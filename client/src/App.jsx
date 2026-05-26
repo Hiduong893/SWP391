@@ -132,12 +132,16 @@ function App() {
   const handleLoginSuccess = (loggedInUser) => {
     setUser(loggedInUser);
     
-    // Switch to previously intended page if any, or default to rent-car
-    const savedTab = sessionStorage.getItem('activeTab');
-    if (savedTab && savedTab !== 'login' && savedTab !== 'register') {
-      setCurrentTab(savedTab);
+    if (loggedInUser.role === 'admin' || loggedInUser.role === 'cskh') {
+      setCurrentTab('admin-dashboard');
     } else {
-      setCurrentTab('rent-car');
+      // Switch to previously intended page if any, or default to rent-car
+      const savedTab = sessionStorage.getItem('activeTab');
+      if (savedTab && savedTab !== 'login' && savedTab !== 'register') {
+        setCurrentTab(savedTab);
+      } else {
+        setCurrentTab('rent-car');
+      }
     }
   };
 
@@ -215,6 +219,7 @@ function App() {
               <Profile 
                 user={user} 
                 onUpdateUser={setUser} 
+                setCurrentTab={setCurrentTab}
               />
             )}
 

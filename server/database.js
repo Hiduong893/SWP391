@@ -119,6 +119,22 @@ const makeAdminUser = () => ({
   createdAt: new Date().toISOString()
 });
 
+const makeAdmin2User = () => ({
+  id: 'user-admin-2',
+  email: 'admin2@bonboncar.vn',
+  password: bcrypt.hashSync('admin', 10),
+  name: 'Admin Hồ Văn Dương',
+  avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80',
+  bio: 'Tài khoản Admin riêng biệt dành riêng cho bạn',
+  isEmailVerified: true,
+  role: 'admin',
+  licenseStatus: 'verified',
+  licenseImage: null,
+  walletBalance: 20000000,
+  bankAccount: { bankName: 'MBBank', accountNumber: '9999999999999', accountHolder: 'HO VAN DUONG ADMIN' },
+  createdAt: new Date().toISOString()
+});
+
 const makeCskhUser = () => ({
   id: 'user-cskh-1',
   email: 'cskh@bonboncar.vn',
@@ -178,7 +194,7 @@ const DEFAULT_SYSTEM_CONFIG = {
 const initDb = () => {
   if (!fs.existsSync(dbFilePath)) {
     const initialData = {
-      users: [makeAdminUser(), makeCskhUser(), makeOwnerUser(), makeRenterUser()],
+      users: [makeAdminUser(), makeAdmin2User(), makeCskhUser(), makeOwnerUser(), makeRenterUser()],
       emails: [],
       cars: DEFAULT_CARS,
       bookings: [],
@@ -193,7 +209,7 @@ const initDb = () => {
     try {
       const data = JSON.parse(fs.readFileSync(dbFilePath, 'utf-8'));
       let updated = false;
-      if (!data.users) { data.users = [makeAdminUser(), makeCskhUser(), makeOwnerUser(), makeRenterUser()]; updated = true; }
+      if (!data.users) { data.users = [makeAdminUser(), makeAdmin2User(), makeCskhUser(), makeOwnerUser(), makeRenterUser()]; updated = true; }
       if (!data.emails) { data.emails = []; updated = true; }
       if (!data.cars || data.cars.length === 0) { data.cars = DEFAULT_CARS; updated = true; }
       if (!data.bookings) { data.bookings = []; updated = true; }
@@ -205,6 +221,7 @@ const initDb = () => {
       // Ensure all standard test users are present
       const userEmails = data.users.map(u => u.email);
       if (!userEmails.includes('admin@bonboncar.vn')) { data.users.push(makeAdminUser()); updated = true; }
+      if (!userEmails.includes('admin2@bonboncar.vn')) { data.users.push(makeAdmin2User()); updated = true; }
       if (!userEmails.includes('cskh@bonboncar.vn')) { data.users.push(makeCskhUser()); updated = true; }
       if (!userEmails.includes('owner@bonboncar.vn')) { data.users.push(makeOwnerUser()); updated = true; }
       if (!userEmails.includes('renter@bonboncar.vn')) { data.users.push(makeRenterUser()); updated = true; }

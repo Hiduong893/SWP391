@@ -155,8 +155,8 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
       {/* 🚀 BONBONCAR BRANDED HERO SECTION */}
       <section className="bonbon-hero">
         <div className="hero-content">
-          <span className="hero-badge">🚗 NỀN TẢNG THUÊ XE TỰ LÁI & KÝ GỬI THẾ HỆ MỚI</span>
-          <h1 className="hero-title">Thuê xe tự lái ngắn hạn & ký gửi xe</h1>
+          <span className="hero-badge">🚗 NỀN TẢNG HỖ TRỢ CHO THUÊ XE Ô TÔ TỰ LÁI &amp; KÝ GỬI</span>
+          <h1 className="hero-title">Nền tảng hỗ trợ cho thuê xe ô tô tự lái</h1>
           <p className="hero-subtitle">
             Trải nghiệm dịch vụ chia sẻ ô tô công nghệ hàng đầu Việt Nam. Thủ tục đơn giản, xe đời mới sạch sẽ, bảo hiểm chuyến đi trọn gói.
           </p>
