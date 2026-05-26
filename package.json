@@ -1,0 +1,20 @@
+{
+  "name": "swp391-auth-demo",
+  "version": "1.0.0",
+  "description": "Full-stack Authentication Demo with Google Sign-in for SWP391",
+  "main": "index.js",
+  "scripts": {
+    "install:client": "npm install --prefix client",
+    "install:server": "npm install --prefix server",
+    "install:all": "npm install && npm run install:client && npm run install:server",
+    "dev:client": "npm run dev --prefix client",
+    "dev:server": "npm run start --prefix server",
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\""
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
