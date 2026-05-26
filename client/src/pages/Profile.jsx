@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Mail, Calendar, FileText, Camera, Edit2, Check, X, Upload, Link, CheckCircle, ZoomIn, RotateCw, Move, ShieldCheck, CreditCard, DollarSign, ArrowDownLeft, ArrowUpRight, ShieldAlert } from 'lucide-react';
+import { User, Mail, Calendar, FileText, Camera, Edit2, Check, X, Upload, Link, CheckCircle, ZoomIn, RotateCw, Move, ShieldCheck, CreditCard, DollarSign, ArrowDownLeft, ArrowUpRight, ShieldAlert, Key } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from '../components/Toast';
 
-export const Profile = ({ user, onUpdateUser }) => {
+export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user.name);
   const [bio, setBio] = useState(user.bio || '');
@@ -431,9 +431,16 @@ export const Profile = ({ user, onUpdateUser }) => {
               </div>
             </div>
 
-            <button type="button" className="btn btn-secondary mt-6" onClick={() => setIsEditing(true)}>
-              <Edit2 size={16} /> Chỉnh sửa thông tin
-            </button>
+            <div style={{ display: 'flex', gap: 12 }} className="mt-6">
+              <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setIsEditing(true)}>
+                <Edit2 size={16} /> Chỉnh sửa thông tin
+              </button>
+              {setCurrentTab && (
+                <button type="button" className="btn btn-primary" style={{ flex: 1, background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }} onClick={() => setCurrentTab('change-password')}>
+                  <Key size={16} /> Đổi mật khẩu
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <form onSubmit={handleEditSubmit} className="profile-edit-form">

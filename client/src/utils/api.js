@@ -58,10 +58,16 @@ export const api = {
         body: JSON.stringify({ email })
       }),
       
-    resetPassword: (token, newPassword) => 
+    verifyResetCode: (email, code) => 
+      request('/auth/verify-reset-code', {
+        method: 'POST',
+        body: JSON.stringify({ email, code })
+      }),
+      
+    resetPassword: (email, code, newPassword) => 
       request('/auth/reset-password', {
         method: 'POST',
-        body: JSON.stringify({ token, newPassword })
+        body: JSON.stringify({ email, code, newPassword })
       })
   },
   

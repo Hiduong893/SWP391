@@ -7,6 +7,7 @@ import { OAuth2Client } from 'google-auth-library';
 import crypto from 'crypto';
 import { db } from './database.js';
 import { auth } from './middleware/auth.js';
+import nodemailer from 'nodemailer';
 
 dotenv.config();
 
@@ -28,6 +29,42 @@ app.use(express.json({ limit: '10mb' })); // Support base64 image uploads up to 
 const sanitizeUser = (user) => {
   const { password, emailVerificationToken, resetPasswordToken, resetPasswordExpires, ...safe } = user;
   return safe;
+};
+
+// Centralized helper to create simulated email and send real SMTP email if SMTP credentials exist in .env
+const sendEmailWithRealFallback = async ({ to, subject, body }) => {
+  // 1. Always create the simulated email for local inbox UI
+  const newEmail = db.emails.create({ to, subject, body });
+
+  // 2. Extract real SMTP settings
+  const smtpEmail = process.env.SMTP_EMAIL;
+  const smtpPassword = process.env.SMTP_PASSWORD;
+
+  if (smtpEmail && smtpPassword) {
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: smtpEmail,
+          pass: smtpPassword
+        }
+      });
+
+      const mailOptions = {
+        from: `"BonBonCar Service" <${smtpEmail}>`,
+        to: to,
+        subject: subject,
+        html: body
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log(`[SMTP] Successfully sent real Gmail to: ${to}`);
+    } catch (smtpError) {
+      console.error('[SMTP] Real Gmail sending failed:', smtpError.message);
+    }
+  }
+
+  return newEmail;
 };
 
 // --- Simulated Email API (For Inbox Component) ---
@@ -59,7 +96,7 @@ app.post('/api/emails/clear', (req, res) => {
 });
 
 
-// --- AUTHENTICATION ROUTES (UC01 - UC06) ---
+// --- AUTHENTICATION ROUTES (UC01 - UC06) [LOADED SMTP] ---
 
 // 1. Register (Đăng ký tài khoản - UC01)
 app.post('/api/auth/register', async (req, res) => {
@@ -87,10 +124,10 @@ app.post('/api/auth/register', async (req, res) => {
       role: 'renter' // Default role is Renter
     });
 
-    // Create simulated email
+    // Create simulated email and send real Gmail if configured
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
     const verificationLink = `${clientUrl}/verify-email?token=${emailVerificationToken}`;
-    db.emails.create({
+    await sendEmailWithRealFallback({
       to: email,
       subject: 'Xác thực tài khoản BonBonCar ✔️',
       body: `
@@ -174,7 +211,7 @@ app.post('/api/auth/login', async (req, res) => {
       const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
       const verificationLink = `${clientUrl}/verify-email?token=${token}`;
       
-      db.emails.create({
+      await sendEmailWithRealFallback({
         to: user.email,
         subject: 'Gửi lại: Xác thực tài khoản BonBonCar 🔄',
         body: `
@@ -267,8 +304,8 @@ app.post('/api/auth/google-login', async (req, res) => {
   }
 });
 
-// 5. Forgot Password (Quên mật khẩu - UC06)
-app.post('/api/auth/forgot-password', (req, res) => {
+// 5. Forgot Password (Quên mật khẩu - Mã OTP 6 số - UC06)
+app.post('/api/auth/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -280,44 +317,68 @@ app.post('/api/auth/forgot-password', (req, res) => {
       return res.status(400).json({ message: 'Email này không tồn tại trong hệ thống.' });
     }
 
-    const resetPasswordToken = crypto.randomUUID();
-    const resetPasswordExpires = Date.now() + 3600000;
+    // Generate a 6-digit random code (OTP)
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const resetPasswordExpires = Date.now() + 600000; // 10 minutes expiry
 
-    db.users.update(user.id, { resetPasswordToken, resetPasswordExpires });
+    db.users.update(user.id, { 
+      resetPasswordToken: resetCode, 
+      resetPasswordExpires 
+    });
 
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-    const resetLink = `${clientUrl}/reset-password?token=${resetPasswordToken}`;
-    db.emails.create({
+    await sendEmailWithRealFallback({
       to: email,
-      subject: 'Yêu cầu đặt lại mật khẩu BonBonCar 🔑',
+      subject: 'Mã xác nhận OTP đặt lại mật khẩu BonBonCar 🔑',
       body: `
         <h3>Chào ${user.name},</h3>
-        <p>Chúng tôi đã nhận được yêu cầu đổi mật khẩu cho tài khoản của bạn.</p>
-        <p>Vui lòng nhấp vào liên kết dưới đây để đặt lại mật khẩu mới (Hiệu lực trong 1 giờ):</p>
-        <div style="margin: 20px 0;">
-          <a href="${resetLink}" style="background-color: #ef4444; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Đặt Lại Mật Khẩu</a>
+        <p>Chúng tôi đã nhận được yêu cầu khôi phục mật khẩu cho tài khoản của bạn.</p>
+        <p>Dưới đây là mã xác thực OTP gồm 6 chữ số của bạn (Có hiệu lực trong vòng 10 phút):</p>
+        <div style="font-size: 24px; font-weight: bold; color: #6366f1; background-color: #f3f4f6; border: 1px solid #e5e7eb; padding: 12px; border-radius: 8px; text-align: center; letter-spacing: 6px; margin: 20px 0; max-width: 200px; margin-left: auto; margin-right: auto;">
+          ${resetCode}
         </div>
-        <a href="${resetLink}">${resetLink}</a>
+        <p>Vui lòng nhập mã này vào trang xác thực trên ứng dụng để tiến hành đổi mật khẩu mới.</p>
+        <br><br>
+        <p>Trân trọng,<br>Ban Quản Trị BonBonCar</p>
       `
     });
 
-    res.json({ message: 'Đã gửi liên kết khôi phục mật khẩu vào "Hộp thư mô phỏng".' });
+    res.json({ message: 'Mã xác thực OTP đã được gửi thành công vào email của bạn!' });
   } catch (error) {
+    console.error('Forgot password error:', error);
     res.status(500).json({ message: 'Lỗi xử lý yêu cầu quên mật khẩu.' });
+  }
+});
+
+// 5.5. Verify OTP code (Xác nhận mã OTP)
+app.post('/api/auth/verify-reset-code', (req, res) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ email và mã xác nhận OTP.' });
+    }
+
+    const user = db.users.findOne({ email: email.toLowerCase().trim() });
+    if (!user || user.resetPasswordToken !== code || !user.resetPasswordExpires || user.resetPasswordExpires < Date.now()) {
+      return res.status(400).json({ message: 'Mã xác nhận OTP không chính xác hoặc đã hết hạn.' });
+    }
+
+    res.json({ message: 'Mã xác nhận OTP chính xác! Bây giờ bạn đã có thể đặt lại mật khẩu mới.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi xác nhận mã OTP.' });
   }
 });
 
 // 6. Reset Password (Đặt lại mật khẩu)
 app.post('/api/auth/reset-password', async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
-    if (!token || !newPassword) {
+    const { email, code, newPassword } = req.body;
+    if (!email || !code || !newPassword) {
       return res.status(400).json({ message: 'Thiếu thông tin khôi phục mật khẩu.' });
     }
 
-    const user = db.users.findOne({ resetPasswordToken: token });
-    if (!user || !user.resetPasswordExpires || user.resetPasswordExpires < Date.now()) {
-      return res.status(400).json({ message: 'Mã khôi phục không hợp lệ hoặc đã hết hạn.' });
+    const user = db.users.findOne({ email: email.toLowerCase().trim() });
+    if (!user || user.resetPasswordToken !== code || !user.resetPasswordExpires || user.resetPasswordExpires < Date.now()) {
+      return res.status(400).json({ message: 'Mã xác nhận không hợp lệ hoặc đã hết hạn.' });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);

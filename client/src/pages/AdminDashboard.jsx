@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Car, CreditCard, DollarSign, ShieldAlert, Check, X, Trash2, Eye, RefreshCw, BarChart2, CheckCircle2, MessageSquare, AlertTriangle, ShieldCheck, Settings, HelpCircle, ArrowUpRight } from 'lucide-react';
+import { Users, Car, CreditCard, DollarSign, ShieldAlert, Check, X, Trash2, Eye, RefreshCw, BarChart2, CheckCircle2, MessageSquare, AlertTriangle, ShieldCheck, Settings, HelpCircle, ArrowUpRight, Star } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from '../components/Toast';
 

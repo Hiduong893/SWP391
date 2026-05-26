@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, LogIn, Chrome, ArrowRight, AlertTriangle } from 'lucide-react';
+import { Mail, Lock, LogIn, Chrome, ArrowRight, AlertTriangle, User, ShieldCheck } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from '../components/Toast';
 
 export const Login = ({ onLoginSuccess, setCurrentTab }) => {
+  const [loginMode, setLoginMode] = useState('renter'); // renter, admin
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,6 +47,10 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
     setLoading(true);
     try {
       const data = await api.auth.googleLogin(response.credential);
+      if (data.user.role === 'admin' || data.user.role === 'cskh') {
+        showToast('Tài khoản Quản trị/CSKH vui lòng đăng nhập tại cổng Ban Quản Trị.', 'error');
+        return;
+      }
       localStorage.setItem('token', data.token);
       showToast(data.message, 'success');
       onLoginSuccess(data.user);
@@ -82,6 +87,20 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
     setUnverifiedEmail(null);
     try {
       const data = await api.auth.login(email, password);
+      
+      // Phân quyền cổng đăng nhập nghiêm ngặt
+      if (loginMode === 'admin') {
+        if (data.user.role !== 'admin' && data.user.role !== 'cskh') {
+          showToast('Tài khoản này không có quyền truy cập cổng Quản trị.', 'error');
+          return;
+        }
+      } else {
+        if (data.user.role === 'admin' || data.user.role === 'cskh') {
+          showToast('Tài khoản Quản trị/CSKH vui lòng đăng nhập tại cổng Ban Quản Trị.', 'error');
+          return;
+        }
+      }
+
       localStorage.setItem('token', data.token);
       showToast(data.message, 'success');
       onLoginSuccess(data.user);
@@ -98,8 +117,72 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
 
   return (
     <div className="glass-card">
-      <h2 className="title">Đăng Nhập</h2>
-      <p className="subtitle">Chào mừng bạn quay lại! Hãy đăng nhập để tiếp tục.</p>
+      <h2 className="title" style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>
+        {loginMode === 'renter' ? 'ĐĂNG NHẬP KHÁCH HÀNG' : 'ĐĂNG NHẬP BAN QUẢN TRỊ'}
+      </h2>
+      <p className="subtitle">
+        {loginMode === 'renter' 
+          ? 'Chào mừng quý khách đến với BonBonCar! Đăng nhập để thuê xe ngay.' 
+          : 'Cổng thông tin chuyên biệt dành cho Ban Quản trị & bộ phận CSKH.'}
+      </p>
+
+      {/* 🔄 Segmented Tab Control */}
+      <div className="login-mode-tabs mb-6" style={{ display: 'flex', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.06)', padding: 4, borderRadius: 10, marginBottom: 20 }}>
+        <button 
+          type="button" 
+          onClick={() => {
+            setLoginMode('renter');
+            setEmail('');
+            setPassword('');
+          }} 
+          style={{ 
+            flex: 1, 
+            padding: '10px 12px', 
+            borderRadius: 8, 
+            fontSize: '13px', 
+            fontWeight: 700, 
+            border: 'none', 
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            background: loginMode === 'renter' ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'transparent',
+            color: loginMode === 'renter' ? 'white' : '#94a3b8',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6
+          }}
+        >
+          <User size={14} />
+          <span>Khách Thuê Xe</span>
+        </button>
+        <button 
+          type="button" 
+          onClick={() => {
+            setLoginMode('admin');
+            setEmail('');
+            setPassword('');
+          }} 
+          style={{ 
+            flex: 1, 
+            padding: '10px 12px', 
+            borderRadius: 8, 
+            fontSize: '13px', 
+            fontWeight: 700, 
+            border: 'none', 
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            background: loginMode === 'admin' ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : 'transparent',
+            color: loginMode === 'admin' ? 'white' : '#94a3b8',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6
+          }}
+        >
+          <ShieldCheck size={14} />
+          <span>Ban Quản Trị</span>
+        </button>
+      </div>
 
       {unverifiedEmail && (
         <div className="alert alert-error">
@@ -121,7 +204,7 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
             <input
               type="email"
               className="form-input"
-              placeholder="name@example.com"
+              placeholder={loginMode === 'renter' ? 'name@example.com' : 'admin@bonboncar.vn'}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -154,72 +237,43 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
           </div>
         </div>
 
-        <button type="submit" className="btn btn-primary mt-4" disabled={loading}>
+        <button 
+          type="submit" 
+          className="btn mt-4" 
+          disabled={loading}
+          style={{ 
+            width: '100%',
+            background: loginMode === 'renter' ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)',
+            color: 'white',
+            fontWeight: 700
+          }}
+        >
           <LogIn size={18} />
-          {loading ? 'Đang xử lý...' : 'Đăng Nhập'}
+          {loading ? 'Đang xử lý...' : loginMode === 'renter' ? 'Đăng Nhập Khách' : 'Đăng Nhập Quản Trị'}
         </button>
       </form>
 
-      <div className="divider">Hoặc đăng nhập với</div>
+      {loginMode === 'renter' && (
+        <>
+          <div className="divider">Hoặc đăng nhập với</div>
+          {/* Official Google Button container */}
+          <div id="official-google-btn" style={{ width: '100%', marginBottom: 12 }}></div>
+        </>
+      )}
 
-      {/* Official Google Button container */}
-      <div id="official-google-btn" style={{ width: '100%', marginBottom: 12 }}></div>
 
-      {/* Mock Dev Google login in case of local client/server origin mismatch or quick testing */}
-      <div className="dev-login-box">
-        <div className="dev-title" style={{ color: '#c084fc' }}>🛡️ ĐĂNG NHẬP NHANH QUẢN TRỊ & HỖ TRỢ (1-CLICK)</div>
-        <div className="dev-buttons-row">
+      {loginMode === 'renter' && (
+        <div className="text-center mt-6" style={{ fontSize: '14px', color: '#94a3b8' }}>
+          Chưa có tài khoản?{' '}
           <button 
-            type="button" 
-            className="btn-dev-admin" 
-            onClick={async () => {
-              setLoading(true);
-              try {
-                const data = await api.auth.login('admin@bonboncar.vn', 'admin');
-                localStorage.setItem('token', data.token);
-                showToast('Đăng nhập với vai trò Admin tối cao thành công!', 'success');
-                onLoginSuccess(data.user);
-              } catch (e) {
-                showToast(e.message, 'error');
-              } finally {
-                setLoading(false);
-              }
-            }}
+            className="link-btn" 
+            onClick={() => setCurrentTab('register')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6366f1', fontWeight: 6 }}
           >
-            👑 Admin Hệ Thống
-          </button>
-          <button 
-            type="button" 
-            className="btn-dev-cskh" 
-            onClick={async () => {
-              setLoading(true);
-              try {
-                const data = await api.auth.login('cskh@bonboncar.vn', 'cskh');
-                localStorage.setItem('token', data.token);
-                showToast('Đăng nhập với vai trò CSKH thành công!', 'success');
-                onLoginSuccess(data.user);
-              } catch (e) {
-                showToast(e.message, 'error');
-              } finally {
-                setLoading(false);
-              }
-            }}
-          >
-            🎧 Nhân Viên CSKH
+            Đăng ký ngay <ArrowRight size={14} style={{ display: 'inline', marginLeft: 2 }} />
           </button>
         </div>
-      </div>
-
-      <div className="text-center mt-6" style={{ fontSize: '14px', color: '#94a3b8' }}>
-        Chưa có tài khoản?{' '}
-        <button 
-          className="link-btn" 
-          onClick={() => setCurrentTab('register')}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6366f1', fontWeight: 6 }}
-        >
-          Đăng ký ngay <ArrowRight size={14} style={{ display: 'inline', marginLeft: 2 }} />
-        </button>
-      </div>
+      )}
     </div>
   );
 };
