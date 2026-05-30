@@ -236,7 +236,7 @@ export const ForgotPassword = ({ setCurrentTab }) => {
           <button 
             className="link-btn" 
             onClick={() => setCurrentTab('login')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6366f1', fontWeight: 6 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#009698', fontWeight: 6 }}
           >
             <ArrowLeft size={12} style={{ display: 'inline', marginRight: 2 }} /> Quay lại Đăng nhập
           </button>

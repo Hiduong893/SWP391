@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
-import { SimulatedInbox } from './components/SimulatedInbox';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { VerifyEmail } from './pages/VerifyEmail';
@@ -26,7 +25,6 @@ function App() {
   const [verificationToken, setVerificationToken] = useState(null);
   const [resetToken, setResetToken] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [triggerInboxReload, setTriggerInboxReload] = useState(false);
   
   // Car Rental state
   const [activeBooking, setActiveBooking] = useState(null);
@@ -227,11 +225,6 @@ function App() {
               <ChangePassword user={user} />
             )}
           </main>
-
-          <SimulatedInbox 
-            onNavigateToLink={handleNavigateToLink} 
-            triggerReload={triggerInboxReload} 
-          />
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Mail, Lock, UserPlus, ArrowLeft } from 'lucide-react';
+import { User, Mail, Lock, UserPlus, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from '../components/Toast';
 
@@ -8,6 +8,8 @@ export const Register = ({ setCurrentTab }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
 
@@ -82,13 +84,35 @@ export const Register = ({ setCurrentTab }) => {
           <div className="input-container">
             <Lock className="input-icon" size={18} />
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               className="form-input"
+              style={{ paddingRight: '42px' }}
               placeholder="Ít nhất 6 ký tự"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: '14px',
+                background: 'none',
+                border: 'none',
+                color: '#64748b',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0',
+                transition: 'color 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#009698'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
         </div>
 
@@ -97,13 +121,35 @@ export const Register = ({ setCurrentTab }) => {
           <div className="input-container">
             <Lock className="input-icon" size={18} />
             <input
-              type="password"
+              type={showConfirmPassword ? 'text' : 'password'}
               className="form-input"
+              style={{ paddingRight: '42px' }}
               placeholder="Trùng khớp mật khẩu trên"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              style={{
+                position: 'absolute',
+                right: '14px',
+                background: 'none',
+                border: 'none',
+                color: '#64748b',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0',
+                transition: 'color 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#009698'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}
+            >
+              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
         </div>
 
@@ -118,7 +164,7 @@ export const Register = ({ setCurrentTab }) => {
         <button 
           className="link-btn" 
           onClick={() => setCurrentTab('login')}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6366f1', fontWeight: 6 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#009698', fontWeight: 6 }}
         >
           <ArrowLeft size={12} style={{ display: 'inline', marginRight: 2 }} /> Quay lại Đăng nhập
         </button>

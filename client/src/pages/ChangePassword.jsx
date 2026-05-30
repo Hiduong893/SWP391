@@ -7,6 +7,9 @@ export const ChangePassword = ({ user }) => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const { showToast } = useToast();
@@ -73,13 +76,35 @@ export const ChangePassword = ({ user }) => {
                 <div className="input-container">
                   <KeyRound className="input-icon" size={18} />
                   <input
-                    type="password"
+                    type={showCurrentPassword ? 'text' : 'password'}
                     className="form-input"
+                    style={{ paddingRight: '42px' }}
                     placeholder="Nhập mật khẩu đang sử dụng"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '14px',
+                      background: 'none',
+                      border: 'none',
+                      color: '#64748b',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0',
+                      transition: 'color 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#009698'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}
+                  >
+                    {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
             )}
@@ -89,13 +114,35 @@ export const ChangePassword = ({ user }) => {
               <div className="input-container">
                 <Lock className="input-icon" size={18} />
                 <input
-                  type="password"
+                  type={showNewPassword ? 'text' : 'password'}
                   className="form-input"
+                  style={{ paddingRight: '42px' }}
                   placeholder="Tối thiểu 6 ký tự"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '14px',
+                    background: 'none',
+                    border: 'none',
+                    color: '#64748b',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0',
+                    transition: 'color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#009698'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}
+                >
+                  {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
@@ -104,13 +151,35 @@ export const ChangePassword = ({ user }) => {
               <div className="input-container">
                 <Lock className="input-icon" size={18} />
                 <input
-                  type="password"
+                  type={showConfirmPassword ? 'text' : 'password'}
                   className="form-input"
+                  style={{ paddingRight: '42px' }}
                   placeholder="Nhập lại mật khẩu mới"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '14px',
+                    background: 'none',
+                    border: 'none',
+                    color: '#64748b',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0',
+                    transition: 'color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#009698'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 

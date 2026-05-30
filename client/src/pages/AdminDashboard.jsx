@@ -205,6 +205,23 @@ export const AdminDashboard = () => {
     }
   };
 
+  // 6.5. Xóa tài khoản thành viên (Admin Only)
+  const handleDeleteUser = async (userId, userName) => {
+    const confirmDelete = window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản "${userName}" khỏi hệ thống không? Hành động này không thể hoàn tác!`);
+    if (!confirmDelete) return;
+
+    setActionLoading(true);
+    try {
+      const data = await api.admin.deleteUser(userId);
+      showToast(data.message, 'success');
+      fetchDashboardData(true);
+    } catch (error) {
+      showToast(error.message || 'Lỗi khi xóa tài khoản.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // 7. Duyệt hoàn trả cọc 5.000.000 VND (Admin/CSKH - UC28)
   const handleRefundDeposit = async (bookingId, refund) => {
     const confirmAct = window.confirm(refund ? 'Bạn đồng ý HOÀN LẠI 5.000.000đ tiền cọc vào ví người dùng?' : 'Bạn quyết định GIỮ LẠI tiền đặt cọc này?');
@@ -901,6 +918,7 @@ export const AdminDashboard = () => {
                       <th>Vai Trò Hiện Tại</th>
                       <th>Xác Thực KYC</th>
                       <th style={{ textAlign: 'center' }}>Thay Đổi Quyền Vai Trò</th>
+                      <th style={{ textAlign: 'center' }}>Hành Động</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -936,6 +954,18 @@ export const AdminDashboard = () => {
                             <option value="cskh">Chăm Sóc Khách (CSKH)</option>
                             <option value="admin">Quản Trị Viên (Admin)</option>
                           </select>
+                        </td>
+                        <td>
+                          <div className="table-actions-cell" style={{ justifyContent: 'center' }}>
+                            <button 
+                              className="btn-approve btn-danger" 
+                              onClick={() => handleDeleteUser(u.id, u.name)}
+                              disabled={actionLoading || u.role === 'admin' /* Prevent deleting admins for security */}
+                              style={{ padding: '4px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <Trash2 size={12} /> Xóa Account
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

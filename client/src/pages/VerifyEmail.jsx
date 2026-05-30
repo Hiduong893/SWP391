@@ -110,8 +110,8 @@ const injectVerifyStyles = () => {
     }
 
     .verify-icon.text-info {
-      color: #6366f1;
-      filter: drop-shadow(0 0 16px rgba(99, 102, 241, 0.3));
+      color: #009698;
+      filter: drop-shadow(0 0 16px rgba(0, 150, 152, 0.3));
     }
 
     .animate-bounce {

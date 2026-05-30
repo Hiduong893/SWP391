@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, LogIn, Chrome, ArrowRight, AlertTriangle, User, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, LogIn, Chrome, ArrowRight, AlertTriangle, User, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from '../components/Toast';
 
@@ -7,6 +7,7 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
   const [loginMode, setLoginMode] = useState('renter'); // renter, admin
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState(null);
   const { showToast } = useToast();
@@ -26,7 +27,7 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
         window.google.accounts.id.renderButton(
           document.getElementById('official-google-btn'),
           { 
-            theme: 'filled_black', 
+            theme: 'outline', 
             size: 'large', 
             width: '100%',
             text: 'signin_with',
@@ -127,7 +128,7 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
       </p>
 
       {/* 🔄 Segmented Tab Control */}
-      <div className="login-mode-tabs mb-6" style={{ display: 'flex', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.06)', padding: 4, borderRadius: 10, marginBottom: 20 }}>
+      <div className="login-mode-tabs mb-6" style={{ display: 'flex', background: '#f1f5f9', border: '1px solid #e2e8f0', padding: 4, borderRadius: 10, marginBottom: 20 }}>
         <button 
           type="button" 
           onClick={() => {
@@ -144,8 +145,8 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
             border: 'none', 
             cursor: 'pointer',
             transition: 'all 0.3s ease',
-            background: loginMode === 'renter' ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'transparent',
-            color: loginMode === 'renter' ? 'white' : '#94a3b8',
+            background: loginMode === 'renter' ? 'linear-gradient(135deg, #009698 0%, #00bfa5 100%)' : 'transparent',
+            color: loginMode === 'renter' ? 'white' : '#64748b',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -171,8 +172,8 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
             border: 'none', 
             cursor: 'pointer',
             transition: 'all 0.3s ease',
-            background: loginMode === 'admin' ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : 'transparent',
-            color: loginMode === 'admin' ? 'white' : '#94a3b8',
+            background: loginMode === 'admin' ? 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)' : 'transparent',
+            color: loginMode === 'admin' ? 'white' : '#64748b',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -219,7 +220,7 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
               type="button" 
               className="link-btn" 
               onClick={() => setCurrentTab('forgot-password')}
-              style={{ fontSize: '13px', background: 'none', border: 'none', cursor: 'pointer', color: '#6366f1' }}
+              style={{ fontSize: '13px', background: 'none', border: 'none', cursor: 'pointer', color: '#009698' }}
             >
               Quên mật khẩu?
             </button>
@@ -227,13 +228,35 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
           <div className="input-container">
             <Lock className="input-icon" size={18} />
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               className="form-input"
+              style={{ paddingRight: '42px' }}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: '14px',
+                background: 'none',
+                border: 'none',
+                color: '#64748b',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0',
+                transition: 'color 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#009698'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
         </div>
 
@@ -243,7 +266,7 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
           disabled={loading}
           style={{ 
             width: '100%',
-            background: loginMode === 'renter' ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)',
+            background: loginMode === 'renter' ? 'linear-gradient(135deg, #009698 0%, #00bfa5 100%)' : 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)',
             color: 'white',
             fontWeight: 700
           }}
@@ -268,7 +291,7 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
           <button 
             className="link-btn" 
             onClick={() => setCurrentTab('register')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6366f1', fontWeight: 6 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#009698', fontWeight: 6 }}
           >
             Đăng ký ngay <ArrowRight size={14} style={{ display: 'inline', marginLeft: 2 }} />
           </button>
@@ -287,23 +310,72 @@ const injectLoginStyles = () => {
   const style = document.createElement('style');
   style.id = styleId;
   style.textContent = `
+    .glass-card {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06) !important;
+      border-radius: 24px !important;
+      padding: 40px !important;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, #009698 0%, #a855f7 100%) !important;
+    }
+
+    .login-mode-tabs button {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .login-mode-tabs button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0, 150, 152, 0.08);
+      filter: brightness(1.03);
+    }
+
+    .login-mode-tabs button:active {
+      transform: scale(0.97);
+    }
+
+    button[type="submit"].btn {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      box-shadow: 0 4px 14px rgba(0, 150, 152, 0.2);
+    }
+
+    button[type="submit"].btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 150, 152, 0.35) !important;
+      filter: brightness(1.05);
+    }
+
+    button[type="submit"].btn:active {
+      transform: translateY(0) scale(0.98);
+    }
+
     .dev-login-box {
-      margin-top: 20px;
+      margin-top: 24px;
       padding: 16px;
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px dashed rgba(99, 102, 241, 0.4);
+      background: rgba(0, 150, 152, 0.03) !important;
+      border: 1px dashed rgba(0, 150, 152, 0.25) !important;
       border-radius: 12px;
       text-align: left;
-      backdrop-filter: blur(10px);
     }
 
     .dev-title {
       font-size: 11px;
       font-weight: 700;
-      color: #94a3b8;
+      color: #009698 !important;
       margin-bottom: 8px;
       letter-spacing: 0.8px;
       text-align: center;
+      text-transform: uppercase;
     }
 
     .dev-buttons-row {
@@ -336,58 +408,63 @@ const injectLoginStyles = () => {
     }
 
     .btn-dev-admin {
-      background: rgba(168, 85, 247, 0.1);
-      border: 1px solid rgba(168, 85, 247, 0.3);
-      color: #e9d5ff;
+      background: rgba(168, 85, 247, 0.04) !important;
+      border: 1px solid rgba(168, 85, 247, 0.2) !important;
+      color: #7e22ce !important;
     }
     .btn-dev-admin:hover {
-      background: rgba(168, 85, 247, 0.25);
-      border-color: rgba(168, 85, 247, 0.6);
-      box-shadow: 0 0 12px rgba(168, 85, 247, 0.2);
+      background: rgba(168, 85, 247, 0.1) !important;
+      border-color: rgba(168, 85, 247, 0.4) !important;
+      box-shadow: 0 4px 10px rgba(168, 85, 247, 0.08);
+      transform: translateY(-1px);
     }
 
     .btn-dev-cskh {
-      background: rgba(236, 72, 153, 0.1);
-      border: 1px solid rgba(236, 72, 153, 0.3);
-      color: #fbcfe8;
+      background: rgba(236, 72, 153, 0.04) !important;
+      border: 1px solid rgba(236, 72, 153, 0.2) !important;
+      color: #db2777 !important;
     }
     .btn-dev-cskh:hover {
-      background: rgba(236, 72, 153, 0.25);
-      border-color: rgba(236, 72, 153, 0.6);
-      box-shadow: 0 0 12px rgba(236, 72, 153, 0.2);
+      background: rgba(236, 72, 153, 0.1) !important;
+      border-color: rgba(236, 72, 153, 0.4) !important;
+      box-shadow: 0 4px 10px rgba(236, 72, 153, 0.08);
+      transform: translateY(-1px);
     }
 
     .btn-dev-owner {
-      background: rgba(14, 165, 233, 0.1);
-      border: 1px solid rgba(14, 165, 233, 0.3);
-      color: #e0f2fe;
+      background: rgba(14, 165, 233, 0.04) !important;
+      border: 1px solid rgba(14, 165, 233, 0.2) !important;
+      color: #0369a1 !important;
     }
     .btn-dev-owner:hover {
-      background: rgba(14, 165, 233, 0.25);
-      border-color: rgba(14, 165, 233, 0.6);
-      box-shadow: 0 0 12px rgba(14, 165, 233, 0.2);
+      background: rgba(14, 165, 233, 0.1) !important;
+      border-color: rgba(14, 165, 233, 0.4) !important;
+      box-shadow: 0 4px 10px rgba(14, 165, 233, 0.08);
+      transform: translateY(-1px);
     }
 
     .btn-dev-renter {
-      background: rgba(34, 197, 94, 0.1);
-      border: 1px solid rgba(34, 197, 94, 0.3);
-      color: #dcfce7;
+      background: rgba(34, 197, 94, 0.04) !important;
+      border: 1px solid rgba(34, 197, 94, 0.2) !important;
+      color: #15803d !important;
     }
     .btn-dev-renter:hover {
-      background: rgba(34, 197, 94, 0.25);
-      border-color: rgba(34, 197, 94, 0.6);
-      box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
+      background: rgba(34, 197, 94, 0.1) !important;
+      border-color: rgba(34, 197, 94, 0.4) !important;
+      box-shadow: 0 4px 10px rgba(34, 197, 94, 0.08);
+      transform: translateY(-1px);
     }
 
     .btn-dev-google {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: #94a3b8;
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #475569 !important;
     }
     .btn-dev-google:hover {
-      background: rgba(99, 102, 241, 0.1);
-      color: white;
-      border-color: rgba(99, 102, 241, 0.3);
+      background: rgba(0, 150, 152, 0.04) !important;
+      color: #009698 !important;
+      border-color: rgba(0, 150, 152, 0.3) !important;
+      transform: translateY(-1px);
     }
   `;
   document.head.appendChild(style);

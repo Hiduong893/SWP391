@@ -33,7 +33,7 @@ const DEFAULT_CARS = [
     transmission: 'Số sàn',
     fuel: 'Xăng',
     pricePerDay: 700000,
-    image: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1603386329225-868f9b1ee6c9?auto=format&fit=crop&w=600&q=80',
     location: 'Hà Nội',
     ownerId: null,
     status: 'available',
@@ -48,7 +48,7 @@ const DEFAULT_CARS = [
     transmission: 'Tự động',
     fuel: 'Dầu',
     pricePerDay: 1400000,
-    image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&w=600&q=80',
     location: 'TP. Hồ Chí Minh',
     ownerId: null,
     status: 'available',
@@ -63,7 +63,7 @@ const DEFAULT_CARS = [
     transmission: 'Tự động',
     fuel: 'Xăng',
     pricePerDay: 800000,
-    image: 'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1619682817481-e994891cd1f5?auto=format&fit=crop&w=600&q=80',
     location: 'TP. Hồ Chí Minh',
     ownerId: null,
     status: 'available',
@@ -78,7 +78,7 @@ const DEFAULT_CARS = [
     transmission: 'Tự động',
     fuel: 'Xăng',
     pricePerDay: 950000,
-    image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=600&q=80',
     location: 'Đà Nẵng',
     ownerId: null,
     status: 'available',
@@ -93,7 +93,7 @@ const DEFAULT_CARS = [
     transmission: 'Tự động',
     fuel: 'Xăng',
     pricePerDay: 900000,
-    image: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1631835339316-dfeb9818b459?auto=format&fit=crop&w=600&q=80',
     location: 'Đà Nẵng',
     ownerId: null,
     status: 'available',
@@ -346,6 +346,13 @@ export const db = {
       
       writeDb(data);
       return data.users[index];
+    },
+
+    delete: (id) => {
+      const data = readDb();
+      data.users = data.users.filter(user => user.id !== id);
+      writeDb(data);
+      return true;
     }
   },
 
