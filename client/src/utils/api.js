@@ -350,6 +350,11 @@ export const api = {
       request(`/admin/users/${id}/role`, {
         method: 'PUT',
         body: JSON.stringify({ role })
+      }),
+
+    deleteUser: (id) =>
+      request(`/admin/users/${id}`, {
+        method: 'DELETE'
       })
   },
   

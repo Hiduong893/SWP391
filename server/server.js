@@ -280,6 +280,40 @@ app.post('/api/auth/google-login', async (req, res) => {
       user = db.users.findOne({ email: email.toLowerCase().trim() });
       if (user) {
         user = db.users.update(user.id, { googleId, isEmailVerified: true });
+
+        // Gửi email chào mừng khi liên kết tài khoản Google lần đầu tiên thành công
+        try {
+          await sendEmailWithRealFallback({
+            to: email,
+            subject: 'Liên kết tài khoản Google thành công ✔️',
+            body: `
+              <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+                <h2 style="color: #4f46e5; text-align: center;">Chào mừng bạn đến với BonBonCar!</h2>
+                <p>Xin chào <strong>${user.name}</strong>,</p>
+                <p>Chúng tôi đã liên kết thành công tài khoản BonBonCar của bạn với tài khoản Google của bạn!</p>
+                
+                <div style="background-color: #f8fafc; padding: 15px; border-left: 4px solid #4f46e5; border-radius: 6px; margin: 20px 0;">
+                  <strong style="color: #0f172a;">Thông tin liên kết Google:</strong>
+                  <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #334155;">
+                    <li><strong>Họ tên:</strong> ${user.name}</li>
+                    <li><strong>Email:</strong> ${email}</li>
+                    <li><strong>Trạng thái:</strong> Đã liên kết & Xác thực ✔️</li>
+                  </ul>
+                </div>
+                
+                <p>Bây giờ bạn đã có thể đăng nhập cực kỳ nhanh chóng và an toàn bằng nút "Đăng nhập với Google".</p>
+                
+                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+                <p style="font-size: 13px; color: #64748b; text-align: center;">
+                  Đây là email tự động từ hệ thống BonBonCar.<br>
+                  © 2026 Ban Quản Trị BonBonCar. All rights reserved.
+                </p>
+              </div>
+            `
+          });
+        } catch (emailError) {
+          console.error('[Google-Login] Lỗi khi gửi email liên kết:', emailError.message);
+        }
       } else {
         user = db.users.create({
           email,
@@ -289,6 +323,40 @@ app.post('/api/auth/google-login', async (req, res) => {
           isEmailVerified: true,
           role: 'renter'
         });
+
+        // Gửi email chào mừng khi đăng ký bằng Google lần đầu tiên thành công
+        try {
+          await sendEmailWithRealFallback({
+            to: email,
+            subject: 'Chào mừng bạn đến với BonBonCar ✔️',
+            body: `
+              <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+                <h2 style="color: #4f46e5; text-align: center;">Chào mừng bạn đến với BonBonCar!</h2>
+                <p>Xin chào <strong>${name}</strong>,</p>
+                <p>Cảm ơn bạn đã lựa chọn đăng nhập bằng tài khoản Google tại BonBonCar. Tài khoản của bạn đã được khởi tạo và xác thực email tự động thành công!</p>
+                
+                <div style="background-color: #f8fafc; padding: 15px; border-left: 4px solid #4f46e5; border-radius: 6px; margin: 20px 0;">
+                  <strong style="color: #0f172a;">Thông tin tài khoản liên kết Google:</strong>
+                  <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #334155;">
+                    <li><strong>Họ tên:</strong> ${name}</li>
+                    <li><strong>Email đăng nhập:</strong> ${email}</li>
+                    <li><strong>Trạng thái xác thực:</strong> Đã kích hoạt ✔️</li>
+                  </ul>
+                </div>
+                
+                <p>Bây giờ bạn đã sẵn sàng trải nghiệm đặt các dòng xe tự lái đời mới hàng đầu tại BonBonCar. Đừng quên hoàn tất thông tin bằng lái xe (KYC) tại mục Hồ sơ cá nhân trước khi thực hiện chuyến đi đầu tiên nhé!</p>
+                
+                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+                <p style="font-size: 13px; color: #64748b; text-align: center;">
+                  Đây là email tự động từ hệ thống BonBonCar.<br>
+                  © 2026 Ban Quản Trị BonBonCar. All rights reserved.
+                </p>
+              </div>
+            `
+          });
+        } catch (emailError) {
+          console.error('[Google-Login] Lỗi khi gửi email chào mừng:', emailError.message);
+        }
       }
     }
 
@@ -1434,6 +1502,33 @@ app.delete('/api/admin/cars/:id', auth, cskhOrAdminAuth, (req, res) => {
     res.json({ message: 'Đã gỡ bỏ xe khỏi hệ thống cho thuê thành công!' });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi gỡ xe.' });
+  }
+});
+
+// DELETE Admin User (Xóa tài khoản thành viên - Admin Only)
+app.delete('/api/admin/users/:id', auth, adminAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Do not allow Admin to delete their own account
+    if (id === req.user.id) {
+      return res.status(400).json({ message: 'Bạn không thể tự xóa tài khoản của chính mình!' });
+    }
+
+    const userToDelete = db.users.findOne({ id });
+    if (!userToDelete) {
+      return res.status(404).json({ message: 'Tài khoản thành viên không tồn tại.' });
+    }
+
+    // Do not allow deleting other Admins unless the logged-in user is the super-admin
+    if (userToDelete.role === 'admin' && req.user.id !== 'user-admin-1') {
+      return res.status(403).json({ message: 'Chỉ có Admin tối cao mới có thể xóa tài khoản Quản trị khác.' });
+    }
+
+    db.users.delete(id);
+    res.json({ message: `Đã xóa tài khoản thành viên "${userToDelete.name}" thành công!` });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi khi xóa tài khoản thành viên.' });
   }
 });
 
