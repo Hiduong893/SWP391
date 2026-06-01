@@ -6,7 +6,7 @@ import { useToast } from '../components/Toast';
 export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Search state
   const [location, setLocation] = useState('Hà Nội');
   const [pickupDate, setPickupDate] = useState('');
@@ -14,7 +14,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
   const [pickupTime, setPickupTime] = useState('10:30');
   const [returnTime, setReturnTime] = useState('10:00');
   const [searchTab, setSearchTab] = useState('self-drive'); // self-drive, monthly
-  
+
   // Filters state
   const [seats, setSeats] = useState('');
   const [transmission, setTransmission] = useState('');
@@ -33,12 +33,13 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
   // Collapsible Policies state
   const [activePolicyIndex, setActivePolicyIndex] = useState(null);
 
-  // Refs for smooth scroll carousels
+  // Kiểm soát các thanh cuộn (Huy)
   const brandScrollRef = useRef(null);
   const likesScrollRef = useRef(null);
   const luxuryScrollRef = useRef(null);
   const locationsScrollRef = useRef(null);
   const reviewsScrollRef = useRef(null);
+  const catalogScrollRef = useRef(null);
 
   const { showToast } = useToast();
 
@@ -83,7 +84,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
       showToast('Ngày trả xe phải sau ngày nhận xe ít nhất 1 ngày.', 'warning');
       return;
     }
-    
+
     const filters = {
       location,
       seats,
@@ -109,7 +110,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
       setCurrentTab('login');
       return;
     }
-    
+
     onRentCarClick({
       car,
       pickupDate,
@@ -147,7 +148,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
     setSearchKeyword(brandName);
     fetchCars({ search: brandName });
     showToast(`Đang tìm kiếm tất cả xe thuộc hãng ${brandName}...`, 'info');
-    
+
     // Smooth scroll down to the main catalog
     const catalogElem = document.getElementById('catalog-live-section');
     if (catalogElem) {
@@ -159,7 +160,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
     setLocation(locName);
     fetchCars({ location: locName });
     showToast(`Đang tìm kiếm xe tại khu vực ${locName}...`, 'info');
-    
+
     const catalogElem = document.getElementById('catalog-live-section');
     if (catalogElem) {
       catalogElem.scrollIntoView({ behavior: 'smooth' });
@@ -389,13 +390,13 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
 
   const brandLogos = [
     { name: 'VinFast', path: 'M50 15 L85 15 L50 85 L15 15 Z' }, // interlocked silver V
-    { name: 'Toyota', path: 'M50 15 C75 15 85 30 85 50 C85 70 75 85 50 85 C25 85 15 70 15 50 C15 30 25 15 50 15 Z' }, 
+    { name: 'Toyota', path: 'M50 15 C75 15 85 30 85 50 C85 70 75 85 50 85 C25 85 15 70 15 50 C15 30 25 15 50 15 Z' },
     { name: 'Mitsubishi', path: 'M50 10 L68 40 L50 70 L32 40 Z' }, // silver diamonds
-    { name: 'Hyundai', path: 'M25 25 L35 25 L45 75 L35 75 Z' }, 
-    { name: 'Kia', path: 'M20 20 L40 80 L60 20 L80 80' }, 
-    { name: 'Honda', path: 'M15 15 L85 15 L85 85 L15 85 Z' }, 
-    { name: 'Mazda', path: 'M50 10 C72 10 90 28 90 50 C90 72 72 90 50 90 C28 90 10 72 10 50 C10 28 28 10 50 10 Z' }, 
-    { name: 'MG', path: 'M50 10 L85 30 L85 70 L50 90 L15 70 L15 30 Z' }, 
+    { name: 'Hyundai', path: 'M25 25 L35 25 L45 75 L35 75 Z' },
+    { name: 'Kia', path: 'M20 20 L40 80 L60 20 L80 80' },
+    { name: 'Honda', path: 'M15 15 L85 15 L85 85 L15 85 Z' },
+    { name: 'Mazda', path: 'M50 10 C72 10 90 28 90 50 C90 72 72 90 50 90 C28 90 10 72 10 50 C10 28 28 10 50 10 Z' },
+    { name: 'MG', path: 'M50 10 L85 30 L85 70 L50 90 L15 70 L15 30 Z' },
     { name: 'Suzuki', path: 'M15 15 L85 15 L50 50 L85 85 L15 85 Z' }
   ];
 
@@ -412,7 +413,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
       id: 'rev-p-1',
       name: 'Anh Hòa',
       role: 'Cư dân Sala, Q2, Tp.HCM',
-      comment: 'Anh thấy cách làm của các em ở BonbonCar rất tốt, chặt chẽ, khoa học, rõ ràng, công bằng, sòng phẳng nữa....',
+      comment: 'Anh thấy cách làm của các em ở ViVuCar rất tốt, chặt chẽ, khoa học, rõ ràng, công bằng, sòng phẳng nữa....',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
       rating: 5
     },
@@ -445,11 +446,11 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
   const systemPolicies = [
     {
       title: "1. Hồ sơ thuê xe tự lái cần những gì?",
-      content: "Để thuê xe tự lái tại BonBonCar, bạn cần hoàn thành xác thực KYC danh tính bao gồm: (1) Căn cước công dân (CCCD) và (2) Bằng lái xe hạng B1 trở lên còn thời hạn. CSKH sẽ phê duyệt hồ sơ của bạn trong vòng tối đa 30 phút."
+      content: "Để thuê xe tự lái tại ViVuCar, bạn cần hoàn thành xác thực KYC danh tính bao gồm: (1) Căn cước công dân (CCCD) và (2) Bằng lái xe hạng B1 trở lên còn thời hạn. CSKH sẽ phê duyệt hồ sơ của bạn trong vòng tối đa 30 phút."
     },
     {
       title: "2. Quy định đặt cọc bảo đảm là như thế nào?",
-      content: "Tất cả các chuyến đi tại BonBonCar đều áp dụng tiền đặt cọc cố định là 5.000.000 VND. Tiền cọc được thanh toán trực tuyến cùng phí thuê qua cổng VietQR động. Khoản tiền cọc này được giữ bảo đảm và sẽ được phê duyệt hoàn trả 100% vào Ví điện tử cá nhân của bạn ngay sau khi trả xe hoàn tất mà không phát sinh sự cố hỏng hóc hay vi phạm giao thông."
+      content: "Tất cả các chuyến đi tại ViVuCar đều áp dụng tiền đặt cọc cố định là 5.000.000 VND. Tiền cọc được thanh toán trực tuyến cùng phí thuê qua cổng VietQR động. Khoản tiền cọc này được giữ bảo đảm và sẽ được phê duyệt hoàn trả 100% vào Ví điện tử cá nhân của bạn ngay sau khi trả xe hoàn tất mà không phát sinh sự cố hỏng hóc hay vi phạm giao thông."
     },
     {
       title: "3. Chính sách hủy chuyến và hoàn trả tiền",
@@ -457,44 +458,34 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
     },
     {
       title: "4. Bảo hiểm chuyến đi và xử lý sự cố khẩn cấp",
-      content: "Tất cả phương tiện trên chợ thuê xe của BonBonCar đều được tích hợp gói bảo hiểm chuyến đi trọn gói giúp giới hạn thiệt hại vật chất tối đa là 5.000.000 VND trong trường hợp va chạm ngoài ý muốn. Nếu gặp sự cố va quẹt hay xịt lốp dọc đường, bạn chỉ cần bấm nút 'Báo Cáo Sự Cố' khẩn cấp trong mục chuyến đi, CSKH và cứu hộ sẽ hỗ trợ lập tức."
+      content: "Tất cả phương tiện trên chợ thuê xe của ViVuCar đều được tích hợp gói bảo hiểm chuyến đi trọn gói giúp giới hạn thiệt hại vật chất tối đa là 5.000.000 VND trong trường hợp va chạm ngoài ý muốn. Nếu gặp sự cố va quẹt hay xịt lốp dọc đường, bạn chỉ cần bấm nút 'Báo Cáo Sự Cố' khẩn cấp trong mục chuyến đi, CSKH và cứu hộ sẽ hỗ trợ lập tức."
     }
   ];
 
   return (
     <div className="rent-car-page">
-      {/* 🚀 BONBONCAR BRANDED HERO SECTION */}
-      <section className="bonbon-hero">
-        <div className="hero-container-flex">
-          <div className="hero-content">
-            <h1 className="hero-title">
-              thuê xe tự lái<br />
-              <span className="hero-title-accent">ấn tượng khó phai</span>
-            </h1>
-            <p className="hero-subtitle">dẫn lối tương lai</p>
-          </div>
-
-          <div className="hero-car-showcase">
-            <img 
-              src="https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1000&q=80" 
-              alt="Kia Carnival Premium Blue" 
-              className="hero-car-img" 
-            />
-          </div>
+      {/*  ViVuCar BRANDED HERO SECTION */}
+      <section className="vivu-hero">
+        <div className="hero-content">
+          <span className="hero-badge">🚗 NỀN TẢNG THUÊ XE TỰ LÁI & KÝ GỬI THẾ HỆ MỚI</span>
+          <h1 className="hero-title">Thuê xe tự lái ngắn hạn & ký gửi xe</h1>
+          <p className="hero-subtitle">
+            Trải nghiệm dịch vụ chia sẻ ô tô công nghệ hàng đầu Việt Nam. Thủ tục đơn giản, xe đời mới sạch sẽ, bảo hiểm chuyến đi trọn gói.
+          </p>
         </div>
 
-        {/* --- BONBON FORM TÌM XE --- */}
+        {/* --- ViVuCar FORM TÌM XE --- */}
         <div className="search-widget-wrapper">
           <div className="search-tabs">
-            <button 
-              type="button" 
+            <button
+              type="button"
               className={`search-tab-btn ${searchTab === 'self-drive' ? 'active' : ''}`}
               onClick={() => setSearchTab('self-drive')}
             >
               Thuê xe tự lái
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className={`search-tab-btn ${searchTab === 'monthly' ? 'active' : ''}`}
               onClick={() => {
                 setSearchTab('monthly');
@@ -507,7 +498,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
 
           <div className="search-widget-light">
             <form onSubmit={handleSearchSubmit} className="search-form-grid">
-              
+
               {/* FIELD 1: Địa điểm */}
               <div className="search-input-box">
                 <label className="search-lbl">
@@ -515,8 +506,8 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
                   <span>Địa điểm nhận xe</span>
                 </label>
                 <div className="input-relative-container">
-                  <select 
-                    value={location} 
+                  <select
+                    value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     className="search-select-borderless"
                   >
@@ -534,8 +525,8 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
                   <Calendar size={14} className="lbl-icon" />
                   <span>Ngày nhận xe</span>
                 </label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={pickupDate}
                   onChange={(e) => setPickupDate(e.target.value)}
                   className="search-date-input-borderless"
@@ -572,8 +563,8 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
                   <Calendar size={14} className="lbl-icon" />
                   <span>Ngày trả xe</span>
                 </label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={returnDate}
                   onChange={(e) => setReturnDate(e.target.value)}
                   className="search-date-input-borderless"
@@ -634,7 +625,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
         {/* Toggle Filters bar */}
         <div className="catalog-header-actions">
           <h2 className="section-title-black">Xe có ngay</h2>
-          <button 
+          <button
             className={`btn btn-secondary filter-toggle-btn ${showFilters ? 'active' : ''}`}
             onClick={() => setShowFilters(!showFilters)}
           >
@@ -678,8 +669,8 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
 
               <div className="filter-item">
                 <span className="filter-lbl">Tìm theo tên xe:</span>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="VinFast, Vios..."
                   value={searchKeyword}
                   onChange={(e) => setSearchKeyword(e.target.value)}
@@ -690,8 +681,8 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
 
             <div className="filter-actions-row">
               <button onClick={handleResetFilters} className="btn-link-reset">Đặt lại lọc</button>
-              <button 
-                onClick={() => fetchCars({ location, seats, transmission, fuel, search: searchKeyword })} 
+              <button
+                onClick={() => fetchCars({ location, seats, transmission, fuel, search: searchKeyword })}
                 className="btn btn-primary"
                 style={{ width: 'auto', padding: '8px 24px', fontSize: '13px' }}
               >
@@ -711,152 +702,101 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
             <button onClick={handleResetFilters} className="btn btn-secondary mt-4" style={{ width: 'auto' }}>Xem tất cả xe có sẵn</button>
           </div>
         ) : (
-          <div className="cars-grid">
-            {cars.map((car) => (
-              <div key={car.id} className="car-card" onClick={() => handleViewCarDetails(car)}>
-                {/* Image Container */}
-                <div className="car-image-container">
-                  <img src={car.image} alt={`${car.brand} ${car.model}`} className="car-img" />
-                  
-                  {/* Mock Promo Badges */}
-                  <div className="car-badge-overlay-container">
-                    <span className="promo-badge-gold">Flash Sale</span>
-                    <span className="promo-badge-pink">Giảm giá 10%</span>
-                  </div>
+          <>
+            <div className="carousel-outer-wrapper">
+              <button className="carousel-nav-arrow left" onClick={() => scrollContainer(catalogScrollRef, 'left')}>
+                <ChevronLeft size={20} />
+              </button>
 
-                  <span className="car-location-badge">
-                    <MapPin size={12} style={{ marginRight: 2 }} />
-                    {car.location}
-                  </span>
-                </div>
+              <div className="premium-car-row-scrollable" ref={catalogScrollRef}>
+                {cars.map((car) => {
+                  //Các gtri hiển thị động dựa trên daily_price
+                  const fourHourOrig = Math.round((car.pricePerDay * 0.45) / 1000) + 'K';
+                  const fourHourActual = Math.round((car.pricePerDay * 0.38) / 1000) + 'K';
+                  const dayPriceOrig = Math.round((car.pricePerDay * 1.1) / 1000) + 'K';
+                  const dayPriceActual = Math.round(car.pricePerDay / 1000) + 'K';
 
-                {/* Info */}
-                <div className="car-info-body">
-                  <div className="car-header">
-                    <div className="title-and-rating">
-                      <h3 className="car-title-model">{car.brand} {car.model}</h3>
-                      <span className="stars-badge-card">
-                        <Star size={12} fill="#fbbf24" color="#fbbf24" style={{ marginRight: 3 }} />
-                        <span style={{ fontSize: '12px', fontWeight: 7, color: '#fbbf24' }}>4.8</span>
-                      </span>
-                    </div>
+                  return (
+                    <div key={car.id} className="premium-row-car-card" onClick={() => handleViewCarDetails(car)}>
+                      {/* Container Ảnh xe */}
+                      <div className="card-image-box">
+                        <img src={car.image} alt={car.model} className="card-image-element" />
+                        {/* Nhãn khuyến mãi góc trên bên trái */}
+                        <div className="card-badge-top-container" style={{ display: 'flex', gap: '4px' }}>
+                          {car.pricePerDay > 1000000 && (
+                            <span className="promo-badge-glow-red">⚡ Flash Sale</span>
+                          )}
+                          <span className="promo-badge-glow-yellow">🏷️ Giảm 10%</span>
+                        </div>
 
-                    <div className="car-price-box">
-                      <span className="price-num">{formatCurrency(car.pricePerDay)}</span>
-                      <span className="price-unit">/ngày</span>
-                    </div>
-                  </div>
+                        {/* Nhãn nhận xe ở góc dưới */}
+                        <div className="card-badge-bottom-container">
+                          {!car.ownerId ? (
+                            <span className="info-badge-deliver">📱 Tự nhận xe</span>
+                          ) : (
+                            <span className="info-badge-owner">🔑 Gặp chủ xe</span>
+                          )}
+                        </div>
+                      </div>
 
-                  {/* Attributes Flat Grey Icons */}
-                  <div className="car-attributes">
-                    <div className="attr-item" title="Số chỗ">
-                      <Users size={14} className="attr-icon-grey" />
-                      <span>{car.seats} chỗ</span>
+                      {/* Nội dung chi tiết xe */}
+                      <div className="card-body-content-premium">
+                        <h3 className="card-title-main-premium">{car.brand.toUpperCase()} {car.model}</h3>
+                        <p className="card-location-subtext">Quận {car.location.replace('Quận ', '')}</p>
+                        {/* Hộp hiển thị giá kép (4h & 24h) giống Ảnh 2 */}
+                        <div className="double-pricing-spec-grid">
+                          <div className="pricing-line-item">
+                            <span className="price-label-small" style={{ textDecoration: 'line-through' }}>{fourHourOrig}</span>
+                            <span className="price-actual-green">{fourHourActual}</span>
+                            <span className="price-unit-gray">/4h</span>
+                          </div>
+                          <div className="pricing-line-item">
+                            <span className="price-label-small" style={{ textDecoration: 'line-through' }}>{dayPriceOrig}</span>
+                            <span className="price-actual-green">{dayPriceActual}</span>
+                            <span className="price-unit-gray">/24h</span>
+                          </div>
+                        </div>
+
+                        {/* Thanh biểu tượng thông số xe */}
+                        <div className="card-flat-specs-row">
+                          <div className="flat-spec-unit" title="Số chỗ">
+                            <Users size={13} className="flat-spec-icon" />
+                            <span>{car.seats}</span>
+                          </div>
+                          <div className="flat-spec-unit" title="Hộp số">
+                            <SlidersHorizontal size={13} className="flat-spec-icon" />
+                            <span>{car.transmission}</span>
+                          </div>
+                          <div className="flat-spec-unit" title="Nhiên liệu">
+                            <Fuel size={13} className="flat-spec-icon" />
+                            <span>{car.fuel}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="attr-item" title="Hộp số">
-                      <SlidersHorizontal size={14} className="attr-icon-grey" />
-                      <span>{car.transmission}</span>
-                    </div>
-                    <div className="attr-item" title="Nhiên liệu">
-                      <Fuel size={14} className="attr-icon-grey" />
-                      <span>{car.fuel}</span>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
-        )}
 
-        {/* XEM THÊM Button */}
-        <div className="xem-them-container">
-          <button className="btn-xem-them" onClick={() => fetchCars()}>
-            XEM THÊM
-          </button>
-        </div>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* 🚀 NEW SECTION 2: XE CÓ THỂ BẠN SẼ THÍCH (BUDGET/POPULAR OFFERS) */}
-      <section className="rich-section-carousel-cars bg-light-white">
-        <div className="rich-section-inner">
-          <h2 className="rich-section-title-center">Xe có thể bạn sẽ thích</h2>
-          
-          <div className="carousel-outer-wrapper">
-            <button className="carousel-nav-arrow left" onClick={() => scrollContainer(likesScrollRef, 'left')}>
-              <ChevronLeft size={20} />
-            </button>
-
-            <div className="premium-car-row-scrollable" ref={likesScrollRef}>
-              {likesCars.map((car) => (
-                <div key={car.id} className="premium-row-car-card" onClick={() => handleViewCarDetails(car)}>
-                  {/* Image Container */}
-                  <div className="card-image-box">
-                    <img src={car.image} alt={car.model} className="card-image-element" />
-                    
-                    {/* Top badges */}
-                    <div className="card-badge-top-container">
-                      <span className="promo-badge-glow-red">⚡ Flash Sale</span>
-                    </div>
-
-                    {/* Bottom badge */}
-                    <div className="card-badge-bottom-container">
-                      <span className="info-badge-deliver">📱 Tự nhận xe</span>
-                    </div>
-                  </div>
-
-                  {/* Body Content */}
-                  <div className="card-body-content-premium">
-                    <h3 className="card-title-main-premium">{car.brand.toUpperCase()} {car.model}</h3>
-                    <p className="card-location-subtext">Quận {car.location.replace('Quận ', '')}</p>
-                    
-                    {/* Double pricing row matching the screenshot */}
-                    <div className="double-pricing-spec-grid">
-                      <div className="pricing-line-item">
-                        <span className="price-label-small">500K</span>
-                        <span className="price-actual-green">{car.fourHourPrice}</span>
-                        <span className="price-unit-gray">/4h</span>
-                      </div>
-                      <div className="pricing-line-item">
-                        <span className="price-label-small">{car.dayPriceOrig}</span>
-                        <span className="price-actual-green">{car.dayPrice}</span>
-                        <span className="price-unit-gray">/24h</span>
-                      </div>
-                    </div>
-
-                    {/* Specs Icons */}
-                    <div className="card-flat-specs-row">
-                      <div className="flat-spec-unit">
-                        <Users size={13} className="flat-spec-icon" />
-                        <span>7</span>
-                      </div>
-                      <div className="flat-spec-unit">
-                        <SlidersHorizontal size={13} className="flat-spec-icon" />
-                        <span>Số tự động</span>
-                      </div>
-                      <div className="flat-spec-unit">
-                        <Fuel size={13} className="flat-spec-icon" />
-                        <span>Xăng</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              <button className="carousel-nav-arrow right" onClick={() => scrollContainer(catalogScrollRef, 'right')}>
+                <ChevronRight size={20} />
+              </button>
             </div>
-
-            <button className="carousel-nav-arrow right" onClick={() => scrollContainer(likesScrollRef, 'right')}>
-              <ChevronRight size={20} />
-            </button>
-          </div>
-        </div>
-      </section>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px', width: '100%' }}>
+              <button className="btn-xem-them" onClick={() => setCurrentTab('find-car')}>
+                Xem thêm
+              </button>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* ========================================================================= */}
       {/* 🚀 NEW SECTION 3: XẾ XỊN - XE SANG - XE CAO CẤP */}
       <section className="rich-section-carousel-cars">
         <div className="rich-section-inner">
           <h2 className="rich-section-title-center">Xế xịn - Xe sang - Xe Cao cấp</h2>
-          
+
           <div className="carousel-outer-wrapper">
             <button className="carousel-nav-arrow left" onClick={() => scrollContainer(luxuryScrollRef, 'left')}>
               <ChevronLeft size={20} />
@@ -868,7 +808,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
                   {/* Image Container */}
                   <div className="card-image-box">
                     <img src={car.image} alt={car.model} className="card-image-element" />
-                    
+
                     {/* Top badges */}
                     <div className="card-badge-top-container">
                       <span className="promo-badge-glow-yellow">👑 Xế xịn</span>
@@ -888,7 +828,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
                   <div className="card-body-content-premium">
                     <h3 className="card-title-main-premium">{car.brand} {car.model}</h3>
                     <p className="card-location-subtext">{car.location}</p>
-                    
+
                     {/* Double pricing row */}
                     <div className="double-pricing-spec-grid">
                       <div className="pricing-line-item">
@@ -935,7 +875,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
       <section className="rich-section-brand-selector">
         <div className="rich-section-inner">
           <h2 className="rich-section-title-center">Chọn xe theo hãng</h2>
-          
+
           <div className="carousel-outer-wrapper">
             <button className="carousel-nav-arrow left" onClick={() => scrollContainer(brandScrollRef, 'left')}>
               <ChevronLeft size={20} />
@@ -943,8 +883,8 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
 
             <div className="brand-logo-scroll-row" ref={brandScrollRef}>
               {brandLogos.map((brand, index) => (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className="brand-logo-card"
                   onClick={() => handleBrandClick(brand.name)}
                 >
@@ -1022,7 +962,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
       <section className="rich-section-featured-locations bg-light-white">
         <div className="rich-section-inner">
           <h2 className="rich-section-title-center">Địa điểm nổi bật</h2>
-          
+
           <div className="carousel-outer-wrapper">
             <button className="carousel-nav-arrow left" onClick={() => scrollContainer(locationsScrollRef, 'left')}>
               <ChevronLeft size={20} />
@@ -1038,8 +978,8 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
                   <div className="location-card-content-overlay">
                     <h3 className="location-card-name">{loc.name}</h3>
                     <p className="location-card-car-count">{loc.count}</p>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="btn-location-search-active"
                       onClick={() => handleLocationClick(loc.name)}
                     >
@@ -1074,7 +1014,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
             <div className="mini-cars-cta-content">
               <h3 className="mini-cars-cta-title">1000+ xe và hơn thế nữa</h3>
               <p className="mini-cars-cta-subtitle">Hãy trải nghiệm hôm nay!</p>
-              <button 
+              <button
                 className="btn-mini-cars-search"
                 onClick={() => {
                   const catalogElem = document.getElementById('catalog-live-section');
@@ -1094,9 +1034,9 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
         <div className="rich-section-inner">
           <div className="steps-banner-card-glass">
             <div className="steps-banner-image-background-overlay"></div>
-            
+
             <h2 className="steps-banner-main-title">3 Bước đặt xe dễ dàng</h2>
-            
+
             <div className="steps-grid-items">
               {/* Step 1 */}
               <div className="step-card-unit">
@@ -1111,7 +1051,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
                 </div>
                 <h4 className="step-unit-text">
                   <span className="step-number-bold">1. </span>
-                  Chọn và giữ chỗ với hàng trăm xe tại bonboncar.vn
+                  Chọn và giữ chỗ với hàng trăm xe tại vivucar.vn
                 </h4>
               </div>
 
@@ -1158,7 +1098,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
       <section className="rich-section-customer-reviews">
         <div className="rich-section-inner">
           <h2 className="rich-section-title-center">Đánh giá khách hàng</h2>
-          
+
           <div className="carousel-outer-wrapper">
             <button className="carousel-nav-arrow left" onClick={() => scrollContainer(reviewsScrollRef, 'left')}>
               <ChevronLeft size={20} />
@@ -1173,7 +1113,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
                     ))}
                   </div>
                   <p className="review-card-comment">"{rev.comment}"</p>
-                  
+
                   <div className="review-user-footer">
                     <img src={rev.avatar} alt={rev.name} className="review-avatar-img" />
                     <div className="review-user-meta">
@@ -1200,7 +1140,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
             <span>Chính Sách & Quy Định Thuê Xe (FAQ)</span>
           </h3>
           <p style={{ color: '#64748b', fontSize: '14px', marginTop: 4 }}>
-            Tìm hiểu các hướng dẫn thủ tục, quy chế đặt cọc bảo đảm, chính sách hoàn hủy của nền tảng BonBonCar.
+            Tìm hiểu các hướng dẫn thủ tục, quy chế đặt cọc bảo đảm, chính sách hoàn hủy của nền tảng ViVuCar.
           </p>
         </div>
 
@@ -1222,130 +1162,132 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
       </div>
 
       {/* --- CAR DETAILS & CUSTOMER REVIEWS LIGHTBOX POPUP --- */}
-      {selectedCarDetails && (
-        <div className="lightbox-overlay" onClick={() => setSelectedCarDetails(null)}>
-          <div className="lightbox-card car-details-lightbox" onClick={(e) => e.stopPropagation()}>
-            <div className="lightbox-header">
-              <h4>Chi Tiết Phương Tiện & Đánh Giá Khách Hàng</h4>
-              <button className="btn-close-lightbox" onClick={() => setSelectedCarDetails(null)}>
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="details-popup-scrollable-body">
-              {/* Car basic presentation */}
-              <div className="popup-car-banner">
-                <img src={selectedCarDetails.image} alt={selectedCarDetails.model} className="popup-banner-img" />
-                <div className="banner-gradient-overlay"></div>
-                <div className="banner-title-box">
-                  <span className="brand-cap">{selectedCarDetails.brand}</span>
-                  <h3 className="model-cap">{selectedCarDetails.model}</h3>
-                </div>
+      {
+        selectedCarDetails && (
+          <div className="lightbox-overlay" onClick={() => setSelectedCarDetails(null)}>
+            <div className="lightbox-card car-details-lightbox" onClick={(e) => e.stopPropagation()}>
+              <div className="lightbox-header">
+                <h4>Chi Tiết Phương Tiện & Đánh Giá Khách Hàng</h4>
+                <button className="btn-close-lightbox" onClick={() => setSelectedCarDetails(null)}>
+                  <X size={20} />
+                </button>
               </div>
 
-              <div className="popup-body-content">
-                {/* Attrs grid */}
-                <div className="popup-spec-grid">
-                  <div className="spec-card">
-                    <span className="spec-lbl">Vị trí</span>
-                    <strong className="spec-val">{selectedCarDetails.location}</strong>
+              <div className="details-popup-scrollable-body">
+                {/* Car basic presentation */}
+                <div className="popup-car-banner">
+                  <img src={selectedCarDetails.image} alt={selectedCarDetails.model} className="popup-banner-img" />
+                  <div className="banner-gradient-overlay"></div>
+                  <div className="banner-title-box">
+                    <span className="brand-cap">{selectedCarDetails.brand}</span>
+                    <h3 className="model-cap">{selectedCarDetails.model}</h3>
                   </div>
-                  <div className="spec-card">
-                    <span className="spec-lbl">Số ghế</span>
-                    <strong className="spec-val">{selectedCarDetails.seats} chỗ</strong>
-                  </div>
-                  <div className="spec-card">
-                    <span className="spec-lbl">Hộp số</span>
-                    <strong className="spec-val">{selectedCarDetails.transmission}</strong>
-                  </div>
-                  <div className="spec-card">
-                    <span className="spec-lbl">Nhiên liệu</span>
-                    <strong className="spec-val">{selectedCarDetails.fuel}</strong>
-                  </div>
-                  {selectedCarDetails.plateNumber && (
+                </div>
+
+                <div className="popup-body-content">
+                  {/* Attrs grid */}
+                  <div className="popup-spec-grid">
                     <div className="spec-card">
-                      <span className="spec-lbl">Biển kiểm soát</span>
-                      <strong className="spec-val" style={{ color: '#009698' }}>{selectedCarDetails.plateNumber}</strong>
+                      <span className="spec-lbl">Vị trí</span>
+                      <strong className="spec-val">{selectedCarDetails.location}</strong>
                     </div>
-                  )}
-                </div>
-
-                <div className="popup-description-block mt-4">
-                  <h5 className="block-title">Đặc Điểm & Điều Khoản Thuê Xe</h5>
-                  <p className="block-desc">
-                    Mẫu xe {selectedCarDetails.brand} {selectedCarDetails.model} đời mới sạch sẽ, động cơ êm ái, trang bị camera hành trình, cảm biến lùi, màn hình giải trí và bản đồ GPS đầy đủ. Xe được vệ sinh và khử khuẩn trước mỗi hành trình giao khách. Khách hàng vui lòng xuất trình Bằng lái xe và hoàn tất đặt cọc bảo đảm 5.000.000 VND trước khi khởi hành chuyến đi.
-                  </p>
-                </div>
-
-                {/* 🌟 CUSTOMER REVIEWS TAB */}
-                <div className="popup-reviews-block mt-6">
-                  <h5 className="block-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <MessageSquare size={16} className="text-info" />
-                    <span>Đánh Giá Từ Khách Thuê ({selectedCarReviews.length})</span>
-                  </h5>
-
-                  {reviewsLoading ? (
-                    <div className="reviews-placeholder">Đang tải các đánh giá từ hệ thống...</div>
-                  ) : selectedCarReviews.length === 0 ? (
-                    <div className="reviews-placeholderempty">
-                      <Star size={24} className="text-muted mb-2" />
-                      <p>Chưa có đánh giá nào cho phương tiện này. Hãy là người đầu tiên trải nghiệm và chia sẻ nhận xét!</p>
+                    <div className="spec-card">
+                      <span className="spec-lbl">Số ghế</span>
+                      <strong className="spec-val">{selectedCarDetails.seats} chỗ</strong>
                     </div>
-                  ) : (
-                    <div className="reviews-scroller-list">
-                      {selectedCarReviews.map((rev) => (
-                        <div key={rev.id} className="review-bubble">
-                          <div className="review-bubble-header">
-                            <div className="review-user-info">
-                              <div className="avatar-letter">{rev.userName[0].toUpperCase()}</div>
-                              <div className="user-details">
-                                <span className="name">{rev.userName}</span>
-                                <span className="date">{new Date(rev.createdAt).toLocaleDateString('vi-VN')}</span>
+                    <div className="spec-card">
+                      <span className="spec-lbl">Hộp số</span>
+                      <strong className="spec-val">{selectedCarDetails.transmission}</strong>
+                    </div>
+                    <div className="spec-card">
+                      <span className="spec-lbl">Nhiên liệu</span>
+                      <strong className="spec-val">{selectedCarDetails.fuel}</strong>
+                    </div>
+                    {selectedCarDetails.plateNumber && (
+                      <div className="spec-card">
+                        <span className="spec-lbl">Biển kiểm soát</span>
+                        <strong className="spec-val" style={{ color: '#009698' }}>{selectedCarDetails.plateNumber}</strong>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="popup-description-block mt-4">
+                    <h5 className="block-title">Đặc Điểm & Điều Khoản Thuê Xe</h5>
+                    <p className="block-desc">
+                      Mẫu xe {selectedCarDetails.brand} {selectedCarDetails.model} đời mới sạch sẽ, động cơ êm ái, trang bị camera hành trình, cảm biến lùi, màn hình giải trí và bản đồ GPS đầy đủ. Xe được vệ sinh và khử khuẩn trước mỗi hành trình giao khách. Khách hàng vui lòng xuất trình Bằng lái xe và hoàn tất đặt cọc bảo đảm 5.000.000 VND trước khi khởi hành chuyến đi.
+                    </p>
+                  </div>
+
+                  {/* 🌟 CUSTOMER REVIEWS TAB */}
+                  <div className="popup-reviews-block mt-6">
+                    <h5 className="block-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <MessageSquare size={16} className="text-info" />
+                      <span>Đánh Giá Từ Khách Thuê ({selectedCarReviews.length})</span>
+                    </h5>
+
+                    {reviewsLoading ? (
+                      <div className="reviews-placeholder">Đang tải các đánh giá từ hệ thống...</div>
+                    ) : selectedCarReviews.length === 0 ? (
+                      <div className="reviews-placeholderempty">
+                        <Star size={24} className="text-muted mb-2" />
+                        <p>Chưa có đánh giá nào cho phương tiện này. Hãy là người đầu tiên trải nghiệm và chia sẻ nhận xét!</p>
+                      </div>
+                    ) : (
+                      <div className="reviews-scroller-list">
+                        {selectedCarReviews.map((rev) => (
+                          <div key={rev.id} className="review-bubble">
+                            <div className="review-bubble-header">
+                              <div className="review-user-info">
+                                <div className="avatar-letter">{rev.userName[0].toUpperCase()}</div>
+                                <div className="user-details">
+                                  <span className="name">{rev.userName}</span>
+                                  <span className="date">{new Date(rev.createdAt).toLocaleDateString('vi-VN')}</span>
+                                </div>
+                              </div>
+                              <div className="stars-row">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    size={12}
+                                    fill={i < rev.rating ? "#fbbf24" : "none"}
+                                    color={i < rev.rating ? "#fbbf24" : "#cbd5e1"}
+                                  />
+                                ))}
                               </div>
                             </div>
-                            <div className="stars-row">
-                              {[...Array(5)].map((_, i) => (
-                                <Star 
-                                  key={i} 
-                                  size={12} 
-                                  fill={i < rev.rating ? "#fbbf24" : "none"} 
-                                  color={i < rev.rating ? "#fbbf24" : "#cbd5e1"} 
-                                />
-                              ))}
-                            </div>
+                            <p className="review-bubble-text">{rev.comment || 'Khách hàng không để lại nhận xét bằng lời.'}</p>
                           </div>
-                          <p className="review-bubble-text">{rev.comment || 'Khách hàng không để lại nhận xét bằng lời.'}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {/* Action footer */}
-              <div className="popup-action-footer">
-                <div className="popup-price-info">
-                  <span className="price-val">{formatCurrency(selectedCarDetails.pricePerDay)}</span>
-                  <span className="price-unit">/ngày (Chưa bao gồm cọc hoàn lại)</span>
-                </div>
-                <div className="popup-buttons">
-                  <button className="btn btn-secondary" onClick={() => setSelectedCarDetails(null)}>Hủy bỏ</button>
-                  <button 
-                    className="btn btn-primary" 
-                    onClick={() => handleBooking(selectedCarDetails)}
-                    disabled={selectedCarDetails.status === 'rented'}
-                  >
-                    {selectedCarDetails.status === 'rented' ? 'Đã Hết Xe' : 'Đặt Xe Ngay'}
-                  </button>
+                {/* Action footer */}
+                <div className="popup-action-footer">
+                  <div className="popup-price-info">
+                    <span className="price-val">{formatCurrency(selectedCarDetails.pricePerDay)}</span>
+                    <span className="price-unit">/ngày (Chưa bao gồm cọc hoàn lại)</span>
+                  </div>
+                  <div className="popup-buttons">
+                    <button className="btn btn-secondary" onClick={() => setSelectedCarDetails(null)}>Hủy bỏ</button>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => handleBooking(selectedCarDetails)}
+                      disabled={selectedCarDetails.status === 'rented'}
+                    >
+                      {selectedCarDetails.status === 'rented' ? 'Đã Hết Xe' : 'Đặt Xe Ngay'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {/* --- BONBONCAR DETAILED FOOTER SECTION --- */}
-      <footer className="bonbon-footer">
+      {/* --- ViVuCar DETAILED FOOTER SECTION --- */}
+      <footer className="vivu-footer">
         <div className="footer-container">
           <div className="footer-grid">
             {/* Column 1: Contact */}
@@ -1362,7 +1304,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
                 </li>
                 <li>
                   <span className="contact-icon-wrapper">✉️</span>
-                  <span className="contact-text">bonboncar@com.vn</span>
+                  <span className="contact-text">vivucar@com.vn</span>
                 </li>
               </ul>
             </div>
@@ -1408,7 +1350,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
           </div>
         </div>
       </footer>
-    </div>
+    </div >
   );
 };
 
@@ -1432,12 +1374,11 @@ const injectRentCarStyles = () => {
     }
 
     /* Hero section */
-    .bonbon-hero {
+    .vivu-hero {
       text-align: center;
       padding: 40px 24px 60px 24px;
       position: relative;
-      background-image: linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.65)), url('https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1600&q=80');
-      background-size: cover;
+      background-image: linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.65)), url('/anh_banner.webp');
       background-position: center;
       min-height: 480px;
       display: flex;
@@ -2408,10 +2349,12 @@ const injectRentCarStyles = () => {
       padding: 0 24px 60px 24px;
     }
 
+    /*Căn lề title "Xe có ngay" */
     .catalog-header-actions {
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
+      position: relative;
       margin-bottom: 28px;
     }
 
@@ -2423,7 +2366,10 @@ const injectRentCarStyles = () => {
       font-family: 'Outfit', sans-serif;
     }
 
+    /* "Bộ lọc nâng cao */
     .filter-toggle-btn {
+      position: absolute;
+      right: 0px;
       width: auto;
       display: flex;
       align-items: center;
@@ -2704,22 +2650,41 @@ const injectRentCarStyles = () => {
     .xem-them-container {
       margin-top: 40px;
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+    }
+
+    .car-price-box {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .price-num {
+      font-size: 16px;
+      font-weight: 800;
+      color: #a855f7;
+    }
+
+    .price-unit {
+      font-size: 11px;
+      color: #64748b;
     }
 
     .btn-xem-them {
-      background: #ffffff;
-      border: 1.5px solid #009698;
-      color: #009698;
-      font-family: 'Outfit', sans-serif;
+      display: inline-block;
+      padding: 12px 36px;
       font-size: 14px;
       font-weight: 700;
-      letter-spacing: 0.5px;
-      padding: 12px 48px;
+      color: #009698;
+      background: transparent;
+      border: 2px solid #009698;
       border-radius: 10px;
       cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 10px rgba(0, 150, 152, 0.02);
+      transition: all 0.3s ease;
+      font-family: 'Outfit', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .btn-xem-them:hover {
@@ -3083,8 +3048,8 @@ const injectRentCarStyles = () => {
       gap: 10px;
     }
 
-    /* Redesigned BonBonCar Footer */
-    .bonbon-footer {
+    /* Redesigned ViVuCar Footer */
+    .vivu-footer {
       background: #f1f5f9;
       border-top: 1px solid #e2e8f0;
       padding: 60px 24px 30px 24px;

@@ -10,6 +10,7 @@ import { ChangePassword } from './pages/ChangePassword';
 
 // Car Rental Pages & Components
 import { RentCar } from './pages/RentCar';
+import { FindCar } from './pages/FindCar';
 import { ListCar } from './pages/ListCar';
 import { MyTrips } from './pages/MyTrips';
 import { AdminDashboard } from './pages/AdminDashboard';
@@ -165,6 +166,14 @@ function App() {
               <RentCar 
                 user={user} 
                 onRentCarClick={setActiveBooking} 
+                setCurrentTab={setCurrentTab} 
+              />
+            )}
+
+            {/* Find Car (Search catalog) Tab */}
+            {currentTab === 'find-car' && (
+              <FindCar 
+                user={user} 
                 setCurrentTab={setCurrentTab} 
               />
             )}

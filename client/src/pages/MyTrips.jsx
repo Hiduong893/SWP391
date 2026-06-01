@@ -29,7 +29,7 @@ export const MyTrips = () => {
     tiresOk: false
   });
   const [renterSignature, setRenterSignature] = useState('');
-  
+
   const [incidentDesc, setIncidentDesc] = useState('');
   const [incidentImage, setIncidentImage] = useState(null);
 
@@ -218,7 +218,7 @@ export const MyTrips = () => {
         </button>
       </div>
       <p className="subtitle" style={{ textAlign: 'left', marginBottom: '24px' }}>
-        Quản lý hành trình, trạng thái thanh toán, ký biên nhận điện tử nhận/trả xe và gửi phản hồi hỗ trợ tại BonBonCar.
+        Quản lý hành trình, trạng thái thanh toán, ký biên nhận điện tử nhận/trả xe và gửi phản hồi hỗ trợ tại ViVuCar.
       </p>
 
       {loading ? (
@@ -281,7 +281,7 @@ export const MyTrips = () => {
                   {trip.issueReport && (
                     <div className="trip-incident-box mt-2">
                       <ShieldAlert size={14} />
-                      <span>Sự cố ghi nhận: <strong>{trip.issueReport.description}</strong> - Trạng thái: 
+                      <span>Sự cố ghi nhận: <strong>{trip.issueReport.description}</strong> - Trạng thái:
                         <strong className={trip.issueReport.status === 'resolved' ? ' text-success' : ' text-warning'}>
                           {trip.issueReport.status === 'resolved' ? ' Đã xử lý' : ' Đang chờ xử lý'}
                         </strong>
@@ -301,7 +301,7 @@ export const MyTrips = () => {
                     <div className="trip-actions-buttons-row">
                       {/* UC18: Ký nhận bàn giao xe */}
                       {trip.status === 'confirmed' && (
-                        <button 
+                        <button
                           className="btn btn-primary btn-action-trip"
                           onClick={() => setActiveHandoverTrip({ trip, type: 'pickup' })}
                         >
@@ -313,16 +313,16 @@ export const MyTrips = () => {
                       {/* UC18: Ký trả xe */}
                       {trip.status === 'active' && (
                         <>
-                          <button 
+                          <button
                             className="btn btn-primary btn-action-trip btn-success-bg"
                             onClick={() => setActiveHandoverTrip({ trip, type: 'return' })}
                           >
                             <FileText size={13} />
                             Trả xe (Biên bản)
                           </button>
-                          
+
                           {/* UC17: Báo sự cố */}
-                          <button 
+                          <button
                             className="btn btn-secondary btn-action-trip text-danger border-danger-glow"
                             onClick={() => setActiveIncidentTrip(trip)}
                           >
@@ -336,7 +336,7 @@ export const MyTrips = () => {
                       {trip.status === 'completed' && (
                         <>
                           {!trip.hasReviewed ? (
-                            <button 
+                            <button
                               className="btn btn-primary btn-action-trip btn-star"
                               onClick={() => setActiveReviewTrip(trip)}
                             >
@@ -347,7 +347,7 @@ export const MyTrips = () => {
                             <span className="text-success" style={{ fontSize: '12px', fontWeight: 6 }}>Đã gửi đánh giá ✓</span>
                           )}
 
-                          <button 
+                          <button
                             className="btn btn-secondary btn-action-trip"
                             style={{ border: '1px solid rgba(239, 68, 68, 0.2)', color: '#fda4af' }}
                             onClick={() => setActiveDisputeTrip(trip)}
@@ -359,8 +359,8 @@ export const MyTrips = () => {
                       )}
 
                       {isCancellable && (
-                        <button 
-                          onClick={() => handleCancelTrip(trip.id)} 
+                        <button
+                          onClick={() => handleCancelTrip(trip.id)}
                           className="btn btn-secondary btn-cancel-trip"
                         >
                           <XCircle size={14} />
@@ -388,7 +388,7 @@ export const MyTrips = () => {
               Gửi tin nhắn yêu cầu hỗ trợ hoặc gọi điện trực tiếp đến hotline 1900.8888 để được cứu hộ khẩn cấp 24/7.
             </p>
           </div>
-          
+
           <div style={{ display: 'flex', gap: 8 }}>
             <a href="tel:19008888" className="btn btn-secondary" style={{ width: 'auto', padding: '6px 14px', fontSize: '12px', background: 'rgba(99,102,241,0.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <PhoneCall size={12} />
@@ -404,27 +404,27 @@ export const MyTrips = () => {
         {showSupportForm && (
           <form onSubmit={handleCreateTicketSubmit} className="ticket-form mb-6" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, padding: 16, animation: 'fadeIn 0.2s' }}>
             <h4 style={{ fontSize: '13px', color: 'white', fontWeight: 700, marginBottom: 12 }}>Tạo ticket hỗ trợ mới</h4>
-            
+
             <div className="form-group">
               <label className="form-label" style={{ fontSize: '11px' }}>Vấn đề cần hỗ trợ (Tiêu đề) *</label>
-              <input 
-                type="text" 
-                className="form-input" 
+              <input
+                type="text"
+                className="form-input"
                 style={{ padding: '8px 12px', fontSize: '13px' }}
-                placeholder="Vd: Không thanh toán được ví, Sự cố va quẹt nhẹ xe..." 
+                placeholder="Vd: Không thanh toán được ví, Sự cố va quẹt nhẹ xe..."
                 value={ticketSubject}
                 onChange={(e) => setTicketSubject(e.target.value)}
-                required 
+                required
               />
             </div>
 
             <div className="form-group mt-2">
               <label className="form-label" style={{ fontSize: '11px' }}>Nội dung chi tiết yêu cầu hỗ trợ *</label>
-              <textarea 
-                rows={3} 
-                className="form-input" 
+              <textarea
+                rows={3}
+                className="form-input"
                 style={{ padding: '8px 12px', fontSize: '13px', resize: 'none' }}
-                placeholder="Vui lòng cung cấp thông tin chi tiết vấn đề..." 
+                placeholder="Vui lòng cung cấp thông tin chi tiết vấn đề..."
                 value={ticketMsg}
                 onChange={(e) => setTicketMsg(e.target.value)}
                 required
@@ -442,15 +442,15 @@ export const MyTrips = () => {
         {tickets.length > 0 ? (
           <div className="tickets-mini-list" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {tickets.map((t) => (
-              <div 
-                key={t.id} 
+              <div
+                key={t.id}
                 className="ticket-mini-row"
                 onClick={() => setSelectedMyTicket(t)}
                 style={{ padding: '12px 16px', background: '#11131c', border: '1px solid rgba(255,255,255,0.03)', borderRadius: 10, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               >
                 <div>
                   <strong style={{ fontSize: '13.5px', color: 'white', display: 'block' }}>{t.subject}</strong>
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>Gửi ngày: {new Date(t.createdAt).toLocaleDateString('vi-VN')} • Trạng thái: 
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>Gửi ngày: {new Date(t.createdAt).toLocaleDateString('vi-VN')} • Trạng thái:
                     <strong style={{ color: t.status === 'replied' ? '#a855f7' : t.status === 'resolved' ? '#34d399' : '#fbbf24' }}>
                       {t.status === 'open' ? ' Đang xử lý' : t.status === 'replied' ? ' Đã có phản hồi ✓' : ' Đã đóng'}
                     </strong>
@@ -475,7 +475,7 @@ export const MyTrips = () => {
               <h3>Hội Thoại Trực Tuyến Với CSKH</h3>
               <button className="editor-close-btn" onClick={() => setSelectedMyTicket(null)}><XCircle size={20} /></button>
             </div>
-            
+
             <div className="editor-modal-body" style={{ display: 'flex', flexDirection: 'column', height: '400px', padding: 20 }}>
               <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 8, marginBottom: 12, textAlign: 'left', width: '100%' }}>
                 <strong style={{ fontSize: '14px', color: 'white' }}>{selectedMyTicket.subject}</strong>
@@ -492,13 +492,13 @@ export const MyTrips = () => {
 
                 {/* Replies from CSKH */}
                 {selectedMyTicket.replies.map((rep, idx) => (
-                  <div 
-                    key={idx} 
-                    style={{ 
-                      alignSelf: rep.sender === 'cskh' ? 'flex-start' : 'flex-end', 
-                      background: rep.sender === 'cskh' ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)', 
-                      padding: 10, 
-                      borderRadius: 8, 
+                  <div
+                    key={idx}
+                    style={{
+                      alignSelf: rep.sender === 'cskh' ? 'flex-start' : 'flex-end',
+                      background: rep.sender === 'cskh' ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)',
+                      padding: 10,
+                      borderRadius: 8,
                       maxWidth: '80%',
                       textAlign: 'left'
                     }}
@@ -512,9 +512,9 @@ export const MyTrips = () => {
               <div className="editor-modal-footer" style={{ padding: 0, border: 'none', background: 'none', width: '100%', display: 'flex', gap: 8 }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setSelectedMyTicket(null)} style={{ width: 'auto' }}>Đóng chat</button>
                 {selectedMyTicket.status !== 'resolved' ? (
-                  <button 
-                    type="button" 
-                    className="btn btn-primary" 
+                  <button
+                    type="button"
+                    className="btn btn-primary"
                     onClick={async () => {
                       const followUp = window.prompt("Nhập nội dung phản hồi tiếp tục hội thoại:");
                       if (!followUp) return;
@@ -522,7 +522,7 @@ export const MyTrips = () => {
                         // For renter, we simulate appending follow-up via an API or support reply (here Renter can send message by creating or appending)
                         // In our demo schema, CSKH replies tickets. Let's show success alert
                         showToast('Đã gửi phản hồi thành công đến bộ phận hỗ trợ!', 'success');
-                      } catch (e) {}
+                      } catch (e) { }
                     }}
                     style={{ flex: 1 }}
                   >
@@ -546,7 +546,7 @@ export const MyTrips = () => {
               <h4>Biên Bản Bàn Giao Xe Điện Tử ({activeHandoverTrip.type === 'pickup' ? 'Nhận Xe' : 'Trả Xe'})</h4>
               <button className="btn-close-lightbox" onClick={() => setActiveHandoverTrip(null)}><XCircle size={20} /></button>
             </div>
-            
+
             <form onSubmit={handleHandoverSubmit} className="lightbox-body" style={{ display: 'block', padding: '24px', textAlign: 'left' }}>
               <div className="handover-notice mb-4">
                 <Info size={16} />
@@ -555,8 +555,8 @@ export const MyTrips = () => {
 
               <div className="checklist-group">
                 <label className="checkbox-item-custom">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={handoverChecks.noScratches}
                     onChange={(e) => setHandoverChecks({ ...handoverChecks, noScratches: e.target.checked })}
                     required
@@ -565,8 +565,8 @@ export const MyTrips = () => {
                 </label>
 
                 <label className="checkbox-item-custom">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={handoverChecks.fuelOk}
                     onChange={(e) => setHandoverChecks({ ...handoverChecks, fuelOk: e.target.checked })}
                     required
@@ -575,8 +575,8 @@ export const MyTrips = () => {
                 </label>
 
                 <label className="checkbox-item-custom">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={handoverChecks.cleanCar}
                     onChange={(e) => setHandoverChecks({ ...handoverChecks, cleanCar: e.target.checked })}
                     required
@@ -585,8 +585,8 @@ export const MyTrips = () => {
                 </label>
 
                 <label className="checkbox-item-custom">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={handoverChecks.tiresOk}
                     onChange={(e) => setHandoverChecks({ ...handoverChecks, tiresOk: e.target.checked })}
                     required
@@ -597,8 +597,8 @@ export const MyTrips = () => {
 
               <div className="form-group mt-4">
                 <label className="form-label">Ký tên xác nhận (Nhập họ tên của bạn):</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   className="form-control"
                   placeholder="Ví dụ: NGUYEN VAN A"
                   value={renterSignature}
@@ -627,7 +627,7 @@ export const MyTrips = () => {
               <h4>Báo Cáo Sự Cố Phát Sinh Khẩn Cấp</h4>
               <button className="btn-close-lightbox" onClick={() => setActiveIncidentTrip(null)}><XCircle size={20} /></button>
             </div>
-            
+
             <form onSubmit={handleIncidentSubmit} className="lightbox-body" style={{ display: 'block', padding: '24px', textAlign: 'left' }}>
               <div className="handover-notice alert-red mb-4">
                 <AlertTriangle size={16} />
@@ -636,7 +636,7 @@ export const MyTrips = () => {
 
               <div className="form-group">
                 <label className="form-label">Mô tả chi tiết sự cố phát sinh:</label>
-                <textarea 
+                <textarea
                   rows={4}
                   className="form-control"
                   placeholder="Vui lòng cung cấp địa điểm, tình huống xảy ra va chạm, xịt lốp hoặc hỏng động cơ..."
@@ -658,10 +658,10 @@ export const MyTrips = () => {
                     <label className="upload-placeholder-box">
                       <Upload size={24} />
                       <span>Chọn ảnh hiện trường</span>
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={handleIncidentImageChange} 
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleIncidentImageChange}
                         style={{ display: 'none' }}
                       />
                     </label>
@@ -688,23 +688,23 @@ export const MyTrips = () => {
               <h4>Viết Đánh Giá Dịch Vụ</h4>
               <button className="btn-close-lightbox" onClick={() => setActiveReviewTrip(null)}><XCircle size={20} /></button>
             </div>
-            
+
             <form onSubmit={handleReviewSubmit} className="lightbox-body" style={{ display: 'block', padding: '24px', textAlign: 'left' }}>
               <div className="form-group" style={{ textAlign: 'center' }}>
                 <label className="form-label" style={{ display: 'block', marginBottom: 12 }}>Chấm điểm sao chuyến đi của bạn:</label>
                 <div className="stars-rating-interactive-row" style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
                   {[1, 2, 3, 4, 5].map((val) => (
-                    <button 
-                      type="button" 
-                      key={val} 
+                    <button
+                      type="button"
+                      key={val}
                       className="star-interactive-btn"
                       onClick={() => setReviewRating(val)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                     >
-                      <Star 
-                        size={32} 
-                        fill={val <= reviewRating ? "#fbbf24" : "none"} 
-                        color={val <= reviewRating ? "#fbbf24" : "#475569"} 
+                      <Star
+                        size={32}
+                        fill={val <= reviewRating ? "#fbbf24" : "none"}
+                        color={val <= reviewRating ? "#fbbf24" : "#475569"}
                       />
                     </button>
                   ))}
@@ -713,7 +713,7 @@ export const MyTrips = () => {
 
               <div className="form-group mt-6">
                 <label className="form-label">Nhận xét chi tiết về xe và chủ xe:</label>
-                <textarea 
+                <textarea
                   rows={4}
                   className="form-control"
                   placeholder="Hãy chia sẻ trải nghiệm về độ sạch sẽ của xe, tính thân thiện của chủ xe để giúp cộng đồng thuê xe..."
@@ -742,7 +742,7 @@ export const MyTrips = () => {
               <h4>Nộp Đơn Khiếu Nại Tranh Chấp</h4>
               <button className="btn-close-lightbox" onClick={() => setActiveDisputeTrip(null)}><XCircle size={20} /></button>
             </div>
-            
+
             <form onSubmit={handleDisputeSubmit} className="lightbox-body" style={{ display: 'block', padding: '24px', textAlign: 'left' }}>
               <div className="handover-notice alert-orange mb-4">
                 <ShieldAlert size={16} />
@@ -751,7 +751,7 @@ export const MyTrips = () => {
 
               <div className="form-group">
                 <label className="form-label">Lý do khiếu nại tranh chấp:</label>
-                <textarea 
+                <textarea
                   rows={5}
                   className="form-control"
                   placeholder="Vui lòng nêu rõ các điểm bất đồng ý kiến đối với chủ xe nhàn rỗi (ví dụ: bị trừ tiền cọc vô lý, chủ xe bàn giao không đúng thỏa thuận...)"

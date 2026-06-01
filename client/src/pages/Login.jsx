@@ -26,9 +26,9 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
 
         window.google.accounts.id.renderButton(
           document.getElementById('official-google-btn'),
-          { 
-            theme: 'outline', 
-            size: 'large', 
+          {
+            theme: 'outline',
+            size: 'large',
             width: '100%',
             text: 'signin_with',
             shape: 'rectangular'
@@ -88,7 +88,7 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
     setUnverifiedEmail(null);
     try {
       const data = await api.auth.login(email, password);
-      
+
       // Phân quyền cổng đăng nhập nghiêm ngặt
       if (loginMode === 'admin') {
         if (data.user.role !== 'admin' && data.user.role !== 'cskh') {
@@ -122,27 +122,27 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
         {loginMode === 'renter' ? 'ĐĂNG NHẬP KHÁCH HÀNG' : 'ĐĂNG NHẬP BAN QUẢN TRỊ'}
       </h2>
       <p className="subtitle">
-        {loginMode === 'renter' 
-          ? 'Chào mừng quý khách đến với BonBonCar! Đăng nhập để thuê xe ngay.' 
+        {loginMode === 'renter'
+          ? 'Chào mừng quý khách đến với ViVuCar! Đăng nhập để thuê xe ngay.'
           : 'Cổng thông tin chuyên biệt dành cho Ban Quản trị & bộ phận CSKH.'}
       </p>
 
       {/* 🔄 Segmented Tab Control */}
       <div className="login-mode-tabs mb-6" style={{ display: 'flex', background: '#f1f5f9', border: '1px solid #e2e8f0', padding: 4, borderRadius: 10, marginBottom: 20 }}>
-        <button 
-          type="button" 
+        <button
+          type="button"
           onClick={() => {
             setLoginMode('renter');
             setEmail('');
             setPassword('');
-          }} 
-          style={{ 
-            flex: 1, 
-            padding: '10px 12px', 
-            borderRadius: 8, 
-            fontSize: '13px', 
-            fontWeight: 700, 
-            border: 'none', 
+          }}
+          style={{
+            flex: 1,
+            padding: '10px 12px',
+            borderRadius: 8,
+            fontSize: '13px',
+            fontWeight: 700,
+            border: 'none',
             cursor: 'pointer',
             transition: 'all 0.3s ease',
             background: loginMode === 'renter' ? 'linear-gradient(135deg, #009698 0%, #00bfa5 100%)' : 'transparent',
@@ -156,20 +156,20 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
           <User size={14} />
           <span>Khách Thuê Xe</span>
         </button>
-        <button 
-          type="button" 
+        <button
+          type="button"
           onClick={() => {
             setLoginMode('admin');
             setEmail('');
             setPassword('');
-          }} 
-          style={{ 
-            flex: 1, 
-            padding: '10px 12px', 
-            borderRadius: 8, 
-            fontSize: '13px', 
-            fontWeight: 700, 
-            border: 'none', 
+          }}
+          style={{
+            flex: 1,
+            padding: '10px 12px',
+            borderRadius: 8,
+            fontSize: '13px',
+            fontWeight: 700,
+            border: 'none',
             cursor: 'pointer',
             transition: 'all 0.3s ease',
             background: loginMode === 'admin' ? 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)' : 'transparent',
@@ -205,7 +205,7 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
             <input
               type="email"
               className="form-input"
-              placeholder={loginMode === 'renter' ? 'name@example.com' : 'admin@bonboncar.vn'}
+              placeholder={loginMode === 'renter' ? 'name@example.com' : 'admin@vivucar.vn'}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -216,9 +216,9 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
         <div className="form-group">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <label className="form-label" style={{ marginBottom: 0 }}>Mật khẩu</label>
-            <button 
-              type="button" 
-              className="link-btn" 
+            <button
+              type="button"
+              className="link-btn"
               onClick={() => setCurrentTab('forgot-password')}
               style={{ fontSize: '13px', background: 'none', border: 'none', cursor: 'pointer', color: '#009698' }}
             >
@@ -260,11 +260,11 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
           </div>
         </div>
 
-        <button 
-          type="submit" 
-          className="btn mt-4" 
+        <button
+          type="submit"
+          className="btn mt-4"
           disabled={loading}
-          style={{ 
+          style={{
             width: '100%',
             background: loginMode === 'renter' ? 'linear-gradient(135deg, #009698 0%, #00bfa5 100%)' : 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)',
             color: 'white',
@@ -288,8 +288,8 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
       {loginMode === 'renter' && (
         <div className="text-center mt-6" style={{ fontSize: '14px', color: '#94a3b8' }}>
           Chưa có tài khoản?{' '}
-          <button 
-            className="link-btn" 
+          <button
+            className="link-btn"
             onClick={() => setCurrentTab('register')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#009698', fontWeight: 6 }}
           >
