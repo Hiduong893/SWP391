@@ -22,21 +22,21 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab }) => {
             </svg>
           </div>
           <span className="brand-text">
-            <span className="brand-dark">BonBon</span>
+            <span className="brand-dark">ViVu</span>
             <span className="brand-teal">Car</span>
           </span>
         </div>
 
         <div className="nav-links">
           {/* Main active links */}
-          <button 
+          <button
             className={`nav-item ${currentTab === 'rent-car' ? 'active' : ''}`}
             onClick={() => setCurrentTab('rent-car')}
           >
             <span>Thuê xe</span>
           </button>
 
-          <button 
+          <button
             className={`nav-item ${currentTab === 'list-car' ? 'active' : ''}`}
             onClick={() => {
               if (!user) {
@@ -50,14 +50,14 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab }) => {
             <span>Ký gửi xe</span>
           </button>
 
-          <button 
+          <button
             className="nav-item"
             onClick={() => handleDummyClick('Blog')}
           >
             <span>Blog</span>
           </button>
 
-          <button 
+          <button
             className="nav-item"
             onClick={() => handleDummyClick('Tuyển dụng')}
           >
@@ -66,7 +66,7 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab }) => {
 
           {user && (
             <>
-              <button 
+              <button
                 className={`nav-item ${currentTab === 'my-trips' ? 'active' : ''}`}
                 onClick={() => setCurrentTab('my-trips')}
               >
@@ -74,7 +74,7 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab }) => {
               </button>
 
               {(user.role === 'admin' || user.role === 'cskh') && (
-                <button 
+                <button
                   className={`nav-item admin-nav-btn ${currentTab === 'admin-dashboard' ? 'active' : ''}`}
                   onClick={() => setCurrentTab('admin-dashboard')}
                 >
@@ -93,7 +93,7 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab }) => {
                 <img src={user.avatar} alt={user.name} className="nav-avatar" />
                 <span className="nav-username">{user.name}</span>
               </div>
-              
+
               <button className="nav-btn-logout" onClick={onLogout} title="Đăng xuất">
                 <LogOut size={16} />
                 <span>Đăng xuất</span>
@@ -101,13 +101,13 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab }) => {
             </div>
           ) : (
             <div className="nav-auth-buttons">
-              <button 
+              <button
                 className={`nav-btn-login ${currentTab === 'login' ? 'active' : ''}`}
                 onClick={() => setCurrentTab('login')}
               >
                 Đăng nhập
               </button>
-              <button 
+              <button
                 className={`nav-btn-signup ${currentTab === 'register' ? 'active' : ''}`}
                 onClick={() => setCurrentTab('register')}
               >
