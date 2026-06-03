@@ -14,6 +14,7 @@ import { ListCar } from './pages/ListCar';
 import { MyTrips } from './pages/MyTrips';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { BookingModal } from './components/BookingModal';
+import { SimulatedInbox } from './components/SimulatedInbox';
 
 import { api } from './utils/api';
 import { useToast } from './components/Toast';

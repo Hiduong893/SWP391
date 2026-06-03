@@ -53,7 +53,7 @@
     {
       "id": "91e48eb8-bd51-47b8-908a-76a80c166319",
       "email": "taophi123q@gmail.com",
-      "password": null,
+      "password": "$2a$10$o0sItIM7Nmj.Ms9wVJliOeCxAVKtrdpyMKXpQa4dAR/Cb9dhHgynS",
       "name": "Lê Quang Minh Đức (DE190607)",
       "avatar": "https://lh3.googleusercontent.com/a/ACg8ocIfW9lGINFblrnjDX-4KTqZzxG4569bTMfvSc2zZIyFVAF9gg=s96-c",
       "bio": "",
@@ -65,7 +65,7 @@
       "role": "renter",
       "licenseStatus": "not_uploaded",
       "licenseImage": null,
-      "walletBalance": 0,
+      "walletBalance": 11111,
       "bankAccount": null,
       "kycDocuments": {
         "cccd": null,
@@ -189,9 +189,82 @@
         "carPapers": null
       },
       "createdAt": "2026-05-27T03:25:09.970Z"
+    },
+    {
+      "id": "56f6ae9b-829b-4517-9042-c5c986392e83",
+      "email": "namthinh978@gmail.com",
+      "password": "$2a$10$LQw7.8iS4Toz3lPyza7YNuqxNcO/DH6ZqiI4qfjlWmuPDv4HzIOwy",
+      "name": "hyy",
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+      "bio": "",
+      "isEmailVerified": true,
+      "emailVerificationToken": null,
+      "resetPasswordToken": null,
+      "resetPasswordExpires": null,
+      "googleId": null,
+      "role": "renter",
+      "licenseStatus": "not_uploaded",
+      "licenseImage": null,
+      "walletBalance": 0,
+      "bankAccount": null,
+      "kycDocuments": {
+        "cccd": null,
+        "license": null,
+        "carPapers": null
+      },
+      "createdAt": "2026-06-01T04:04:49.828Z"
     }
   ],
-  "emails": [],
+  "emails": [
+    {
+      "id": "c5777b9b-cd62-4517-b6fa-3e88d35584bb",
+      "to": "namthinh978@gmail.com",
+      "subject": "Mã xác nhận OTP đặt lại mật khẩu BonBonCar 🔑",
+      "body": "\n        <h3>Chào huy,</h3>\n        <p>Chúng tôi đã nhận được yêu cầu khôi phục mật khẩu cho tài khoản của bạn.</p>\n        <p>Dưới đây là mã xác thực OTP gồm 6 chữ số của bạn (Có hiệu lực trong vòng 10 phút):</p>\n        <div style=\"font-size: 24px; font-weight: bold; color: #6366f1; background-color: #f3f4f6; border: 1px solid #e5e7eb; padding: 12px; border-radius: 8px; text-align: center; letter-spacing: 6px; margin: 20px 0; max-width: 200px; margin-left: auto; margin-right: auto;\">\n          430763\n        </div>\n        <p>Vui lòng nhập mã này vào trang xác thực trên ứng dụng để tiến hành đổi mật khẩu mới.</p>\n        <br><br>\n        <p>Trân trọng,<br>Ban Quản Trị BonBonCar</p>\n      ",
+      "sentAt": "2026-06-01T03:54:00.898Z",
+      "isRead": false
+    },
+    {
+      "id": "7a62c233-df68-4abf-8cb0-84fc85a62616",
+      "to": "namthinh978@gmail.com",
+      "subject": "Gửi lại: Xác thực tài khoản BonBonCar 🔄",
+      "body": "\n          <h3>Xác thực lại địa chỉ email của bạn</h3>\n          <p>Tài khoản của bạn chưa được xác thực. Vui lòng bấm vào đường link bên dưới để kích hoạt tài khoản:</p>\n          <div style=\"margin: 20px 0;\">\n            <a href=\"http://localhost:5173/verify-email?token=8da5dca9-39c8-4e8a-90a2-c37fed676014\" style=\"background-color: #6366f1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;\">Kích Hoạt Tài Khoản</a>\n          </div>\n          <a href=\"http://localhost:5173/verify-email?token=8da5dca9-39c8-4e8a-90a2-c37fed676014\">http://localhost:5173/verify-email?token=8da5dca9-39c8-4e8a-90a2-c37fed676014</a>\n        ",
+      "sentAt": "2026-06-01T03:54:38.488Z",
+      "isRead": false
+    },
+    {
+      "id": "bb7da0a4-b1ba-4eb7-95cc-c8c1ec73f217",
+      "to": "namthinh978@gmail.com",
+      "subject": "Gửi lại: Xác thực tài khoản BonBonCar 🔄",
+      "body": "\n          <h3>Xác thực lại địa chỉ email của bạn</h3>\n          <p>Tài khoản của bạn chưa được xác thực. Vui lòng bấm vào đường link bên dưới để kích hoạt tài khoản:</p>\n          <div style=\"margin: 20px 0;\">\n            <a href=\"http://localhost:5173/verify-email?token=8da5dca9-39c8-4e8a-90a2-c37fed676014\" style=\"background-color: #6366f1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;\">Kích Hoạt Tài Khoản</a>\n          </div>\n          <a href=\"http://localhost:5173/verify-email?token=8da5dca9-39c8-4e8a-90a2-c37fed676014\">http://localhost:5173/verify-email?token=8da5dca9-39c8-4e8a-90a2-c37fed676014</a>\n        ",
+      "sentAt": "2026-06-01T03:57:52.744Z",
+      "isRead": false
+    },
+    {
+      "id": "fb33583b-0157-4a00-882d-2efeab2a8bb5",
+      "to": "namthinh978@gmail.com",
+      "subject": "Gửi lại: Xác thực tài khoản BonBonCar 🔄",
+      "body": "\n          <h3>Xác thực lại địa chỉ email của bạn</h3>\n          <p>Tài khoản của bạn chưa được xác thực. Vui lòng bấm vào đường link bên dưới để kích hoạt tài khoản:</p>\n          <div style=\"margin: 20px 0;\">\n            <a href=\"http://localhost:5173/verify-email?token=8da5dca9-39c8-4e8a-90a2-c37fed676014\" style=\"background-color: #6366f1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;\">Kích Hoạt Tài Khoản</a>\n          </div>\n          <a href=\"http://localhost:5173/verify-email?token=8da5dca9-39c8-4e8a-90a2-c37fed676014\">http://localhost:5173/verify-email?token=8da5dca9-39c8-4e8a-90a2-c37fed676014</a>\n        ",
+      "sentAt": "2026-06-01T04:01:06.554Z",
+      "isRead": false
+    },
+    {
+      "id": "2cf73fab-93b8-466b-b1b3-b91868d06879",
+      "to": "namthinh978@gmail.com",
+      "subject": "Mã OTP xác thực tài khoản BonBonCar 🔑",
+      "body": "\n        <h3>Chào mừng hyy đến với BonBonCar!</h3>\n        <p>Cảm ơn bạn đã đăng ký tài khoản. Dưới đây là mã xác thực OTP gồm 6 chữ số của bạn (Có hiệu lực trong vòng 10 phút):</p>\n        <div style=\"font-size: 24px; font-weight: bold; color: #009698; background-color: #f3f4f6; border: 1px solid #e5e7eb; padding: 12px; border-radius: 8px; text-align: center; letter-spacing: 6px; margin: 20px 0; max-width: 200px; margin-left: auto; margin-right: auto;\">\n          689195\n        </div>\n        <p>Vui lòng nhập mã này vào ô xác thực trên ứng dụng để kích hoạt tài khoản của bạn.</p>\n        <br><br>\n        <p>Trân trọng,<br>Ban Quản Trị BonBonCar</p>\n      ",
+      "sentAt": "2026-06-01T04:04:49.841Z",
+      "isRead": false
+    },
+    {
+      "id": "6215a15f-9847-4402-a009-60a7cbedf518",
+      "to": "namthinh978@gmail.com",
+      "subject": "Gửi lại: Mã OTP xác thực tài khoản BonBonCar 🔄",
+      "body": "\n          <h3>Xác thực tài khoản của bạn</h3>\n          <p>Tài khoản của bạn chưa được xác thực. Dưới đây là mã xác thực OTP gồm 6 chữ số của bạn (Có hiệu lực trong vòng 10 phút):</p>\n          <div style=\"font-size: 24px; font-weight: bold; color: #009698; background-color: #f3f4f6; border: 1px solid #e5e7eb; padding: 12px; border-radius: 8px; text-align: center; letter-spacing: 6px; margin: 20px 0; max-width: 200px; margin-left: auto; margin-right: auto;\">\n            689195\n          </div>\n          <p>Vui lòng nhập mã này vào ô xác thực trên ứng dụng để kích hoạt tài khoản của bạn.</p>\n          <br><br>\n          <p>Trân trọng,<br>Ban Quản Trị BonBonCar</p>\n        ",
+      "sentAt": "2026-06-01T04:05:05.123Z",
+      "isRead": false
+    }
+  ],
   "cars": [
     {
       "id": "car-preset-1",
