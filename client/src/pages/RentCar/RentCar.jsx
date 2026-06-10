@@ -3181,6 +3181,65 @@ const injectRentCarStyles = () => {
       margin: 0 auto;
     }
 
+    /* Lightbox / Modal Overlay Styles */
+    .lightbox-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(5, 5, 8, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .lightbox-card {
+      background: #11131c;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    }
+
+    .lightbox-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .lightbox-header h4 {
+      margin: 0;
+      font-size: 16px;
+      color: #fff;
+    }
+
+    .btn-close-lightbox {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-close-lightbox:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
     /* Responsive Grid and styles override */
     @media (max-width: 1200px) {
       .search-form-grid {
