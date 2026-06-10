@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
-import { SimulatedInbox } from './components/SimulatedInbox';
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
-import { VerifyEmail } from './pages/VerifyEmail';
-import { ForgotPassword } from './pages/ForgotPassword';
-import { ResetPassword } from './pages/ResetPassword';
-import { Profile } from './pages/Profile';
-import { ChangePassword } from './pages/ChangePassword';
+import { Login } from './pages/Authentication/Login';
+import { Register } from './pages/Authentication/Register';
+import { VerifyEmail } from './pages/Authentication/VerifyEmail';
+import { ForgotPassword } from './pages/Authentication/ForgotPassword';
+import { ResetPassword } from './pages/Authentication/ResetPassword';
+import { Profile } from './pages/Authentication/Profile';
+import { ChangePassword } from './pages/Authentication/ChangePassword';
 
 // Car Rental Pages & Components
-import { RentCar } from './pages/RentCar';
-import { ListCar } from './pages/ListCar';
-import { MyTrips } from './pages/MyTrips';
-import { AdminDashboard } from './pages/AdminDashboard';
+import { RentCar } from './pages/RentCar/RentCar';
+import { FindCar } from './pages/FindCar/FindCar';
+import { ListCar } from './pages/ListCar/ListCar';
+import { MyTrips } from './pages/MyTrips/MyTrips';
+import { AdminDashboard } from './pages/AdminDashboard/AdminDashboard';
 import { BookingModal } from './components/BookingModal';
+import { SimulatedInbox } from './components/SimulatedInbox';
 
 import { api } from './utils/api';
 import { useToast } from './components/Toast';
@@ -26,10 +27,14 @@ function App() {
   const [verificationToken, setVerificationToken] = useState(null);
   const [resetToken, setResetToken] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [triggerInboxReload, setTriggerInboxReload] = useState(false);
   
-  // Car Rental state
   const [activeBooking, setActiveBooking] = useState(null);
+  const [searchParams, setSearchParams] = useState(null);
+
+  const handleSearch = (params) => {
+    setSearchParams(params);
+    setCurrentTab('find-car');
+  };
 
   const { showToast } = useToast();
 
@@ -168,6 +173,17 @@ function App() {
                 user={user} 
                 onRentCarClick={setActiveBooking} 
                 setCurrentTab={setCurrentTab} 
+                onSearch={handleSearch}
+              />
+            )}
+
+            {/* Find Car (Search catalog) Tab */}
+            {currentTab === 'find-car' && (
+              <FindCar 
+                user={user} 
+                setCurrentTab={setCurrentTab} 
+                onRentCarClick={setActiveBooking}
+                initialSearchParams={searchParams}
               />
             )}
 
@@ -227,11 +243,6 @@ function App() {
               <ChangePassword user={user} />
             )}
           </main>
-
-          <SimulatedInbox 
-            onNavigateToLink={handleNavigateToLink} 
-            triggerReload={triggerInboxReload} 
-          />
         </div>
       )}
 

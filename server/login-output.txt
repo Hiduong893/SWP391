@@ -1,0 +1,47 @@
+Connection config used: server=localhost, database=CarRentalPlatform, user=sa
+
+Successfully connected to SQL Server!
+
+Tables found in this database:
+  - BookingHandover
+  - Emails
+  - HandoverImage
+  - Payment
+  - Wallet
+  - WalletTransaction
+  - Review
+  - Incident
+  - Role
+  - User
+  - IncidentImage
+  - Complaint
+  - UserRole
+  - OTPVerification
+  - ComplaintEvidence
+  - KYC
+  - SupportTicket
+  - Brand
+  - TicketMessage
+  - VehicleCategory
+  - Vehicle
+  - Notification
+  - Policy
+  - SystemConfig
+  - VehicleImage
+  - VehicleDocument
+  - sysdiagrams
+  - Feature
+  - VehicleFeature
+  - Booking
+
+Total rows in [User] table: 9
+Users found:
+  - ID: 1, Email: "admin@bonboncar.vn", Name: "Hệ Thống Admin"
+  - ID: 3, Email: "giahuynguyentq.010605@gmail.com", Name: "Huy Nguyễn Gia"
+  - ID: 4, Email: "admin2@vivucar.vn", Name: "Admin Hồ Văn Dương"
+  - ID: 5, Email: "cskh@vivucar.vn", Name: "CSKH Minh Anh"
+  - ID: 6, Email: "owner@vivucar.vn", Name: "Chủ Xe Lê Mạnh"
+  - ID: 7, Email: "renter@vivucar.vn", Name: "Khách Thuê Quang Huy"
+  - ID: 8, Email: "ghuyb@vivucar.vn", Name: "Nguyễn Gia Huy"
+  - ID: 9, Email: "ghuy@vivucar.vn", Name: "Nguyễn Gia Huy"
+  - ID: 10, Email: "testowner@gmail.com", Name: "Test Owner"
