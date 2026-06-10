@@ -16,9 +16,9 @@ export const OverviewTab = ({
     <div className="tab-pane-content fade-in-animation">
 
       <div className="datepicker-left-wrapper mb-6" style={{ display: 'flex', justifyContent: 'flex-start' }}>
-        <input 
-          type="date" 
-          className="dashboard-datepicker-pill" 
+        <input
+          type="date"
+          className="dashboard-datepicker-pill"
           defaultValue="2026-06-09"
           onChange={(e) => showToast(`Đã lọc báo cáo theo ngày: ${e.target.value}`, 'success')}
         />
@@ -28,11 +28,11 @@ export const OverviewTab = ({
       <div className="kpi-grid">
 
         {/* CARD 1: REVENUE */}
-        <div className="kpi-card glassmorphism">
+        <div className="kpi-card glassmorphism" onClick={() => setActiveTab('cashflow')} style={{ cursor: 'pointer' }}>
           <div className="kpi-body">
             <div>
               <span className="kpi-label">TỔNG DOANH THU</span>
-              <h3 className="kpi-value">{formatCurrency(stats.totalRevenue || 128430000)}</h3>
+              <h3 className="kpi-value">{formatCurrency(stats.totalRevenue || 0)}</h3>
             </div>
             <div className="kpi-icon-box bg-green-tint">
               <DollarSign size={20} className="text-green" />
@@ -45,11 +45,11 @@ export const OverviewTab = ({
         </div>
 
         {/* CARD 2: ACTIVE CARS */}
-        <div className="kpi-card glassmorphism">
+        <div className="kpi-card glassmorphism" onClick={() => { setActiveTab('fleet'); setActiveSubTab('all_cars'); }} style={{ cursor: 'pointer' }}>
           <div className="kpi-body">
             <div>
               <span className="kpi-label">XE ĐANG HOẠT ĐỘNG</span>
-              <h3 className="kpi-value">{stats.totalCars > 0 ? Math.floor(stats.totalCars * 0.8) : 42} xe</h3>
+              <h3 className="kpi-value">{(stats.totalCars || 0)} xe</h3>
             </div>
             <div className="kpi-icon-box bg-teal-tint">
               <Car size={20} className="text-teal" />
@@ -62,11 +62,11 @@ export const OverviewTab = ({
         </div>
 
         {/* CARD 3: USERS */}
-        <div className="kpi-card glassmorphism">
+        <div className="kpi-card glassmorphism" onClick={() => { setActiveTab('accounts'); setActiveSubTab('roles'); }} style={{ cursor: 'pointer' }}>
           <div className="kpi-body">
             <div>
               <span className="kpi-label">TỔNG NGƯỜI DÙNG</span>
-              <h3 className="kpi-value">{stats.totalUsers || 8432} hội viên</h3>
+              <h3 className="kpi-value">{(stats.totalUsers || 0)} hội viên</h3>
             </div>
             <div className="kpi-icon-box bg-blue-tint">
               <Users size={20} className="text-blue" />
@@ -79,11 +79,11 @@ export const OverviewTab = ({
         </div>
 
         {/* CARD 4: PENDING BOOKINGS */}
-        <div className="kpi-card glassmorphism">
+        <div className="kpi-card glassmorphism" onClick={() => { setActiveTab('cashflow'); }} style={{ cursor: 'pointer' }}>
           <div className="kpi-body">
             <div>
               <span className="kpi-label">ĐẶT XE CHỜ DUYỆT</span>
-              <h3 className="kpi-value">{stats.totalBookings > 0 ? Math.max(1, Math.floor(stats.totalBookings * 0.15)) : 15} đơn</h3>
+              <h3 className="kpi-value">{(stats.totalBookings || 0)} đơn</h3>
             </div>
             <div className="kpi-icon-box bg-orange-tint">
               <CreditCard size={20} className="text-orange" />

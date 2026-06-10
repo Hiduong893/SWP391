@@ -27,7 +27,7 @@ function App() {
   const [verificationToken, setVerificationToken] = useState(null);
   const [resetToken, setResetToken] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   const [activeBooking, setActiveBooking] = useState(null);
   const [searchParams, setSearchParams] = useState(null);
 
@@ -136,7 +136,7 @@ function App() {
 
   const handleLoginSuccess = (loggedInUser) => {
     setUser(loggedInUser);
-    
+
     if (loggedInUser.role === 'admin' || loggedInUser.role === 'cskh') {
       setCurrentTab('admin-dashboard');
     } else {
@@ -152,11 +152,11 @@ function App() {
 
   return (
     <>
-      <Navbar 
-        user={user} 
-        onLogout={handleLogout} 
-        currentTab={currentTab} 
-        setCurrentTab={setCurrentTab} 
+      <Navbar
+        user={user}
+        onLogout={handleLogout}
+        currentTab={currentTab}
+        setCurrentTab={setCurrentTab}
       />
 
       {loading ? (
@@ -169,19 +169,19 @@ function App() {
           <main className="main-content">
             {/* Core Marketplace Tab */}
             {currentTab === 'rent-car' && (
-              <RentCar 
-                user={user} 
-                onRentCarClick={setActiveBooking} 
-                setCurrentTab={setCurrentTab} 
+              <RentCar
+                user={user}
+                onRentCarClick={setActiveBooking}
+                setCurrentTab={setCurrentTab}
                 onSearch={handleSearch}
               />
             )}
 
             {/* Find Car (Search catalog) Tab */}
             {currentTab === 'find-car' && (
-              <FindCar 
-                user={user} 
-                setCurrentTab={setCurrentTab} 
+              <FindCar
+                user={user}
+                setCurrentTab={setCurrentTab}
                 onRentCarClick={setActiveBooking}
                 initialSearchParams={searchParams}
               />
@@ -198,43 +198,43 @@ function App() {
             )}
 
             {currentTab === 'admin-dashboard' && user && (user.role === 'admin' || user.role === 'cskh') && (
-              <AdminDashboard />
+              <AdminDashboard setCurrentTab={setCurrentTab} />
             )}
 
             {/* Auth pages */}
             {currentTab === 'login' && (
-              <Login 
-                onLoginSuccess={handleLoginSuccess} 
-                setCurrentTab={setCurrentTab} 
+              <Login
+                onLoginSuccess={handleLoginSuccess}
+                setCurrentTab={setCurrentTab}
               />
             )}
-            
+
             {currentTab === 'register' && (
               <Register setCurrentTab={setCurrentTab} />
             )}
-            
+
             {currentTab === 'verify-email' && (
-              <VerifyEmail 
-                token={verificationToken} 
-                setCurrentTab={setCurrentTab} 
+              <VerifyEmail
+                token={verificationToken}
+                setCurrentTab={setCurrentTab}
               />
             )}
-            
+
             {currentTab === 'forgot-password' && (
               <ForgotPassword setCurrentTab={setCurrentTab} />
             )}
-            
+
             {currentTab === 'reset-password' && (
-              <ResetPassword 
-                token={resetToken} 
-                setCurrentTab={setCurrentTab} 
+              <ResetPassword
+                token={resetToken}
+                setCurrentTab={setCurrentTab}
               />
             )}
 
             {user && currentTab === 'profile' && (
-              <Profile 
-                user={user} 
-                onUpdateUser={setUser} 
+              <Profile
+                user={user}
+                onUpdateUser={setUser}
                 setCurrentTab={setCurrentTab}
               />
             )}
@@ -248,8 +248,8 @@ function App() {
 
       {/* --- PRE-COMPUTED VietQR BOOKING CHECKOUT MODAL --- */}
       {activeBooking && user && (
-        <BookingModal 
-          bookingDetails={activeBooking} 
+        <BookingModal
+          bookingDetails={activeBooking}
           user={user}
           onUpdateUser={setUser}
           onClose={() => setActiveBooking(null)}
