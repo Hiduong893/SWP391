@@ -62,52 +62,49 @@ export const ChangePassword = ({ user }) => {
       {!success ? (
         <>
           <p className="subtitle">
-            {user.googleId && !user.password 
+            {user.googleId && !user.hasPassword 
               ? 'Tài khoản của bạn được tạo qua Google và chưa có mật khẩu gốc. Hãy tạo một mật khẩu tại đây.' 
               : 'Hãy bảo mật tài khoản của bạn bằng cách thiết lập mật khẩu mới có độ bảo mật cao.'
             }
           </p>
 
           <form onSubmit={handleSubmit}>
-            {/* Display current password only if user isn't Google-only (or if they've already set a password) */}
-            {(!user.googleId || user.password) && (
-              <div className="form-group">
-                <label className="form-label">Mật khẩu Hiện tại</label>
-                <div className="input-container">
-                  <KeyRound className="input-icon" size={18} />
-                  <input
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    className="form-input"
-                    style={{ paddingRight: '42px' }}
-                    placeholder="Nhập mật khẩu đang sử dụng"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    style={{
-                      position: 'absolute',
-                      right: '14px',
-                      background: 'none',
-                      border: 'none',
-                      color: '#64748b',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '0',
-                      transition: 'color 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#009698'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}
-                  >
-                    {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
+            <div className="form-group">
+              <label className="form-label">Mật khẩu Hiện tại</label>
+              <div className="input-container">
+                <KeyRound className="input-icon" size={18} />
+                <input
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  className="form-input"
+                  style={{ paddingRight: '42px' }}
+                  placeholder={user.googleId && !user.hasPassword ? "Tài khoản Google chưa có mật khẩu gốc (để trống)" : "Nhập mật khẩu đang sử dụng"}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required={!(user.googleId && !user.hasPassword)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '14px',
+                    background: 'none',
+                    border: 'none',
+                    color: '#64748b',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0',
+                    transition: 'color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#009698'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}
+                >
+                  {showCurrentPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+                </button>
               </div>
-            )}
+            </div>
 
             <div className="form-group">
               <label className="form-label">Mật khẩu Mới</label>
@@ -141,7 +138,7 @@ export const ChangePassword = ({ user }) => {
                   onMouseEnter={(e) => e.currentTarget.style.color = '#009698'}
                   onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}
                 >
-                  {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showNewPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                 </button>
               </div>
             </div>
@@ -178,7 +175,7 @@ export const ChangePassword = ({ user }) => {
                   onMouseEnter={(e) => e.currentTarget.style.color = '#009698'}
                   onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}
                 >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showConfirmPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                 </button>
               </div>
             </div>

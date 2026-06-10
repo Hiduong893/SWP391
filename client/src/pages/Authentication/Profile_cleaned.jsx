@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Mail, Calendar, FileText, Camera, Edit2, Check, X, Upload, Link, CheckCircle, ZoomIn, RotateCw, Move, ShieldCheck, CreditCard, DollarSign, ArrowDownLeft, ArrowUpRight, ShieldAlert, Key } from 'lucide-react';
-import { api } from '../utils/api';
-import { useToast } from '../components/Toast';
+import { api } from '../../utils/api';
+import { useToast } from '../../components/Toast';
 
 export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
   const [isEditing, setIsEditing] = useState(false);

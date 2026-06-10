@@ -374,31 +374,31 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
             <div className="info-row">
               <Calendar size={18} className="info-icon text-muted" />
               <div className="info-data">
-                <span className="info-label">Thành viên từ ngày</span>
+                <span className="info-label">Thành viên từ</span>
                 <span className="info-value">{new Date(user.createdAt).toLocaleDateString('vi-VN')}</span>
               </div>
             </div>
 
             {/* 🛡️ KYC CCCD & BẰNG LÁI CARD (UC04) */}
-            <div className="kyc-verifications-card-box mt-4" style={{ background: 'rgba(255,255,255,0.01)', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: 12, padding: 16 }}>
-              <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <ShieldCheck size={16} className="text-primary" />
+            <div className="kyc-verifications-card-box mt-4">
+              <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <ShieldCheck size={16} />
                 <span>Hồ Sơ Xác Minh KYC Danh Tính (UC04)</span>
               </h4>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {/* 1. CCCD */}
-                <div style={{ textAlign: 'left', background: '#0a0b10', padding: 12, borderRadius: 8, border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <span style={{ fontSize: '11px', color: '#64748b', display: 'block' }}>CĂN CƯỚC CÔNG DÂN (CCCD)</span>
+                <div className="kyc-item-box">
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>CĂN CƯỚC CÔNG DÂN (CCCD)</span>
                   {user.kycDocuments?.cccd ? (
                     <div style={{ marginTop: 4 }}>
                       <span className="badge-verified" style={{ fontSize: '10px' }}>Đã Tải Lên ✓</span>
-                      <a href={user.kycDocuments.cccd} target="_blank" rel="noreferrer" style={{ display: 'block', fontSize: '11px', color: '#6366f1', marginTop: 4, textDecoration: 'underline' }}>Xem ảnh CCCD</a>
+                      <a href={user.kycDocuments.cccd} target="_blank" rel="noreferrer" style={{ display: 'block', fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500 }}>Xem ảnh CCCD</a>
                     </div>
                   ) : (
-                    <div style={{ marginTop: 4 }}>
-                      <label className="upload-license-inline-btn" style={{ cursor: 'pointer', fontSize: '10px', color: '#818cf8', fontWeight: 6, display: 'inline-flex', gap: 4, alignItems: 'center' }}>
-                        <Upload size={10} />
+                    <div style={{ marginTop: 6 }}>
+                      <label className="upload-license-inline-btn" style={{ cursor: 'pointer', fontSize: '10.5px', color: 'var(--accent-primary)', fontWeight: 600, display: 'inline-flex', gap: 4, alignItems: 'center' }}>
+                        <Upload size={11} />
                         <span>{cccdUploading ? 'Đang tải...' : 'Tải ảnh CCCD'}</span>
                         <input type="file" onChange={(e) => handleKycUpload(e, 'cccd')} accept="image/*" style={{ display: 'none' }} disabled={cccdUploading} />
                       </label>
@@ -407,21 +407,21 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
                 </div>
 
                 {/* 2. Bằng lái */}
-                <div style={{ textAlign: 'left', background: '#0a0b10', padding: 12, borderRadius: 8, border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <span style={{ fontSize: '11px', color: '#64748b', display: 'block' }}>BẰNG LÁI XE HẠNG B1/B2</span>
+                <div className="kyc-item-box">
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>BẰNG LÁI XE HẠNG B1/B2</span>
                   {user.licenseStatus === 'verified' ? (
                     <div style={{ marginTop: 4 }}>
-                      <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>Verified ✓</span>
-                      {user.licenseImage && <a href={user.licenseImage} target="_blank" rel="noreferrer" style={{ display: 'block', fontSize: '11px', color: '#6366f1', marginTop: 4, textDecoration: 'underline' }}>Xem ảnh Bằng lái</a>}
+                      <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}>Verified ✓</span>
+                      {user.licenseImage && <a href={user.licenseImage} target="_blank" rel="noreferrer" style={{ display: 'block', fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500 }}>Xem ảnh Bằng lái</a>}
                     </div>
                   ) : user.licenseStatus === 'pending' ? (
                     <div style={{ marginTop: 4 }}>
-                      <span className="badge-pending" style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', padding: '2px 6px', borderRadius: 99 }}>Đang chờ duyệt</span>
+                      <span className="badge-pending" style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Đang chờ duyệt</span>
                     </div>
                   ) : (
-                    <div style={{ marginTop: 4 }}>
-                      <label className="upload-license-inline-btn" style={{ cursor: 'pointer', fontSize: '10px', color: '#fda4af', fontWeight: 6, display: 'inline-flex', gap: 4, alignItems: 'center' }}>
-                        <Upload size={10} />
+                    <div style={{ marginTop: 6 }}>
+                      <label className="upload-license-inline-btn" style={{ cursor: 'pointer', fontSize: '10.5px', color: 'var(--accent-primary)', fontWeight: 600, display: 'inline-flex', gap: 4, alignItems: 'center' }}>
+                        <Upload size={11} />
                         <span>{licenseUploading ? 'Đang tải...' : 'Tải bằng lái xe'}</span>
                         <input type="file" onChange={(e) => handleKycUpload(e, 'license')} accept="image/*" style={{ display: 'none' }} disabled={licenseUploading} />
                       </label>
@@ -436,7 +436,7 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
                 <Edit2 size={16} /> Chỉnh sửa thông tin
               </button>
               {setCurrentTab && (
-                <button type="button" className="btn btn-primary" style={{ flex: 1, background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }} onClick={() => setCurrentTab('change-password')}>
+                <button type="button" className="btn btn-primary" style={{ flex: 1, background: 'var(--accent-gradient)' }} onClick={() => setCurrentTab('change-password')}>
                   <Key size={16} /> Đổi mật khẩu
                 </button>
               )}
@@ -462,7 +462,7 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
 
             <div className="edit-form-buttons mt-6">
               <button type="button" className="btn btn-secondary" onClick={() => setIsEditing(false)}><X size={16} /> Hủy</button>
-              <button type="submit" className="btn btn-primary"><Check size={16} /> Lưu thay đổi</button>
+              <button type="submit" className="btn btn-primary" style={{ background: 'var(--accent-gradient)' }}><Check size={16} /> Lưu thay đổi</button>
             </div>
           </form>
         )}
@@ -472,24 +472,28 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%' }}>
         
         {/* WALLET BALANCE CARD */}
-        <div className="glass-card wallet-card-premium" style={{ width: '100%', textAlign: 'left', padding: '24px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.1) 100%)', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#c084fc', textTransform: 'uppercase', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div className="glass-card wallet-card-premium">
+          <div className="wallet-card-shine"></div>
+          <div className="wallet-card-pattern"></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, position: 'relative', zIndex: 2 }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#e0f2fe', textTransform: 'uppercase', letterSpacing: 0.8, display: 'flex', alignItems: 'center', gap: 6 }}>
               <DollarSign size={16} />
               <span>Ví Điện Tử Cá Nhân (UC19)</span>
             </h4>
             <span className="balance-badge-live">Live</span>
           </div>
 
-          <span style={{ fontSize: '11px', color: '#94a3b8' }}>Số dư ví hiện tại</span>
-          <h2 style={{ fontSize: '32px', fontWeight: 800, color: 'white', marginTop: 4, letterSpacing: -0.5 }}>{formatCurrency(walletBalance)}</h2>
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <span style={{ fontSize: '11px', color: '#b9e6e8', fontWeight: 500 }}>Số dư ví hiện tại</span>
+            <h2 style={{ fontSize: '32px', fontWeight: 800, color: 'white', marginTop: 4, letterSpacing: -0.5 }}>{formatCurrency(walletBalance)}</h2>
+          </div>
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-            <button className="btn btn-primary" onClick={() => { setWalletTxType('deposit'); setShowWalletModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: 10, marginTop: 24, position: 'relative', zIndex: 2 }}>
+            <button className="btn btn-wallet-action btn-wallet-deposit" onClick={() => { setWalletTxType('deposit'); setShowWalletModal(true); }}>
               <ArrowDownLeft size={16} />
               <span>Nạp Tiền</span>
             </button>
-            <button className="btn btn-secondary" onClick={() => { setWalletTxType('withdraw'); setShowWalletModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <button className="btn btn-wallet-action btn-wallet-withdraw" onClick={() => { setWalletTxType('withdraw'); setShowWalletModal(true); }}>
               <ArrowUpRight size={16} />
               <span>Rút Tiền</span>
             </button>
@@ -499,35 +503,65 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
         {/* BANKING LINK CARD (UC24) */}
         <div className="glass-card" style={{ width: '100%', textAlign: 'left', padding: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <CreditCard size={16} className="text-info" />
+            <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <CreditCard size={16} style={{ color: 'var(--accent-primary)' }} />
               <span>Liên Kết Tài Khoản Ngân Hàng (UC24)</span>
             </h4>
-            {!bankAccount && <span style={{ fontSize: '10px', color: '#fda4af', padding: '2px 6px', background: 'rgba(244,63,94,0.1)', borderRadius: 4, fontWeight: 700 }}>Chưa liên kết</span>}
+            {!bankAccount && <span style={{ fontSize: '10px', color: '#e11d48', padding: '2px 6px', background: 'rgba(225,29,72,0.08)', borderRadius: 4, fontWeight: 700 }}>Chưa liên kết</span>}
           </div>
 
           {bankAccount ? (
-            <div className="linked-bank-info-box" style={{ background: '#0a0b10', padding: 16, borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)' }}>
-              <span style={{ fontSize: '10px', color: '#64748b', display: 'block' }}>NGÂN HÀNG LIÊN KẾT</span>
-              <strong style={{ fontSize: '15px', color: '#818cf8', display: 'block', marginTop: 2 }}>{bankAccount.bankName}</strong>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 12 }}>
-                <div>
-                  <span style={{ fontSize: '9px', color: '#64748b' }}>SỐ TÀI KHOẢN</span>
-                  <span style={{ fontSize: '13px', color: 'white', fontWeight: 6, display: 'block' }}>{bankAccount.accountNumber}</span>
+            <div>
+              <div className="linked-bank-card-premium">
+                <div className="card-chip-glow"></div>
+                <div className="card-header-premium">
+                  <span className="card-bank-name">{bankAccount.bankName}</span>
+                  <span className="card-type-label">ATM DEBIT</span>
                 </div>
-                <div>
-                  <span style={{ fontSize: '9px', color: '#64748b' }}>CHỦ TÀI KHOẢN</span>
-                  <span style={{ fontSize: '13px', color: 'white', fontWeight: 6, display: 'block', textTransform: 'uppercase' }}>{bankAccount.accountHolder}</span>
+                <div className="card-chip-icon">
+                  <svg width="36" height="28" viewBox="0 0 36 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="36" height="28" rx="4" fill="url(#chip-grad)" />
+                    <path d="M0 6H12M0 14H16M0 22H12" stroke="#1e293b" strokeWidth="1.2" />
+                    <path d="M36 6H24M36 14H20M36 22H24" stroke="#1e293b" strokeWidth="1.2" />
+                    <path d="M12 0V6M24 0V6M16 28V14M20 28V14" stroke="#1e293b" strokeWidth="1.2" />
+                    <rect x="12" y="6" width="12" height="8" rx="1.5" fill="#e2e8f0" stroke="#1e293b" strokeWidth="1.2" />
+                    <defs>
+                      <linearGradient id="chip-grad" x1="0" y1="0" x2="36" y2="28" gradientUnits="userSpaceOnUse">
+                        <stop stopColor="#f59e0b" />
+                        <stop offset="1" stopColor="#d97706" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </div>
+                <div className="card-number-premium">
+                  <span>••••</span>
+                  <span>••••</span>
+                  <span>••••</span>
+                  <span>{bankAccount.accountNumber.slice(-4) || '1234'}</span>
+                </div>
+                <div className="card-footer-premium">
+                  <div className="card-holder-area">
+                    <span className="card-holder-label">CARD HOLDER</span>
+                    <span className="card-holder-name">{bankAccount.accountHolder.toUpperCase()}</span>
+                  </div>
+                  <div className="card-logo-area">
+                    <div className="card-logo-circles">
+                      <span className="logo-circle-1"></span>
+                      <span className="logo-circle-2"></span>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              <button className="btn-link-reset mt-4" onClick={() => setShowBankForm(true)} style={{ fontSize: '12px', padding: 0 }}>Thay đổi tài khoản</button>
+              <div style={{ textAlign: 'right', marginTop: 12 }}>
+                <button className="btn-link-reset-premium" onClick={() => setShowBankForm(true)}>Thay đổi tài khoản ngân hàng</button>
+              </div>
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <p style={{ fontSize: '13px', color: '#64748b' }}>Liên kết tài khoản ngân hàng để thực hiện rút tiền cọc và tiền doanh thu thuê xe.</p>
-              <button className="btn btn-secondary mt-4" onClick={() => setShowBankForm(true)}>Liên kết ngay</button>
+            <div className="bank-placeholder-card">
+              <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>Liên kết tài khoản ngân hàng để thực hiện rút tiền cọc và nhận doanh thu từ việc cho thuê xe.</p>
+              <button className="btn btn-secondary mt-4" style={{ width: 'auto', padding: '10px 24px', borderColor: 'var(--accent-primary)', color: 'var(--accent-primary)', background: 'transparent' }} onClick={() => setShowBankForm(true)}>
+                <Link size={14} /> Liên kết ngay
+              </button>
             </div>
           )}
 
@@ -677,9 +711,14 @@ const injectProfileStyles = () => {
       height: 110px;
       border-radius: 50%;
       object-fit: cover;
-      border: 4px solid rgba(99, 102, 241, 0.4);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-      transition: all 0.2s;
+      border: 4px solid rgba(0, 150, 152, 0.25);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+    }
+
+    .profile-avatar-large:hover {
+      border-color: var(--accent-primary);
+      transform: scale(1.02);
     }
 
     .loading-blur {
@@ -690,8 +729,8 @@ const injectProfileStyles = () => {
       position: absolute;
       bottom: 0;
       right: 0;
-      background: #6366f1;
-      border: 2px solid var(--bg-secondary);
+      background: var(--accent-primary);
+      border: 2.5px solid var(--bg-secondary);
       color: white;
       width: 32px;
       height: 32px;
@@ -700,13 +739,13 @@ const injectProfileStyles = () => {
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-      transition: all 0.2s;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .avatar-change-badge:hover {
-      background: #4f46e5;
-      transform: scale(1.1);
+      background: var(--accent-secondary);
+      transform: scale(1.1) rotate(15deg);
     }
 
     .profile-title-area {
@@ -723,35 +762,36 @@ const injectProfileStyles = () => {
     .profile-name {
       font-size: 22px;
       font-weight: 700;
-      color: #f8fafc;
+      color: var(--text-primary);
+      letter-spacing: -0.3px;
     }
 
     .user-role-badge-pill {
       display: inline-block;
       margin-top: 6px;
-      background: rgba(168, 85, 247, 0.15);
-      border: 1px solid rgba(168, 85, 247, 0.3);
-      color: #c084fc;
+      background: rgba(0, 150, 152, 0.06);
+      border: 1px solid rgba(0, 150, 152, 0.15);
+      color: var(--accent-primary);
       font-size: 11px;
       font-weight: 700;
       padding: 2px 10px;
-      border-radius: 99px;
+      border-radius: var(--radius-full);
     }
 
     .badge-verified {
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #34d399;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: #059669;
       font-size: 11px;
       font-weight: 700;
       padding: 2px 8px;
-      border-radius: 99px;
+      border-radius: var(--radius-full);
       display: inline-flex;
       align-items: center;
     }
 
     .profile-email-sub {
-      color: #94a3b8;
+      color: var(--text-secondary);
       font-size: 14px;
       margin-top: 4px;
     }
@@ -759,19 +799,20 @@ const injectProfileStyles = () => {
     .profile-divider {
       border: none;
       height: 1px;
-      background: rgba(255,255,255,0.08);
+      background: var(--border-color);
       margin: 24px 0;
     }
 
     /* Avatar Selector Drawer */
     .avatar-selector-box {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
       padding: 16px;
       margin: 16px 0;
       animation: fadeIn 0.2s ease-out;
       text-align: left;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
     }
 
     .selector-header {
@@ -784,33 +825,34 @@ const injectProfileStyles = () => {
     .selector-header h4 {
       font-size: 14px;
       font-weight: 700;
-      color: #cbd5e1;
+      color: var(--text-primary);
     }
 
     .btn-close-selector {
       background: none;
       border: none;
-      color: #64748b;
+      color: var(--text-muted);
       cursor: pointer;
       padding: 4px;
       border-radius: 4px;
+      transition: all 0.2s;
     }
 
     .btn-close-selector:hover {
-      color: #f8fafc;
-      background: rgba(255,255,255,0.05);
+      color: var(--text-primary);
+      background: rgba(0,0,0,0.05);
     }
 
     .preset-title {
       font-size: 12px;
-      color: #94a3b8;
+      color: var(--text-muted);
       margin-bottom: 8px;
     }
 
     .preset-avatars-grid {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
-      gap: 8px;
+      gap: 10px;
     }
 
     .preset-item {
@@ -820,24 +862,25 @@ const injectProfileStyles = () => {
       object-fit: cover;
       cursor: pointer;
       border: 2px solid transparent;
-      transition: all 0.2s;
+      transition: all 0.25s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
 
     .preset-item:hover {
-      transform: scale(1.08);
-      border-color: rgba(99,102,241,0.5);
+      transform: scale(1.1);
+      border-color: rgba(0, 150, 152, 0.4);
     }
 
     .preset-item.active {
-      border-color: #6366f1;
-      box-shadow: 0 0 10px rgba(99,102,241,0.3);
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 12px rgba(0, 150, 152, 0.2);
     }
 
     .selector-divider {
       display: flex;
       align-items: center;
       text-align: center;
-      color: #64748b;
+      color: var(--text-muted);
       font-size: 11px;
       margin: 12px 0;
     }
@@ -845,7 +888,7 @@ const injectProfileStyles = () => {
     .selector-divider::before, .selector-divider::after {
       content: '';
       flex: 1;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid var(--border-color);
     }
 
     .selector-divider::before { margin-right: 8px; }
@@ -860,11 +903,11 @@ const injectProfileStyles = () => {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(99,102,241,0.1);
-      border: 1px dashed rgba(99,102,241,0.4);
-      color: #818cf8;
+      background: rgba(0, 150, 152, 0.05);
+      border: 1px dashed rgba(0, 150, 152, 0.3);
+      color: var(--accent-primary);
       padding: 8px 20px;
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
@@ -872,9 +915,8 @@ const injectProfileStyles = () => {
     }
 
     .upload-btn:hover {
-      background: rgba(99,102,241,0.18);
-      color: white;
-      border-color: rgba(99,102,241,0.6);
+      background: rgba(0, 150, 152, 0.1);
+      border-color: var(--accent-primary);
     }
 
     .url-avatar-form {
@@ -892,14 +934,25 @@ const injectProfileStyles = () => {
 
     .info-row {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 16px;
+      padding: 6px 0;
+      transition: all 0.2s;
     }
 
     .info-icon {
-      margin-top: 4px;
-      color: #64748b;
+      color: var(--accent-primary);
+      background: rgba(0, 150, 152, 0.08);
+      padding: 10px;
+      border-radius: 50%;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
       flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .info-row:hover .info-icon {
+      transform: scale(1.08);
+      background: rgba(0, 150, 152, 0.15);
     }
 
     .info-data {
@@ -911,19 +964,19 @@ const injectProfileStyles = () => {
 
     .info-label {
       font-size: 12px;
-      color: #64748b;
+      color: var(--text-muted);
       font-weight: 500;
     }
 
     .info-value {
       font-size: 15px;
-      color: #e2e8f0;
+      color: var(--text-primary);
       font-weight: 600;
     }
 
     .info-value.bio-text {
       font-weight: 400;
-      color: #94a3b8;
+      color: var(--text-secondary);
       font-style: italic;
       white-space: pre-wrap;
       word-break: break-word;
@@ -935,6 +988,248 @@ const injectProfileStyles = () => {
       gap: 12px;
     }
 
+    /* --- PREMIUM WALLET & BANK LINK STYLES --- */
+    .wallet-card-premium {
+      position: relative;
+      background: linear-gradient(135deg, #009698 0%, #03686a 100%) !important;
+      border: none !important;
+      box-shadow: 0 12px 30px rgba(0, 150, 152, 0.25) !important;
+      overflow: hidden;
+      color: white !important;
+      border-radius: var(--radius-lg);
+      transition: all 0.3s ease;
+    }
+
+    .wallet-card-premium:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 36px rgba(0, 150, 152, 0.35) !important;
+    }
+
+    .wallet-card-shine {
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+      pointer-events: none;
+      transform: rotate(25deg);
+    }
+
+    .wallet-card-pattern {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      opacity: 0.04;
+      background-image: radial-gradient(white 1px, transparent 0), radial-gradient(white 1px, transparent 0);
+      background-size: 8px 8px;
+      background-position: 0 0, 4px 4px;
+      pointer-events: none;
+    }
+
+    .btn-wallet-action {
+      flex: 1;
+      border-radius: var(--radius-md) !important;
+      font-weight: 600 !important;
+      transition: all 0.2s !important;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px !important;
+      font-size: 14px !important;
+      height: 42px;
+    }
+
+    .btn-wallet-deposit {
+      background: white !important;
+      color: #009698 !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+    }
+
+    .btn-wallet-deposit:hover {
+      background: #f8fafc !important;
+      transform: translateY(-1.5px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12) !important;
+    }
+
+    .btn-wallet-withdraw {
+      background: rgba(255,255,255,0.15) !important;
+      color: white !important;
+      border: 1px solid rgba(255,255,255,0.2) !important;
+    }
+
+    .btn-wallet-withdraw:hover {
+      background: rgba(255,255,255,0.25) !important;
+      transform: translateY(-1.5px);
+    }
+
+    .balance-badge-live {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+    }
+
+    /* Linked ATM Debit Card style */
+    .linked-bank-card-premium {
+      position: relative;
+      background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      color: #1e293b;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 180px;
+      justify-content: space-between;
+      transition: all 0.3s ease;
+    }
+
+    .linked-bank-card-premium:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+    }
+
+    .card-chip-glow {
+      position: absolute;
+      top: -20px;
+      right: -20px;
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle, rgba(255,255,255,0.45) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .card-header-premium {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-bank-name {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #009698 0%, #006062 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .card-type-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #64748b;
+    }
+
+    .card-chip-icon {
+      margin-top: 6px;
+    }
+
+    .card-number-premium {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      font-family: monospace;
+      color: #334155;
+      margin: 10px 0;
+      display: flex;
+      gap: 12px;
+    }
+
+    .card-footer-premium {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .card-holder-area {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .card-holder-label {
+      font-size: 8px;
+      color: #64748b;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .card-holder-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e293b;
+      letter-spacing: 0.5px;
+    }
+
+    .card-logo-circles {
+      display: flex;
+      position: relative;
+      width: 38px;
+      height: 24px;
+    }
+
+    .logo-circle-1 {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(0, 150, 152, 0.35);
+      position: absolute;
+      left: 0;
+    }
+
+    .logo-circle-2 {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(0, 191, 165, 0.4);
+      position: absolute;
+      right: 0;
+      mix-blend-mode: multiply;
+    }
+
+    .btn-link-reset-premium {
+      background: none;
+      border: none;
+      color: var(--accent-primary);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+      transition: all 0.2s;
+      text-align: right;
+      display: inline-block;
+    }
+
+    .btn-link-reset-premium:hover {
+      color: var(--accent-secondary);
+      text-decoration: underline;
+    }
+
+    .bank-placeholder-card {
+      border: 2px dashed var(--border-color);
+      background: rgba(0, 150, 152, 0.01);
+      border-radius: var(--radius-lg);
+      padding: 32px 24px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .bank-placeholder-card:hover {
+      border-color: var(--accent-primary);
+      background: rgba(0, 150, 152, 0.03);
+    }
+
     /* --- PREMIUM EDITOR MODAL STYLES --- */
     .editor-modal-overlay {
       position: fixed;
@@ -942,7 +1237,7 @@ const injectProfileStyles = () => {
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(5, 5, 8, 0.85);
+      background: rgba(15, 23, 42, 0.5);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       display: flex;
@@ -954,10 +1249,10 @@ const injectProfileStyles = () => {
     }
 
     .editor-modal-card {
-      background: #11131c;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-      border-radius: 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+      border-radius: var(--radius-lg);
       width: 100%;
       max-width: 440px;
       overflow: hidden;
@@ -968,7 +1263,7 @@ const injectProfileStyles = () => {
 
     .editor-modal-header {
       padding: 18px 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      border-bottom: 1px solid var(--border-color);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -977,15 +1272,13 @@ const injectProfileStyles = () => {
     .editor-modal-header h3 {
       font-size: 16px;
       font-weight: 700;
-      background: linear-gradient(135deg, #f8fafc 30%, #6366f1 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: var(--text-primary);
     }
 
     .editor-close-btn {
       background: none;
       border: none;
-      color: #64748b;
+      color: var(--text-muted);
       cursor: pointer;
       padding: 4px;
       border-radius: 6px;
@@ -993,8 +1286,8 @@ const injectProfileStyles = () => {
     }
 
     .editor-close-btn:hover {
-      color: white;
-      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
     }
 
     .editor-modal-body {
@@ -1006,11 +1299,11 @@ const injectProfileStyles = () => {
 
     .editor-tip {
       font-size: 12px;
-      color: #818cf8;
-      background: rgba(99, 102, 241, 0.08);
-      border: 1px solid rgba(99, 102, 241, 0.15);
+      color: var(--accent-primary);
+      background: rgba(0, 150, 152, 0.05);
+      border: 1px solid rgba(0, 150, 152, 0.12);
       padding: 8px 12px;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       width: 100%;
       margin-bottom: 20px;
       text-align: left;
@@ -1021,12 +1314,12 @@ const injectProfileStyles = () => {
       position: relative;
       width: 320px;
       height: 320px;
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       overflow: hidden;
       cursor: grab;
-      background: #050508;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1050,23 +1343,24 @@ const injectProfileStyles = () => {
       right: 0;
       bottom: 0;
       border-radius: 50%;
-      border: 2px solid #6366f1;
-      box-shadow: 0 0 0 9999px rgba(5, 5, 8, 0.7);
+      border: 2px dashed var(--accent-primary);
+      box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65);
       pointer-events: none;
       transition: border-color 0.2s;
     }
 
     .crop-container:hover .crop-overlay-circle {
-      border-color: #a855f7;
+      border-color: var(--accent-secondary);
+      border-style: solid;
     }
 
     .drag-helper-icon {
       position: absolute;
       top: 12px;
       right: 12px;
-      background: rgba(5, 5, 8, 0.6);
+      background: rgba(15, 23, 42, 0.6);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #94a3b8;
+      color: white;
       width: 36px;
       height: 36px;
       border-radius: 50%;
@@ -1102,7 +1396,7 @@ const injectProfileStyles = () => {
     .control-label {
       font-size: 13px;
       font-weight: 600;
-      color: #94a3b8;
+      color: var(--text-secondary);
       width: 90px;
       display: inline-flex;
       align-items: center;
@@ -1115,7 +1409,7 @@ const injectProfileStyles = () => {
       appearance: none;
       height: 6px;
       border-radius: 99px;
-      background: #171a26;
+      background: var(--bg-tertiary);
       outline: none;
       cursor: pointer;
     }
@@ -1126,42 +1420,32 @@ const injectProfileStyles = () => {
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      background: #6366f1;
+      background: var(--accent-primary);
       border: 2px solid white;
       transition: transform 0.1s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
 
     .editor-slider::-webkit-slider-thumb:hover {
       transform: scale(1.2);
-      background: #a855f7;
+      background: var(--accent-secondary);
     }
 
     .control-value {
       font-size: 12px;
       font-weight: 700;
-      color: #cbd5e1;
+      color: var(--text-primary);
       width: 42px;
       text-align: right;
     }
 
     .editor-modal-footer {
       padding: 16px 24px;
-      background: rgba(255, 255, 255, 0.01);
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      background: var(--bg-tertiary);
+      border-top: 1px solid var(--border-color);
       display: grid;
       grid-template-columns: 1fr 1.5fr;
       gap: 12px;
-    }
-
-    .balance-badge-live {
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #34d399;
-      font-size: 9px;
-      font-weight: 800;
-      text-transform: uppercase;
-      padding: 2px 6px;
-      border-radius: 4px;
     }
 
     @keyframes editorFadeIn {
@@ -1184,3 +1468,4 @@ const injectProfileStyles = () => {
 };
 
 injectProfileStyles();
+
