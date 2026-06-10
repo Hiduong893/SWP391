@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import { db } from './database.js';
 import { auth } from './middleware/auth.js';
 import nodemailer from 'nodemailer';
+import renterActionRoutes from './routes/renterActionRoutes.js'; // Task 19, 21, 22 - Renter Actions (Inter 2)
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' })); // Support base64 image uploads up to 10MB
+app.use('/api/renter', renterActionRoutes); // Task 19, 21, 22 - Renter Action Routes (Inter 2)
 
 // Helper to sanitize user object
 const sanitizeUser = (user) => {
