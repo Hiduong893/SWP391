@@ -40,6 +40,18 @@ export const api = {
         method: 'GET'
       }),
       
+    verifyEmailDirect: (email) => 
+      request('/auth/verify-email-direct', {
+        method: 'POST',
+        body: JSON.stringify({ email })
+      }),
+      
+    verifyEmailOtp: (email, code) => 
+      request('/auth/verify-email-otp', {
+        method: 'POST',
+        body: JSON.stringify({ email, code })
+      }),
+      
     login: (email, password) => 
       request('/auth/login', {
         method: 'POST',
@@ -350,6 +362,11 @@ export const api = {
       request(`/admin/users/${id}/role`, {
         method: 'PUT',
         body: JSON.stringify({ role })
+      }),
+
+    deleteUser: (id) =>
+      request(`/admin/users/${id}`, {
+        method: 'DELETE'
       })
   },
   

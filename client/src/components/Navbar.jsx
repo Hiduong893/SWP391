@@ -1,102 +1,119 @@
 import React from 'react';
-import { ShieldCheck, LogOut, User, Key, Car, PlusCircle, Compass } from 'lucide-react';
+import { ShieldCheck, LogOut, User, Key, Car, PlusCircle, Compass, BookOpen, Briefcase } from 'lucide-react';
+import { useToast } from './Toast';
 
 export const Navbar = ({ user, onLogout, currentTab, setCurrentTab }) => {
+  const { showToast } = useToast();
+
+  const handleDummyClick = (title) => {
+    showToast(`Tính năng "${title}" đang được phát triển. Cảm ơn bạn đã quan tâm!`, 'info');
+  };
+
   return (
     <nav className="main-nav">
       <div className="nav-container">
         <div className="nav-brand" onClick={() => setCurrentTab('rent-car')}>
-          <Car className="brand-icon" size={28} />
-          <span className="brand-text">BONBONCAR</span>
-          <span className="brand-badge">PRO</span>
+          <div className="brand-logo-container">
+            <svg viewBox="0 0 100 100" className="brand-logo-svg" width="36" height="36">
+              <rect width="100" height="100" rx="24" fill="#009698" />
+              <path d="M50 18 C62 18, 76 28, 76 50 C76 72, 62 82, 50 82 C38 82, 24 72, 24 50 C24 28, 38 18, 50 18 Z" fill="none" stroke="white" strokeWidth="6" />
+              <circle cx="50" cy="50" r="12" fill="white" />
+              <path d="M50 18 L50 82" stroke="white" strokeWidth="4" />
+            </svg>
+          </div>
+          <span className="brand-text">
+            <span className="brand-dark">ViVu</span>
+            <span className="brand-teal">Car</span>
+          </span>
         </div>
 
         <div className="nav-links">
-          {/* Rent Car tab is always accessible */}
-          <button 
+          {/* Main active links */}
+          <button
             className={`nav-item ${currentTab === 'rent-car' ? 'active' : ''}`}
             onClick={() => setCurrentTab('rent-car')}
           >
-            <Car size={18} />
-            <span>Thuê Xe</span>
+            <span>Thuê xe</span>
           </button>
 
-          {user ? (
+          <button
+            className={`nav-item ${currentTab === 'list-car' ? 'active' : ''}`}
+            onClick={() => {
+              if (!user) {
+                showToast('Vui lòng đăng nhập để ký gửi xe!', 'warning');
+                setCurrentTab('login');
+              } else {
+                setCurrentTab('list-car');
+              }
+            }}
+          >
+            <span>Ký gửi xe</span>
+          </button>
+
+          <button
+            className="nav-item"
+            onClick={() => handleDummyClick('Blog')}
+          >
+            <span>Blog</span>
+          </button>
+
+          <button
+            className="nav-item"
+            onClick={() => handleDummyClick('Tuyển dụng')}
+          >
+            <span>Tuyển dụng</span>
+          </button>
+
+          {user && (
             <>
-              {/* Owner listing & Trips tabs are accessible only when logged in */}
-              <button 
-                className={`nav-item ${currentTab === 'list-car' ? 'active' : ''}`}
-                onClick={() => setCurrentTab('list-car')}
-              >
-                <PlusCircle size={18} />
-                <span>Ký Gửi Xe</span>
-              </button>
-              
-              <button 
+              <button
                 className={`nav-item ${currentTab === 'my-trips' ? 'active' : ''}`}
                 onClick={() => setCurrentTab('my-trips')}
               >
-                <Compass size={18} />
-                <span>Chuyến Đi</span>
+                <span>Chuyến đi</span>
               </button>
 
               {(user.role === 'admin' || user.role === 'cskh') && (
-                <button 
+                <button
                   className={`nav-item admin-nav-btn ${currentTab === 'admin-dashboard' ? 'active' : ''}`}
                   onClick={() => setCurrentTab('admin-dashboard')}
                 >
-                  <ShieldCheck size={18} />
-                  <span>{user.role === 'admin' ? 'Quản Trị' : 'CSKH & Hỗ Trợ'}</span>
+                  <ShieldCheck size={16} />
+                  <span>{user.role === 'admin' ? 'Quản trị' : 'CSKH & Hỗ trợ'}</span>
                 </button>
               )}
+            </>
+          )}
 
-              <div className="nav-user-divider"></div>
+          <div className="nav-user-divider"></div>
 
-              <button 
-                className={`nav-item ${currentTab === 'profile' ? 'active' : ''}`}
-                onClick={() => setCurrentTab('profile')}
-              >
-                <User size={18} />
-                <span>Hồ Sơ</span>
-              </button>
-              
-              <button 
-                className={`nav-item ${currentTab === 'change-password' ? 'active' : ''}`}
-                onClick={() => setCurrentTab('change-password')}
-              >
-                <Key size={18} />
-                <span>Đổi Mật Khẩu</span>
-              </button>
-              
-              <div className="nav-user-divider"></div>
-
-              <div className="nav-profile-summary">
+          {user ? (
+            <div className="nav-user-area">
+              <div className="nav-profile-summary" onClick={() => setCurrentTab('profile')} title="Xem hồ sơ cá nhân">
                 <img src={user.avatar} alt={user.name} className="nav-avatar" />
                 <span className="nav-username">{user.name}</span>
               </div>
 
-              <button className="nav-btn-logout" onClick={onLogout}>
-                <LogOut size={18} />
-                <span>Đăng Xuất</span>
+              <button className="nav-btn-logout" onClick={onLogout} title="Đăng xuất">
+                <LogOut size={16} />
+                <span>Đăng xuất</span>
               </button>
-            </>
+            </div>
           ) : (
-            <>
-              <div className="nav-user-divider"></div>
-              
-              <button 
-                className={`nav-item ${currentTab === 'login' || currentTab === 'forgot-password' || currentTab === 'reset-password' ? 'active' : ''}`}
+            <div className="nav-auth-buttons">
+              <button
+                className={`nav-btn-login ${currentTab === 'login' ? 'active' : ''}`}
                 onClick={() => setCurrentTab('login')}
               >
-                Đăng Nhập
+                Đăng nhập
               </button>
-              <button 
+              <button
                 className={`nav-btn-signup ${currentTab === 'register' ? 'active' : ''}`}
                 onClick={() => setCurrentTab('register')}
               >
-                Đăng Ký
+                Đăng ký
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -108,26 +125,30 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab }) => {
 const injectNavbarStyles = () => {
   if (typeof document === 'undefined') return;
   const styleId = 'navbar-styles';
-  if (document.getElementById(styleId)) return;
+  if (document.getElementById(styleId)) {
+    // Remove existing styles to replace
+    const oldStyle = document.getElementById(styleId);
+    oldStyle.parentNode.removeChild(oldStyle);
+  }
 
   const style = document.createElement('style');
   style.id = styleId;
   style.textContent = `
     .main-nav {
-      background: rgba(17, 19, 28, 0.8);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
       position: sticky;
       top: 0;
       z-index: 100;
       width: 100%;
+      transition: all 0.3s ease;
     }
 
     .nav-container {
-      max-width: 1400px;
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 16px 24px;
+      padding: 14px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -136,153 +157,195 @@ const injectNavbarStyles = () => {
     .nav-brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       cursor: pointer;
       user-select: none;
     }
 
-    .brand-icon {
-      color: #6366f1;
-      filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));
+    .brand-logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-logo-svg {
+      filter: drop-shadow(0 4px 8px rgba(0, 150, 152, 0.15));
+      transition: all 0.3s ease;
+    }
+
+    .nav-brand:hover .brand-logo-svg {
+      transform: rotate(10deg) scale(1.05);
     }
 
     .brand-text {
-      font-size: 20px;
+      font-size: 24px;
       font-weight: 800;
-      letter-spacing: 0.5px;
-      background: linear-gradient(135deg, #f8fafc 30%, #a855f7 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+      font-family: 'Outfit', sans-serif;
     }
 
-    .brand-badge {
-      background: rgba(99, 102, 241, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      color: #818cf8;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 1px 6px;
-      border-radius: 6px;
-      text-transform: uppercase;
+    .brand-dark {
+      color: #0f172a;
+    }
+
+    .brand-teal {
+      color: #009698;
     }
 
     .nav-links {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
     }
 
     .nav-item {
       background: none;
       border: none;
-      color: #94a3b8;
+      color: #334155;
       font-family: 'Outfit', sans-serif;
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 500;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 8px 12px;
+      padding: 8px 16px;
       border-radius: 8px;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
     }
 
-    .nav-item:hover, .nav-item.active {
-      color: #f8fafc;
-      background: rgba(255, 255, 255, 0.05);
+    .nav-item:hover {
+      color: #009698;
+      background: #f8fafc;
     }
 
     .nav-item.active {
-      background: rgba(99, 102, 241, 0.1);
-      color: #818cf8;
+      color: #009698;
+      font-weight: 600;
     }
 
     .nav-item.admin-nav-btn {
-      color: #c084fc;
-      border: 1px dashed rgba(168, 85, 247, 0.4);
-      background: rgba(168, 85, 247, 0.05);
+      color: #8b5cf6;
+      border: 1px dashed rgba(139, 92, 246, 0.3);
+      background: rgba(139, 92, 246, 0.02);
     }
 
-    .nav-item.admin-nav-btn:hover, .nav-item.admin-nav-btn.active {
-      color: #f8fafc;
-      background: rgba(168, 85, 247, 0.15);
-      border-color: rgba(168, 85, 247, 0.7);
-    }
-
-    .nav-item.admin-nav-btn.active {
-      box-shadow: 0 0 12px rgba(168, 85, 247, 0.2);
-    }
-
-    .nav-btn-signup {
-      background: #6366f1;
-      border: none;
-      color: white;
-      font-family: 'Outfit', sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      padding: 8px 18px;
-      border-radius: 8px;
-      transition: all 0.2s;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
-    }
-
-    .nav-btn-signup:hover {
-      background: #4f46e5;
-      transform: translateY(-1px);
+    .nav-item.admin-nav-btn:hover {
+      color: #7c3aed;
+      background: rgba(139, 92, 246, 0.08);
+      border-color: rgba(139, 92, 246, 0.6);
     }
 
     .nav-user-divider {
       height: 24px;
       width: 1px;
-      background: rgba(255, 255, 255, 0.1);
-      margin: 0 4px;
+      background: #e2e8f0;
+      margin: 0 10px;
+    }
+
+    .nav-user-area {
+      display: flex;
+      align-items: center;
+      gap: 16px;
     }
 
     .nav-profile-summary {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 99px;
+      background: #f8fafc;
+      border: 1px solid #f1f5f9;
+      transition: all 0.2s ease;
+    }
+
+    .nav-profile-summary:hover {
+      background: #f1f5f9;
+      border-color: #e2e8f0;
     }
 
     .nav-avatar {
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       object-fit: cover;
-      border: 2px solid rgba(99, 102, 241, 0.4);
+      border: 2px solid #009698;
     }
 
     .nav-username {
       font-size: 14px;
       font-weight: 600;
-      color: #e2e8f0;
-      max-width: 100px;
+      color: #1e293b;
+      max-width: 120px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
     .nav-btn-logout {
-      background: rgba(244, 63, 94, 0.1);
-      border: 1px solid rgba(244, 63, 94, 0.2);
-      color: #fda4af;
+      background: none;
+      border: 1px solid #f1f5f9;
+      color: #64748b;
       font-family: 'Outfit', sans-serif;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      padding: 8px 14px;
+      padding: 6px 12px;
       border-radius: 8px;
       display: flex;
       align-items: center;
-      gap: 4px;
-      transition: all 0.2s;
+      gap: 6px;
+      transition: all 0.2s ease;
     }
 
     .nav-btn-logout:hover {
-      background: rgba(244, 63, 94, 0.2);
-      color: #ffe4e6;
+      background: #fdf2f2;
+      border-color: #fde8e8;
+      color: #ef4444;
+    }
+
+    .nav-auth-buttons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-btn-login {
+      background: none;
+      border: none;
+      color: #334155;
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 8px 16px;
+      transition: all 0.2s;
+    }
+
+    .nav-btn-login:hover {
+      color: #009698;
+    }
+
+    .nav-btn-signup {
+      background: #009698;
+      border: none;
+      color: #ffffff;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 8px 20px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(0, 150, 152, 0.2);
+    }
+
+    .nav-btn-signup:hover {
+      background: #00797b;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(0, 150, 152, 0.3);
     }
 
     @media (max-width: 1024px) {
@@ -299,7 +362,7 @@ const injectNavbarStyles = () => {
     }
 
     @media (max-width: 768px) {
-      .nav-username, .nav-user-divider {
+      .nav-user-divider {
         display: none;
       }
       .nav-links {
@@ -309,12 +372,10 @@ const injectNavbarStyles = () => {
         padding: 6px 10px;
         font-size: 13px;
       }
-      .nav-item span {
-        display: none; /* Hide labels, show only icons on mobile */
-      }
     }
   `;
   document.head.appendChild(style);
 };
 
 injectNavbarStyles();
+

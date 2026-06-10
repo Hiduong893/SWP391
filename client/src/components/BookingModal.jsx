@@ -78,7 +78,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
 
   // VietQR Dynamic Link Generator
   // Format: https://img.vietqr.io/image/<BANK_ID>-<ACCOUNT_NO>-<TEMPLATE>.png?amount=<AMOUNT>&addInfo=<MEMO>
-  const vietQrUrl = `https://img.vietqr.io/image/mbbank-1900533588-compact.png?amount=${totalPrice}&addInfo=SWP391%20THUEXE%20${car.brand}%20${bookingId}&accountName=BONBONCAR%20DEMO`;
+  const vietQrUrl = `https://img.vietqr.io/image/mbbank-1900533588-compact.png?amount=${totalPrice}&addInfo=SWP391%20THUEXE%20${car.brand}%20${bookingId}&accountName=ViVuCar%20DEMO`;
 
   return (
     <div className="booking-modal-overlay">
@@ -163,7 +163,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                   <div style={{ flex: 1 }}>
                     <strong>Cần xác thực bằng lái xe!</strong>
                     <p>Luật cho thuê xe tự lái yêu cầu tải ảnh bằng lái để xác minh tư cách người lái.</p>
-                    
+
                     <label className="upload-license-inline-btn mt-2">
                       <Upload size={14} />
                       <span>{licenseUploading ? 'Đang tải lên...' : 'Tải lên Bằng lái (Sửa & Duyệt ngay)'}</span>
@@ -177,10 +177,10 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
             {/* Step 1 Footer Action */}
             <div className="booking-modal-footer mt-6">
               <button type="button" className="btn btn-secondary" onClick={onClose}>Hủy bỏ</button>
-              <button 
-                type="button" 
-                className="btn btn-primary" 
-                disabled={user.licenseStatus !== 'verified'} 
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={user.licenseStatus !== 'verified'}
                 onClick={() => setStep(2)}
               >
                 <span>Tiếp tục thanh toán</span>
@@ -216,7 +216,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                 </div>
                 <div className="bank-detail-row">
                   <span className="lbl">Tên tài khoản</span>
-                  <strong className="val">BONBONCAR DEMO SYSTEM</strong>
+                  <strong className="val">ViVuCar DEMO SYSTEM</strong>
                 </div>
                 <div className="bank-detail-row">
                   <span className="lbl">Số tiền cần chuyển</span>
@@ -234,9 +234,9 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
             {/* Step 2 Footer Action */}
             <div className="booking-modal-footer mt-6" style={{ gridTemplateColumns: '1fr 2fr' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setStep(1)} disabled={loading}>Quay lại</button>
-              <button 
-                type="button" 
-                className="btn btn-primary" 
+              <button
+                type="button"
+                className="btn btn-primary"
                 onClick={handlePaymentSubmit}
                 disabled={loading}
               >
@@ -261,7 +261,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                 <span className="receipt-id">Mã đặt xe: {bookingId}</span>
               </div>
               <hr className="receipt-line" />
-              
+
               <div className="receipt-grid">
                 <div className="receipt-row">
                   <span>Khách hàng:</span>
@@ -297,8 +297,8 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
               <div className="receipt-stamp">PAID / ĐÃ THANH TOÁN</div>
             </div>
 
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="btn btn-primary mt-6"
               onClick={() => {
                 setCurrentTab('my-trips');

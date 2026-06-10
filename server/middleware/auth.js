@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { db } from '../database.js';
 
-export const auth = (req, res, next) => {
+export const auth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -16,7 +16,7 @@ export const auth = (req, res, next) => {
     const JWT_SECRET = process.env.JWT_SECRET || 'swp391-super-secret-key-12345';
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    const user = db.users.findOne({ id: decoded.userId });
+    const user = await db.users.findOne({ id: decoded.userId });
     if (!user) {
       return res.status(401).json({ message: 'Người dùng không tồn tại hoặc đã bị xóa.' });
     }
