@@ -213,6 +213,30 @@
         "carPapers": null
       },
       "createdAt": "2026-05-26T15:11:20.924Z"
+    },
+    {
+      "id": "4dafe5ec-2d6f-45d6-bf06-81c79d545921",
+      "email": "namkhanhbui3210@gmail.com",
+      "password": null,
+      "name": "Bùi Nam Khánh",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocLVjKnj2KZV1x2OFvfH3ZlMtIqzuTkEQlHwyObO0326EEVRI2r2=s96-c",
+      "bio": "",
+      "isEmailVerified": true,
+      "emailVerificationToken": null,
+      "resetPasswordToken": null,
+      "resetPasswordExpires": null,
+      "googleId": "112888345586217181259",
+      "role": "renter",
+      "licenseStatus": "not_uploaded",
+      "licenseImage": null,
+      "walletBalance": 999999999999,
+      "bankAccount": null,
+      "kycDocuments": {
+        "cccd": null,
+        "license": null,
+        "carPapers": null
+      },
+      "createdAt": "2026-06-10T01:02:25.130Z"
     }
   ],
   "emails": [],
@@ -321,7 +345,19 @@
   ],
   "bookings": [],
   "reviews": [],
-  "support_tickets": [],
+  "support_tickets": [
+    {
+      "id": "f40d14cc-5af1-4e35-963e-e743c2153e84",
+      "userId": "4dafe5ec-2d6f-45d6-bf06-81c79d545921",
+      "userName": "Bùi Nam Khánh",
+      "userRole": "renter",
+      "subject": "11",
+      "message": "111",
+      "status": "open",
+      "replies": [],
+      "createdAt": "2026-06-10T01:03:03.571Z"
+    }
+  ],
   "disputes": [],
   "system_config": {
     "serviceFeePercent": 5,
