@@ -380,3 +380,18 @@ a:hover {
     font-size: 24px;
   }
 }
+
+/* Simulated Inbox Grid Layout */
+.app-layout-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 32px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .app-layout-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
