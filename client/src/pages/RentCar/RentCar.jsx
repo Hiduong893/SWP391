@@ -8,7 +8,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
   const [loading, setLoading] = useState(true);
 
   // Search state
-  const [location, setLocation] = useState('Hà Nội');
+  const [location, setLocation] = useState('');
   const [pickupDate, setPickupDate] = useState('');
   const [returnDate, setReturnDate] = useState('');
   const [pickupTime, setPickupTime] = useState('10:30');
@@ -93,7 +93,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
         pickupTime,
         returnTime
       });
-      showToast(`Đang mở trang tìm xe tại ${location}...`, 'success');
+      showToast(`Đang mở trang tìm xe tại ${location || 'mọi địa điểm'}...`, 'success');
     } else {
       const filters = {
         location,
@@ -103,16 +103,17 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
         search: searchKeyword
       };
       fetchCars(filters);
-      showToast(`Đã tìm thấy xe phù hợp tại ${location}!`, 'success');
+      showToast(`Đã tìm thấy xe phù hợp tại ${location || 'mọi địa điểm'}!`, 'success');
     }
   };
 
   const handleResetFilters = () => {
+    setLocation('');
     setSeats('');
     setTransmission('');
     setFuel('');
     setSearchKeyword('');
-    fetchCars({ location });
+    fetchCars({});
   };
 
   const handleBooking = (car) => {
@@ -522,6 +523,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                     onChange={(e) => setLocation(e.target.value)}
                     className="search-select-borderless"
                   >
+                    <option value="">Tất cả địa điểm</option>
                     <option value="Hà Nội">Hà Nội</option>
                     <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
                     <option value="Đà Nẵng">Đà Nẵng</option>

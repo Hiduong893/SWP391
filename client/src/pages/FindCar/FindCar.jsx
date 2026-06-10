@@ -9,7 +9,7 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
   const { showToast } = useToast();
 
   // Search states (Matches search-bar-premium layout)
-  const [selectedLocation, setSelectedLocation] = useState('TP. Hồ Chí Minh');
+  const [selectedLocation, setSelectedLocation] = useState('');
   const [pickupDate, setPickupDate] = useState('');
   const [returnDate, setReturnDate] = useState('');
 
@@ -48,7 +48,7 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
     const dayAfter = new Date();
     dayAfter.setDate(dayAfter.getDate() + 3);
 
-    const initLocation = initialSearchParams ? initialSearchParams.location : 'TP. Hồ Chí Minh';
+    const initLocation = initialSearchParams ? initialSearchParams.location : '';
     const initPickup = initialSearchParams ? initialSearchParams.pickupDate : tomorrow.toISOString().split('T')[0];
     const initReturn = initialSearchParams ? initialSearchParams.returnDate : dayAfter.toISOString().split('T')[0];
 
@@ -70,6 +70,7 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
   };
 
   const handleClearAllFilters = () => {
+    setSelectedLocation('');
     setSelectedBrand('');
     setSelectedSeats('');
     setSelectedFuel('');
@@ -81,6 +82,7 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
     setSelectedModel('');
     setSelectedType('');
     setSelectedDistrict('');
+    fetchCars({ location: '' });
     showToast('Đã xóa tất cả bộ lọc', 'info');
   };
 
@@ -117,7 +119,10 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
     if (selectedLocation === 'Đà Nẵng') {
       return ['Tất cả', 'Hải Châu', 'Thanh Khê', 'Sơn Trà', 'Ngũ Hành Sơn', 'Liên Chiểu', 'Cẩm Lệ'];
     }
-    return ['Tất cả', 'Quận 1', 'Quận 3', 'Quận 4', 'Quận 5', 'Quận 7', 'Quận 10', 'Tân Bình', 'Tân Phú', 'Bình Thạnh', 'Thủ Đức', 'Gò Vấp'];
+    if (selectedLocation === 'TP. Hồ Chí Minh') {
+      return ['Tất cả', 'Quận 1', 'Quận 3', 'Quận 4', 'Quận 5', 'Quận 7', 'Quận 10', 'Tân Bình', 'Tân Phú', 'Bình Thạnh', 'Thủ Đức', 'Gò Vấp'];
+    }
+    return ['Tất cả'];
   };
 
   // Client-side dynamic filtering & sorting logic
@@ -209,9 +214,15 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
             <MapPin size={18} className="field-icon-premium" />
             <select 
               value={selectedLocation} 
-              onChange={(e) => setSelectedLocation(e.target.value)}
+              onChange={(e) => {
+                const newLoc = e.target.value;
+                setSelectedLocation(newLoc);
+                setSelectedDistrict('');
+                fetchCars({ location: newLoc });
+              }}
               className="search-select-premium"
             >
+              <option value="">Tất cả địa điểm</option>
               <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
               <option value="Hà Nội">Hà Nội</option>
               <option value="Đà Nẵng">Đà Nẵng</option>
