@@ -3,7 +3,7 @@ import { Search, MapPin, Calendar, Clock, SlidersHorizontal, Users, Fuel, Shield
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
 
-export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
+export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -85,15 +85,26 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
       return;
     }
 
-    const filters = {
-      location,
-      seats,
-      transmission,
-      fuel,
-      search: searchKeyword
-    };
-    fetchCars(filters);
-    showToast(`Đã tìm thấy xe phù hợp tại ${location}!`, 'success');
+    if (onSearch) {
+      onSearch({
+        location,
+        pickupDate,
+        returnDate,
+        pickupTime,
+        returnTime
+      });
+      showToast(`Đang mở trang tìm xe tại ${location}...`, 'success');
+    } else {
+      const filters = {
+        location,
+        seats,
+        transmission,
+        fuel,
+        search: searchKeyword
+      };
+      fetchCars(filters);
+      showToast(`Đã tìm thấy xe phù hợp tại ${location}!`, 'success');
+    }
   };
 
   const handleResetFilters = () => {
@@ -885,63 +896,57 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab }) => {
               {brandLogos.map((brand, index) => (
                 <div
                   key={index}
-                  className="brand-logo-card"
+                  className={`brand-logo-card ${searchKeyword.toLowerCase() === brand.name.toLowerCase() ? 'active' : ''}`}
                   onClick={() => handleBrandClick(brand.name)}
                 >
                   <div className="brand-logo-svg-wrapper">
                     <svg viewBox="0 0 100 100" className="brand-inline-svg" width="44" height="44">
                       {brand.name === 'VinFast' && (
-                        <path d={brand.path} fill="none" stroke="#334155" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M10,20 L35,20 L50,56 L65,20 L90,20 L50,84 Z" fill="currentColor" />
                       )}
                       {brand.name === 'Toyota' && (
                         <>
-                          <path d={brand.path} fill="none" stroke="#334155" strokeWidth="5" />
-                          <ellipse cx="50" cy="50" rx="35" ry="20" fill="none" stroke="#334155" strokeWidth="5" />
-                          <ellipse cx="50" cy="40" rx="20" ry="12" fill="none" stroke="#334155" strokeWidth="4" />
+                          <ellipse cx="50" cy="50" rx="45" ry="30" fill="none" stroke="currentColor" strokeWidth="6" />
+                          <ellipse cx="50" cy="50" rx="14" ry="24" fill="none" stroke="currentColor" strokeWidth="6" />
+                          <ellipse cx="50" cy="40" rx="30" ry="16" fill="none" stroke="currentColor" strokeWidth="6" />
                         </>
                       )}
                       {brand.name === 'Mitsubishi' && (
                         <>
-                          <path d="M50 15 L68 45 L50 75 L32 45 Z" fill="#ef4444" />
-                          <path d="M50 75 L68 105 L50 105 L32 105 Z" fill="none" />
-                          <path d="M68 45 L100 45 L82 75 L50 75 Z" fill="#ef4444" />
-                          <path d="M32 45 L0 45 L18 75 L50 75 Z" fill="#ef4444" />
+                          <polygon points="50,50 64,26 50,2 36,26" fill="#e60012" />
+                          <polygon points="50,50 78,50 92,74 64,74" fill="#e60012" />
+                          <polygon points="50,50 36,74 8,74 22,50" fill="#e60012" />
                         </>
                       )}
                       {brand.name === 'Hyundai' && (
                         <>
-                          <ellipse cx="50" cy="50" rx="42" ry="26" fill="none" stroke="#334155" strokeWidth="5" transform="rotate(-12 50 50)" />
-                          <path d="M36 32 L44 32 L54 68 L46 68 Z" fill="#334155" />
-                          <path d="M54 32 L62 32 L52 68 L44 68 Z" fill="#334155" />
-                          <path d="M38 50 L56 50" stroke="#334155" strokeWidth="6" />
+                          <ellipse cx="50" cy="50" rx="44" ry="28" fill="none" stroke="currentColor" strokeWidth="6" transform="rotate(-15 50 50)" />
+                          <path d="M35,32 L45,68 M55,32 L65,68 M38,50 C46,48 54,48 62,50" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
                         </>
                       )}
                       {brand.name === 'Kia' && (
-                        <>
-                          <text x="50" y="60" textAnchor="middle" fill="#000000" fontSize="32" fontWeight="900" fontFamily="system-ui">KIΛ</text>
-                        </>
+                        <path d="M18,70 L30,30 L42,70 L54,30 L54,70 L66,30 L78,70" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="miter" />
                       )}
                       {brand.name === 'Honda' && (
                         <>
-                          <rect x="15" y="15" width="70" height="70" rx="14" fill="none" stroke="#334155" strokeWidth="5" />
-                          <path d="M32 25 L32 75 M68 25 L68 75 M32 50 L68 50" stroke="#334155" strokeWidth="6" strokeLinecap="round" />
+                          <rect x="12" y="12" width="76" height="76" rx="18" fill="none" stroke="currentColor" strokeWidth="5" />
+                          <path d="M28,24 L34,76 M72,24 L66,76 M31,50 L69,50" stroke="currentColor" strokeWidth="7" strokeLinecap="round" />
                         </>
                       )}
                       {brand.name === 'Mazda' && (
                         <>
-                          <circle cx="50" cy="50" r="38" fill="none" stroke="#334155" strokeWidth="5" />
-                          <path d="M22 42 C35 62, 65 62, 78 42 C65 48, 35 48, 22 42 Z" fill="#334155" />
-                          <path d="M50 24 L50 52" stroke="#334155" strokeWidth="5" />
+                          <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="5" />
+                          <path d="M18,44 C32,64 68,64 82,44 C65,50 50,30 50,30 C50,30 35,50 18,44 Z" fill="currentColor" />
                         </>
                       )}
                       {brand.name === 'MG' && (
                         <>
-                          <polygon points="50,15 80,32 80,68 50,85 20,68 20,32" fill="none" stroke="#334155" strokeWidth="5" />
-                          <text x="50" y="58" textAnchor="middle" fill="#334155" fontSize="24" fontWeight="800" fontFamily="sans-serif">MG</text>
+                          <polygon points="50,12 77,23 88,50 77,77 50,88 23,77 12,50 23,23" fill="none" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
+                          <text x="50" y="59" textAnchor="middle" fill="currentColor" fontFamily="'Outfit', sans-serif" fontWeight="900" fontSize="28" letterSpacing="-1">MG</text>
                         </>
                       )}
                       {brand.name === 'Suzuki' && (
-                        <path d="M25 15 L75 15 L35 52 L75 85 L25 85" fill="none" stroke="#ef4444" strokeWidth="10" strokeLinecap="square" strokeLinejoin="miter" />
+                        <path d="M28,15 H72 L42,48 L72,81 H28 L58,48 Z" fill="#e60012" />
                       )}
                     </svg>
                   </div>
@@ -1729,12 +1734,12 @@ const injectRentCarStyles = () => {
     /* Brand Selector Row */
     .brand-logo-scroll-row {
       display: flex;
-      gap: 16px;
+      gap: 18px;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
       scrollbar-width: none; /* Firefox */
       -ms-overflow-style: none;  /* IE and Edge */
-      padding: 10px 4px;
+      padding: 15px 6px;
       width: 100%;
     }
 
@@ -1746,22 +1751,33 @@ const injectRentCarStyles = () => {
       flex: 0 0 120px;
       scroll-snap-align: start;
       background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 16px;
-      padding: 16px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 20px 16px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.01);
-      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #475569;
+      box-sizing: border-box;
     }
 
     .brand-logo-card:hover {
       transform: translateY(-4px);
       border-color: #009698;
-      box-shadow: 0 8px 20px rgba(0, 150, 152, 0.08);
+      box-shadow: 0 10px 22px rgba(0, 150, 152, 0.1);
+      color: #009698;
+    }
+
+    .brand-logo-card.active {
+      background: rgba(0, 150, 152, 0.05);
+      border-color: #009698;
+      color: #009698;
+      box-shadow: 0 8px 20px rgba(0, 150, 152, 0.12);
+      transform: translateY(-2px);
     }
 
     .brand-logo-svg-wrapper {
@@ -1773,17 +1789,31 @@ const injectRentCarStyles = () => {
     }
 
     .brand-inline-svg {
-      transition: transform 0.3s;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .brand-logo-card:hover .brand-inline-svg {
-      transform: scale(1.05);
+      transform: scale(1.08);
+    }
+
+    .brand-logo-card.active .brand-inline-svg {
+      transform: scale(1.04);
     }
 
     .brand-name-lbl {
       font-size: 13.5px;
       font-weight: 700;
-      color: #334155;
+      color: inherit;
+      transition: color 0.2s ease;
+    }
+
+    @media (min-width: 1250px) {
+      .brand-logo-scroll-row {
+        justify-content: center;
+      }
+      .rich-section-brand-selector .carousel-nav-arrow {
+        display: none;
+      }
     }
 
     /* Popular & Luxury Car Carousel Row */

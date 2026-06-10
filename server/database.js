@@ -6,7 +6,7 @@ dotenv.config();
 
 const config = {
   user: process.env.DB_USER || 'sa',
-  password: process.env.DB_PASSWORD || '123',
+  password: process.env.DB_PASSWORD || 'sa',
   server: process.env.DB_SERVER || 'GHUY-LAP',
   database: process.env.DB_DATABASE || 'CarRentalPlatform',
   options: {

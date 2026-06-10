@@ -28,8 +28,13 @@ function App() {
   const [resetToken, setResetToken] = useState(null);
   const [loading, setLoading] = useState(true);
   
-  // Car Rental state
   const [activeBooking, setActiveBooking] = useState(null);
+  const [searchParams, setSearchParams] = useState(null);
+
+  const handleSearch = (params) => {
+    setSearchParams(params);
+    setCurrentTab('find-car');
+  };
 
   const { showToast } = useToast();
 
@@ -168,6 +173,7 @@ function App() {
                 user={user} 
                 onRentCarClick={setActiveBooking} 
                 setCurrentTab={setCurrentTab} 
+                onSearch={handleSearch}
               />
             )}
 
@@ -176,6 +182,8 @@ function App() {
               <FindCar 
                 user={user} 
                 setCurrentTab={setCurrentTab} 
+                onRentCarClick={setActiveBooking}
+                initialSearchParams={searchParams}
               />
             )}
 
