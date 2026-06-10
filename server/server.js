@@ -38,6 +38,7 @@ app.use(express.json({ limit: '10mb' })); // Support base64 image uploads up to 
 // Helper to sanitize user object
 const sanitizeUser = (user) => {
   const { password, emailVerificationToken, resetPasswordToken, resetPasswordExpires, ...safe } = user;
+  safe.hasPassword = !!password;
   return safe;
 };
 
@@ -126,7 +127,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     //Mã hóa password
     const hashedPassword = await bcrypt.hash(password, 10);
-    const emailVerificationToken = crypto.randomUUID();
+    const emailVerificationToken = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP code
 
     const newUser = await db.users.create({
       email,
@@ -138,26 +139,23 @@ app.post('/api/auth/register', async (req, res) => {
     });
 
     // Create simulated email and send real Gmail if configured
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-    const verificationLink = `${clientUrl}/verify-email?token=${emailVerificationToken}`;
     await sendEmailWithRealFallback({
       to: email,
-      subject: 'Xác thực tài khoản ViVuCar ✔️',
+      subject: 'Mã OTP xác thực tài khoản ViVuCar 🔑',
       body: `
         <h3>Chào mừng ${name} đến với ViVuCar!</h3>
-        <p>Cảm ơn bạn đã đăng ký tài khoản. Vui lòng nhấn vào nút bên dưới để xác thực địa chỉ email của bạn:</p>
-        <div style="margin: 20px 0;">
-          <a href="${verificationLink}" style="background-color: #6366f1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Xác Thực Tài Khoản</a>
+        <p>Cảm ơn bạn đã đăng ký tài khoản. Dưới đây là mã xác thực OTP gồm 6 chữ số của bạn (Có hiệu lực trong vòng 10 phút):</p>
+        <div style="font-size: 24px; font-weight: bold; color: #6366f1; background-color: #f3f4f6; border: 1px solid #e5e7eb; padding: 12px; border-radius: 8px; text-align: center; letter-spacing: 6px; margin: 20px 0; max-width: 200px; margin-left: auto; margin-right: auto;">
+          ${emailVerificationToken}
         </div>
-        <p>Nếu nút trên không hoạt động, vui lòng sao chép link sau dán vào trình duyệt:</p>
-        <a href="${verificationLink}">${verificationLink}</a>
+        <p>Vui lòng nhập mã này vào ô xác thực trên ứng dụng để kích hoạt tài khoản của bạn.</p>
         <br><br>
         <p>Trân trọng,<br>Ban Quản Trị ViVuCar</p>
       `
     });
 
     res.status(201).json({
-      message: 'Đăng ký tài khoản thành công! Vui lòng kiểm tra "Hộp thư mô phỏng" bên phải để xác thực địa chỉ email.'
+      message: 'Đăng ký tài khoản thành công! Mã xác thực OTP đã được gửi vào email của bạn.'
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -191,6 +189,52 @@ app.get('/api/auth/verify-email', async (req, res) => {
   }
 });
 
+// Quick Dev Bypass to verify email directly by email address
+app.post('/api/auth/verify-email-direct', (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Thiếu email.' });
+
+    const user = db.users.findOne({ email: email.toLowerCase().trim() });
+    if (!user) return res.status(404).json({ message: 'Tài khoản không tồn tại.' });
+
+    db.users.update(user.id, { isEmailVerified: true, emailVerificationToken: null });
+    res.json({ message: 'Kích hoạt tài khoản thành công! Bây giờ bạn đã có thể đăng nhập.' });
+  } catch (error) {
+    console.error('Verify email direct error:', error);
+    res.status(500).json({ message: 'Có lỗi xảy ra trong quá trình kích hoạt nhanh.' });
+  }
+});
+
+// 2.5 Verify Email via 6-digit OTP code
+app.post('/api/auth/verify-email-otp', (req, res) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ email và mã xác thực OTP.' });
+    }
+
+    const user = db.users.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(404).json({ message: 'Tài khoản không tồn tại.' });
+    }
+
+    if (user.emailVerificationToken !== code) {
+      return res.status(400).json({ message: 'Mã xác thực OTP không chính xác.' });
+    }
+
+    db.users.update(user.id, {
+      isEmailVerified: true,
+      emailVerificationToken: null
+    });
+
+    res.json({ message: 'Kích hoạt tài khoản thành công! Bây giờ bạn đã có thể đăng nhập.' });
+  } catch (error) {
+    console.error('Verify email OTP error:', error);
+    res.status(500).json({ message: 'Có lỗi xảy ra trong quá trình kích hoạt bằng OTP.' });
+  }
+});
+
 // 3. Login (Đăng nhập - UC02)
 app.post('/api/auth/login', authLimiter, async (req, res) => {
   try {
@@ -216,30 +260,30 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
     }
 
     if (!user.isEmailVerified) {
-      let token = user.emailVerificationToken;
-      if (!token) {
-        token = crypto.randomUUID();
-        await db.users.update(user.id, { emailVerificationToken: token });
+      let otp = user.emailVerificationToken;
+      // If token is missing or not a 6-digit number, regenerate it
+      if (!otp || !/^\d{6}$/.test(otp)) {
+        otp = Math.floor(100000 + Math.random() * 900000).toString();
+        db.users.update(user.id, { emailVerificationToken: otp });
       }
-
-      const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-      const verificationLink = `${clientUrl}/verify-email?token=${token}`;
-
-      await db.emails.create({
+      
+      await sendEmailWithRealFallback({
         to: user.email,
-        subject: 'Gửi lại: Xác thực tài khoản ViVuCar 🔄',
+        subject: 'Gửi lại: Mã OTP xác thực tài khoản ViVuCar 🔄',
         body: `
-          <h3>Xác thực lại địa chỉ email của bạn</h3>
-          <p>Tài khoản của bạn chưa được xác thực. Vui lòng bấm vào đường link bên dưới để kích hoạt tài khoản:</p>
-          <div style="margin: 20px 0;">
-            <a href="${verificationLink}" style="background-color: #6366f1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Kích Hoạt Tài Khoản</a>
+          <h3>Xác thực tài khoản của bạn</h3>
+          <p>Tài khoản của bạn chưa được xác thực. Dưới đây là mã xác thực OTP gồm 6 chữ số của bạn (Có hiệu lực trong vòng 10 phút):</p>
+          <div style="font-size: 24px; font-weight: bold; color: #6366f1; background-color: #f3f4f6; border: 1px solid #e5e7eb; padding: 12px; border-radius: 8px; text-align: center; letter-spacing: 6px; margin: 20px 0; max-width: 200px; margin-left: auto; margin-right: auto;">
+            ${otp}
           </div>
-          <a href="${verificationLink}">${verificationLink}</a>
+          <p>Vui lòng nhập mã này vào ô xác thực trên ứng dụng để kích hoạt tài khoản của bạn.</p>
+          <br><br>
+          <p>Trân trọng,<br>Ban Quản Trị ViVuCar</p>
         `
       });
 
       return res.status(403).json({
-        message: 'Tài khoản của bạn chưa được xác thực email. Một link xác thực mới đã được gửi vào "Hộp thư mô phỏng", vui lòng kiểm tra.',
+        message: 'Tài khoản của bạn chưa được xác thực email. Mã xác thực OTP mới đã được gửi vào email của bạn.',
         unverified: true
       });
     }

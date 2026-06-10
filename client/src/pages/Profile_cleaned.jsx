@@ -374,12 +374,7 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
             <div className="info-row">
               <Calendar size={18} className="info-icon text-muted" />
               <div className="info-data">
-                <span className="info-label">Thành viên từ</span>
-                <span className="info-value">{new Date(user.createdAt).toLocaleDateString('vi-VN')}</span>
-              </div>
-            </div>
-
-            {/* 🛡️ KYC CCCD & BẰNG LÁI CARD (UC04) */}
+                <span className="info-label">Thành viên từ ng�            {/* 🛡️ KYC CCCD & BẰNG LÁI CARD (UC04) */}
             <div className="kyc-verifications-card-box mt-4">
               <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <ShieldCheck size={16} />
@@ -562,6 +557,10 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
               <button className="btn btn-secondary mt-4" style={{ width: 'auto', padding: '10px 24px', borderColor: 'var(--accent-primary)', color: 'var(--accent-primary)', background: 'transparent' }} onClick={() => setShowBankForm(true)}>
                 <Link size={14} /> Liên kết ngay
               </button>
+            </div>
+          )} 0' }}>
+              <p style={{ fontSize: '13px', color: '#64748b' }}>Liên kết tài khoản ngân hàng để thực hiện rút tiền cọc và tiền doanh thu thuê xe.</p>
+              <button className="btn btn-secondary mt-4" onClick={() => setShowBankForm(true)}>Liên kết ngay</button>
             </div>
           )}
 
