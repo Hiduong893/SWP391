@@ -186,13 +186,91 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
       </div>
 
       {unverifiedEmail && (
-        <div className="alert alert-error">
-          <AlertTriangle size={18} className="flex-shrink-0" />
-          <div>
-            <strong>Tài khoản chưa xác thực!</strong>
-            <p style={{ fontSize: '12px', marginTop: 4 }}>
-              Email xác thực mới đã được gửi tự động tới <strong>Hộp thư mô phỏng</strong>. Vui lòng kiểm tra và nhấp xác thực.
-            </p>
+        <div className="alert alert-error" style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'stretch', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '16px', borderRadius: '16px' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+            <AlertTriangle size={18} className="flex-shrink-0" style={{ marginTop: '2px', color: '#f43f5e' }} />
+            <div>
+              <strong style={{ fontSize: '14.5px', color: '#f43f5e' }}>Tài khoản chưa xác thực email!</strong>
+              <p style={{ fontSize: '12.5px', marginTop: 4, lineHeight: '1.4', color: '#94a3b8' }}>
+                Mã xác thực OTP gồm 6 số đã được gửi tới email của bạn. Vui lòng nhập mã để kích hoạt:
+              </p>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+            <input 
+              type="text" 
+              placeholder="Nhập mã OTP 6 số" 
+              maxLength="6"
+              id="otp-input-code"
+              style={{ 
+                flex: 1, 
+                padding: '10px 14px', 
+                fontSize: '14px', 
+                background: '#f8fafc', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '10px', 
+                color: 'var(--text-primary)',
+                outline: 'none',
+                textAlign: 'center',
+                letterSpacing: '4px',
+                fontWeight: '700'
+              }}
+            />
+            <button 
+              type="button" 
+              className="btn btn-primary" 
+              style={{ 
+                width: 'auto', 
+                padding: '10px 20px', 
+                fontSize: '13px', 
+                background: 'var(--accent-gradient)',
+                borderRadius: '10px',
+                fontWeight: '700',
+                boxShadow: 'none'
+              }}
+              onClick={async () => {
+                const code = document.getElementById('otp-input-code')?.value;
+                if (!code || code.length !== 6) {
+                  showToast('Vui lòng nhập đúng mã OTP 6 số.', 'warning');
+                  return;
+                }
+                try {
+                  const data = await api.auth.verifyEmailOtp(unverifiedEmail, code);
+                  showToast(data.message, 'success');
+                  setUnverifiedEmail(null);
+                } catch (err) {
+                  showToast(err.message || 'Mã OTP không chính xác.', 'error');
+                }
+              }}
+            >
+              Xác Nhận
+            </button>
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '8px', marginTop: '4px' }}>
+            <button 
+              type="button" 
+              style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline' }}
+              onClick={() => setUnverifiedEmail(null)}
+            >
+              Hủy bỏ
+            </button>
+            <button 
+              type="button" 
+              style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '11.5px', cursor: 'pointer', fontWeight: '700' }}
+              onClick={async () => {
+                try {
+                  const data = await api.auth.verifyEmailDirect(unverifiedEmail);
+                  showToast(data.message, 'success');
+                  setUnverifiedEmail(null);
+                } catch (err) {
+                  showToast(err.message || 'Lỗi kích hoạt nhanh.', 'error');
+                }
+              }}
+            >
+              ⚡ Kích hoạt nhanh (Dev Bypass)
+            </button>
           </div>
         </div>
       )}

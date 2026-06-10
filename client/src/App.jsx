@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
-import { VerifyEmail } from './pages/VerifyEmail';
-import { ForgotPassword } from './pages/ForgotPassword';
-import { ResetPassword } from './pages/ResetPassword';
-import { Profile } from './pages/Profile';
-import { ChangePassword } from './pages/ChangePassword';
+import { Login } from './pages/Authentication/Login';
+import { Register } from './pages/Authentication/Register';
+import { VerifyEmail } from './pages/Authentication/VerifyEmail';
+import { ForgotPassword } from './pages/Authentication/ForgotPassword';
+import { ResetPassword } from './pages/Authentication/ResetPassword';
+import { Profile } from './pages/Authentication/Profile';
+import { ChangePassword } from './pages/Authentication/ChangePassword';
 
 // Car Rental Pages & Components
-import { RentCar } from './pages/RentCar';
-import { FindCar } from './pages/FindCar';
-import { ListCar } from './pages/ListCar';
-import { MyTrips } from './pages/MyTrips';
-import { AdminDashboard } from './pages/AdminDashboard';
+import { RentCar } from './pages/RentCar/RentCar';
+import { FindCar } from './pages/FindCar/FindCar';
+import { ListCar } from './pages/ListCar/ListCar';
+import { MyTrips } from './pages/MyTrips/MyTrips';
+import { AdminDashboard } from './pages/AdminDashboard/AdminDashboard';
 import { BookingModal } from './components/BookingModal';
 import { SimulatedInbox } from './components/SimulatedInbox';
 
