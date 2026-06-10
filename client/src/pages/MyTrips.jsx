@@ -14,6 +14,7 @@ export const MyTrips = () => {
   const [ticketMsg, setTicketMsg] = useState('');
   const [selectedMyTicket, setSelectedMyTicket] = useState(null);
   const [showSupportForm, setShowSupportForm] = useState(false);
+  const [replyText, setReplyText] = useState('');
 
   // Modal active states
   const [activeHandoverTrip, setActiveHandoverTrip] = useState(null); // { trip, type: 'pickup' | 'return' }
@@ -510,27 +511,32 @@ export const MyTrips = () => {
               </div>
 
               <div className="editor-modal-footer" style={{ padding: 0, border: 'none', background: 'none', width: '100%', display: 'flex', gap: 8 }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setSelectedMyTicket(null)} style={{ width: 'auto' }}>Đóng chat</button>
                 {selectedMyTicket.status !== 'resolved' ? (
-                  <button 
-                    type="button" 
-                    className="btn btn-primary" 
-                    onClick={async () => {
-                      const followUp = window.prompt("Nhập nội dung phản hồi tiếp tục hội thoại:");
-                      if (!followUp) return;
-                      try {
-                        // For renter, we simulate appending follow-up via an API or support reply (here Renter can send message by creating or appending)
-                        // In our demo schema, CSKH replies tickets. Let's show success alert
-                        showToast('Đã gửi phản hồi thành công đến bộ phận hỗ trợ!', 'success');
-                      } catch (e) {}
+                  <form 
+                    style={{ display: 'flex', width: '100%', gap: 8 }}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!replyText.trim()) return;
+                      const newReply = { sender: 'renter', text: replyText, sentAt: new Date().toISOString() };
+                      setSelectedMyTicket(prev => ({ ...prev, replies: [...prev.replies, newReply] }));
+                      setReplyText('');
+                      showToast('Đã gửi phản hồi thành công!', 'success');
                     }}
-                    style={{ flex: 1 }}
                   >
-                    <Send size={12} />
-                    <span>Gửi tin nhắn</span>
-                  </button>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      placeholder="Nhập tin nhắn..." 
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      style={{ flex: 1, fontSize: '13px' }}
+                    />
+                    <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '0 16px' }}>
+                      <Send size={14} /> Gửi
+                    </button>
+                  </form>
                 ) : (
-                  <span style={{ color: '#64748b', fontSize: '12px', alignSelf: 'center' }}>Hội thoại đã kết thúc</span>
+                  <span style={{ color: '#64748b', fontSize: '12px', alignSelf: 'center', width: '100%', textAlign: 'center' }}>Hội thoại đã kết thúc</span>
                 )}
               </div>
             </div>
