@@ -1,0 +1,13 @@
+Testing Hash 1 (admin@bonboncar.vn):
+  - "admin": MATCH
+  - "admin2": NO MATCH
+  - "123456": NO MATCH
+  - "Admin@123": NO MATCH
+  - "admin123": NO MATCH
+
+Testing Hash 2 (admin2@bonboncar.vn):
+  - "admin": MATCH
+  - "admin2": NO MATCH
+  - "123456": NO MATCH
+  - "Admin@123": NO MATCH
+  - "admin123": NO MATCH
