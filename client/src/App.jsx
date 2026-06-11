@@ -15,6 +15,7 @@ import { ListCar } from './pages/ListCar/ListCar';
 import { MyTrips } from './pages/MyTrips/MyTrips';
 import { AdminDashboard } from './pages/AdminDashboard/AdminDashboard';
 import { BookingModal } from './components/BookingModal';
+import { BookingPage } from './pages/Booking/BookingPage';
 import { SimulatedInbox } from './components/SimulatedInbox';
 
 import { api } from './utils/api';
@@ -246,9 +247,9 @@ function App() {
         </div>
       )}
 
-      {/* --- PRE-COMPUTED VietQR BOOKING CHECKOUT MODAL --- */}
+      {/* --- ĐẶT XE & ĐẶT CỌC VIETQR (BookingPage - 4 bước, tác giả: VietVR) --- */}
       {activeBooking && user && (
-        <BookingModal
+        <BookingPage
           bookingDetails={activeBooking}
           user={user}
           onUpdateUser={setUser}

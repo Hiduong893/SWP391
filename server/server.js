@@ -926,9 +926,9 @@ app.put('/api/bookings/:id/cancel', auth, async (req, res) => {
 
     // Refund cọc to wallet
     const user = await db.users.findOne({ id: req.user.id });
-    await db.users.update(user.id, { walletBalance: (user.walletBalance || 0) + 5000000 });
+    await db.users.update(user.id, { walletBalance: (user.walletBalance || 0) + 10000 });
 
-    res.json({ message: 'Hủy đơn đặt xe thành công! Tiền cọc 5.000.000 VND đã được hoàn trả lại vào Ví cá nhân của bạn.' });
+    res.json({ message: 'Hủy đơn đặt xe thành công! Tiền cọc 10.000 VND đã được hoàn trả lại vào Ví cá nhân của bạn.' });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi hủy đơn đặt xe.' });
   }
