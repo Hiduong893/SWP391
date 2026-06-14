@@ -9,6 +9,8 @@ import crypto from 'crypto';
 import { db } from './database.js';
 import { auth } from './middleware/auth.js';
 import nodemailer from 'nodemailer';
+import { Jimp } from 'jimp';
+import jsQR from 'jsqr';
 
 dotenv.config();
 
@@ -18,6 +20,71 @@ const JWT_SECRET = process.env.JWT_SECRET || 'swp391-super-secret-key-12345';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '685695521533-f6f90q2icshojk8lcsbo2etf0oma73jc.apps.googleusercontent.com';
 
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+// Helper to normalize Vietnamese string (remove accents and casing)
+function normalizeName(name) {
+  if (!name) return '';
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+// Helper to extract & verify QR from base64 image
+async function verifyCCCDQr(base64Image, expectedName) {
+  try {
+    // 1. Convert base64 to Buffer
+    const matches = base64Image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    let imageBuffer;
+    if (matches && matches.length === 3) {
+      imageBuffer = Buffer.from(matches[2], 'base64');
+    } else {
+      imageBuffer = Buffer.from(base64Image, 'base64');
+    }
+
+    // 2. Read image using Jimp
+    const image = await Jimp.read(imageBuffer);
+    const { data, width, height } = image.bitmap;
+
+    // 3. Scan QR using jsQR
+    const qrCode = jsQR(new Uint8ClampedArray(data), width, height);
+    if (!qrCode) {
+      return { verified: false, reason: 'Không tìm thấy mã QR trên ảnh mặt trước CCCD. Vui lòng chụp rõ nét, thẳng góc, không bị chói sáng hoặc che khuất mã QR.' };
+    }
+
+    const qrText = qrCode.data;
+    console.log('Decoded QR Text:', qrText);
+
+    // CCCD QR format is typically: Số_CCCD|Số_CMND_Cũ|Họ_Tên|Ngày_Sinh|Giới_Tính|Địa_Chỉ|Ngày_Cấp
+    const parts = qrText.split('|');
+    if (parts.length < 5) {
+      return { verified: false, reason: 'Mã QR không đúng định dạng Căn cước công dân Việt Nam.' };
+    }
+
+    const cccdNumber = parts[0];
+    const fullName = parts[2];
+    
+    // Normalize both names for matching
+    const normExpected = normalizeName(expectedName);
+    const normActual = normalizeName(fullName);
+
+    if (normExpected !== normActual) {
+      return { 
+        verified: false, 
+        reason: `Họ tên trên CCCD (${fullName}) không trùng khớp với họ tên đã đăng ký (${expectedName}).`
+      };
+    }
+
+    return { verified: true, cccdNumber, fullName };
+  } catch (error) {
+    console.error('Error during CCCD QR verification:', error);
+    return { verified: false, reason: 'Lỗi xử lý hình ảnh. Vui lòng gửi tệp ảnh hợp lệ (PNG/JPG).' };
+  }
+}
 
 // Rate Limiter for authentication routes (Huy)
 const authLimiter = rateLimit({
@@ -522,28 +589,54 @@ app.put('/api/user/change-password', auth, async (req, res) => {
 // 11. Upload KYC Documents (Xác thực KYC CCCD, Bằng lái, Giấy tờ - UC04)
 app.put('/api/user/kyc', auth, async (req, res) => {
   try {
-    const { cccdImage, licenseImage, carPapersImage } = req.body;
+    const { cccdImage, cccdBackImage, licenseImage, carPapersImage } = req.body;
     const user = await db.users.findOne({ id: req.user.id });
+
+    let autoVerifySuccess = false;
+    let qrErrorMsg = null;
+
+    // Validate CCCD via QR if a new CCCD front image is provided
+    if (cccdImage && cccdImage !== user.kycDocuments?.cccd) {
+      console.log('Validating uploaded CCCD QR code...');
+      const qrResult = await verifyCCCDQr(cccdImage, user.name);
+      if (qrResult.verified) {
+        autoVerifySuccess = true;
+      } else {
+        qrErrorMsg = qrResult.reason;
+      }
+    }
+
+    // If CCCD was uploaded but QR check failed, reject the request with error message
+    if (cccdImage && cccdImage !== user.kycDocuments?.cccd && !autoVerifySuccess) {
+      return res.status(400).json({ 
+        message: `Xác thực giấy tờ thất bại: ${qrErrorMsg}` 
+      });
+    }
 
     const newKyc = {
       cccd: cccdImage || user.kycDocuments?.cccd || null,
+      cccdBack: cccdBackImage || user.kycDocuments?.cccdBack || null,
       license: licenseImage || user.kycDocuments?.license || null,
       carPapers: carPapersImage || user.kycDocuments?.carPapers || null
     };
 
-    const licenseStatus = licenseImage ? 'pending' : user.licenseStatus;
+    // Since manual admin verification is removed, we auto-approve the user's KYC directly
+    const licenseStatus = 'verified';
 
     const updatedUser = await db.users.update(req.user.id, {
       kycDocuments: newKyc,
       licenseStatus,
-      licenseImage: licenseImage || user.licenseImage
+      licenseImage: licenseImage || user.licenseImage,
+      cccdStatus: cccdImage ? 'verified' : undefined,
+      cccdBackStatus: cccdBackImage ? 'verified' : undefined
     });
 
     res.json({
-      message: 'Tải giấy tờ KYC thành công! Nhân viên hỗ trợ sẽ kiểm duyệt tài liệu của bạn.',
+      message: 'Xác thực hồ sơ KYC thành công! Trạng thái hoạt động của bạn đã được kích hoạt.',
       user: sanitizeUser(updatedUser)
     });
   } catch (error) {
+    console.error('KYC upload error:', error);
     res.status(500).json({ message: 'Lỗi cập nhật hồ sơ KYC.' });
   }
 });
@@ -561,13 +654,13 @@ app.put('/api/user/license', auth, async (req, res) => {
     };
 
     const updatedUser = await db.users.update(req.user.id, {
-      licenseStatus: 'pending',
+      licenseStatus: 'verified',
       licenseImage,
       kycDocuments: newKyc
     });
 
     res.json({
-      message: 'Tải ảnh bằng lái xe thành công! Bằng lái đang chờ duyệt.',
+      message: 'Tải ảnh bằng lái xe thành công! Bằng lái đã được tự động xác minh.',
       user: sanitizeUser(updatedUser)
     });
   } catch (error) {

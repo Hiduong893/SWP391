@@ -4,8 +4,8 @@ import { api } from '../utils/api';
 import { useToast } from '../components/Toast';
 
 export const AdminDashboard = () => {
-  // Tabs: kyc, cars_moderation, support, reviews, incidents, disputes, bookings, config, roles
-  const [activeSubTab, setActiveSubTab] = useState('kyc');
+  // Tabs: cars_moderation, support, reviews, incidents, disputes, bookings, config, roles
+  const [activeSubTab, setActiveSubTab] = useState('cars_moderation');
   const [stats, setStats] = useState({ totalUsers: 0, totalCars: 0, totalBookings: 0, totalRevenue: 0 });
   const [currentUserRole, setCurrentUserRole] = useState('cskh'); // Detected from profile
   
@@ -104,20 +104,6 @@ export const AdminDashboard = () => {
     fetchDashboardData();
   }, []);
 
-  // 1. Duyệt KYC (UC31)
-  const handleApproveKyc = async (userId, approve) => {
-    setActionLoading(true);
-    try {
-      const status = approve ? 'verified' : 'rejected';
-      const data = await api.admin.approveKyc(userId, status);
-      showToast(data.message, 'success');
-      fetchDashboardData(true);
-    } catch (error) {
-      showToast(error.message || 'Lỗi duyệt KYC.', 'error');
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   // 2. Kiểm duyệt xe mới (UC27)
   const handleModerateCar = async (carId, approve, reason = '') => {
@@ -303,9 +289,7 @@ export const AdminDashboard = () => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
-  // Filter pending lists
-  const pendingKycUsers = usersList.filter(u => u.licenseStatus === 'pending');
-  const verifiedKycUsers = usersList.filter(u => u.licenseStatus === 'verified');
+
 
   const isAdmin = currentUserRole === 'admin';
 
@@ -361,9 +345,6 @@ export const AdminDashboard = () => {
 
       {/* 🛠️ SUB-TABS NAVIGATION (UC27 - UC35) */}
       <div className="admin-tabs-nav mt-6" style={{ flexWrap: 'wrap', gap: 6 }}>
-        <button className={`admin-tab-btn ${activeSubTab === 'kyc' ? 'active' : ''}`} onClick={() => setActiveSubTab('kyc')}>
-          <ShieldAlert size={14} /> <span>Duyệt KYC ({pendingKycUsers.length})</span>
-        </button>
         <button className={`admin-tab-btn ${activeSubTab === 'cars_moderation' ? 'active' : ''}`} onClick={() => setActiveSubTab('cars_moderation')}>
           <Car size={14} /> <span>Duyệt Xe Mới ({pendingCars.length})</span>
         </button>
@@ -402,59 +383,7 @@ export const AdminDashboard = () => {
           <div className="admin-viewport-loading">Đang nạp kho dữ liệu...</div>
         ) : (
           <>
-            {/* 1. KYC APPROVALS (UC31) */}
-            {activeSubTab === 'kyc' && (
-              <div className="admin-table-container">
-                <h4 className="table-section-title">Hồ sơ người dùng tải CCCD &amp; Bằng lái xe chờ xác minh KYC</h4>
-                {pendingKycUsers.length === 0 ? (
-                  <div className="admin-empty-state">
-                    <CheckCircle2 className="text-success mb-2" size={32} style={{ display: 'inline', color: '#10b981' }} />
-                    <p>Không có hồ sơ thành viên nào chờ phê duyệt danh tính.</p>
-                  </div>
-                ) : (
-                  <table className="admin-data-table">
-                    <thead>
-                      <tr>
-                        <th>Thành Viên</th>
-                        <th>Email</th>
-                        <th>Ảnh CCCD</th>
-                        <th>Ảnh Bằng Lái</th>
-                        <th style={{ textAlign: 'center' }}>Hành Động KYC</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pendingKycUsers.map((u) => (
-                        <tr key={u.id}>
-                          <td>
-                            <div className="table-user-cell">
-                              <img src={u.avatar} alt={u.name} className="table-avatar" />
-                              <span>{u.name}</span>
-                            </div>
-                          </td>
-                          <td>{u.email}</td>
-                          <td>
-                            {u.kycDocuments?.cccd ? (
-                              <button className="btn-table-action text-info" onClick={() => setSelectedLicenseImage(u.kycDocuments.cccd)}><Eye size={12} /> Xem CCCD</button>
-                            ) : <span className="text-muted" style={{ fontSize: '11px' }}>Chưa tải</span>}
-                          </td>
-                          <td>
-                            {u.licenseImage ? (
-                              <button className="btn-table-action text-info" onClick={() => setSelectedLicenseImage(u.licenseImage)}><Eye size={12} /> Xem Bằng lái</button>
-                            ) : <span className="text-muted" style={{ fontSize: '11px' }}>Chưa tải</span>}
-                          </td>
-                          <td>
-                            <div className="table-actions-cell" style={{ justifyContent: 'center' }}>
-                              <button className="btn-approve btn-success" onClick={() => handleApproveKyc(u.id, true)} disabled={actionLoading}>✓ Duyệt KYC</button>
-                              <button className="btn-approve btn-danger" onClick={() => handleApproveKyc(u.id, false)} disabled={actionLoading}>✕ Từ chối</button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            )}
+
 
             {/* 2. CAR LISTING MODERATION (UC27) */}
             {activeSubTab === 'cars_moderation' && (

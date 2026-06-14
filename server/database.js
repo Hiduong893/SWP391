@@ -387,7 +387,7 @@ const mapUserRow = async (p, userRow) => {
     .query('SELECT * FROM KYC WHERE user_id = @userId');
   let licenseStatus = 'not_uploaded';
   let licenseImage = null;
-  let kycDocuments = { cccd: null, license: null, carPapers: null };
+  let kycDocuments = { cccd: null, cccdBack: null, license: null, carPapers: null };
 
   for (const doc of kycRes.recordset) {
     const statusMap = { 'Pending': 'pending', 'Approved': 'verified', 'Rejected': 'rejected' };
@@ -395,6 +395,8 @@ const mapUserRow = async (p, userRow) => {
 
     if (doc.document_type === 'NationalID') {
       kycDocuments.cccd = doc.front_image_url;
+    } else if (doc.document_type === 'NationalIDBack') {
+      kycDocuments.cccdBack = doc.front_image_url;
     } else if (doc.document_type === 'DriverLicense') {
       kycDocuments.license = doc.front_image_url;
       licenseImage = doc.front_image_url;
@@ -752,6 +754,7 @@ export const db = {
             `);
         };
         await upsertKyc('NationalID', docs.cccd);
+        await upsertKyc('NationalIDBack', docs.cccdBack);
         await upsertKyc('DriverLicense', docs.license);
         await upsertKyc('VehicleRegistration', docs.carPapers);
       }
@@ -766,6 +769,30 @@ export const db = {
           .query(`
             UPDATE KYC SET status = @status, reviewed_at = GETDATE()
             WHERE user_id = @userId AND document_type = 'DriverLicense'
+          `);
+      }
+
+      if (updateData.cccdStatus !== undefined) {
+        const dbStatusMap = { 'pending': 'Pending', 'verified': 'Approved', 'rejected': 'Rejected' };
+        const dbStatus = dbStatusMap[updateData.cccdStatus] || 'Pending';
+        await p.request()
+          .input('userId', sql.Int, userId)
+          .input('status', sql.NVarChar, dbStatus)
+          .query(`
+            UPDATE KYC SET status = @status, reviewed_at = GETDATE()
+            WHERE user_id = @userId AND document_type = 'NationalID'
+          `);
+      }
+
+      if (updateData.cccdBackStatus !== undefined) {
+        const dbStatusMap = { 'pending': 'Pending', 'verified': 'Approved', 'rejected': 'Rejected' };
+        const dbStatus = dbStatusMap[updateData.cccdBackStatus] || 'Pending';
+        await p.request()
+          .input('userId', sql.Int, userId)
+          .input('status', sql.NVarChar, dbStatus)
+          .query(`
+            UPDATE KYC SET status = @status, reviewed_at = GETDATE()
+            WHERE user_id = @userId AND document_type = 'NationalIDBack'
           `);
       }
 
