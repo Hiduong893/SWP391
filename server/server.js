@@ -654,6 +654,7 @@ app.post('/api/user/register-owner', auth, async (req, res) => {
 });
 
 // --- WALLET & TRANSACTIONS (UC19, UC28) ---
+
 app.get('/api/user/wallet', auth, async (req, res) => {
   try {
     const user = await db.users.findOne({ id: req.user.id });
@@ -662,33 +663,51 @@ app.get('/api/user/wallet', auth, async (req, res) => {
       bankAccount: user.bankAccount
     });
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi tải thông tin ví.' });
+    res.status(500).json({ message: 'Loi tai thong tin vi.' });
+  }
+});
+
+// Lay lich su giao dich vi cua nguoi dung hien tai (UC30)
+app.get('/api/user/wallet/transactions', auth, async (req, res) => {
+  try {
+    const myTxs = await db.walletTransactions.findMany({ userId: req.user.id });
+    res.json(myTxs);
+  } catch (error) {
+    res.status(500).json({ message: 'Loi tai lich su giao dich.' });
   }
 });
 
 app.post('/api/user/wallet/transaction', auth, async (req, res) => {
   try {
-    const { type, amount } = req.body; // type: 'deposit' (nap) | 'withdraw' (rut)
+    const { type, amount } = req.body;
     const user = await db.users.findOne({ id: req.user.id });
 
-    let currentBalance = user.walletBalance || 0;
+    const currentBalance = user.walletBalance || 0;
     const value = parseInt(amount);
 
     if (type === 'withdraw') {
-      if (currentBalance < value) return res.status(400).json({ message: 'Số dư ví không đủ để rút tiền.' });
-      if (!user.bankAccount) return res.status(400).json({ message: 'Vui lòng liên kết tài khoản ngân hàng trước khi rút tiền.' });
-      currentBalance -= value;
-    } else {
-      currentBalance += value;
+      if (currentBalance < value) return res.status(400).json({ message: 'So du vi khong du de rut tien.' });
+      if (!user.bankAccount) return res.status(400).json({ message: 'Vui long lien ket tai khoan ngan hang truoc khi rut tien.' });
     }
 
-    const updatedUser = await db.users.update(req.user.id, { walletBalance: currentBalance });
+    const bankName = user.bankAccount ? user.bankAccount.bankName : '';
+    const description = type === 'withdraw' ? `Rut tien ve ngan hang ${bankName}` : 'Nap tien vao vi dien tu';
+    const referenceCode = `TX${Date.now()}`;
+
+    const { balanceAfter } = await db.walletTransactions.create({
+      userId: req.user.id,
+      type,
+      amount: value,
+      description,
+      referenceCode
+    });
+
     res.json({
-      message: type === 'withdraw' ? 'Yêu cầu rút tiền về ngân hàng thành công!' : 'Nạp tiền vào ví điện tử thành công!',
-      walletBalance: updatedUser.walletBalance
+      message: type === 'withdraw' ? 'Yeu cau rut tien ve ngan hang thanh cong!' : 'Nap tien vao vi dien tu thanh cong!',
+      walletBalance: balanceAfter
     });
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi thực hiện giao dịch ví.' });
+    res.status(500).json({ message: 'Loi thuc hien giao dich vi.' });
   }
 });
 
@@ -1335,9 +1354,15 @@ app.put('/api/admin/bookings/:id/refund-deposit', auth, cskhOrAdminAuth, async (
     await db.bookings.update(id, { depositStatus: status });
 
     if (status === 'refunded') {
-      // Refund the 5,000,000 VND cọc directly to user wallet balance!
-      const user = await db.users.findOne({ id: booking.userId });
-      await db.users.update(user.id, { walletBalance: (user.walletBalance || 0) + 5000000 });
+      // Refund the 5,000,000 VND cọc directly to user wallet balance and log the transaction!
+      await db.walletTransactions.create({
+        userId: booking.userId,
+        bookingId: id,
+        type: 'deposit',
+        amount: 5000000,
+        description: `Hoan tra tien coc dat xe - Don hang #${id}`,
+        referenceCode: `REF_${id}`
+      });
     }
 
     res.json({

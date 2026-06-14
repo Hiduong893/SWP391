@@ -64,6 +64,12 @@ const getPool = async () => {
             ALTER TABLE Booking ADD issue_report NVARCHAR(MAX) NULL;
         END
 
+        -- Add deposit_status if missing in Booking
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Booking') AND name = 'deposit_status')
+        BEGIN
+            ALTER TABLE Booking ADD deposit_status NVARCHAR(50) NULL;
+        END
+
         -- Create simulated Emails table if missing for the Inbox view
         IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Emails')
         BEGIN
@@ -466,8 +472,17 @@ const mapCarRow = (row) => {
 
 const mapBookingRow = async (p, row) => {
   const carRes = await p.request().input('vehicleId', sql.Int, row.vehicle_id)
-    .query('SELECT owner_id FROM Vehicle WHERE vehicle_id = @vehicleId');
-  const isOwnerCar = carRes.recordset.length > 0 && carRes.recordset[0].owner_id !== null;
+    .query(`
+      SELECT v.owner_id, v.model_name, b.brand_name,
+             (SELECT TOP 1 image_url FROM VehicleImage WHERE vehicle_id = v.vehicle_id AND is_primary = 1) as image_url
+      FROM Vehicle v
+      LEFT JOIN Brand b ON v.brand_id = b.brand_id
+      WHERE v.vehicle_id = @vehicleId
+    `);
+  const carInfo = carRes.recordset[0] || {};
+  const isOwnerCar = carInfo.owner_id !== undefined && carInfo.owner_id !== null;
+  const carName = carInfo.brand_name ? `${carInfo.brand_name} ${carInfo.model_name}` : 'Xe thuê';
+  const carImage = carInfo.image_url || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80';
 
   let mappedStatus = 'pending';
   if (row.status === 'Pending') {
@@ -488,12 +503,14 @@ const mapBookingRow = async (p, row) => {
     id: String(row.booking_id),
     userId: String(row.renter_id),
     carId: String(row.vehicle_id),
+    carName,
+    carImage,
     pickupDate: row.start_datetime ? new Date(row.start_datetime).toISOString() : '',
     returnDate: row.end_datetime ? new Date(row.end_datetime).toISOString() : '',
     pickupLocation: row.pickup_address,
     totalPrice: Number(row.rental_price),
     depositAmount: Number(row.deposit_amount),
-    depositStatus: 'paid', // Mark paid for QR checkout demo flow
+    depositStatus: row.deposit_status || 'paid',
     status: mappedStatus,
     paymentMethod: 'bank_transfer',
     handoverDocs: row.handover_docs ? JSON.parse(row.handover_docs) : { pickup: null, return: null },
@@ -1180,8 +1197,8 @@ export const db = {
         .input('status', sql.NVarChar, status);
 
       const insertBookingQuery = `
-        INSERT INTO Booking (renter_id, vehicle_id, start_datetime, end_datetime, pickup_address, return_address, rental_price, deposit_amount, platform_fee, total_amount, status, created_at, updated_at)
-        VALUES (@renterId, @vehicleId, CAST(@pickupDate AS DATETIME2), CAST(@returnDate AS DATETIME2), @pickupLocation, @pickupLocation, @price, @deposit, 0, @price + @deposit, @status, GETDATE(), GETDATE());
+        INSERT INTO Booking (renter_id, vehicle_id, start_datetime, end_datetime, pickup_address, return_address, rental_price, deposit_amount, platform_fee, total_amount, status, deposit_status, created_at, updated_at)
+        VALUES (@renterId, @vehicleId, CAST(@pickupDate AS DATETIME2), CAST(@returnDate AS DATETIME2), @pickupLocation, @pickupLocation, @price, @deposit, 0, @price + @deposit, @status, 'paid', GETDATE(), GETDATE());
         SELECT SCOPE_IDENTITY() as booking_id;
       `;
       const res = await request.query(insertBookingQuery);
@@ -1238,6 +1255,10 @@ export const db = {
       if (updateData.issueReport !== undefined) {
         updates.push('issue_report = @issueReport');
         request.input('issueReport', sql.NVarChar, JSON.stringify(updateData.issueReport));
+      }
+      if (updateData.depositStatus !== undefined) {
+        updates.push('deposit_status = @depositStatus');
+        request.input('depositStatus', sql.NVarChar, updateData.depositStatus);
       }
 
       if (updates.length > 0) {
@@ -1558,6 +1579,67 @@ export const db = {
         resolutionDetails: row.resolution ? { resolution: row.resolution, resolvedAt: row.resolved_at } : null,
         createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString()
       };
+    }
+  },
+
+  walletTransactions: {
+    findMany: async (filter = {}) => {
+      const p = await getPool();
+      const res = await p.request()
+        .input('userId', sql.Int, parseInt(filter.userId))
+        .query(`
+          SELECT wt.* FROM WalletTransaction wt
+          INNER JOIN Wallet w ON wt.wallet_id = w.wallet_id
+          WHERE w.user_id = @userId
+          ORDER BY wt.created_at DESC
+        `);
+      return res.recordset.map(row => ({
+        id: String(row.txn_id),
+        walletId: String(row.wallet_id),
+        bookingId: row.booking_id ? String(row.booking_id) : null,
+        amount: Number(row.amount),
+        type: row.txn_type.toLowerCase() === 'deposit' ? 'deposit' : 'withdraw',
+        balanceBefore: Number(row.balance_before),
+        balanceAfter: Number(row.balance_after),
+        description: row.description,
+        referenceCode: row.reference_code,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString()
+      }));
+    },
+    create: async (txData) => {
+      const p = await getPool();
+      const walletRes = await p.request()
+        .input('userId', sql.Int, parseInt(txData.userId))
+        .query('SELECT wallet_id, balance FROM Wallet WHERE user_id = @userId');
+      if (walletRes.recordset.length === 0) throw new Error('User wallet not found');
+      
+      const walletId = walletRes.recordset[0].wallet_id;
+      const balanceBefore = Number(walletRes.recordset[0].balance);
+      const amount = Number(txData.amount);
+      const balanceAfter = txData.type === 'withdraw' ? balanceBefore - amount : balanceBefore + amount;
+
+      const dbType = txData.type === 'withdraw' ? 'Withdrawal' : 'Deposit';
+
+      await p.request()
+        .input('walletId', sql.Int, walletId)
+        .input('bookingId', sql.Int, txData.bookingId ? parseInt(txData.bookingId) : null)
+        .input('amount', sql.Decimal(18, 2), amount)
+        .input('type', sql.NVarChar, dbType)
+        .input('balanceBefore', sql.Decimal(18, 2), balanceBefore)
+        .input('balanceAfter', sql.Decimal(18, 2), balanceAfter)
+        .input('description', sql.NVarChar, txData.description)
+        .input('refCode', sql.NVarChar, txData.referenceCode || '')
+        .query(`
+          INSERT INTO WalletTransaction (wallet_id, booking_id, amount, txn_type, balance_before, balance_after, description, reference_code, created_at)
+          VALUES (@walletId, @bookingId, @amount, @type, @balanceBefore, @balanceAfter, @description, @refCode, GETDATE())
+        `);
+      
+      await p.request()
+        .input('walletId', sql.Int, walletId)
+        .input('balance', sql.Decimal(18, 2), balanceAfter)
+        .query('UPDATE Wallet SET balance = @balance, updated_at = GETDATE() WHERE wallet_id = @walletId');
+
+      return { balanceAfter };
     }
   },
 

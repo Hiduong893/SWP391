@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, DollarSign, MapPin, PlusCircle, Sparkles, Check, Car, Compass, ShieldCheck, Eye, Trash2, X, RefreshCw, BarChart3, CreditCard } from 'lucide-react';
+import { Upload, DollarSign, MapPin, PlusCircle, Sparkles, Check, Car, Compass, ShieldCheck, Eye, Trash2, X, RefreshCw, BarChart3, CreditCard, TrendingUp, TrendingDown, Award } from 'lucide-react';
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
 
@@ -278,6 +278,14 @@ export const ListCar = ({ setCurrentTab }) => {
         >
           <PlusCircle size={15} />
           <span>Ký Gửi Xe Mới</span>
+        </button>
+
+        <button 
+          className={`owner-nav-btn ${activeSubTab === 'revenue' ? 'active' : ''}`}
+          onClick={() => setActiveSubTab('revenue')}
+        >
+          <TrendingUp size={15} />
+          <span>Thống Kê Doanh Thu</span>
         </button>
       </div>
 
@@ -695,6 +703,117 @@ export const ListCar = ({ setCurrentTab }) => {
             </div>
           </div>
         )}
+
+            {/* SUB-TAB 4: REVENUE STATISTICS (UC31) */}
+            {activeSubTab === 'revenue' && (() => {
+              // Tinh toan thong ke doanh thu
+              const completedBookings = ownerBookings.filter(b => b.status === 'completed');
+              const activeBookings = ownerBookings.filter(b => b.status === 'active');
+              const cancelledBookings = ownerBookings.filter(b => b.status === 'cancelled');
+              const completionRate = ownerBookings.length > 0 ? Math.round((completedBookings.length / ownerBookings.length) * 100) : 0;
+
+              // Doanh thu theo tung xe
+              const carRevenueMap = {};
+              ownerBookings.forEach(b => {
+                if (!carRevenueMap[b.carId]) carRevenueMap[b.carId] = { carName: b.carName, carImage: b.carImage, total: 0, trips: 0, completed: 0 };
+                carRevenueMap[b.carId].total += (b.status === 'completed') ? b.totalPrice : 0;
+                carRevenueMap[b.carId].trips++;
+                if (b.status === 'completed') carRevenueMap[b.carId].completed++;
+              });
+              const carRevenueSorted = Object.values(carRevenueMap).sort((a, b) => b.total - a.total);
+              const maxRevenue = carRevenueSorted[0]?.total || 1;
+
+              return (
+                <div className="owner-glass-table-container" style={{ background: 'rgba(17,19,28,0.5)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24 }}>
+                  <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 20, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <TrendingUp size={15} style={{ color: '#a855f7' }} />
+                    Thống Kê Doanh Thu Chi Tiết (UC31)
+                  </h4>
+
+                  {/* KPI SUMMARY CARDS */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
+                    <div style={{ background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.2)', borderRadius: 12, padding: '14px 16px' }}>
+                      <span style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Tổng Doanh Thu</span>
+                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#a855f7', marginTop: 4 }}>{formatCurrency(totalEarnings)}</div>
+                    </div>
+                    <div style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 12, padding: '14px 16px' }}>
+                      <span style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Chuyến Hoàn Thành</span>
+                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#34d399', marginTop: 4 }}>{completedBookings.length} chuyến</div>
+                    </div>
+                    <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 12, padding: '14px 16px' }}>
+                      <span style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Đang Cho Thuê</span>
+                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#818cf8', marginTop: 4 }}>{activeBookings.length} xe</div>
+                    </div>
+                    <div style={{ background: 'rgba(251,146,60,0.08)', border: '1px solid rgba(251,146,60,0.2)', borderRadius: 12, padding: '14px 16px' }}>
+                      <span style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Tỷ Lệ Hoàn Thành</span>
+                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#fb923c', marginTop: 4 }}>{completionRate}%</div>
+                    </div>
+                  </div>
+
+                  {/* DOANH THU THEO XE */}
+                  {carRevenueSorted.length === 0 ? (
+                    <div style={{ padding: 32, textAlign: 'center', color: '#64748b', border: '1px dashed rgba(255,255,255,0.05)', borderRadius: 12, fontSize: '13px' }}>
+                      Chưa có chuyến đi nào hoàn thành. Hãy phê duyệt các yêu cầu thuê xe để bắt đầu kiếm doanh thu!
+                    </div>
+                  ) : (
+                    <div>
+                      <h5 style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Award size={13} /> Xếp Hạng Doanh Thu Theo Xe
+                      </h5>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {carRevenueSorted.map((car, idx) => (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <span style={{ fontSize: '18px', fontWeight: 800, color: idx === 0 ? '#f59e0b' : idx === 1 ? '#94a3b8' : idx === 2 ? '#b45309' : '#475569', width: 24, flexShrink: 0, textAlign: 'center' }}>
+                              {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                            </span>
+                            {car.carImage && <img src={car.carImage} alt={car.carName} style={{ width: 54, height: 34, objectFit: 'cover', borderRadius: 6 }} />}
+                            <div style={{ flex: 1 }}>
+                              <strong style={{ fontSize: '13px', color: 'white', display: 'block' }}>{car.carName}</strong>
+                              <span style={{ fontSize: '11px', color: '#64748b' }}>{car.trips} chuyến · {car.completed} hoàn thành</span>
+                              {/* Revenue bar */}
+                              <div style={{ marginTop: 6, height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 99, overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${(car.total / maxRevenue) * 100}%`, background: idx === 0 ? 'linear-gradient(90deg, #a855f7, #6366f1)' : 'rgba(99,102,241,0.5)', borderRadius: 99, transition: 'width 0.6s ease' }} />
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <strong style={{ fontSize: '14px', color: '#a855f7', display: 'block' }}>{formatCurrency(car.total)}</strong>
+                              <span style={{ fontSize: '10.5px', color: '#64748b' }}>doanh thu</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* CHI TIET TUNG CHUYEN DI HOAN THANH */}
+                      {completedBookings.length > 0 && (
+                        <div style={{ marginTop: 20 }}>
+                          <h5 style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', marginBottom: 12 }}>Lịch Sử Chuyến Đã Hoàn Thành</h5>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12.5px' }}>
+                            <thead>
+                              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                                <th style={{ padding: '8px 10px', color: '#64748b', fontWeight: 600 }}>Khách hàng</th>
+                                <th style={{ padding: '8px 10px', color: '#64748b', fontWeight: 600 }}>Xe</th>
+                                <th style={{ padding: '8px 10px', color: '#64748b', fontWeight: 600 }}>Thời gian</th>
+                                <th style={{ padding: '8px 10px', color: '#a855f7', fontWeight: 700, textAlign: 'right' }}>Doanh thu</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {completedBookings.map(b => (
+                                <tr key={b.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                                  <td style={{ padding: '10px 10px', color: '#cbd5e1' }}><strong>{b.userName}</strong></td>
+                                  <td style={{ padding: '10px 10px', color: '#94a3b8' }}>{b.carName}</td>
+                                  <td style={{ padding: '10px 10px', color: '#64748b', fontSize: '11px' }}>{b.pickupDate} → {b.returnDate}</td>
+                                  <td style={{ padding: '10px 10px', color: '#a855f7', fontWeight: 700, textAlign: 'right' }}>{formatCurrency(b.totalPrice)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
       </div>
     </div>
   );

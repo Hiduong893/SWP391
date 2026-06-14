@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Mail, Calendar, FileText, Camera, Edit2, Check, X, Upload, Link, CheckCircle, ZoomIn, RotateCw, Move, ShieldCheck, CreditCard, DollarSign, ArrowDownLeft, ArrowUpRight, ShieldAlert, Key } from 'lucide-react';
+import { User, Mail, Calendar, FileText, Camera, Edit2, Check, X, Upload, Link, CheckCircle, ZoomIn, RotateCw, Move, ShieldCheck, CreditCard, DollarSign, ArrowDownLeft, ArrowUpRight, ShieldAlert, Key, History, TrendingUp, TrendingDown, Clock } from 'lucide-react';
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
 
@@ -11,12 +11,15 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
   const [licenseUploading, setLicenseUploading] = useState(false);
   const [cccdUploading, setCccdUploading] = useState(false);
   
-  // Wallet States (UC19)
+  // Wallet States (UC19, UC30)
   const [walletBalance, setWalletBalance] = useState(user.walletBalance || 0);
   const [bankAccount, setBankAccount] = useState(user.bankAccount || null);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [walletTxType, setWalletTxType] = useState('deposit'); // deposit | withdraw
   const [walletTxAmount, setWalletTxAmount] = useState('');
+  // Lich su giao dich vi (UC30)
+  const [walletTxHistory, setWalletTxHistory] = useState([]);
+  const [txLoading, setTxLoading] = useState(false);
   
   // Bank Account linking form states (UC24)
   const [showBankForm, setShowBankForm] = useState(false);
@@ -58,12 +61,26 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
       setWalletBalance(data.walletBalance);
       setBankAccount(data.bankAccount);
     } catch (e) {
-      console.warn("Lỗi tải ví tiền.");
+      console.warn('Loi tai vi tien.');
+    }
+  };
+
+  // Tai lich su giao dich vi (UC30)
+  const fetchWalletHistory = async () => {
+    setTxLoading(true);
+    try {
+      const txs = await api.user.getWalletTransactions();
+      setWalletTxHistory(txs || []);
+    } catch (e) {
+      setWalletTxHistory([]);
+    } finally {
+      setTxLoading(false);
     }
   };
 
   useEffect(() => {
     fetchWalletDetails();
+    fetchWalletHistory();
   }, [user]);
 
   // Draw image on canvas whenever editor states change
@@ -217,7 +234,7 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
     }
   };
 
-  // Wallet deposit/withdrawal (UC19)
+  // Wallet deposit/withdrawal (UC19, UC30)
   const handleWalletTxSubmit = async (e) => {
     e.preventDefault();
     if (!walletTxAmount || parseInt(walletTxAmount) <= 0) {
@@ -231,6 +248,8 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
       showToast(data.message, 'success');
       setShowWalletModal(false);
       setWalletTxAmount('');
+      // Cap nhat lich su giao dich (UC30)
+      fetchWalletHistory();
     } catch (error) {
       showToast(error.message || 'Lỗi giao dịch ví.', 'error');
     }
@@ -593,6 +612,67 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
                 <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '6px 16px', fontSize: '12px' }}>Xác Nhận</button>
               </div>
             </form>
+          )}
+        </div>
+      </div>
+
+      {/* LICH SU GIAO DICH VI (UC30) - Transaction History Card */}
+      <div style={{ gridColumn: '1 / -1', width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
+        <div className="glass-card" style={{ padding: '24px', width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <History size={16} style={{ color: 'var(--accent-primary)' }} />
+              <span>Lịch Sử Giao Dịch Ví (UC30)</span>
+            </h4>
+            <button
+              onClick={fetchWalletHistory}
+              style={{ fontSize: '11px', color: 'var(--accent-primary)', background: 'transparent', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+            >
+              <Clock size={11} /> Làm mới
+            </button>
+          </div>
+
+          {txLoading ? (
+            <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+              Đang tải lịch sử giao dịch...
+            </div>
+          ) : walletTxHistory.length === 0 ? (
+            <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: 10 }}>
+              <History size={28} style={{ opacity: 0.3, marginBottom: 8, display: 'block', margin: '0 auto 8px' }} />
+              Chưa có giao dịch nào. Hãy nạp tiền vào ví để bắt đầu!
+            </div>
+          ) : (
+            <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {walletTxHistory.map((tx) => (
+                <div key={tx.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    background: tx.type === 'deposit' ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)'
+                  }}>
+                    {tx.type === 'deposit'
+                      ? <TrendingUp size={16} style={{ color: '#34d399' }} />
+                      : <TrendingDown size={16} style={{ color: '#fb7185' }} />
+                    }
+                  </div>
+                  <div style={{ flex: 1, textAlign: 'left' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', display: 'block' }}>
+                      {tx.type === 'deposit' ? 'Nạp tiền vào ví' : 'Rút tiền về ngân hàng'}
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      {new Date(tx.createdAt).toLocaleString('vi-VN')}
+                    </span>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 800, color: tx.type === 'deposit' ? '#34d399' : '#fb7185' }}>
+                      {tx.type === 'deposit' ? '+' : '-'}{formatCurrency(tx.amount)}
+                    </span>
+                    <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'block' }}>
+                      Số dư: {formatCurrency(tx.balanceAfter)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>

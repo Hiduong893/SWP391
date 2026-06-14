@@ -130,6 +130,11 @@ export const api = {
         body: JSON.stringify({ type, amount })
       }),
 
+    getWalletTransactions: () =>
+      request('/user/wallet/transactions', {
+        method: 'GET'
+      }),
+
     linkBank: (bankName, accountNumber, accountHolder) =>
       request('/user/bank-account', {
         method: 'PUT',
