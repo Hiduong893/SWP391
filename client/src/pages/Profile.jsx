@@ -32,6 +32,7 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
   // Image Editor Modal States
   const [showEditor, setShowEditor] = useState(false);
   const [editorImageSrc, setEditorImageSrc] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [xOffset, setXOffset] = useState(0);
@@ -175,18 +176,18 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
       return;
     }
 
-    if (type === 'cccd') setCccdUploading(true);
+    if (type === 'cccdFront' || type === 'cccdBack') setCccdUploading(true);
     else setLicenseUploading(true);
 
     const reader = new FileReader();
     reader.onloadend = async () => {
       try {
         const base64Data = reader.result;
-        let payload = {};
-        if (type === 'cccd') payload.cccdImage = base64Data;
-        else payload.licenseImage = base64Data;
+        let cccdFront = type === 'cccdFront' ? base64Data : null;
+        let cccdBack = type === 'cccdBack' ? base64Data : null;
+        let license = type === 'license' ? base64Data : null;
 
-        const data = await api.user.uploadKyc(payload.cccdImage, payload.licenseImage, null);
+        const data = await api.user.uploadKyc(cccdFront, license, null, cccdBack);
         onUpdateUser(data.user);
         showToast(data.message, 'success');
       } catch (error) {
@@ -379,57 +380,90 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
               </div>
             </div>
 
-            {/* 🛡️ KYC CCCD & BẰNG LÁI CARD (UC04) */}
-            <div className="kyc-verifications-card-box mt-4" style={{ background: 'rgba(255,255,255,0.01)', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: 12, padding: 16 }}>
-              <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <ShieldCheck size={16} className="text-primary" />
-                <span>Hồ Sơ Xác Minh KYC Danh Tính (UC04)</span>
-              </h4>
+            {/* 🛡️ KYC CCCD & BẰNG LÁI CARD (UC04) - Hủy hiển thị đối với Admin/CSKH */}
+            {user.role !== 'admin' && user.role !== 'cskh' && (
+              <div className="kyc-verifications-card-box">
+                <h4 className="kyc-header-title">
+                  <ShieldCheck size={18} />
+                  <span>Hồ Sơ Xác Minh KYC Danh Tính (UC04)</span>
+                </h4>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                {/* 1. CCCD */}
-                <div style={{ textAlign: 'left', background: '#0a0b10', padding: 12, borderRadius: 8, border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <span style={{ fontSize: '11px', color: '#64748b', display: 'block' }}>CĂN CƯỚC CÔNG DÂN (CCCD)</span>
-                  {user.kycDocuments?.cccd ? (
-                    <div style={{ marginTop: 4 }}>
-                      <span className="badge-verified" style={{ fontSize: '10px' }}>Đã Tải Lên ✓</span>
-                      <a href={user.kycDocuments.cccd} target="_blank" rel="noreferrer" style={{ display: 'block', fontSize: '11px', color: '#6366f1', marginTop: 4, textDecoration: 'underline' }}>Xem ảnh CCCD</a>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* 1. CCCD Row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    {/* CCCD Front */}
+                    <div className="kyc-item-card">
+                      <span className="kyc-title">CCCD MẶT TRƯỚC (QUÉT QR)</span>
+                      <div className="kyc-status-container">
+                        {user.kycDocuments?.cccd ? (
+                          <>
+                            <span className="badge-verified" style={{ fontSize: '10px' }}>Đã Tải Lên ✓</span>
+                            <button onClick={() => setPreviewImage({ src: user.kycDocuments.cccd, title: 'Căn cước công dân (Mặt trước)' })} className="btn-link-premium-button">
+                              <ZoomIn size={12} />
+                              <span>Xem mặt trước</span>
+                            </button>
+                          </>
+                        ) : (
+                          <label className="kyc-upload-btn-premium">
+                            <Upload size={12} />
+                            <span>{cccdUploading ? 'Đang tải...' : 'Tải mặt trước'}</span>
+                            <input type="file" onChange={(e) => handleKycUpload(e, 'cccdFront')} accept="image/*" style={{ display: 'none' }} disabled={cccdUploading} />
+                          </label>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <div style={{ marginTop: 4 }}>
-                      <label className="upload-license-inline-btn" style={{ cursor: 'pointer', fontSize: '10px', color: '#818cf8', fontWeight: 6, display: 'inline-flex', gap: 4, alignItems: 'center' }}>
-                        <Upload size={10} />
-                        <span>{cccdUploading ? 'Đang tải...' : 'Tải ảnh CCCD'}</span>
-                        <input type="file" onChange={(e) => handleKycUpload(e, 'cccd')} accept="image/*" style={{ display: 'none' }} disabled={cccdUploading} />
-                      </label>
-                    </div>
-                  )}
-                </div>
 
-                {/* 2. Bằng lái */}
-                <div style={{ textAlign: 'left', background: '#0a0b10', padding: 12, borderRadius: 8, border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <span style={{ fontSize: '11px', color: '#64748b', display: 'block' }}>BẰNG LÁI XE HẠNG B1/B2</span>
-                  {user.licenseStatus === 'verified' ? (
-                    <div style={{ marginTop: 4 }}>
-                      <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>Verified ✓</span>
-                      {user.licenseImage && <a href={user.licenseImage} target="_blank" rel="noreferrer" style={{ display: 'block', fontSize: '11px', color: '#6366f1', marginTop: 4, textDecoration: 'underline' }}>Xem ảnh Bằng lái</a>}
+                    {/* CCCD Back */}
+                    <div className="kyc-item-card">
+                      <span className="kyc-title">CCCD MẶT SAU</span>
+                      <div className="kyc-status-container">
+                        {user.kycDocuments?.cccdBack ? (
+                          <>
+                            <span className="badge-verified" style={{ fontSize: '10px' }}>Đã Tải Lên ✓</span>
+                            <button onClick={() => setPreviewImage({ src: user.kycDocuments.cccdBack, title: 'Căn cước công dân (Mặt sau)' })} className="btn-link-premium-button">
+                              <ZoomIn size={12} />
+                              <span>Xem mặt sau</span>
+                            </button>
+                          </>
+                        ) : (
+                          <label className="kyc-upload-btn-premium">
+                            <Upload size={12} />
+                            <span>{cccdUploading ? 'Đang tải...' : 'Tải mặt sau'}</span>
+                            <input type="file" onChange={(e) => handleKycUpload(e, 'cccdBack')} accept="image/*" style={{ display: 'none' }} disabled={cccdUploading} />
+                          </label>
+                        )}
+                      </div>
                     </div>
-                  ) : user.licenseStatus === 'pending' ? (
-                    <div style={{ marginTop: 4 }}>
-                      <span className="badge-pending" style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', padding: '2px 6px', borderRadius: 99 }}>Đang chờ duyệt</span>
+                  </div>
+
+                  {/* 2. Bằng lái Row */}
+                  <div className="kyc-item-card">
+                    <span className="kyc-title">BẰNG LÁI XE HẠNG B1/B2</span>
+                    <div className="kyc-status-container">
+                      {user.licenseStatus === 'verified' ? (
+                        <>
+                          <span className="kyc-badge-premium verified">Đã Xác Minh ✓</span>
+                          {user.licenseImage && (
+                            <button onClick={() => setPreviewImage({ src: user.licenseImage, title: 'Bằng lái xe B1/B2' })} className="btn-link-premium-button">
+                              <ZoomIn size={12} />
+                              <span>Xem bằng lái</span>
+                            </button>
+                          )}
+                        </>
+                      ) : user.licenseStatus === 'pending' ? (
+                        <span className="kyc-badge-premium pending">Đang chờ duyệt</span>
+                      ) : (
+                        <label className="kyc-upload-btn-premium" style={{ color: '#fda4af', borderColor: 'rgba(239, 68, 68, 0.2)', background: 'rgba(239, 68, 68, 0.04)' }}>
+                          <Upload size={12} />
+                          <span>{licenseUploading ? 'Đang tải...' : 'Tải bằng lái xe'}</span>
+                          <input type="file" onChange={(e) => handleKycUpload(e, 'license')} accept="image/*" style={{ display: 'none' }} disabled={licenseUploading} />
+                        </label>
+                      )}
                     </div>
-                  ) : (
-                    <div style={{ marginTop: 4 }}>
-                      <label className="upload-license-inline-btn" style={{ cursor: 'pointer', fontSize: '10px', color: '#fda4af', fontWeight: 6, display: 'inline-flex', gap: 4, alignItems: 'center' }}>
-                        <Upload size={10} />
-                        <span>{licenseUploading ? 'Đang tải...' : 'Tải bằng lái xe'}</span>
-                        <input type="file" onChange={(e) => handleKycUpload(e, 'license')} accept="image/*" style={{ display: 'none' }} disabled={licenseUploading} />
-                      </label>
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div style={{ display: 'flex', gap: 12 }} className="mt-6">
               <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setIsEditing(true)}>
@@ -609,6 +643,24 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
         </div>
       )}
 
+      {/* --- PREVIEW DOCUMENT MODAL --- */}
+      {previewImage && (
+        <div className="editor-modal-overlay" onClick={() => setPreviewImage(null)}>
+          <div className="editor-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="editor-modal-header">
+              <h3>{previewImage.title}</h3>
+              <button className="editor-close-btn" onClick={() => setPreviewImage(null)}><X size={20} /></button>
+            </div>
+            <div className="editor-modal-body" style={{ padding: '16px', display: 'flex', justifyContent: 'center', background: '#050508', alignItems: 'center' }}>
+              <img src={previewImage.src} alt={previewImage.title} style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'contain', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }} />
+            </div>
+            <div className="editor-modal-footer" style={{ padding: '12px 24px', background: 'none', borderTop: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', justifyContent: 'flex-end', margin: 0 }}>
+              <button className="btn btn-secondary" onClick={() => setPreviewImage(null)} style={{ width: 'auto' }}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* --- PREMIUM CROPPING EDITOR MODAL --- */}
       {showEditor && (
         <div className="editor-modal-overlay">
@@ -653,9 +705,12 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
 const injectProfileStyles = () => {
   if (typeof document === 'undefined') return;
   const styleId = 'profile-styles';
-  if (document.getElementById(styleId)) return;
-
-  const style = document.createElement('style');
+  let style = document.getElementById(styleId);
+  if (!style) {
+    style = document.createElement('style');
+    style.id = styleId;
+    document.head.appendChild(style);
+  }
   style.id = styleId;
   style.textContent = `
     .profile-header-card {
@@ -722,8 +777,8 @@ const injectProfileStyles = () => {
 
     .profile-name {
       font-size: 22px;
-      font-weight: 700;
-      color: #f8fafc;
+      font-weight: 800;
+      color: var(--text-primary);
     }
 
     .user-role-badge-pill {
@@ -751,7 +806,7 @@ const injectProfileStyles = () => {
     }
 
     .profile-email-sub {
-      color: #94a3b8;
+      color: var(--text-secondary);
       font-size: 14px;
       margin-top: 4px;
     }
@@ -917,13 +972,13 @@ const injectProfileStyles = () => {
 
     .info-value {
       font-size: 15px;
-      color: #e2e8f0;
-      font-weight: 600;
+      color: var(--text-primary);
+      font-weight: 700;
     }
 
     .info-value.bio-text {
-      font-weight: 400;
-      color: #94a3b8;
+      font-weight: 500;
+      color: var(--text-secondary);
       font-style: italic;
       white-space: pre-wrap;
       word-break: break-word;
@@ -1162,6 +1217,169 @@ const injectProfileStyles = () => {
       text-transform: uppercase;
       padding: 2px 6px;
       border-radius: 4px;
+    }
+
+    /* Premium KYC Redesign Styles */
+    .kyc-verifications-card-box {
+      background: var(--bg-secondary) !important;
+      border: 1px solid var(--border-color) !important;
+      border-radius: var(--radius-lg) !important;
+      padding: 24px !important;
+      margin-top: 24px !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02) !important;
+      transition: all 0.3s var(--transition-normal) !important;
+    }
+    
+    .kyc-header-title {
+      font-size: 14px !important;
+      font-weight: 700 !important;
+      color: var(--accent-primary) !important;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+      text-align: left;
+    }
+
+    .kyc-item-card {
+      text-align: left;
+      background: var(--bg-primary);
+      padding: 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 100px;
+    }
+
+    .kyc-item-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(0, 150, 152, 0.3);
+      box-shadow: 0 8px 20px rgba(0, 150, 152, 0.05);
+      background: var(--bg-secondary);
+    }
+
+    .kyc-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .kyc-status-container {
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .kyc-badge-premium {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      width: fit-content;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .kyc-badge-premium.verified {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      color: #059669;
+    }
+
+    .kyc-badge-premium.pending {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      color: #d97706;
+    }
+
+    .kyc-badge-premium.unuploaded {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #dc2626;
+    }
+
+    .kyc-link-premium {
+      font-size: 12px;
+      color: var(--accent-primary);
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+      width: fit-content;
+      margin-top: 6px;
+    }
+
+    .kyc-link-premium:hover {
+      color: var(--accent-secondary);
+      text-decoration: underline;
+    }
+
+    .btn-link-premium-button {
+      background: rgba(0, 150, 152, 0.05) !important;
+      border: 1px solid rgba(0, 150, 152, 0.15) !important;
+      color: var(--accent-primary) !important;
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      padding: 8px 16px !important;
+      border-radius: var(--radius-md) !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 6px !important;
+      cursor: pointer !important;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      margin-top: 10px !important;
+      width: 100% !important;
+      font-family: var(--font-primary) !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.01) !important;
+      outline: none !important;
+    }
+
+    .btn-link-premium-button:hover {
+      background: var(--accent-gradient) !important;
+      color: white !important;
+      border-color: transparent !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 4px 12px rgba(0, 150, 152, 0.18) !important;
+    }
+
+    .kyc-upload-btn-premium {
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--accent-primary);
+      font-weight: 700;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      padding: 6px 12px;
+      background: rgba(0, 150, 152, 0.06);
+      border: 1px dashed rgba(0, 150, 152, 0.3);
+      border-radius: var(--radius-sm);
+      transition: all 0.2s;
+      width: fit-content;
+      margin-top: 8px;
+    }
+
+    .kyc-upload-btn-premium:hover {
+      background: var(--accent-gradient);
+      color: white;
+      border-style: solid;
+      border-color: transparent;
+      box-shadow: 0 4px 10px rgba(0, 150, 152, 0.2);
     }
 
     @keyframes editorFadeIn {
