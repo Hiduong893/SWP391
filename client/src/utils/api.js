@@ -113,10 +113,10 @@ export const api = {
         body: JSON.stringify({ licenseImage })
       }),
 
-    uploadKyc: (cccdImage, licenseImage, carPapersImage) =>
+    uploadKyc: (cccdImage, licenseImage, carPapersImage, cccdBackImage) =>
       request('/user/kyc', {
         method: 'PUT',
-        body: JSON.stringify({ cccdImage, licenseImage, carPapersImage })
+        body: JSON.stringify({ cccdImage, licenseImage, carPapersImage, cccdBackImage })
       }),
 
     getWallet: () =>
