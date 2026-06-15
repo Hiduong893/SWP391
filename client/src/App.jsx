@@ -5,7 +5,7 @@ import { Register } from './pages/Authentication/Register';
 import { VerifyEmail } from './pages/Authentication/VerifyEmail';
 import { ForgotPassword } from './pages/Authentication/ForgotPassword';
 import { ResetPassword } from './pages/Authentication/ResetPassword';
-import { Profile } from './pages/Authentication/Profile';
+import { Profile } from './pages/Authentication/Profile/Profile';
 import { ChangePassword } from './pages/Authentication/ChangePassword';
 
 // Car Rental Pages & Components
