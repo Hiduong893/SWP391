@@ -375,6 +375,14 @@ export const api = {
         method: 'DELETE'
       })
   },
+
+  chatbot: {
+    sendMessage: (message, history) => 
+      request('/chatbot/message', {
+        method: 'POST',
+        body: JSON.stringify({ message, history })
+      })
+  },
   
   emails: {
     getEmails: () => 
