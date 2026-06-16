@@ -50,6 +50,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
       const data = await api.cars.getCars(filters);
       setCars(data);
     } catch (error) {
+      console.error('Lỗi chi tiết khi lấy danh sách xe:', error);
       showToast('Không thể lấy danh sách xe.', 'error');
     } finally {
       setLoading(false);
@@ -2824,7 +2825,7 @@ const injectRentCarStyles = () => {
       border: 1px solid #e2e8f0;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
       width: 100%;
-      max-width: 600px;
+      max-width: 850px;
       overflow: hidden;
       animation: modalZoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
@@ -2870,7 +2871,7 @@ const injectRentCarStyles = () => {
     .popup-car-banner {
       position: relative;
       width: 100%;
-      height: 220px;
+      height: 280px;
       background: #f1f5f9;
     }
 
@@ -2917,7 +2918,7 @@ const injectRentCarStyles = () => {
 
     .popup-spec-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
       gap: 12px;
     }
 
@@ -2981,7 +2982,7 @@ const injectRentCarStyles = () => {
       display: flex;
       flex-direction: column;
       gap: 12px;
-      max-height: 250px;
+      max-height: 350px;
       overflow-y: auto;
       padding-right: 4px;
     }
@@ -3212,65 +3213,6 @@ const injectRentCarStyles = () => {
       color: #94a3b8;
       font-weight: 500;
       margin: 0 auto;
-    }
-
-    /* Lightbox / Modal Overlay Styles */
-    .lightbox-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(5, 5, 8, 0.85);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .lightbox-card {
-      background: #11131c;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-    }
-
-    .lightbox-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 20px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .lightbox-header h4 {
-      margin: 0;
-      font-size: 16px;
-      color: #fff;
-    }
-
-    .btn-close-lightbox {
-      background: transparent;
-      border: none;
-      color: #94a3b8;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4px;
-      border-radius: 6px;
-      transition: all 0.2s;
-    }
-
-    .btn-close-lightbox:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
     }
 
     /* Responsive Grid and styles override */
