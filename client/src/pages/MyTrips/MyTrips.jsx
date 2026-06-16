@@ -379,7 +379,7 @@ export const MyTrips = () => {
       )}
 
       {/* 📞 UC07: HỆ THỐNG LIÊN HỆ CHĂM SÓC KHÁCH HÀNG 24/7 --- */}
-      <div className="support-tickets-section mt-12" style={{ background: 'rgba(17,19,28,0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: '24px', textAlign: 'left' }}>
+      <div className="support-tickets-section mt-12" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 16, padding: '24px', textAlign: 'left', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
             <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '16px' }}>
@@ -404,15 +404,15 @@ export const MyTrips = () => {
 
         {/* Create Ticket Form */}
         {showSupportForm && (
-          <form onSubmit={handleCreateTicketSubmit} className="ticket-form mb-6" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, padding: 16, animation: 'fadeIn 0.2s' }}>
-            <h4 style={{ fontSize: '13px', color: 'white', fontWeight: 700, marginBottom: 12 }}>Tạo ticket hỗ trợ mới</h4>
+          <form onSubmit={handleCreateTicketSubmit} className="ticket-form mb-6" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 16, animation: 'fadeIn 0.2s' }}>
+            <h4 style={{ fontSize: '13px', color: '#0f172a', fontWeight: 700, marginBottom: 12 }}>Tạo ticket hỗ trợ mới</h4>
 
             <div className="form-group">
               <label className="form-label" style={{ fontSize: '11px' }}>Vấn đề cần hỗ trợ (Tiêu đề) *</label>
               <input
                 type="text"
                 className="form-input"
-                style={{ padding: '8px 12px', fontSize: '13px' }}
+                style={{ padding: '8px 12px', fontSize: '13px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#ffffff', color: '#0f172a' }}
                 placeholder="Vd: Không thanh toán được ví, Sự cố va quẹt nhẹ xe..."
                 value={ticketSubject}
                 onChange={(e) => setTicketSubject(e.target.value)}
@@ -425,7 +425,7 @@ export const MyTrips = () => {
               <textarea
                 rows={3}
                 className="form-input"
-                style={{ padding: '8px 12px', fontSize: '13px', resize: 'none' }}
+                style={{ padding: '8px 12px', fontSize: '13px', resize: 'none', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#ffffff', color: '#0f172a' }}
                 placeholder="Vui lòng cung cấp thông tin chi tiết vấn đề..."
                 value={ticketMsg}
                 onChange={(e) => setTicketMsg(e.target.value)}
@@ -448,17 +448,17 @@ export const MyTrips = () => {
                 key={t.id}
                 className="ticket-mini-row"
                 onClick={() => setSelectedMyTicket(t)}
-                style={{ padding: '12px 16px', background: '#11131c', border: '1px solid rgba(255,255,255,0.03)', borderRadius: 10, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                    style={{ padding: '12px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.2s' }}
               >
                 <div>
-                  <strong style={{ fontSize: '13.5px', color: 'white', display: 'block' }}>{t.subject}</strong>
+                      <strong style={{ fontSize: '13.5px', color: '#0f172a', display: 'block' }}>{t.subject}</strong>
                   <span style={{ fontSize: '11px', color: '#64748b' }}>Gửi ngày: {new Date(t.createdAt).toLocaleDateString('vi-VN')} • Trạng thái:
                     <strong style={{ color: t.status === 'replied' ? '#a855f7' : t.status === 'resolved' ? '#34d399' : '#fbbf24' }}>
                       {t.status === 'open' ? ' Đang xử lý' : t.status === 'replied' ? ' Đã có phản hồi ✓' : ' Đã đóng'}
                     </strong>
                   </span>
                 </div>
-                <button className="btn-table-action" style={{ fontSize: '12px', padding: 0 }}>Xem chat</button>
+                <button className="btn btn-secondary" style={{ width: 'auto', padding: '4px 12px', fontSize: '12px' }}>Xem chat</button>
               </div>
             ))}
           </div>
@@ -472,24 +472,24 @@ export const MyTrips = () => {
       {/* --- POPUP CHAT VỚI CSKH THÀNH VIÊN (UC07) --- */}
       {selectedMyTicket && (
         <div className="editor-modal-overlay" onClick={() => setSelectedMyTicket(null)}>
-          <div className="editor-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px' }}>
-            <div className="editor-modal-header">
-              <h3>Hội Thoại Trực Tuyến Với CSKH</h3>
-              <button className="editor-close-btn" onClick={() => setSelectedMyTicket(null)}><XCircle size={20} /></button>
+          <div className="editor-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px', background: '#ffffff', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <div className="editor-modal-header" style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a', fontWeight: 'bold' }}>Hội Thoại Trực Tuyến Với CSKH</h3>
+              <button className="editor-close-btn" onClick={() => setSelectedMyTicket(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex' }}><XCircle size={20} /></button>
             </div>
 
             <div className="editor-modal-body" style={{ display: 'flex', flexDirection: 'column', height: '400px', padding: 20 }}>
-              <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 8, marginBottom: 12, textAlign: 'left', width: '100%' }}>
-                <strong style={{ fontSize: '14px', color: 'white' }}>{selectedMyTicket.subject}</strong>
+              <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 12, textAlign: 'left', width: '100%' }}>
+                <strong style={{ fontSize: '14px', color: '#0f172a' }}>{selectedMyTicket.subject}</strong>
                 <p style={{ fontSize: '11px', color: '#94a3b8' }}>Mã ticket: {selectedMyTicket.id.slice(0, 8).toUpperCase()}</p>
               </div>
 
               {/* Chat list inside popup */}
               <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, width: '100%', paddingRight: 4, marginBottom: 12 }}>
                 {/* Renter prompt */}
-                <div style={{ alignSelf: 'flex-end', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.25)', padding: 10, borderRadius: 8, maxWidth: '80%', textAlign: 'left' }}>
-                  <p style={{ fontSize: '13px', color: 'white' }}>{selectedMyTicket.message}</p>
-                  <span style={{ fontSize: '9px', color: '#818cf8', display: 'block', marginTop: 4 }}>Bạn - {new Date(selectedMyTicket.createdAt).toLocaleTimeString()}</span>
+                <div style={{ alignSelf: 'flex-end', background: 'rgba(0, 150, 152, 0.1)', border: '1px solid rgba(0, 150, 152, 0.2)', padding: '10px 14px', borderRadius: '14px 14px 0 14px', maxWidth: '80%', textAlign: 'left' }}>
+                  <p style={{ margin: 0, fontSize: '13.5px', color: '#0f172a', lineHeight: '1.5' }}>{selectedMyTicket.message}</p>
+                  <span style={{ fontSize: '10px', color: '#009698', display: 'block', marginTop: 6, fontWeight: 500 }}>Bạn - {new Date(selectedMyTicket.createdAt).toLocaleTimeString()}</span>
                 </div>
 
                 {/* Replies from CSKH */}
@@ -498,20 +498,21 @@ export const MyTrips = () => {
                     key={idx}
                     style={{
                       alignSelf: rep.sender === 'cskh' ? 'flex-start' : 'flex-end',
-                      background: rep.sender === 'cskh' ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)',
-                      padding: 10,
-                      borderRadius: 8,
+                      background: rep.sender === 'cskh' ? '#f1f5f9' : 'rgba(0, 150, 152, 0.1)',
+                      border: rep.sender === 'cskh' ? '1px solid #e2e8f0' : '1px solid rgba(0, 150, 152, 0.2)',
+                      padding: '10px 14px',
+                      borderRadius: rep.sender === 'cskh' ? '14px 14px 14px 0' : '14px 14px 0 14px',
                       maxWidth: '80%',
                       textAlign: 'left'
                     }}
                   >
-                    <p style={{ fontSize: '13px', color: '#e2e8f0' }}>{rep.text}</p>
-                    <span style={{ fontSize: '9px', color: '#64748b', display: 'block', marginTop: 4 }}>{rep.sender === 'cskh' ? 'CSKH Minh Anh' : 'Bạn'} - {new Date(rep.sentAt).toLocaleTimeString()}</span>
+                    <p style={{ margin: 0, fontSize: '13.5px', color: '#0f172a', lineHeight: '1.5' }}>{rep.text}</p>
+                    <span style={{ fontSize: '10px', color: rep.sender === 'cskh' ? '#64748b' : '#009698', display: 'block', marginTop: 6, fontWeight: 500 }}>{rep.sender === 'cskh' ? 'CSKH Minh Anh' : 'Bạn'} - {new Date(rep.sentAt).toLocaleTimeString()}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="editor-modal-footer" style={{ padding: 0, border: 'none', background: 'none', width: '100%', display: 'flex', gap: 8 }}>
+              <div className="editor-modal-footer" style={{ padding: '12px 0 0 0', borderTop: '1px solid #e2e8f0', background: 'none', width: '100%', display: 'flex', gap: 8 }}>
                 {selectedMyTicket.status !== 'resolved' ? (
                   <form 
                     style={{ display: 'flex', width: '100%', gap: 8 }}
@@ -526,13 +527,12 @@ export const MyTrips = () => {
                   >
                     <input 
                       type="text" 
-                      className="form-control" 
                       placeholder="Nhập tin nhắn..." 
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
-                      style={{ flex: 1, fontSize: '13px' }}
+                      style={{ flex: 1, fontSize: '13.5px', padding: '10px 16px', border: '1px solid #cbd5e1', borderRadius: '24px', outline: 'none', color: '#0f172a', background: '#f8fafc' }}
                     />
-                    <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '0 16px' }}>
+                    <button type="submit" style={{ background: '#009698', color: '#ffffff', border: 'none', borderRadius: '24px', padding: '0 20px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,150,152,0.2)' }}>
                       <Send size={14} /> Gửi
                     </button>
                   </form>
