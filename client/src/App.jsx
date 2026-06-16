@@ -16,6 +16,7 @@ import { MyTrips } from './pages/MyTrips/MyTrips';
 import { AdminDashboard } from './pages/AdminDashboard/AdminDashboard';
 import { BookingModal } from './components/BookingModal';
 import { SimulatedInbox } from './components/SimulatedInbox';
+import { ChatbotWidget } from './components/ChatbotWidget';
 
 import { api } from './utils/api';
 import { useToast } from './components/Toast';
@@ -271,6 +272,9 @@ function App() {
           setCurrentTab={setCurrentTab}
         />
       )}
+
+      {/* --- AI SUPPORT CHATBOT WIDGET --- */}
+      <ChatbotWidget user={user} />
     </>
   );
 }
