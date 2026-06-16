@@ -31,3 +31,11 @@ lerna-debug.log*
 *.sln
 *.sw?
 .DS_Store
+ 
+# Server test scripts and logs
+server/test-*.js
+server/run-*.js
+server/update-*.js
+server/*.txt
+server/db.json.backup
+
