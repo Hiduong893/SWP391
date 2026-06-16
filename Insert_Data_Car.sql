@@ -32,6 +32,17 @@ BEGIN
     SELECT TOP 1 @owner_id = user_id FROM [User] ORDER BY user_id ASC;
 END;
 
+-- Nếu CSDL chưa có user nào (vì chưa chạy backend bao giờ), tự động tạo 1 user chủ xe để gán
+IF @owner_id IS NULL
+BEGIN
+    INSERT INTO [User] (email, full_name, is_active, is_email_verified)
+    VALUES ('owner@bonboncar.vn', N'Chủ Xe ViVuCar', 1, 1);
+    SET @owner_id = SCOPE_IDENTITY();
+    
+    INSERT INTO UserRole (user_id, role_id)
+    SELECT @owner_id, role_id FROM Role WHERE role_name = 'CarOwner';
+END;
+
 -- Xóa dữ liệu cũ nếu muốn làm sạch trước khi chạy (tùy chọn - đã comment)
  --DELETE FROM VehicleImage;
 -- DELETE FROM Vehicle;

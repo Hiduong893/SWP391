@@ -10,8 +10,8 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const config = {
   user: process.env.DB_USER || 'sa',
-  password: process.env.DB_PASSWORD || 'sa',
-  server: process.env.DB_SERVER || 'localhost',
+  password: process.env.DB_PASSWORD || '123456',
+  server: process.env.DB_SERVER || 'noom',
   database: process.env.DB_DATABASE || 'CarRentalPlatform',
   options: {
     encrypt: false, // Set to false for local development
