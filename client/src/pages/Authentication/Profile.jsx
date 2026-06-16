@@ -42,6 +42,7 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const { showToast } = useToast();
+  const [previewImage, setPreviewImage] = useState(null);
 
   const PRESET_AVATARS = [
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
@@ -393,7 +394,7 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
                   {user.kycDocuments?.cccd ? (
                     <div style={{ marginTop: 4 }}>
                       <span className="badge-verified" style={{ fontSize: '10px' }}>Đã Tải Lên ✓</span>
-                      <a href={user.kycDocuments.cccd} target="_blank" rel="noreferrer" style={{ display: 'block', fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500 }}>Xem ảnh CCCD</a>
+                      <button type="button" onClick={() => setPreviewImage({ src: user.kycDocuments.cccd, title: 'Mặt trước Căn cước công dân (CCCD)' })} style={{ display: 'block', background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh CCCD</button>
                     </div>
                   ) : (
                     <div style={{ marginTop: 6 }}>
@@ -412,7 +413,7 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
                   {user.licenseStatus === 'verified' ? (
                     <div style={{ marginTop: 4 }}>
                       <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}>Verified ✓</span>
-                      {user.licenseImage && <a href={user.licenseImage} target="_blank" rel="noreferrer" style={{ display: 'block', fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500 }}>Xem ảnh Bằng lái</a>}
+                      {user.licenseImage && <button type="button" onClick={() => setPreviewImage({ src: user.licenseImage, title: 'Bằng lái xe B1/B2' })} style={{ display: 'block', background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh Bằng lái</button>}
                     </div>
                   ) : user.licenseStatus === 'pending' ? (
                     <div style={{ marginTop: 4 }}>
@@ -675,6 +676,68 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
             <div className="editor-modal-footer">
               <button type="button" className="btn btn-secondary" onClick={() => setShowEditor(false)} disabled={avatarLoading}>Hủy bỏ</button>
               <button type="button" className="btn btn-primary" onClick={handleSaveCroppedImage} disabled={avatarLoading}><Check size={18} /> {avatarLoading ? 'Đang lưu...' : 'Áp Dụng'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- LIGHTBOX POPUP PREVIEW KYC DOCUMENTS --- */}
+      {previewImage && (
+        <div className="kyc-lightbox-overlay" onClick={() => setPreviewImage(null)} style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 99999,
+          padding: '20px',
+          animation: 'fadeIn 0.25s ease-out'
+        }}>
+          <div className="kyc-lightbox-card" onClick={(e) => e.stopPropagation()} style={{
+            background: 'var(--bg-secondary, #11131c)',
+            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+            borderRadius: '16px',
+            maxWidth: '600px',
+            width: '100%',
+            overflow: 'hidden',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)'
+          }}>
+            <div className="kyc-lightbox-header" style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px 20px',
+              borderBottom: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))'
+            }}>
+              <h4 style={{ margin: 0, color: 'var(--text-primary, #f8fafc)', fontSize: '15px', fontWeight: 700 }}>{previewImage.title}</h4>
+              <button className="kyc-close-btn" onClick={() => setPreviewImage(null)} style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-secondary, #94a3b8)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '4px'
+              }}><X size={20} /></button>
+            </div>
+            <div className="kyc-lightbox-body" style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              background: '#0a0b10',
+              padding: '20px'
+            }}>
+              <img src={previewImage.src} alt={previewImage.title} style={{
+                maxWidth: '100%',
+                maxHeight: '65vh',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+              }} />
             </div>
           </div>
         </div>

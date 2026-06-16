@@ -1,10 +1,9 @@
-Connection config used: server=localhost, database=CarRentalPlatform, user=sa
+Connection config used: server=DESKTOP-DF1VL3V, database=CarRentalPlatform, user=sa
 
 Successfully connected to SQL Server!
 
 Tables found in this database:
   - BookingHandover
-  - Emails
   - HandoverImage
   - Payment
   - Wallet
@@ -29,19 +28,19 @@ Tables found in this database:
   - SystemConfig
   - VehicleImage
   - VehicleDocument
-  - sysdiagrams
+  - Emails
   - Feature
   - VehicleFeature
   - Booking
 
 Total rows in [User] table: 9
 Users found:
-  - ID: 1, Email: "admin@bonboncar.vn", Name: "Hệ Thống Admin"
-  - ID: 3, Email: "giahuynguyentq.010605@gmail.com", Name: "Huy Nguyễn Gia"
-  - ID: 4, Email: "admin2@vivucar.vn", Name: "Admin Hồ Văn Dương"
-  - ID: 5, Email: "cskh@vivucar.vn", Name: "CSKH Minh Anh"
-  - ID: 6, Email: "owner@vivucar.vn", Name: "Chủ Xe Lê Mạnh"
-  - ID: 7, Email: "renter@vivucar.vn", Name: "Khách Thuê Quang Huy"
-  - ID: 8, Email: "ghuyb@vivucar.vn", Name: "Nguyễn Gia Huy"
-  - ID: 9, Email: "ghuy@vivucar.vn", Name: "Nguyễn Gia Huy"
-  - ID: 10, Email: "testowner@gmail.com", Name: "Test Owner"
+  - ID: 1, Email: "admin@vivucar.vn", Name: "Hệ Thống Admin"
+  - ID: 2, Email: "admin2@vivucar.vn", Name: "Admin Hồ Văn Dương"
+  - ID: 3, Email: "cskh@vivucar.vn", Name: "CSKH Minh Anh"
+  - ID: 4, Email: "owner@vivucar.vn", Name: "Chủ Xe Lê Mạnh"
+  - ID: 5, Email: "renter@vivucar.vn", Name: "Khách Thuê Quang Huy"
+  - ID: 7, Email: "customer1@vivucar.vn", Name: "Nguyen Van A"
+  - ID: 1007, Email: "milloduong@gmail.com", Name: "Dương Hồ Văn"
+  - ID: 1008, Email: "renter@bonboncar.vn", Name: "Renter"
+  - ID: 1009, Email: "testcustomer@test.com", Name: "Test User"

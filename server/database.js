@@ -18,30 +18,320 @@ const config = {
 let pool;
 const getPool = async () => {
   if (!pool) {
+    // 1. Connect to master database first to check and create the CarRentalPlatform database if missing
+    const masterConfig = { ...config, database: 'master' };
+    try {
+      const masterPool = await sql.connect(masterConfig);
+      await masterPool.request().query(`
+        IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '${config.database}')
+        BEGIN
+            CREATE DATABASE ${config.database};
+        END
+      `);
+      await masterPool.close();
+      console.log(`Verified or created database '${config.database}'`);
+    } catch (dbErr) {
+      console.error(`Warning: Could not verify/create database via master:`, dbErr.message);
+    }
+
+    // 2. Connect to the actual target database
     pool = await sql.connect(config);
-    // Run essential migrations to adapt the SQL schema for application features
+
+    // 3. Run essential migrations to create tables and adapt the SQL schema
     try {
       await pool.request().query(`
+        -- 1. Create Role table if not exists
+        IF OBJECT_ID('dbo.Role', 'U') IS NULL
+        BEGIN
+            CREATE TABLE Role (
+                role_id INT IDENTITY(1,1) PRIMARY KEY,
+                role_name NVARCHAR(50) NOT NULL UNIQUE,
+                is_active BIT NOT NULL DEFAULT 1
+            );
+        END
+
+        -- 2. Create User table if not exists
+        IF OBJECT_ID('dbo.[User]', 'U') IS NULL
+        BEGIN
+            CREATE TABLE [User] (
+                user_id INT IDENTITY(1,1) PRIMARY KEY,
+                email VARCHAR(255) NOT NULL UNIQUE,
+                password_hash NVARCHAR(255) NULL,
+                full_name NVARCHAR(255) NOT NULL,
+                avatar_url NVARCHAR(MAX) NULL,
+                google_id VARCHAR(255) NULL,
+                bio NVARCHAR(MAX) NULL,
+                is_email_verified BIT NOT NULL DEFAULT 0,
+                is_active BIT NOT NULL DEFAULT 1,
+                created_at DATETIME NOT NULL DEFAULT GETDATE(),
+                updated_at DATETIME NOT NULL DEFAULT GETDATE()
+            );
+        END
+
+        -- 3. Create UserRole table if not exists
+        IF OBJECT_ID('dbo.UserRole', 'U') IS NULL
+        BEGIN
+            CREATE TABLE UserRole (
+                user_id INT NOT NULL FOREIGN KEY REFERENCES [User](user_id),
+                role_id INT NOT NULL FOREIGN KEY REFERENCES Role(role_id),
+                PRIMARY KEY (user_id, role_id)
+            );
+        END
+
+        -- 4. Create Wallet table if not exists
+        IF OBJECT_ID('dbo.Wallet', 'U') IS NULL
+        BEGIN
+            CREATE TABLE Wallet (
+                wallet_id INT IDENTITY(1,1) PRIMARY KEY,
+                user_id INT NOT NULL UNIQUE FOREIGN KEY REFERENCES [User](user_id),
+                balance DECIMAL(18,2) NOT NULL DEFAULT 0,
+                bank_name NVARCHAR(255) NULL,
+                bank_account_number VARCHAR(50) NULL,
+                is_bank_verified BIT NOT NULL DEFAULT 0,
+                created_at DATETIME NOT NULL DEFAULT GETDATE(),
+                updated_at DATETIME NOT NULL DEFAULT GETDATE()
+            );
+        END
+
+        -- 5. Create OTPVerification table if not exists
+        IF OBJECT_ID('dbo.OTPVerification', 'U') IS NULL
+        BEGIN
+            CREATE TABLE OTPVerification (
+                otp_id INT IDENTITY(1,1) PRIMARY KEY,
+                user_id INT NOT NULL FOREIGN KEY REFERENCES [User](user_id),
+                otp_code VARCHAR(50) NOT NULL,
+                otp_type VARCHAR(50) NOT NULL,
+                is_used BIT NOT NULL DEFAULT 0,
+                expires_at DATETIME NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT GETDATE()
+            );
+        END
+
+        -- 6. Create KYC table if not exists
+        IF OBJECT_ID('dbo.KYC', 'U') IS NULL
+        BEGIN
+            CREATE TABLE KYC (
+                kyc_id INT IDENTITY(1,1) PRIMARY KEY,
+                user_id INT NOT NULL FOREIGN KEY REFERENCES [User](user_id),
+                document_type NVARCHAR(50) NOT NULL,
+                document_number VARCHAR(50) NULL,
+                front_image_url NVARCHAR(MAX) NOT NULL,
+                back_image_url NVARCHAR(MAX) NULL,
+                status NVARCHAR(50) NOT NULL DEFAULT 'Pending',
+                submitted_at DATETIME NOT NULL DEFAULT GETDATE(),
+                reviewed_at DATETIME NULL
+            );
+        END
+
+        -- 7. Create Brand table if not exists
+        IF OBJECT_ID('dbo.Brand', 'U') IS NULL
+        BEGIN
+            CREATE TABLE Brand (
+                brand_id INT IDENTITY(1,1) PRIMARY KEY,
+                brand_name NVARCHAR(100) NOT NULL UNIQUE,
+                is_active BIT NOT NULL DEFAULT 1
+            );
+        END
+
+        -- 8. Create VehicleCategory table if not exists
+        IF OBJECT_ID('dbo.VehicleCategory', 'U') IS NULL
+        BEGIN
+            CREATE TABLE VehicleCategory (
+                category_id INT IDENTITY(1,1) PRIMARY KEY,
+                category_name NVARCHAR(100) NOT NULL UNIQUE,
+                is_active BIT NOT NULL DEFAULT 1
+            );
+        END
+
+        -- 9. Create Vehicle table if not exists
+        IF OBJECT_ID('dbo.Vehicle', 'U') IS NULL
+        BEGIN
+            CREATE TABLE Vehicle (
+                vehicle_id INT IDENTITY(1,1) PRIMARY KEY,
+                owner_id INT NULL FOREIGN KEY REFERENCES [User](user_id),
+                brand_id INT NOT NULL FOREIGN KEY REFERENCES Brand(brand_id),
+                category_id INT NOT NULL FOREIGN KEY REFERENCES VehicleCategory(category_id),
+                model_name NVARCHAR(150) NOT NULL,
+                license_plate VARCHAR(50) NOT NULL UNIQUE,
+                year_of_manufacture INT NULL,
+                daily_price DECIMAL(18,2) NOT NULL,
+                deposit_amount DECIMAL(18,2) NOT NULL DEFAULT 5000000,
+                location_address NVARCHAR(255) NOT NULL,
+                transmission NVARCHAR(50) NULL,
+                fuel NVARCHAR(50) NULL,
+                status NVARCHAR(50) NOT NULL DEFAULT 'Available',
+                is_active BIT NOT NULL DEFAULT 1,
+                created_at DATETIME NOT NULL DEFAULT GETDATE(),
+                updated_at DATETIME NOT NULL DEFAULT GETDATE(),
+                seat_count INT NOT NULL DEFAULT 5,
+                rejection_reason NVARCHAR(MAX) NULL
+            );
+        END
+
+        -- 10. Create VehicleImage table if not exists
+        IF OBJECT_ID('dbo.VehicleImage', 'U') IS NULL
+        BEGIN
+            CREATE TABLE VehicleImage (
+                image_id INT IDENTITY(1,1) PRIMARY KEY,
+                vehicle_id INT NOT NULL FOREIGN KEY REFERENCES Vehicle(vehicle_id),
+                image_url NVARCHAR(MAX) NOT NULL,
+                is_primary BIT NOT NULL DEFAULT 0,
+                sort_order INT NOT NULL DEFAULT 0
+            );
+        END
+
+        -- 11. Create VehicleDocument table if not exists
+        IF OBJECT_ID('dbo.VehicleDocument', 'U') IS NULL
+        BEGIN
+            CREATE TABLE VehicleDocument (
+                document_id INT IDENTITY(1,1) PRIMARY KEY,
+                vehicle_id INT NOT NULL FOREIGN KEY REFERENCES Vehicle(vehicle_id),
+                document_type NVARCHAR(50) NOT NULL,
+                document_url NVARCHAR(MAX) NOT NULL
+            );
+        END
+
+        -- 12. Create Booking table if not exists
+        IF OBJECT_ID('dbo.Booking', 'U') IS NULL
+        BEGIN
+            CREATE TABLE Booking (
+                booking_id INT IDENTITY(1,1) PRIMARY KEY,
+                renter_id INT NOT NULL FOREIGN KEY REFERENCES [User](user_id),
+                vehicle_id INT NOT NULL FOREIGN KEY REFERENCES Vehicle(vehicle_id),
+                start_datetime DATETIME NOT NULL,
+                end_datetime DATETIME NOT NULL,
+                pickup_address NVARCHAR(255) NOT NULL,
+                return_address NVARCHAR(255) NOT NULL,
+                rental_price DECIMAL(18,2) NOT NULL,
+                deposit_amount DECIMAL(18,2) NOT NULL DEFAULT 5000000,
+                platform_fee DECIMAL(18,2) NOT NULL DEFAULT 0,
+                total_amount DECIMAL(18,2) NOT NULL,
+                status NVARCHAR(50) NOT NULL DEFAULT 'Pending',
+                payment_status NVARCHAR(50) NULL,
+                handover_docs NVARCHAR(MAX) NULL,
+                issue_report NVARCHAR(MAX) NULL,
+                created_at DATETIME NOT NULL DEFAULT GETDATE(),
+                updated_at DATETIME NOT NULL DEFAULT GETDATE()
+            );
+        END
+
+        -- 13. Create Payment table if not exists
+        IF OBJECT_ID('dbo.Payment', 'U') IS NULL
+        BEGIN
+            CREATE TABLE Payment (
+                payment_id INT IDENTITY(1,1) PRIMARY KEY,
+                booking_id INT NOT NULL FOREIGN KEY REFERENCES Booking(booking_id),
+                payer_id INT NOT NULL FOREIGN KEY REFERENCES [User](user_id),
+                amount DECIMAL(18,2) NOT NULL,
+                payment_type NVARCHAR(50) NOT NULL,
+                payment_method NVARCHAR(50) NOT NULL,
+                status NVARCHAR(50) NOT NULL,
+                paid_at DATETIME NULL,
+                vnp_txn_ref NVARCHAR(100) NULL,
+                vnp_transaction_no NVARCHAR(100) NULL,
+                vnp_response_code NVARCHAR(20) NULL,
+                vnp_transaction_status NVARCHAR(20) NULL,
+                created_at DATETIME NOT NULL DEFAULT GETDATE()
+            );
+        END
+
+        -- 14. Create Review table if not exists
+        IF OBJECT_ID('dbo.Review', 'U') IS NULL
+        BEGIN
+            CREATE TABLE Review (
+                review_id INT IDENTITY(1,1) PRIMARY KEY,
+                booking_id INT NOT NULL FOREIGN KEY REFERENCES Booking(booking_id),
+                vehicle_id INT NOT NULL FOREIGN KEY REFERENCES Vehicle(vehicle_id),
+                reviewer_id INT NOT NULL FOREIGN KEY REFERENCES [User](user_id),
+                rating INT NOT NULL,
+                comment NVARCHAR(MAX) NULL,
+                status NVARCHAR(50) NOT NULL DEFAULT 'Visible',
+                created_at DATETIME NOT NULL DEFAULT GETDATE()
+            );
+        END
+
+        -- 15. Create Complaint table if not exists
+        IF OBJECT_ID('dbo.Complaint', 'U') IS NULL
+        BEGIN
+            CREATE TABLE Complaint (
+                complaint_id INT IDENTITY(1,1) PRIMARY KEY,
+                booking_id INT NOT NULL FOREIGN KEY REFERENCES Booking(booking_id),
+                complainant_id INT NOT NULL FOREIGN KEY REFERENCES [User](user_id),
+                defendant_id INT NOT NULL FOREIGN KEY REFERENCES [User](user_id),
+                title NVARCHAR(255) NULL,
+                description NVARCHAR(MAX) NOT NULL,
+                status NVARCHAR(50) NOT NULL DEFAULT 'Open',
+                resolution NVARCHAR(MAX) NULL,
+                resolved_at DATETIME NULL,
+                created_at DATETIME NOT NULL DEFAULT GETDATE(),
+                updated_at DATETIME NOT NULL DEFAULT GETDATE()
+            );
+        END
+
+        -- 16. Create SupportTicket table if not exists
+        IF OBJECT_ID('dbo.SupportTicket', 'U') IS NULL
+        BEGIN
+            CREATE TABLE SupportTicket (
+                ticket_id INT IDENTITY(1,1) PRIMARY KEY,
+                user_id INT NOT NULL FOREIGN KEY REFERENCES [User](user_id),
+                subject NVARCHAR(255) NOT NULL,
+                status NVARCHAR(50) NOT NULL DEFAULT 'Open',
+                created_at DATETIME NOT NULL DEFAULT GETDATE(),
+                updated_at DATETIME NOT NULL DEFAULT GETDATE()
+            );
+        END
+
+        -- 17. Create TicketMessage table if not exists
+        IF OBJECT_ID('dbo.TicketMessage', 'U') IS NULL
+        BEGIN
+            CREATE TABLE TicketMessage (
+                message_id INT IDENTITY(1,1) PRIMARY KEY,
+                ticket_id INT NOT NULL FOREIGN KEY REFERENCES SupportTicket(ticket_id),
+                sender_id INT NOT NULL FOREIGN KEY REFERENCES [User](user_id),
+                message NVARCHAR(MAX) NOT NULL,
+                sent_at DATETIME NOT NULL DEFAULT GETDATE()
+            );
+        END
+
+        -- 18. Create SystemConfig table if not exists
+        IF OBJECT_ID('dbo.SystemConfig', 'U') IS NULL
+        BEGIN
+            CREATE TABLE SystemConfig (
+                config_id INT IDENTITY(1,1) PRIMARY KEY,
+                config_key NVARCHAR(100) NOT NULL UNIQUE,
+                config_value NVARCHAR(MAX) NOT NULL,
+                data_type NVARCHAR(50) NOT NULL,
+                updated_at DATETIME NOT NULL DEFAULT GETDATE()
+            );
+        END
+
+        -- 19. Create Emails table if not exists
+        IF OBJECT_ID('dbo.Emails', 'U') IS NULL
+        BEGIN
+            CREATE TABLE Emails (
+                id VARCHAR(50) PRIMARY KEY,
+                [to] VARCHAR(255) NOT NULL,
+                subject NVARCHAR(255) NOT NULL,
+                body NVARCHAR(MAX) NOT NULL,
+                sentAt VARCHAR(50) NOT NULL,
+                isRead BIT NOT NULL DEFAULT 0
+            );
+        END
+
+        -- 20. Create VehicleFeature table if not exists
+        IF OBJECT_ID('dbo.VehicleFeature', 'U') IS NULL
+        BEGIN
+            CREATE TABLE VehicleFeature (
+                feature_id INT IDENTITY(1,1) PRIMARY KEY,
+                vehicle_id INT NOT NULL FOREIGN KEY REFERENCES Vehicle(vehicle_id),
+                feature_name NVARCHAR(100) NOT NULL
+            );
+        END
+
         -- Add bio column if missing in User
         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('[User]') AND name = 'bio')
         BEGIN
             ALTER TABLE [User] ADD bio NVARCHAR(MAX) NULL;
-        END
-
-        -- Drop standard UNIQUE constraint on google_id (relying on the filtered index instead to allow multiple NULLs)
-        DECLARE @IndexName NVARCHAR(200);
-        SELECT @IndexName = i.name
-        FROM sys.indexes i
-        INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-        INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-        WHERE i.object_id = OBJECT_ID('[User]') AND c.name = 'google_id' AND i.is_unique = 1 AND i.has_filter = 0;
-
-        IF @IndexName IS NOT NULL
-        BEGIN
-            IF EXISTS (SELECT 1 FROM sys.key_constraints WHERE name = @IndexName)
-                EXEC('ALTER TABLE [User] DROP CONSTRAINT [' + @IndexName + ']');
-            ELSE
-                EXEC('DROP INDEX [' + @IndexName + '] ON [User]');
         END
 
         -- Add transmission and fuel if missing in Vehicle
@@ -64,35 +354,53 @@ const getPool = async () => {
             ALTER TABLE Booking ADD issue_report NVARCHAR(MAX) NULL;
         END
 
-        -- Create simulated Emails table if missing for the Inbox view
-        IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Emails')
+        -- Add VNPAY columns to Payment table
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Payment') AND name = 'vnp_txn_ref')
         BEGIN
-            CREATE TABLE Emails (
-                id VARCHAR(50) PRIMARY KEY,
-                [to] VARCHAR(255) NOT NULL,
-                subject NVARCHAR(255) NOT NULL,
-                body NVARCHAR(MAX) NOT NULL,
-                sentAt VARCHAR(50) NOT NULL,
-                isRead BIT NOT NULL DEFAULT 0
-            );
+            ALTER TABLE Payment ADD vnp_txn_ref NVARCHAR(100) NULL;
+        END
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Payment') AND name = 'vnp_transaction_no')
+        BEGIN
+            ALTER TABLE Payment ADD vnp_transaction_no NVARCHAR(100) NULL;
+        END
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Payment') AND name = 'vnp_response_code')
+        BEGIN
+            ALTER TABLE Payment ADD vnp_response_code NVARCHAR(20) NULL;
+        END
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Payment') AND name = 'vnp_transaction_status')
+        BEGIN
+            ALTER TABLE Payment ADD vnp_transaction_status NVARCHAR(20) NULL;
         END
 
-        -- Alter columns to NVARCHAR(MAX) to support base64 image uploads without truncation error
+        -- Drop standard UNIQUE constraint on google_id if needed
+        DECLARE @IndexName NVARCHAR(200);
+        SELECT @IndexName = i.name
+        FROM sys.indexes i
+        INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+        INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+        WHERE i.object_id = OBJECT_ID('[User]') AND c.name = 'google_id' AND i.is_unique = 1 AND i.has_filter = 0;
+
+        IF @IndexName IS NOT NULL
+        BEGIN
+            IF EXISTS (SELECT 1 FROM sys.key_constraints WHERE name = @IndexName)
+                EXEC('ALTER TABLE [User] DROP CONSTRAINT [' + @IndexName + ']');
+            ELSE
+                EXEC('DROP INDEX [' + @IndexName + '] ON [User]');
+        END
+
+        -- Alter columns to NVARCHAR(MAX) to support base64 image uploads
         IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('[User]') AND name = 'avatar_url' AND max_length <> -1)
         BEGIN
             ALTER TABLE [User] ALTER COLUMN avatar_url NVARCHAR(MAX) NULL;
         END
-
         IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('KYC') AND name = 'front_image_url' AND max_length <> -1)
         BEGIN
             ALTER TABLE KYC ALTER COLUMN front_image_url NVARCHAR(MAX) NOT NULL;
         END
-
         IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('KYC') AND name = 'back_image_url' AND max_length <> -1)
         BEGIN
             ALTER TABLE KYC ALTER COLUMN back_image_url NVARCHAR(MAX) NULL;
         END
-
         IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('VehicleImage') AND name = 'image_url' AND max_length <> -1)
         BEGIN
             ALTER TABLE VehicleImage ALTER COLUMN image_url NVARCHAR(MAX) NOT NULL;
@@ -102,6 +410,18 @@ const getPool = async () => {
       await seedDb(pool);
     } catch (err) {
       console.error('Error running SQL migrations or seeding database:', err);
+    }
+
+    // Run separate migration for payment_status (needs own batch to avoid duplicate-column error)
+    try {
+      await pool.request().query(`
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Booking') AND name = 'payment_status')
+        BEGIN
+            ALTER TABLE Booking ADD payment_status NVARCHAR(50) NULL;
+        END
+      `);
+    } catch (e) {
+      // Ignore if already exists
     }
   }
   return pool;
@@ -215,138 +535,196 @@ const seedDb = async (p) => {
     }
   }
 
-  // Seed default cars if empty
-  const vehicleCount = await p.request().query('SELECT COUNT(*) as count FROM Vehicle');
-  if (vehicleCount.recordset[0].count === 0) {
-    const defaultCars = [
-      {
-        brand: 'VinFast',
-        model: 'VF 8 (Điện)',
-        seats: 5,
-        transmission: 'Tự động',
-        fuel: 'Điện',
-        price: 1200000,
-        image: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=600&q=80',
-        location: 'Hà Nội',
-        plate: '30K-123.45'
-      },
-      {
-        brand: 'Toyota',
-        model: 'Vios',
-        seats: 5,
-        transmission: 'Số sàn',
-        fuel: 'Xăng',
-        price: 700000,
-        image: 'https://images.unsplash.com/photo-1603386329225-868f9b1ee6c9?auto=format&fit=crop&w=600&q=80',
-        location: 'Hà Nội',
-        plate: '30L-999.88'
-      },
-      {
-        brand: 'Hyundai',
-        model: 'SantaFe',
-        seats: 7,
-        transmission: 'Tự động',
-        fuel: 'Dầu',
-        price: 1400000,
-        image: 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&w=600&q=80',
-        location: 'TP. Hồ Chí Minh',
-        plate: '51G-567.89'
-      },
-      {
-        brand: 'Honda',
-        model: 'City',
-        seats: 5,
-        transmission: 'Tự động',
-        fuel: 'Xăng',
-        price: 800000,
-        image: 'https://images.unsplash.com/photo-1619682817481-e994891cd1f5?auto=format&fit=crop&w=600&q=80',
-        location: 'TP. Hồ Chí Minh',
-        plate: '51H-111.22'
-      },
-      {
-        brand: 'Mitsubishi',
-        model: 'Xpander',
-        seats: 7,
-        transmission: 'Tự động',
-        fuel: 'Xăng',
-        price: 950000,
-        image: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=600&q=80',
-        location: 'Đà Nẵng',
-        plate: '43A-555.55'
-      },
-      {
-        brand: 'Kia',
-        model: 'Seltos',
-        seats: 5,
-        transmission: 'Tự động',
-        fuel: 'Xăng',
-        price: 900000,
-        image: 'https://images.unsplash.com/photo-1631835339316-dfeb9818b459?auto=format&fit=crop&w=600&q=80',
-        location: 'Đà Nẵng',
-        plate: '43C-678.90'
-      }
-    ];
-
-    for (const c of defaultCars) {
-      // Resolve Brand
-      let bRes = await p.request().input('brand', sql.NVarChar, c.brand).query('SELECT brand_id FROM Brand WHERE brand_name = @brand');
-      let brandId;
-      if (bRes.recordset.length === 0) {
-        const insertBrand = await p.request().input('brand', sql.NVarChar, c.brand).query('INSERT INTO Brand (brand_name, is_active) VALUES (@brand, 1); SELECT SCOPE_IDENTITY() as brand_id');
-        brandId = insertBrand.recordset[0].brand_id;
-      } else {
-        brandId = bRes.recordset[0].brand_id;
-      }
-
-      // Resolve Category
-      const catName = c.seats > 5 ? 'MPV' : 'Sedan';
-      let catRes = await p.request().input('catName', sql.NVarChar, catName).query('SELECT category_id FROM VehicleCategory WHERE category_name = @catName');
-      let categoryId;
-      if (catRes.recordset.length === 0) {
-        const insertCat = await p.request().input('catName', sql.NVarChar, catName).query('INSERT INTO VehicleCategory (category_name, is_active) VALUES (@catName, 1); SELECT SCOPE_IDENTITY() as category_id');
-        categoryId = insertCat.recordset[0].category_id;
-      } else {
-        categoryId = catRes.recordset[0].category_id;
-      }
-
-      // Insert Vehicle (seeded as owner@vivucar.vn or the first user in DB)
-      let ownerId = null;
-      let ownerRes = await p.request().query("SELECT user_id FROM [User] WHERE email = 'owner@vivucar.vn'");
-      if (ownerRes.recordset.length > 0) {
-        ownerId = ownerRes.recordset[0].user_id;
-      } else {
-        let fallbackRes = await p.request().query("SELECT TOP 1 user_id FROM [User]");
-        if (fallbackRes.recordset.length > 0) {
-          ownerId = fallbackRes.recordset[0].user_id;
-        }
-      }
-
-      if (!ownerId) continue; // Skip if no user exists at all
-
-      const vRes = await p.request()
-        .input('ownerId', sql.Int, ownerId)
-        .input('brandId', sql.Int, brandId)
-        .input('categoryId', sql.Int, categoryId)
-        .input('model', sql.NVarChar, c.model)
-        .input('seats', sql.Int, c.seats)
-        .input('plate', sql.VarChar, c.plate)
-        .input('price', sql.Decimal(18, 2), c.price)
-        .input('location', sql.NVarChar, c.location)
-        .input('transmission', sql.NVarChar, c.transmission)
-        .input('fuel', sql.NVarChar, c.fuel)
-        .query(`
-          INSERT INTO Vehicle (owner_id, brand_id, category_id, model_name, license_plate, year_of_manufacture, daily_price, deposit_amount, location_address, transmission, fuel, status, is_active, created_at, updated_at, seat_count)
-          VALUES (@ownerId, @brandId, @categoryId, @model, @plate, 2023, @price, 5000000, @location, @transmission, @fuel, 'Available', 1, GETDATE(), GETDATE(), @seats);
-          SELECT SCOPE_IDENTITY() as vehicle_id;
-        `);
-      const vehicleId = vRes.recordset[0].vehicle_id;
-
-      // Insert primary image
-      await p.request()
-        .input('vehicleId', sql.Int, vehicleId)
-        .input('image', sql.NVarChar, c.image)
-        .query('INSERT INTO VehicleImage (vehicle_id, image_url, is_primary, sort_order) VALUES (@vehicleId, @image, 1, 0)');
+  // Seed default cars checking by license plate
+  const defaultCars = [
+    {
+      brand: 'VinFast',
+      model: 'VF 8 (Điện)',
+      seats: 5,
+      transmission: 'Tự động',
+      fuel: 'Điện',
+      price: 1200000,
+      image: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=600&q=80',
+      location: 'Hà Nội',
+      plate: '30K-123.45'
+    },
+    {
+      brand: 'Toyota',
+      model: 'Vios',
+      seats: 5,
+      transmission: 'Số sàn',
+      fuel: 'Xăng',
+      price: 700000,
+      image: 'https://images.unsplash.com/photo-1603386329225-868f9b1ee6c9?auto=format&fit=crop&w=600&q=80',
+      location: 'Hà Nội',
+      plate: '30L-999.88'
+    },
+    {
+      brand: 'Hyundai',
+      model: 'SantaFe',
+      seats: 7,
+      transmission: 'Tự động',
+      fuel: 'Dầu',
+      price: 1400000,
+      image: 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&w=600&q=80',
+      location: 'TP. Hồ Chí Minh',
+      plate: '51G-567.89'
+    },
+    {
+      brand: 'Honda',
+      model: 'City',
+      seats: 5,
+      transmission: 'Tự động',
+      fuel: 'Xăng',
+      price: 800000,
+      image: 'https://images.unsplash.com/photo-1619682817481-e994891cd1f5?auto=format&fit=crop&w=600&q=80',
+      location: 'TP. Hồ Chí Minh',
+      plate: '51H-111.22'
+    },
+    {
+      brand: 'Mitsubishi',
+      model: 'Xpander',
+      seats: 7,
+      transmission: 'Tự động',
+      fuel: 'Xăng',
+      price: 950000,
+      image: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=600&q=80',
+      location: 'Đà Nẵng',
+      plate: '43A-555.55'
+    },
+    {
+      brand: 'Kia',
+      model: 'Seltos',
+      seats: 5,
+      transmission: 'Tự động',
+      fuel: 'Xăng',
+      price: 900000,
+      image: 'https://images.unsplash.com/photo-1631835339316-dfeb9818b459?auto=format&fit=crop&w=600&q=80',
+      location: 'Đà Nẵng',
+      plate: '43C-678.90'
+    },
+    {
+      brand: 'Mercedes-Benz',
+      model: 'GLC 200 4MATIC',
+      seats: 5,
+      transmission: 'Tự động',
+      fuel: 'Xăng',
+      price: 2400000,
+      image: 'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?auto=format&fit=crop&w=600&q=80',
+      location: 'TP. Hồ Chí Minh',
+      plate: '30K-999.99'
+    },
+    {
+      brand: 'Mercedes-Benz',
+      model: 'C200 2019',
+      seats: 5,
+      transmission: 'Tự động',
+      fuel: 'Xăng',
+      price: 1650000,
+      image: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=600&q=80',
+      location: 'TP. Hồ Chí Minh',
+      plate: '51F-123.45'
+    },
+    {
+      brand: 'Mercedes-Benz',
+      model: 'C200 2021',
+      seats: 5,
+      transmission: 'Tự động',
+      fuel: 'Xăng',
+      price: 1770000,
+      image: 'https://images.unsplash.com/photo-1617531653332-bd46c24f2068?auto=format&fit=crop&w=600&q=80',
+      location: 'TP. Hồ Chí Minh',
+      plate: '51H-999.99'
+    },
+    {
+      brand: 'Mercedes-Benz',
+      model: 'GLC200 2022',
+      seats: 5,
+      transmission: 'Tự động',
+      fuel: 'Xăng',
+      price: 2360000,
+      image: 'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?auto=format&fit=crop&w=600&q=80',
+      location: 'Hà Nội',
+      plate: '30L-111.11'
+    },
+    {
+      brand: 'Kia',
+      model: 'Carnival HEV 2025',
+      seats: 7,
+      transmission: 'Tự động',
+      fuel: 'Xăng',
+      price: 3180000,
+      image: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=600&q=80',
+      location: 'TP. Hồ Chí Minh',
+      plate: '51K-999.00'
     }
+  ];
+
+  for (const c of defaultCars) {
+    // Check if plate already exists in DB
+    const checkRes = await p.request().input('plate', sql.VarChar, c.plate).query('SELECT vehicle_id FROM Vehicle WHERE license_plate = @plate');
+    if (checkRes.recordset.length > 0) {
+      continue;
+    }
+
+    // Resolve Brand
+    let bRes = await p.request().input('brand', sql.NVarChar, c.brand).query('SELECT brand_id FROM Brand WHERE brand_name = @brand');
+    let brandId;
+    if (bRes.recordset.length === 0) {
+      const insertBrand = await p.request().input('brand', sql.NVarChar, c.brand).query('INSERT INTO Brand (brand_name, is_active) VALUES (@brand, 1); SELECT SCOPE_IDENTITY() as brand_id');
+      brandId = insertBrand.recordset[0].brand_id;
+    } else {
+      brandId = bRes.recordset[0].brand_id;
+    }
+
+    // Resolve Category
+    const catName = c.seats > 5 ? 'MPV' : 'Sedan';
+    let catRes = await p.request().input('catName', sql.NVarChar, catName).query('SELECT category_id FROM VehicleCategory WHERE category_name = @catName');
+    let categoryId;
+    if (catRes.recordset.length === 0) {
+      const insertCat = await p.request().input('catName', sql.NVarChar, catName).query('INSERT INTO VehicleCategory (category_name, is_active) VALUES (@catName, 1); SELECT SCOPE_IDENTITY() as category_id');
+      categoryId = insertCat.recordset[0].category_id;
+    } else {
+      categoryId = catRes.recordset[0].category_id;
+    }
+
+    // Insert Vehicle (seeded as owner@bonboncar.vn or the first user in DB)
+    let ownerId = null;
+    let ownerRes = await p.request().query("SELECT user_id FROM [User] WHERE email = 'owner@bonboncar.vn'");
+    if (ownerRes.recordset.length > 0) {
+      ownerId = ownerRes.recordset[0].user_id;
+    } else {
+      let fallbackRes = await p.request().query("SELECT TOP 1 user_id FROM [User]");
+      if (fallbackRes.recordset.length > 0) {
+        ownerId = fallbackRes.recordset[0].user_id;
+      }
+    }
+
+    if (!ownerId) continue; // Skip if no user exists at all
+
+    const vRes = await p.request()
+      .input('ownerId', sql.Int, ownerId)
+      .input('brandId', sql.Int, brandId)
+      .input('categoryId', sql.Int, categoryId)
+      .input('model', sql.NVarChar, c.model)
+      .input('seats', sql.Int, c.seats)
+      .input('plate', sql.VarChar, c.plate)
+      .input('price', sql.Decimal(18, 2), c.price)
+      .input('location', sql.NVarChar, c.location)
+      .input('transmission', sql.NVarChar, c.transmission)
+      .input('fuel', sql.NVarChar, c.fuel)
+      .query(`
+        INSERT INTO Vehicle (owner_id, brand_id, category_id, model_name, license_plate, year_of_manufacture, daily_price, deposit_amount, location_address, transmission, fuel, status, is_active, created_at, updated_at, seat_count)
+        VALUES (@ownerId, @brandId, @categoryId, @model, @plate, 2023, @price, 5000000, @location, @transmission, @fuel, 'Available', 1, GETDATE(), GETDATE(), @seats);
+        SELECT SCOPE_IDENTITY() as vehicle_id;
+      `);
+    const vehicleId = vRes.recordset[0].vehicle_id;
+
+    // Insert primary image
+    await p.request()
+      .input('vehicleId', sql.Int, vehicleId)
+      .input('image', sql.NVarChar, c.image)
+      .query('INSERT INTO VehicleImage (vehicle_id, image_url, is_primary, sort_order) VALUES (@vehicleId, @image, 1, 0)');
   }
 };
 
@@ -486,6 +864,10 @@ const mapBookingRow = async (p, row) => {
     mappedStatus = 'rejected';
   }
 
+  const payRes = await p.request().input('bookingId', sql.Int, row.booking_id)
+    .query('SELECT payment_method FROM Payment WHERE booking_id = @bookingId');
+  const paymentMethod = payRes.recordset.length > 0 ? payRes.recordset[0].payment_method : 'bank_transfer';
+
   return {
     id: String(row.booking_id),
     userId: String(row.renter_id),
@@ -495,9 +877,9 @@ const mapBookingRow = async (p, row) => {
     pickupLocation: row.pickup_address,
     totalPrice: Number(row.rental_price),
     depositAmount: Number(row.deposit_amount),
-    depositStatus: 'paid', // Mark paid for QR checkout demo flow
+    depositStatus: (row.payment_status || 'Pending').toLowerCase(),
     status: mappedStatus,
-    paymentMethod: 'bank_transfer',
+    paymentMethod: paymentMethod,
     handoverDocs: row.handover_docs ? JSON.parse(row.handover_docs) : { pickup: null, return: null },
     issueReport: row.issue_report ? JSON.parse(row.issue_report) : null,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString()
@@ -709,11 +1091,12 @@ export const db = {
 
       // 3. Update Wallet (balance, bank fields)
       let walletUpdates = [];
-      const walletRequest = p.request().input('userId', sql.Int, userId);
+      const walletRequest = p.request()
+        .input('userId', sql.Int, userId)
+        .input('balance', sql.Decimal(18, 2), updateData.walletBalance !== undefined ? updateData.walletBalance : null);
 
       if (updateData.walletBalance !== undefined) {
         walletUpdates.push('balance = @balance');
-        walletRequest.input('balance', sql.Decimal(18, 2), updateData.walletBalance);
       }
       if (updateData.bankAccount !== undefined) {
         if (updateData.bankAccount) {
@@ -1192,7 +1575,10 @@ export const db = {
         .query('SELECT owner_id FROM Vehicle WHERE vehicle_id = @vehicleId');
       const isOwnerCar = carRes.recordset.length > 0 && carRes.recordset[0].owner_id !== null;
 
-      const status = isOwnerCar ? 'Pending' : 'Approved';
+      const isVnpay = bookingData.paymentMethod === 'vnpay';
+      const initialPaymentStatus = isVnpay ? 'Pending' : 'Paid';
+      const initialBookingStatus = isVnpay ? 'Pending' : (isOwnerCar ? 'Pending' : 'Approved');
+
       const price = parseInt(bookingData.totalPrice);
       const deposit = 5000000;
 
@@ -1204,11 +1590,12 @@ export const db = {
         .input('pickupLocation', sql.NVarChar, bookingData.pickupLocation)
         .input('price', sql.Decimal(18, 2), price)
         .input('deposit', sql.Decimal(18, 2), deposit)
-        .input('status', sql.NVarChar, status);
+        .input('status', sql.NVarChar, initialBookingStatus)
+        .input('paymentStatus', sql.NVarChar, initialPaymentStatus);
 
       const insertBookingQuery = `
-        INSERT INTO Booking (renter_id, vehicle_id, start_datetime, end_datetime, pickup_address, return_address, rental_price, deposit_amount, platform_fee, total_amount, status, created_at, updated_at)
-        VALUES (@renterId, @vehicleId, CAST(@pickupDate AS DATETIME2), CAST(@returnDate AS DATETIME2), @pickupLocation, @pickupLocation, @price, @deposit, 0, @price + @deposit, @status, GETDATE(), GETDATE());
+        INSERT INTO Booking (renter_id, vehicle_id, start_datetime, end_datetime, pickup_address, return_address, rental_price, deposit_amount, platform_fee, total_amount, status, payment_status, created_at, updated_at)
+        VALUES (@renterId, @vehicleId, CAST(@pickupDate AS DATETIME2), CAST(@returnDate AS DATETIME2), @pickupLocation, @pickupLocation, @price, @deposit, 0, @price + @deposit, @status, @paymentStatus, GETDATE(), GETDATE());
         SELECT SCOPE_IDENTITY() as booking_id;
       `;
       const res = await request.query(insertBookingQuery);
@@ -1222,11 +1609,14 @@ export const db = {
         .input('bookingId', sql.Int, bookingId)
         .input('payerId', sql.Int, renterId)
         .input('amount', sql.Decimal(18, 2), price + deposit)
-        .input('method', sql.NVarChar, bookingData.paymentMethod || 'bank_transfer');
-      await payRequest.query(`
+        .input('method', sql.NVarChar, bookingData.paymentMethod || 'bank_transfer')
+        .input('payStatus', sql.NVarChar, isVnpay ? 'Pending' : 'Success');
+
+      const insertPaymentQuery = `
         INSERT INTO Payment (booking_id, payer_id, amount, payment_type, payment_method, status, paid_at, created_at)
-        VALUES (@bookingId, @payerId, @amount, 'RentalFee', @method, 'Success', GETDATE(), GETDATE())
-      `);
+        VALUES (@bookingId, @payerId, @amount, 'RentalFee', @method, @payStatus, ${isVnpay ? 'NULL' : 'GETDATE()'}, GETDATE())
+      `;
+      await payRequest.query(insertPaymentQuery);
 
       return await db.bookings.findOne({ id: String(bookingId) });
     },
@@ -1257,6 +1647,18 @@ export const db = {
             WHERE vehicle_id = (SELECT vehicle_id FROM Booking WHERE booking_id = @bookingId)
           `);
         }
+      }
+      if (updateData.depositStatus !== undefined) {
+        const dbDepositStatusMap = {
+          'pending': 'Pending',
+          'paid': 'Paid',
+          'refunded': 'Refunded',
+          'withheld': 'Withheld'
+        };
+        const dbDepositStatus = dbDepositStatusMap[updateData.depositStatus.toLowerCase()] || 
+          (updateData.depositStatus.charAt(0).toUpperCase() + updateData.depositStatus.slice(1));
+        updates.push('payment_status = @depositStatus');
+        request.input('depositStatus', sql.NVarChar, dbDepositStatus);
       }
       if (updateData.handoverDocs !== undefined) {
         updates.push('handover_docs = @handoverDocs');
@@ -1585,6 +1987,98 @@ export const db = {
         resolutionDetails: row.resolution ? { resolution: row.resolution, resolvedAt: row.resolved_at } : null,
         createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString()
       };
+    }
+  },
+
+  // Payments VNPAY Operations
+  payments: {
+    confirmVnpayPayment: async ({ bookingId, vnpTxnRef, vnpTransactionNo, vnpResponseCode, vnpTransactionStatus, targetStatus }) => {
+      const p = await getPool();
+      const transaction = new sql.Transaction(p);
+      try {
+        await transaction.begin();
+
+        // 1. Update Booking payment_status and status
+        const bookingRequest = new sql.Request(transaction)
+          .input('bookingId', sql.Int, parseInt(bookingId))
+          .input('status', sql.NVarChar, targetStatus);
+        await bookingRequest.query(`
+          UPDATE Booking 
+          SET status = @status, payment_status = 'Paid', updated_at = GETDATE() 
+          WHERE booking_id = @bookingId
+        `);
+
+        // 2. Update Payment status to 'Success' and fill VNPAY columns
+        const paymentRequest = new sql.Request(transaction)
+          .input('bookingId', sql.Int, parseInt(bookingId))
+          .input('vnpTxnRef', sql.NVarChar, vnpTxnRef)
+          .input('vnpTransactionNo', sql.NVarChar, vnpTransactionNo)
+          .input('vnpResponseCode', sql.NVarChar, vnpResponseCode)
+          .input('vnpTransactionStatus', sql.NVarChar, vnpTransactionStatus);
+        await paymentRequest.query(`
+          UPDATE Payment 
+          SET status = 'Success', 
+              paid_at = GETDATE(), 
+              vnp_txn_ref = @vnpTxnRef, 
+              vnp_transaction_no = @vnpTransactionNo, 
+              vnp_response_code = @vnpResponseCode, 
+              vnp_transaction_status = @vnpTransactionStatus
+          WHERE booking_id = @bookingId AND status = 'Pending'
+        `);
+
+        await transaction.commit();
+        return true;
+      } catch (err) {
+        await transaction.rollback();
+        throw err;
+      }
+    },
+
+    failVnpayPayment: async ({ bookingId, vnpTxnRef, vnpTransactionNo, vnpResponseCode, vnpTransactionStatus }) => {
+      const p = await getPool();
+      const transaction = new sql.Transaction(p);
+      try {
+        await transaction.begin();
+
+        // 1. Update Booking status to 'Cancelled' and payment_status to 'Failed'
+        const bookingRequest = new sql.Request(transaction)
+          .input('bookingId', sql.Int, parseInt(bookingId));
+        await bookingRequest.query(`
+          UPDATE Booking 
+          SET status = 'Cancelled', payment_status = 'Failed', updated_at = GETDATE() 
+          WHERE booking_id = @bookingId
+        `);
+
+        // Release the vehicle back to 'Available'
+        await bookingRequest.query(`
+          UPDATE Vehicle 
+          SET status = 'Available'
+          WHERE vehicle_id = (SELECT vehicle_id FROM Booking WHERE booking_id = @bookingId)
+        `);
+
+        // 2. Update Payment status to 'Failed'
+        const paymentRequest = new sql.Request(transaction)
+          .input('bookingId', sql.Int, parseInt(bookingId))
+          .input('vnpTxnRef', sql.NVarChar, vnpTxnRef)
+          .input('vnpTransactionNo', sql.NVarChar, vnpTransactionNo)
+          .input('vnpResponseCode', sql.NVarChar, vnpResponseCode)
+          .input('vnpTransactionStatus', sql.NVarChar, vnpTransactionStatus);
+        await paymentRequest.query(`
+          UPDATE Payment 
+          SET status = 'Failed', 
+              vnp_txn_ref = @vnpTxnRef, 
+              vnp_transaction_no = @vnpTransactionNo, 
+              vnp_response_code = @vnpResponseCode, 
+              vnp_transaction_status = @vnpTransactionStatus
+          WHERE booking_id = @bookingId AND status = 'Pending'
+        `);
+
+        await transaction.commit();
+        return true;
+      } catch (err) {
+        await transaction.rollback();
+        throw err;
+      }
     }
   },
 
