@@ -8,9 +8,22 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   const [loading, setLoading] = useState(false);
   const [licenseUploading, setLicenseUploading] = useState(false);
   const [bookingId] = useState(() => crypto.randomUUID().slice(0, 8).toUpperCase());
+  const [systemConfig, setSystemConfig] = useState(null);
 
   const { car, pickupDate, returnDate, pickupLocation } = bookingDetails;
   const { showToast } = useToast();
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const config = await api.system.getConfig();
+        setSystemConfig(config);
+      } catch (error) {
+        console.error('Lỗi tải cấu hình hệ thống:', error);
+      }
+    };
+    fetchConfig();
+  }, []);
 
   // Calculate rental days
   const start = new Date(pickupDate);
@@ -76,9 +89,14 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
+  const bankId = systemConfig?.bankId || 'mbbank';
+  const bankAccountNumber = systemConfig?.bankAccountNumber || '1900533588';
+  const bankAccountHolder = systemConfig?.bankAccountHolder || 'ViVuCar DEMO SYSTEM';
+  const bankName = systemConfig?.bankName || 'Ngân hàng Quân Đội (MBBank)';
+
   // VietQR Dynamic Link Generator
   // Format: https://img.vietqr.io/image/<BANK_ID>-<ACCOUNT_NO>-<TEMPLATE>.png?amount=<AMOUNT>&addInfo=<MEMO>
-  const vietQrUrl = `https://img.vietqr.io/image/mbbank-1900533588-compact.png?amount=${totalPrice}&addInfo=SWP391%20THUEXE%20${car.brand}%20${bookingId}&accountName=ViVuCar%20DEMO`;
+  const vietQrUrl = `https://img.vietqr.io/image/${bankId}-${bankAccountNumber}-compact.png?amount=${totalPrice}&addInfo=SWP391%20THUEXE%20${car.brand}%20${bookingId}&accountName=${encodeURIComponent(bankAccountHolder)}`;
 
   return (
     <div className="booking-modal-overlay">
@@ -208,15 +226,15 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
               <div className="payment-text-details">
                 <div className="bank-detail-row">
                   <span className="lbl">Tên ngân hàng</span>
-                  <strong className="val">Ngân hàng Quân Đội (MBBank)</strong>
+                  <strong className="val">{bankName}</strong>
                 </div>
                 <div className="bank-detail-row">
                   <span className="lbl">Số tài khoản nhận</span>
-                  <strong className="val text-primary" style={{ fontSize: '16px' }}>1900533588</strong>
+                  <strong className="val text-primary" style={{ fontSize: '16px' }}>{bankAccountNumber}</strong>
                 </div>
                 <div className="bank-detail-row">
                   <span className="lbl">Tên tài khoản</span>
-                  <strong className="val">ViVuCar DEMO SYSTEM</strong>
+                  <strong className="val">{bankAccountHolder}</strong>
                 </div>
                 <div className="bank-detail-row">
                   <span className="lbl">Số tiền cần chuyển</span>

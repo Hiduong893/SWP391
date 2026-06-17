@@ -8,6 +8,14 @@ export const ConfigTab = ({
   setInsuranceMul,
   sysNotice,
   setSysNotice,
+  bankId,
+  setBankId,
+  bankName,
+  setBankName,
+  bankAccountNumber,
+  setBankAccountNumber,
+  bankAccountHolder,
+  setBankAccountHolder,
   handleUpdateConfig,
   actionLoading
 }) => {
@@ -63,6 +71,67 @@ export const ConfigTab = ({
                 placeholder="Nhập thông báo chung hiển thị cho người dùng toàn hệ thống..."
               />
               <span className="input-helper-text">Thông báo hiển thị dạng banner cho người dùng.</span>
+            </div>
+          </div>
+
+          <div className="config-card-header mt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <Settings size={18} className="text-yellow" />
+            <span>Cấu hình tài khoản nhận thanh toán (VietQR)</span>
+          </div>
+
+          <div className="config-form-row">
+            <div className="config-input-group">
+              <label className="config-input-label">Mã ngân hàng (VietQR Bank ID) *</label>
+              <input
+                type="text"
+                className="config-text-input"
+                value={bankId}
+                onChange={(e) => setBankId(e.target.value)}
+                placeholder="Ví dụ: mbbank, vietcombank, techcombank..."
+                required
+              />
+              <span className="input-helper-text">Mã định danh viết thường của ngân hàng hỗ trợ bởi VietQR.</span>
+            </div>
+
+            <div className="config-input-group">
+              <label className="config-input-label">Tên ngân hàng *</label>
+              <input
+                type="text"
+                className="config-text-input"
+                value={bankName}
+                onChange={(e) => setBankName(e.target.value)}
+                placeholder="Ví dụ: Ngân hàng Quân Đội (MBBank)"
+                required
+              />
+              <span className="input-helper-text">Tên hiển thị đầy đủ của ngân hàng nhận tiền.</span>
+            </div>
+          </div>
+
+          <div className="config-form-row">
+            <div className="config-input-group">
+              <label className="config-input-label">Số tài khoản nhận *</label>
+              <input
+                type="text"
+                className="config-text-input"
+                value={bankAccountNumber}
+                onChange={(e) => setBankAccountNumber(e.target.value)}
+                placeholder="Nhập số tài khoản nhận tiền..."
+                required
+              />
+              <span className="input-helper-text">Số tài khoản ngân hàng để tạo mã QR và nhận chuyển khoản.</span>
+            </div>
+
+            <div className="config-input-group">
+              <label className="config-input-label">Tên chủ tài khoản *</label>
+              <input
+                type="text"
+                className="config-text-input"
+                value={bankAccountHolder}
+                onChange={(e) => setBankAccountHolder(e.target.value)}
+                placeholder="Nhập tên chủ tài khoản viết hoa..."
+                required
+              />
+              <span className="input-helper-text">Tên chủ tài khoản viết hoa không dấu (ví dụ: NGUYEN VAN A).</span>
             </div>
           </div>
 

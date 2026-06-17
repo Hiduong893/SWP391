@@ -44,6 +44,10 @@ export const AdminDashboard = ({ setCurrentTab }) => {
   const [serviceFee, setServiceFee] = useState(5);
   const [insuranceMul, setInsuranceMul] = useState(1.1);
   const [sysNotice, setSysNotice] = useState('');
+  const [bankId, setBankId] = useState('mbbank');
+  const [bankName, setBankName] = useState('Ngân hàng Quân Đội (MBBank)');
+  const [bankAccountNumber, setBankAccountNumber] = useState('1900533588');
+  const [bankAccountHolder, setBankAccountHolder] = useState('ViVuCar DEMO SYSTEM');
 
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -118,6 +122,10 @@ export const AdminDashboard = ({ setCurrentTab }) => {
       setServiceFee(config.serviceFeePercent);
       setInsuranceMul(config.insuranceMultiplier);
       setSysNotice(config.systemNotice || '');
+      setBankId(config.bankId || 'mbbank');
+      setBankName(config.bankName || 'Ngân hàng Quân Đội (MBBank)');
+      setBankAccountNumber(config.bankAccountNumber || '1900533588');
+      setBankAccountHolder(config.bankAccountHolder || 'ViVuCar DEMO SYSTEM');
 
     } catch (error) {
       console.error('Fetch command center error:', error);
@@ -208,7 +216,11 @@ export const AdminDashboard = ({ setCurrentTab }) => {
       const data = await api.admin.updateSystemConfig({
         serviceFeePercent: serviceFee,
         insuranceMultiplier: insuranceMul,
-        systemNotice: sysNotice
+        systemNotice: sysNotice,
+        bankId,
+        bankName,
+        bankAccountNumber,
+        bankAccountHolder
       });
       showToast(data.message, 'success');
       fetchDashboardData(true);
@@ -621,6 +633,14 @@ export const AdminDashboard = ({ setCurrentTab }) => {
               setInsuranceMul={setInsuranceMul}
               sysNotice={sysNotice}
               setSysNotice={setSysNotice}
+              bankId={bankId}
+              setBankId={setBankId}
+              bankName={bankName}
+              setBankName={setBankName}
+              bankAccountNumber={bankAccountNumber}
+              setBankAccountNumber={setBankAccountNumber}
+              bankAccountHolder={bankAccountHolder}
+              setBankAccountHolder={setBankAccountHolder}
               handleUpdateConfig={handleUpdateConfig}
               actionLoading={actionLoading}
             />
