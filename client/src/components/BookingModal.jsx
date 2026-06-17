@@ -588,7 +588,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
           <div className="booking-modal-body text-center">
             <CheckCircle2 className="success-lottie-icon animate-bounce text-success mb-2" size={60} style={{ display: 'inline-block' }} />
             <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#10b981', marginBottom: '8px' }}>Thuê Xe Thành Công!</h2>
-            <p className="subtitle mt-1" style={{ color: '#cbd5e1' }}>Hệ thống đã nhận được thanh toán đặt xe của bạn.</p>
+            <p className="subtitle mt-1" style={{ color: '#64748b' }}>Hệ thống đã nhận được thanh toán đặt xe của bạn.</p>
 
             {/* Premium Printable Bill Receipt */}
             <div className="printable-receipt-card mt-4">
@@ -673,7 +673,7 @@ const injectBookingStyles = () => {
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(5, 5, 8, 0.85);
+      background: rgba(15, 23, 42, 0.5);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       display: flex;
@@ -685,9 +685,9 @@ const injectBookingStyles = () => {
     }
 
     .booking-modal-card {
-      background: #11131c;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
       border-radius: 20px;
       width: 100%;
       max-width: 600px;
@@ -701,11 +701,11 @@ const injectBookingStyles = () => {
 
     .booking-modal-header {
       padding: 20px 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      border-bottom: 1px solid #f1f5f9;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(255, 255, 255, 0.01);
+      background: #f8fafc;
     }
 
     .header-title-box {
@@ -724,7 +724,7 @@ const injectBookingStyles = () => {
     .booking-modal-header h3 {
       font-size: 18px;
       font-weight: 700;
-      color: #f8fafc;
+      color: #0f172a;
     }
 
     .btn-close-modal {
@@ -741,8 +741,8 @@ const injectBookingStyles = () => {
     }
 
     .btn-close-modal:hover {
-      color: #ffffff;
-      background: rgba(255, 255, 255, 0.1);
+      color: #0f172a;
+      background: #f1f5f9;
       transform: rotate(90deg);
     }
 
@@ -755,27 +755,26 @@ const injectBookingStyles = () => {
     .booking-car-summary {
       display: flex;
       gap: 16px;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      border-radius: 14px;
-      padding: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px;
       align-items: center;
       transition: all 0.3s ease;
     }
 
     .booking-car-summary:hover {
-      background: rgba(255, 255, 255, 0.04);
-      border-color: rgba(255, 255, 255, 0.08);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
     }
 
     .summary-car-img {
       width: 120px;
       height: 75px;
       object-fit: cover;
-      border-radius: 10px;
-      background: #0a0b10;
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      background: #f1f5f9;
     }
 
     .summary-car-info {
@@ -791,10 +790,9 @@ const injectBookingStyles = () => {
     }
 
     .summary-car-info h4 {
-      font-size: 18px;
-      font-weight: 800;
-      color: white;
-      margin-top: 2px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
     }
 
     .car-desc-sub {
@@ -814,18 +812,10 @@ const injectBookingStyles = () => {
       display: flex;
       gap: 12px;
       align-items: flex-start;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      padding: 14px 16px;
-      border-radius: 14px;
-      transition: all 0.3s ease;
-    }
-
-    .detail-item:hover {
-      background: rgba(255, 255, 255, 0.04);
-      border-color: rgba(255, 255, 255, 0.08);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 12px;
+      border-radius: 12px;
     }
 
     .detail-lbl {
@@ -839,7 +829,7 @@ const injectBookingStyles = () => {
     .detail-val {
       font-size: 13px;
       font-weight: 600;
-      color: #f8fafc;
+      color: #1e293b;
       text-align: left;
       display: block;
       margin-top: 4px;
@@ -854,21 +844,16 @@ const injectBookingStyles = () => {
 
     /* Cost Breakdown */
     .cost-breakdown-card {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 14px;
-      padding: 20px;
-      transition: all 0.3s ease;
-    }
-
-    .cost-breakdown-card:hover {
-      border-color: rgba(255, 255, 255, 0.08);
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
     }
 
     .cost-breakdown-card h5 {
       font-size: 13px;
       font-weight: 800;
-      color: #f8fafc;
+      color: #0f172a;
       margin-bottom: 16px;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -878,21 +863,21 @@ const injectBookingStyles = () => {
       display: flex;
       justify-content: space-between;
       font-size: 13.5px;
-      color: #cbd5e1;
+      color: #475569;
       margin-bottom: 12px;
     }
 
     .cost-divider {
       border: none;
       height: 1px;
-      background: rgba(255, 255, 255, 0.08);
-      margin: 14px 0;
+      background: #e2e8f0;
+      margin: 12px 0;
     }
 
     .total-row {
       font-weight: 800;
-      color: white;
-      font-size: 16px;
+      color: #0f172a;
+      font-size: 15px;
       margin-bottom: 0;
     }
 
@@ -903,9 +888,9 @@ const injectBookingStyles = () => {
     }
 
     .license-status-success {
-      background: rgba(16, 185, 129, 0.05);
-      border: 1px solid rgba(16, 185, 129, 0.15);
-      color: #a7f3d0;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
       display: flex;
       gap: 12px;
       align-items: center;
@@ -915,20 +900,20 @@ const injectBookingStyles = () => {
     }
 
     .license-status-success:hover {
-      background: rgba(16, 185, 129, 0.08);
-      border-color: rgba(16, 185, 129, 0.25);
+      background: #d1fae5;
+      border-color: #34d399;
     }
 
     .license-status-success p {
       font-size: 12.5px;
-      color: #34d399;
+      color: #047857;
       margin-top: 3px;
     }
 
     .license-status-warning {
-      background: rgba(245, 158, 11, 0.05);
-      border: 1px solid rgba(245, 158, 11, 0.15);
-      color: #fde68a;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #92400e;
       display: flex;
       gap: 12px;
       align-items: flex-start;
@@ -938,13 +923,13 @@ const injectBookingStyles = () => {
     }
 
     .license-status-warning:hover {
-      background: rgba(245, 158, 11, 0.08);
-      border-color: rgba(245, 158, 11, 0.25);
+      background: #fef3c7;
+      border-color: #fbbf24;
     }
 
     .license-status-warning p {
       font-size: 12.5px;
-      color: #fbbf24;
+      color: #b45309;
       margin-top: 3px;
       line-height: 1.5;
     }
@@ -978,7 +963,7 @@ const injectBookingStyles = () => {
     }
 
     .new-payment-layout {
-      color: #cbd5e1;
+      color: #1e293b;
     }
 
     .payment-grid-columns {
@@ -998,22 +983,20 @@ const injectBookingStyles = () => {
     }
 
     .white-card {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
       border-radius: 16px;
       padding: 24px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      color: #cbd5e1;
+      box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+      color: #475569;
     }
 
     .card-sub-title {
       font-size: 16px;
       font-weight: 700;
-      color: #ffffff;
+      color: #0f172a;
       margin-bottom: 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid #f1f5f9;
       padding-bottom: 12px;
       text-align: left;
     }
@@ -1024,7 +1007,7 @@ const injectBookingStyles = () => {
 
     .card-sub-description {
       font-size: 13px;
-      color: #94a3b8;
+      color: #64748b;
       line-height: 1.5;
       margin-bottom: 16px;
     }
@@ -1035,7 +1018,6 @@ const injectBookingStyles = () => {
       color: #6366f1;
       text-align: center;
       margin: 12px 0;
-      text-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
     }
 
     .timer-box-lbl {
@@ -1043,42 +1025,42 @@ const injectBookingStyles = () => {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: #94a3b8;
+      color: #64748b;
       text-align: center;
     }
 
     .timer-countdown-clock {
       font-size: 24px;
       font-weight: 800;
-      color: #f87171;
+      color: #dc2626;
       text-align: center;
       margin: 6px auto 16px auto;
       font-family: monospace;
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.25);
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
       padding: 6px 16px;
       border-radius: 8px;
       display: table;
-      box-shadow: 0 0 10px rgba(239, 68, 68, 0.1);
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.05);
     }
 
     .booking-code-line {
       font-size: 13px;
-      color: #cbd5e1;
+      color: #475569;
       text-align: center;
-      background: rgba(255, 255, 255, 0.02);
+      background: #f8fafc;
       padding: 10px;
       border-radius: 8px;
-      border: 1px dashed rgba(255, 255, 255, 0.15);
+      border: 1px dashed #cbd5e1;
       margin-bottom: 16px;
     }
 
     .car-detail-inline-box {
       font-size: 13px;
-      background: rgba(255, 255, 255, 0.02);
+      background: #f8fafc;
       padding: 12px;
       border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      border: 1px solid #e2e8f0;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -1090,11 +1072,11 @@ const injectBookingStyles = () => {
     }
 
     .detail-inline-row .lbl {
-      color: #94a3b8;
+      color: #64748b;
     }
 
     .detail-inline-row .val {
-      color: #ffffff;
+      color: #1e293b;
       font-weight: 600;
     }
 
@@ -1106,16 +1088,15 @@ const injectBookingStyles = () => {
     .vietqr-inline-logo {
       height: 32px;
       object-fit: contain;
-      filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.15));
     }
 
     .vietqr-frame-box {
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid #e2e8f0;
       border-radius: 12px;
       padding: 16px;
       display: inline-block;
       background: #ffffff;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
       margin: 0 auto 16px auto;
       text-align: center;
     }
@@ -1154,7 +1135,7 @@ const injectBookingStyles = () => {
       top: 50%;
       width: 40%;
       height: 1px;
-      background: rgba(255, 255, 255, 0.08);
+      background: #e2e8f0;
     }
 
     .divider-or-text::before { left: 0; }
@@ -1163,7 +1144,7 @@ const injectBookingStyles = () => {
     .bank-title-transfer {
       font-size: 14px;
       font-weight: 700;
-      color: #ffffff;
+      color: #0f172a;
       text-align: center;
       margin-bottom: 4px;
     }
@@ -1171,9 +1152,9 @@ const injectBookingStyles = () => {
     .alert-memo-warn {
       font-size: 11px;
       line-height: 1.4;
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.25);
-      color: #fca5a5;
+      background: #fff5f5;
+      border: 1px solid #fee2e2;
+      color: #dc2626;
       padding: 10px;
       border-radius: 8px;
       margin-bottom: 16px;
@@ -1191,8 +1172,8 @@ const injectBookingStyles = () => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
       border-radius: 8px;
       padding: 8px 12px;
     }
@@ -1206,19 +1187,19 @@ const injectBookingStyles = () => {
 
     .field-value-col .lbl {
       font-size: 11px;
-      color: #94a3b8;
+      color: #64748b;
     }
 
     .field-value-col .val {
       font-size: 13px;
-      color: #ffffff;
+      color: #1e293b;
       font-weight: 600;
     }
 
     .btn-copy-action {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #cbd5e1;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      color: #475569;
       padding: 4px 8px;
       border-radius: 6px;
       font-size: 11px;
@@ -1228,9 +1209,9 @@ const injectBookingStyles = () => {
     }
 
     .btn-copy-action:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.2);
-      color: #ffffff;
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+      color: #0f172a;
     }
 
     .car-preview-img-container {
@@ -1238,8 +1219,8 @@ const injectBookingStyles = () => {
       border-radius: 8px;
       overflow: hidden;
       margin-bottom: 16px;
-      background: rgba(0, 0, 0, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
       text-align: center;
     }
 
@@ -1259,7 +1240,7 @@ const injectBookingStyles = () => {
       display: flex;
       justify-content: space-between;
       font-size: 13px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      border-bottom: 1px solid #f1f5f9;
       padding-bottom: 8px;
     }
 
@@ -1269,11 +1250,11 @@ const injectBookingStyles = () => {
     }
 
     .info-row .lbl {
-      color: #94a3b8;
+      color: #64748b;
     }
 
     .info-row .val {
-      color: #ffffff;
+      color: #1e293b;
       font-weight: 600;
     }
 
@@ -1281,8 +1262,8 @@ const injectBookingStyles = () => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(16, 185, 129, 0.08);
-      border: 1px solid rgba(16, 185, 129, 0.25);
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
       padding: 12px 14px;
       border-radius: 10px;
     }
@@ -1296,20 +1277,19 @@ const injectBookingStyles = () => {
     .lbl-box .main {
       font-size: 13.5px;
       font-weight: 700;
-      color: #34d399;
+      color: #059669;
     }
 
     .lbl-box .sub {
       font-size: 10px;
-      color: #10b981;
+      color: #059669;
       margin-top: 1px;
     }
 
     .val-price {
       font-size: 18px;
       font-weight: 800;
-      color: #34d399;
-      text-shadow: 0 0 10px rgba(52, 211, 153, 0.25);
+      color: #059669;
     }
 
     .payment-steps-list {
@@ -1336,7 +1316,7 @@ const injectBookingStyles = () => {
       font-size: 12px;
       font-weight: 800;
       flex-shrink: 0;
-      box-shadow: 0 0 8px rgba(99, 102, 241, 0.35);
+      box-shadow: 0 0 8px rgba(99, 102, 241, 0.2);
     }
 
     .step-content {
@@ -1349,19 +1329,19 @@ const injectBookingStyles = () => {
       justify-content: space-between;
       font-size: 13.5px;
       font-weight: 700;
-      color: #ffffff;
+      color: #1e293b;
     }
 
     .step-desc {
       font-size: 11.5px;
-      color: #94a3b8;
+      color: #64748b;
       margin-top: 4px;
       line-height: 1.45;
     }
 
     .step-breakdown-details {
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.04);
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
       border-radius: 8px;
       padding: 10px 12px;
       display: flex;
@@ -1374,21 +1354,26 @@ const injectBookingStyles = () => {
     .breakdown-row {
       display: flex;
       justify-content: space-between;
-      color: #cbd5e1;
+      color: #64748b;
     }
 
     .breakdown-row strong {
-      color: #ffffff;
+      color: #1e293b;
     }
 
     .strike-text {
       text-decoration: line-through;
-      color: #64748b;
+      color: #94a3b8;
     }
 
     .text-orange {
       color: #f97316;
       font-weight: 700;
+    }
+
+    .bank-detail-row .val {
+      font-size: 13px;
+      color: #1e293b;
     }
 
     /* Receipt printable bill with zig-zag edge */
@@ -1397,7 +1382,8 @@ const injectBookingStyles = () => {
       color: #0f172a;
       border-radius: 12px;
       padding: 32px 24px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+      border: 1px solid #e2e8f0;
       position: relative;
       overflow: hidden;
       max-width: 420px;
@@ -1411,7 +1397,7 @@ const injectBookingStyles = () => {
       left: 0;
       right: 0;
       height: 6px;
-      background: linear-gradient(-135deg, #11131c 4px, transparent 0), linear-gradient(135deg, #11131c 4px, transparent 0);
+      background: linear-gradient(-135deg, #f1f5f9 4px, transparent 0), linear-gradient(135deg, #f1f5f9 4px, transparent 0);
       background-size: 8px 6px;
       background-repeat: repeat-x;
       z-index: 10;
@@ -1501,3 +1487,4 @@ const injectBookingStyles = () => {
 };
 
 injectBookingStyles();
+
