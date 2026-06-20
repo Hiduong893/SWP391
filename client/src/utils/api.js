@@ -168,6 +168,12 @@ export const api = {
         body: JSON.stringify(bookingData)
       }),
       
+    createVnpayUrl: (bookingId) =>
+      request('/payments/vnpay/create', {
+        method: 'POST',
+        body: JSON.stringify({ bookingId })
+      }),
+      
     getMyTrips: () => 
       request('/bookings/my-trips', {
         method: 'GET'
@@ -367,6 +373,14 @@ export const api = {
     deleteUser: (id) =>
       request(`/admin/users/${id}`, {
         method: 'DELETE'
+      })
+  },
+
+  chatbot: {
+    sendMessage: (message, history) => 
+      request('/chatbot/message', {
+        method: 'POST',
+        body: JSON.stringify({ message, history })
       })
   },
   

@@ -13,6 +13,13 @@ export const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'Token không hợp lệ.' });
     }
 
+    if (!process.env.JWT_SECRET) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('JWT_SECRET is not defined in the environment variables! Server crashed for security.');
+      } else {
+        console.warn('WARNING: JWT_SECRET is not defined in .env! Falling back to default insecure key for development.');
+      }
+    }
     const JWT_SECRET = process.env.JWT_SECRET || 'swp391-super-secret-key-12345';
     const decoded = jwt.verify(token, JWT_SECRET);
     

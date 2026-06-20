@@ -298,12 +298,16 @@ router.put('/api/admin/cars/:id/moderation', auth, cskhOrAdminAuth, async (req, 
 // 3. System notices & Pricing policies adjustment
 router.put('/api/admin/system/config', auth, adminAuth, async (req, res) => {
   try {
-    const { serviceFeePercent, insuranceMultiplier, systemNotice } = req.body;
+    const { serviceFeePercent, insuranceMultiplier, systemNotice, bankId, bankName, bankAccountNumber, bankAccountHolder } = req.body;
 
     const updated = await db.system_config.update({
       serviceFeePercent: serviceFeePercent !== undefined ? parseFloat(serviceFeePercent) : undefined,
       insuranceMultiplier: insuranceMultiplier !== undefined ? parseFloat(insuranceMultiplier) : undefined,
-      systemNotice
+      systemNotice,
+      bankId,
+      bankName,
+      bankAccountNumber,
+      bankAccountHolder
     });
 
     res.json({

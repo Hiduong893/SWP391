@@ -16,6 +16,7 @@ import { MyTrips } from './pages/MyTrips/MyTrips';
 import { AdminDashboard } from './pages/AdminDashboard/AdminDashboard';
 import { BookingModal } from './components/BookingModal';
 import { SimulatedInbox } from './components/SimulatedInbox';
+import { ChatbotWidget } from './components/ChatbotWidget';
 
 import { api } from './utils/api';
 import { useToast } from './components/Toast';
@@ -75,6 +76,7 @@ function App() {
     const path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
+    const vnpayStatus = params.get('vnpay_status');
 
     if (token) {
       if (path.includes('verify-email')) {
@@ -85,10 +87,24 @@ function App() {
         setCurrentTab('reset-password');
       }
       setLoading(false);
-      // Clear query params to make URL clean
       window.history.replaceState({}, document.title, '/');
     } else {
       checkAutoLogin();
+    }
+
+    if (vnpayStatus) {
+      if (vnpayStatus === 'success') {
+        showToast('Thanh toán đặt xe qua VNPAY thành công!', 'success');
+        setCurrentTab('my-trips');
+      } else if (vnpayStatus === 'failed') {
+        showToast('Thanh toán đặt xe qua VNPAY thất bại hoặc đã bị hủy.', 'error');
+        setCurrentTab('rent-car');
+      } else if (vnpayStatus === 'invalid_signature') {
+        showToast('Chữ ký thanh toán VNPAY không hợp lệ.', 'error');
+      } else if (vnpayStatus === 'error') {
+        showToast('Lỗi xử lý thanh toán VNPAY.', 'error');
+      }
+      window.history.replaceState({}, document.title, '/');
     }
   }, []);
 
@@ -256,6 +272,9 @@ function App() {
           setCurrentTab={setCurrentTab}
         />
       )}
+
+      {/* --- AI SUPPORT CHATBOT WIDGET --- */}
+      <ChatbotWidget user={user} />
     </>
   );
 }
