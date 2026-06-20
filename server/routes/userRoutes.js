@@ -194,25 +194,38 @@ router.get('/wallet', auth, async (req, res) => {
 router.post('/wallet/transaction', auth, async (req, res) => {
   try {
     const { type, amount } = req.body;
-    const user = await db.users.findOne({ id: req.user.id });
-
-    let currentBalance = user.walletBalance || 0;
     const value = parseInt(amount);
 
-    if (type === 'withdraw') {
-      if (currentBalance < value) return res.status(400).json({ message: 'Số dư ví không đủ để rút tiền.' });
-      if (!user.bankAccount) return res.status(400).json({ message: 'Vui lòng liên kết tài khoản ngân hàng trước khi rút tiền.' });
-      currentBalance -= value;
-    } else {
-      currentBalance += value;
+    if (isNaN(value) || value <= 0) {
+      return res.status(400).json({ message: 'Số tiền giao dịch không hợp lệ.' });
     }
 
-    const updatedUser = await db.users.update(req.user.id, { walletBalance: currentBalance });
+    const user = await db.users.findOne({ id: req.user.id });
+    if (!user) return res.status(404).json({ message: 'Thành viên không tồn tại.' });
+
+    if (type === 'withdraw') {
+      const currentBalance = user.walletBalance || 0;
+      if (currentBalance < value) {
+        return res.status(400).json({ message: 'Số dư ví không đủ để rút tiền.' });
+      }
+      if (!user.bankAccount) {
+        return res.status(400).json({ message: 'Vui lòng liên kết tài khoản ngân hàng trước khi rút tiền.' });
+      }
+    }
+
+    const txnType = type === 'withdraw' ? 'Withdrawal' : 'TopUp';
+    const description = type === 'withdraw'
+      ? `Rút tiền về tài khoản ngân hàng ${user.bankAccount?.bankName} - ${user.bankAccount?.accountNumber}`
+      : 'Nạp tiền vào ví điện tử';
+
+    const updatedUser = await db.users.transactWallet(req.user.id, value, txnType, null, description);
+
     res.json({
       message: type === 'withdraw' ? 'Yêu cầu rút tiền về ngân hàng thành công!' : 'Nạp tiền vào ví điện tử thành công!',
       walletBalance: updatedUser.walletBalance
     });
   } catch (error) {
+    console.error('Wallet transaction error:', error);
     res.status(500).json({ message: 'Lỗi thực hiện giao dịch ví.' });
   }
 });

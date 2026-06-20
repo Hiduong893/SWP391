@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, DollarSign, RefreshCw, XCircle, ShieldCheck, Compass, Info, FileText, AlertTriangle, Star, ShieldAlert, Award, Upload, MessageSquare, PhoneCall, Send, HelpCircle } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, RefreshCw, X, ShieldCheck, Compass, Info, FileText, AlertTriangle, Star, ShieldAlert, Award, Upload, MessageSquare, PhoneCall, Send, CheckSquare, ClipboardList, Zap } from 'lucide-react';
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
 import './MyTrips.css';
@@ -68,7 +68,7 @@ export const MyTrips = () => {
   }, []);
 
   const handleCancelTrip = async (id) => {
-    const confirmCancel = window.confirm('Bạn có thực sự chắc chắn muốn hủy đơn đặt xe này không? Tiền cọc 5.000.000 VND sẽ được tự động hoàn lại vào Ví của bạn.');
+    const confirmCancel = window.confirm('Xác nhận hủy đơn đặt xe?\n\nTiền cọc 5.000.000 VND sẽ được hoàn trả tự động về Ví của bạn trong vòng vài phút.');
     if (!confirmCancel) return;
 
     try {
@@ -215,12 +215,12 @@ export const MyTrips = () => {
     <div className="my-trips-page">
       <div className="trips-header">
         <h2 className="title">Chuyến Đi Của Tôi</h2>
-        <button onClick={() => fetchTrips()} className="btn-refresh" title="Tải lại">
+        <button onClick={() => fetchTrips()} className="btn-refresh" title="Làm mới danh sách">
           <RefreshCw size={16} />
         </button>
       </div>
       <p className="subtitle" style={{ textAlign: 'left', marginBottom: '24px' }}>
-        Quản lý hành trình, trạng thái thanh toán, ký biên nhận điện tử nhận/trả xe và gửi phản hồi hỗ trợ tại ViVuCar.
+        Theo dõi hành trình, quản lý thanh toán, ký biên bản điện tử nhận/trả xe và gửi đánh giá tại ViVuCar.
       </p>
 
       {loading ? (
@@ -307,8 +307,8 @@ export const MyTrips = () => {
                           className="btn btn-primary btn-action-trip"
                           onClick={() => setActiveHandoverTrip({ trip, type: 'pickup' })}
                         >
-                          <FileText size={13} />
-                          Nhận xe (Biên bản)
+                          <ClipboardList size={13} />
+                          Nhận xe
                         </button>
                       )}
 
@@ -319,16 +319,16 @@ export const MyTrips = () => {
                             className="btn btn-primary btn-action-trip btn-success-bg"
                             onClick={() => setActiveHandoverTrip({ trip, type: 'return' })}
                           >
-                            <FileText size={13} />
-                            Trả xe (Biên bản)
+                            <CheckSquare size={13} />
+                            Trả xe
                           </button>
 
                           {/* UC17: Báo sự cố */}
                           <button
-                            className="btn btn-secondary btn-action-trip text-danger border-danger-glow"
+                            className="btn btn-secondary btn-action-trip border-danger-glow"
                             onClick={() => setActiveIncidentTrip(trip)}
                           >
-                            <AlertTriangle size={13} />
+                            <Zap size={13} />
                             Báo sự cố
                           </button>
                         </>
@@ -339,19 +339,22 @@ export const MyTrips = () => {
                         <>
                           {!trip.hasReviewed ? (
                             <button
-                              className="btn btn-primary btn-action-trip btn-star"
+                              className="btn btn-action-trip"
+                              style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', boxShadow: '0 4px 10px rgba(245,158,11,0.3)' }}
                               onClick={() => setActiveReviewTrip(trip)}
                             >
-                              <Star size={13} fill="#fbbf24" color="#fbbf24" />
+                              <Star size={13} fill="white" color="white" />
                               Đánh giá
                             </button>
                           ) : (
-                            <span className="text-success" style={{ fontSize: '12px', fontWeight: 6 }}>Đã gửi đánh giá ✓</span>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <ShieldCheck size={13} /> Đã đánh giá
+                            </span>
                           )}
 
                           <button
                             className="btn btn-secondary btn-action-trip"
-                            style={{ border: '1px solid rgba(239, 68, 68, 0.2)', color: '#fda4af' }}
+                            style={{ border: '1px solid rgba(239, 68, 68, 0.2)', color: '#dc2626', background: 'rgba(239,68,68,0.05)' }}
                             onClick={() => setActiveDisputeTrip(trip)}
                           >
                             <ShieldAlert size={13} />
@@ -363,9 +366,9 @@ export const MyTrips = () => {
                       {isCancellable && (
                         <button
                           onClick={() => handleCancelTrip(trip.id)}
-                          className="btn btn-secondary btn-cancel-trip"
+                          className="btn-cancel-trip"
                         >
-                          <XCircle size={14} />
+                          <X size={14} />
                           Hủy đặt xe
                         </button>
                       )}
@@ -379,24 +382,24 @@ export const MyTrips = () => {
       )}
 
       {/* 📞 UC07: HỆ THỐNG LIÊN HỆ CHĂM SÓC KHÁCH HÀNG 24/7 --- */}
-      <div className="support-tickets-section mt-12" style={{ background: 'rgba(17,19,28,0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: '24px', textAlign: 'left' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div className="support-tickets-section">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
-            <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '16px' }}>
-              <MessageSquare className="text-primary animate-bounce" size={20} />
-              <span>Hỗ Trợ Trực Tuyến &amp; Hotline CSKH (UC07)</span>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+              <MessageSquare size={20} style={{ color: '#009698' }} />
+              <span>Hỗ Trợ & CSKH 24/7</span>
             </h3>
-            <p style={{ fontSize: '12.5px', color: '#94a3b8', marginTop: 4 }}>
-              Gửi tin nhắn yêu cầu hỗ trợ hoặc gọi điện trực tiếp đến hotline 1900.8888 để được cứu hộ khẩn cấp 24/7.
+            <p style={{ fontSize: '13px', color: '#64748b', marginTop: 4 }}>
+              Gửi yêu cầu hỗ trợ hoặc gọi hotline 1900.8888 để được cứu hộ khẩn cấp.
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: 8 }}>
-            <a href="tel:19008888" className="btn btn-secondary" style={{ width: 'auto', padding: '6px 14px', fontSize: '12px', background: 'rgba(99,102,241,0.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <PhoneCall size={12} />
-              <span>Gọi 1900.8888</span>
+            <a href="tel:19008888" style={{ width: 'auto', padding: '8px 16px', fontSize: '13px', background: 'rgba(0,150,152,0.08)', color: '#009698', border: '1px solid rgba(0,150,152,0.2)', display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: '10px', fontWeight: 600, textDecoration: 'none', transition: 'all 0.2s' }}>
+              <PhoneCall size={14} />
+              <span>1900.8888</span>
             </a>
-            <button className="btn btn-primary" onClick={() => setShowSupportForm(!showSupportForm)} style={{ width: 'auto', padding: '6px 14px', fontSize: '12px' }}>
+            <button style={{ width: 'auto', padding: '8px 16px', fontSize: '13px', background: 'var(--accent-gradient)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setShowSupportForm(!showSupportForm)}>
               + Gửi Yêu Cầu
             </button>
           </div>
@@ -404,78 +407,84 @@ export const MyTrips = () => {
 
         {/* Create Ticket Form */}
         {showSupportForm && (
-          <form onSubmit={handleCreateTicketSubmit} className="ticket-form mb-6" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, padding: 16, animation: 'fadeIn 0.2s' }}>
-            <h4 style={{ fontSize: '13px', color: 'white', fontWeight: 700, marginBottom: 12 }}>Tạo ticket hỗ trợ mới</h4>
+          <form onSubmit={handleCreateTicketSubmit} style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 12, padding: 20, marginBottom: 20, animation: 'fadeIn 0.2s' }}>
+            <h4 style={{ fontSize: '14px', color: '#0f172a', fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <MessageSquare size={15} style={{ color: '#009698' }} />
+              Tạo yêu cầu hỗ trợ mới
+            </h4>
 
             <div className="form-group">
-              <label className="form-label" style={{ fontSize: '11px' }}>Vấn đề cần hỗ trợ (Tiêu đề) *</label>
+              <label className="form-label">Tiêu đề vấn đề cần hỗ trợ *</label>
               <input
                 type="text"
-                className="form-input"
-                style={{ padding: '8px 12px', fontSize: '13px' }}
-                placeholder="Vd: Không thanh toán được ví, Sự cố va quẹt nhẹ xe..."
+                className="form-control"
+                placeholder="Vd: Không thanh toán được ví, Sự cố va quẹt xe..."
                 value={ticketSubject}
                 onChange={(e) => setTicketSubject(e.target.value)}
                 required
               />
             </div>
 
-            <div className="form-group mt-2">
-              <label className="form-label" style={{ fontSize: '11px' }}>Nội dung chi tiết yêu cầu hỗ trợ *</label>
+            <div className="form-group mt-4">
+              <label className="form-label">Mô tả chi tiết *</label>
               <textarea
                 rows={3}
-                className="form-input"
-                style={{ padding: '8px 12px', fontSize: '13px', resize: 'none' }}
-                placeholder="Vui lòng cung cấp thông tin chi tiết vấn đề..."
+                className="form-control"
+                style={{ resize: 'vertical' }}
+                placeholder="Cung cấp thông tin chi tiết về vấn đề để CSKH hỗ trợ nhanh hơn..."
                 value={ticketMsg}
                 onChange={(e) => setTicketMsg(e.target.value)}
                 required
               />
             </div>
 
-            <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-secondary" style={{ width: 'auto', padding: '5px 12px', fontSize: '12px' }} onClick={() => setShowSupportForm(false)}>Hủy</button>
-              <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '5px 16px', fontSize: '12px' }}>Gửi Tin</button>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
+              <button type="button" className="btn btn-secondary" style={{ width: 'auto', padding: '8px 16px', fontSize: '13px' }} onClick={() => setShowSupportForm(false)}>Hủy</button>
+              <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '8px 20px', fontSize: '13px' }}>
+                <Send size={14} /> Gửi yêu cầu
+              </button>
             </div>
           </form>
         )}
 
         {/* Tickets list */}
         {tickets.length > 0 ? (
-          <div className="tickets-mini-list" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {tickets.map((t) => (
               <div
                 key={t.id}
-                className="ticket-mini-row"
                 onClick={() => setSelectedMyTicket(t)}
-                style={{ padding: '12px 16px', background: '#11131c', border: '1px solid rgba(255,255,255,0.03)', borderRadius: 10, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                style={{ padding: '14px 18px', background: '#ffffff', border: '1px solid var(--border-color)', borderRadius: 12, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#009698'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,150,152,0.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)'; }}
               >
                 <div>
-                  <strong style={{ fontSize: '13.5px', color: 'white', display: 'block' }}>{t.subject}</strong>
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>Gửi ngày: {new Date(t.createdAt).toLocaleDateString('vi-VN')} • Trạng thái:
-                    <strong style={{ color: t.status === 'replied' ? '#a855f7' : t.status === 'resolved' ? '#34d399' : '#fbbf24' }}>
-                      {t.status === 'open' ? ' Đang xử lý' : t.status === 'replied' ? ' Đã có phản hồi ✓' : ' Đã đóng'}
+                  <strong style={{ fontSize: '14px', color: '#0f172a', display: 'block', fontWeight: 600 }}>{t.subject}</strong>
+                  <span style={{ fontSize: '12px', color: '#64748b', marginTop: 2, display: 'block' }}>
+                    {new Date(t.createdAt).toLocaleDateString('vi-VN')} •
+                    <strong style={{ color: t.status === 'replied' ? '#7c3aed' : t.status === 'resolved' ? '#059669' : '#d97706', marginLeft: 4 }}>
+                      {t.status === 'open' ? 'Đang xử lý' : t.status === 'replied' ? 'Đã có phản hồi ✓' : 'Đã đóng'}
                     </strong>
                   </span>
                 </div>
-                <button className="btn-table-action" style={{ fontSize: '12px', padding: 0 }}>Xem chat</button>
+                <span style={{ fontSize: '12px', color: '#009698', fontWeight: 700, flexShrink: 0 }}>Xem chat →</span>
               </div>
             ))}
           </div>
         ) : (
-          <div style={{ padding: '16px 0', textAlign: 'center', color: '#475569', fontSize: '12.5px' }}>
-            Bạn chưa có yêu cầu hỗ trợ nào. Nhấn 'Gửi Yêu Cầu' nếu cần cứu hộ hoặc giải đáp thắc mắc.
+          <div style={{ padding: '20px 0', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+            Chưa có yêu cầu hỗ trợ nào. Nhấn nút bên trên để gửi yêu cầu khi cần thiết.
           </div>
         )}
       </div>
 
       {/* --- POPUP CHAT VỚI CSKH THÀNH VIÊN (UC07) --- */}
       {selectedMyTicket && (
-        <div className="editor-modal-overlay" onClick={() => setSelectedMyTicket(null)}>
-          <div className="editor-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px' }}>
-            <div className="editor-modal-header">
-              <h3>Hội Thoại Trực Tuyến Với CSKH</h3>
-              <button className="editor-close-btn" onClick={() => setSelectedMyTicket(null)}><XCircle size={20} /></button>
+        <div className="lightbox-overlay" onClick={() => setSelectedMyTicket(null)}>
+          <div className="lightbox-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '460px' }}>
+            <div className="lightbox-header" style={{ background: 'linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%)' }}>
+              <h4><MessageSquare size={18} style={{ color: '#009698' }} />Hội Thoại Trực Tuyến CSKH</h4>
+              <button className="btn-close-lightbox" onClick={() => setSelectedMyTicket(null)}><X size={18} /></button>
             </div>
 
             <div className="editor-modal-body" style={{ display: 'flex', flexDirection: 'column', height: '400px', padding: 20 }}>
@@ -548,16 +557,20 @@ export const MyTrips = () => {
       {/* --- POPUP 1: BIÊN BẢN BÀN GIAO ĐIỆN TỬ (UC18) --- */}
       {activeHandoverTrip && (
         <div className="lightbox-overlay" onClick={() => setActiveHandoverTrip(null)}>
-          <div className="lightbox-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-            <div className="lightbox-header">
-              <h4>Biên Bản Bàn Giao Xe Điện Tử ({activeHandoverTrip.type === 'pickup' ? 'Nhận Xe' : 'Trả Xe'})</h4>
-              <button className="btn-close-lightbox" onClick={() => setActiveHandoverTrip(null)}><XCircle size={20} /></button>
+          <div className="lightbox-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+            <div className="lightbox-header" style={{ background: activeHandoverTrip.type === 'pickup' ? 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)' : 'linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)' }}>
+              <h4>
+                {activeHandoverTrip.type === 'pickup'
+                  ? <><ClipboardList size={18} style={{ color: '#059669' }} />Biên Bản Nhận Xe Điện Tử</>
+                  : <><CheckSquare size={18} style={{ color: '#2563eb' }} />Biên Bản Trả Xe Điện Tử</>}
+              </h4>
+              <button className="btn-close-lightbox" onClick={() => setActiveHandoverTrip(null)}><X size={18} /></button>
             </div>
 
             <form onSubmit={handleHandoverSubmit} className="lightbox-body" style={{ display: 'block', padding: '24px', textAlign: 'left' }}>
               <div className="handover-notice mb-4">
                 <Info size={16} />
-                <span>Vui lòng kiểm tra thực tế trạng thái chiếc xe cùng chủ xe trước khi ký biên bản bàn giao điện tử này.</span>
+                <span>Vui lòng kiểm tra thực tế tình trạng xe cùng chủ xe <strong>trước khi ký</strong> biên bản bàn giao điện tử.</span>
               </div>
 
               <div className="checklist-group">
@@ -615,10 +628,10 @@ export const MyTrips = () => {
                 />
               </div>
 
-              <div className="popup-actions mt-6" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setActiveHandoverTrip(null)}>Bỏ qua</button>
-                <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '10px 24px' }}>
-                  Xác Nhận &amp; Ký Tên
+              <div className="popup-actions mt-6">
+                <button type="button" className="btn btn-secondary" style={{ width: 'auto', padding: '10px 20px', fontSize: '13px' }} onClick={() => setActiveHandoverTrip(null)}>Bỏ qua</button>
+                <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '10px 28px', fontSize: '14px' }}>
+                  <ShieldCheck size={15} /> Xác Nhận & Ký Tên
                 </button>
               </div>
             </form>
@@ -629,16 +642,16 @@ export const MyTrips = () => {
       {/* --- POPUP 2: BÁO CÁO SỰ CỐ KHẨN CẤP (UC17) --- */}
       {activeIncidentTrip && (
         <div className="lightbox-overlay" onClick={() => setActiveIncidentTrip(null)}>
-          <div className="lightbox-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-            <div className="lightbox-header">
-              <h4>Báo Cáo Sự Cố Phát Sinh Khẩn Cấp</h4>
-              <button className="btn-close-lightbox" onClick={() => setActiveIncidentTrip(null)}><XCircle size={20} /></button>
+          <div className="lightbox-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+            <div className="lightbox-header" style={{ background: 'linear-gradient(135deg, #fff5f5 0%, #ffffff 100%)' }}>
+              <h4><Zap size={18} style={{ color: '#dc2626' }} />Báo Cáo Sự Cố Khẩn Cấp</h4>
+              <button className="btn-close-lightbox" onClick={() => setActiveIncidentTrip(null)}><X size={18} /></button>
             </div>
 
             <form onSubmit={handleIncidentSubmit} className="lightbox-body" style={{ display: 'block', padding: '24px', textAlign: 'left' }}>
               <div className="handover-notice alert-red mb-4">
                 <AlertTriangle size={16} />
-                <span>Khai báo sự cố va quẹt, tai nạn hoặc lỗi hỏng hóc để kích hoạt gói bảo hiểm chuyến đi bảo vệ quyền lợi của bạn.</span>
+                <span>Khai báo sự cố va chạm, tai nạn hoặc hỏng hóc để <strong>kích hoạt bảo hiểm chuyến đi</strong> bảo vệ quyền lợi của bạn.</span>
               </div>
 
               <div className="form-group">
@@ -676,10 +689,10 @@ export const MyTrips = () => {
                 </div>
               </div>
 
-              <div className="popup-actions mt-6" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setActiveIncidentTrip(null)}>Bỏ qua</button>
-                <button type="submit" className="btn btn-primary btn-danger-bg" style={{ width: 'auto', padding: '10px 24px', background: '#f43f5e', borderColor: '#f43f5e' }}>
-                  Gửi Khai Báo Khẩn Cấp
+              <div className="popup-actions mt-6">
+                <button type="button" className="btn btn-secondary" style={{ width: 'auto', padding: '10px 20px', fontSize: '13px' }} onClick={() => setActiveIncidentTrip(null)}>Bỏ qua</button>
+                <button type="submit" className="btn" style={{ width: 'auto', padding: '10px 28px', fontSize: '14px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, boxShadow: '0 4px 12px rgba(239,68,68,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <AlertTriangle size={15} /> Gửi Khai Báo Khẩn Cấp
                 </button>
               </div>
             </form>
@@ -690,32 +703,43 @@ export const MyTrips = () => {
       {/* --- POPUP 3: ĐÁNH GIÁ DỊCH VỤ CHUYẾN ĐI (UC16) --- */}
       {activeReviewTrip && (
         <div className="lightbox-overlay" onClick={() => setActiveReviewTrip(null)}>
-          <div className="lightbox-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-            <div className="lightbox-header">
-              <h4>Viết Đánh Giá Dịch Vụ</h4>
-              <button className="btn-close-lightbox" onClick={() => setActiveReviewTrip(null)}><XCircle size={20} /></button>
+          <div className="lightbox-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+            <div className="lightbox-header" style={{ background: 'linear-gradient(135deg, #fffbeb 0%, #ffffff 100%)' }}>
+              <h4><Star size={18} fill="#f59e0b" color="#f59e0b" />Đánh Giá Dịch Vụ</h4>
+              <button className="btn-close-lightbox" onClick={() => setActiveReviewTrip(null)}><X size={18} /></button>
             </div>
 
-            <form onSubmit={handleReviewSubmit} className="lightbox-body" style={{ display: 'block', padding: '24px', textAlign: 'left' }}>
+            <form onSubmit={handleReviewSubmit} className="lightbox-body" style={{ display: 'block', padding: '28px', textAlign: 'left' }}>
+              {/* Car info summary */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: '#f8fafc', borderRadius: 12, marginBottom: 20, border: '1px solid var(--border-color)' }}>
+                <img src={activeReviewTrip.car?.image} alt={activeReviewTrip.car?.model} style={{ width: 60, height: 40, objectFit: 'cover', borderRadius: 8 }} />
+                <div>
+                  <strong style={{ fontSize: '14px', color: '#0f172a' }}>{activeReviewTrip.car?.brand} {activeReviewTrip.car?.model}</strong>
+                  <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>{activeReviewTrip.pickupDate} → {activeReviewTrip.returnDate}</p>
+                </div>
+              </div>
+
               <div className="form-group" style={{ textAlign: 'center' }}>
-                <label className="form-label" style={{ display: 'block', marginBottom: 12 }}>Chấm điểm sao chuyến đi của bạn:</label>
-                <div className="stars-rating-interactive-row" style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                <label className="form-label" style={{ display: 'block', marginBottom: 16, textAlign: 'center', fontSize: '15px', color: '#0f172a', fontWeight: 700 }}>Chuyến đi này xứng đáng mấy sao?</label>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 8 }}>
                   {[1, 2, 3, 4, 5].map((val) => (
                     <button
                       type="button"
                       key={val}
                       className="star-interactive-btn"
                       onClick={() => setReviewRating(val)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                     >
                       <Star
-                        size={32}
-                        fill={val <= reviewRating ? "#fbbf24" : "none"}
-                        color={val <= reviewRating ? "#fbbf24" : "#475569"}
+                        size={36}
+                        fill={val <= reviewRating ? "#f59e0b" : "none"}
+                        color={val <= reviewRating ? "#f59e0b" : "#cbd5e1"}
                       />
                     </button>
                   ))}
                 </div>
+                <p style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+                  {reviewRating === 1 ? '😞 Rất tệ' : reviewRating === 2 ? '😐 Tạm ổn' : reviewRating === 3 ? '🙂 Khá tốt' : reviewRating === 4 ? '😊 Rất tốt' : '🤩 Xuất sắc!'}
+                </p>
               </div>
 
               <div className="form-group mt-6">
@@ -723,17 +747,17 @@ export const MyTrips = () => {
                 <textarea
                   rows={4}
                   className="form-control"
-                  placeholder="Hãy chia sẻ trải nghiệm về độ sạch sẽ của xe, tính thân thiện của chủ xe để giúp cộng đồng thuê xe..."
+                  placeholder="Chia sẻ về độ sạch sẽ, tình trạng xe, thái độ chủ xe để giúp cộng đồng thuê xe..."
                   value={reviewComment}
                   onChange={(e) => setReviewComment(e.target.value)}
                   required
                 ></textarea>
               </div>
 
-              <div className="popup-actions mt-6" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setActiveReviewTrip(null)}>Hủy</button>
-                <button type="submit" className="btn btn-primary btn-gold" style={{ width: 'auto', padding: '10px 24px', background: '#fbbf24', borderColor: '#fbbf24', color: '#090a0f' }}>
-                  Gửi Đánh Giá
+              <div className="popup-actions mt-6">
+                <button type="button" className="btn btn-secondary" style={{ width: 'auto', padding: '10px 20px', fontSize: '13px' }} onClick={() => setActiveReviewTrip(null)}>Hủy</button>
+                <button type="submit" className="btn" style={{ width: 'auto', padding: '10px 28px', fontSize: '14px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#0f172a', border: 'none', borderRadius: '10px', fontWeight: 800, boxShadow: '0 4px 12px rgba(245,158,11,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Star size={15} fill="#0f172a" color="#0f172a" /> Gửi Đánh Giá
                 </button>
               </div>
             </form>
@@ -744,16 +768,16 @@ export const MyTrips = () => {
       {/* --- POPUP 4: GỬI KHIẾU NẠI TRANH CHẤP LÊN CSKH (UC34) --- */}
       {activeDisputeTrip && (
         <div className="lightbox-overlay" onClick={() => setActiveDisputeTrip(null)}>
-          <div className="lightbox-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-            <div className="lightbox-header">
-              <h4>Nộp Đơn Khiếu Nại Tranh Chấp</h4>
-              <button className="btn-close-lightbox" onClick={() => setActiveDisputeTrip(null)}><XCircle size={20} /></button>
+          <div className="lightbox-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+            <div className="lightbox-header" style={{ background: 'linear-gradient(135deg, #fffbeb 0%, #ffffff 100%)' }}>
+              <h4><ShieldAlert size={18} style={{ color: '#d97706' }} />Nộp Đơn Khiếu Nại Tranh Chấp</h4>
+              <button className="btn-close-lightbox" onClick={() => setActiveDisputeTrip(null)}><X size={18} /></button>
             </div>
 
             <form onSubmit={handleDisputeSubmit} className="lightbox-body" style={{ display: 'block', padding: '24px', textAlign: 'left' }}>
               <div className="handover-notice alert-orange mb-4">
                 <ShieldAlert size={16} />
-                <span>Trường hợp phát sinh mâu thuẫn bất đồng ý kiến về tiền đền bù hoặc trả cọc bảo đảm, đội ngũ CSKH sẽ đứng ra phán quyết độc lập.</span>
+                <span>Khi có mâu thuẫn về tiền đền bù hoặc hoàn cọc, đội CSKH độc lập sẽ <strong>xem xét và ban hành phán quyết</strong>.</span>
               </div>
 
               <div className="form-group">
@@ -768,10 +792,10 @@ export const MyTrips = () => {
                 ></textarea>
               </div>
 
-              <div className="popup-actions mt-6" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setActiveDisputeTrip(null)}>Bỏ qua</button>
-                <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '10px 24px', background: '#f59e0b', borderColor: '#f59e0b' }}>
-                  Gửi Khiếu Nại Lên Hệ Thống
+              <div className="popup-actions mt-6">
+                <button type="button" className="btn btn-secondary" style={{ width: 'auto', padding: '10px 20px', fontSize: '13px' }} onClick={() => setActiveDisputeTrip(null)}>Bỏ qua</button>
+                <button type="submit" className="btn" style={{ width: 'auto', padding: '10px 28px', fontSize: '14px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#0f172a', border: 'none', borderRadius: '10px', fontWeight: 800, boxShadow: '0 4px 12px rgba(245,158,11,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <ShieldAlert size={15} /> Gửi Khiếu Nại
                 </button>
               </div>
             </form>

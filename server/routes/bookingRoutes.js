@@ -1,6 +1,7 @@
 import express from 'express';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
+import { sql, getPool } from '../config/db.js';
 
 const router = express.Router();
 
@@ -22,6 +23,23 @@ router.post('/api/bookings', auth, async (req, res) => {
       return res.status(400).json({ message: 'Tài khoản chưa xác thực Bằng lái xe. Vui lòng xác thực trước khi đặt xe.' });
     }
 
+    // Kiểm tra số dư ví đủ để đặt cọc 5.000.000 VND
+    const DEPOSIT_AMOUNT = 5000000;
+    if ((user.walletBalance || 0) < DEPOSIT_AMOUNT) {
+      return res.status(400).json({
+        message: `Số dư ví không đủ để đặt cọc. Ví cần tối thiểu ${new Intl.NumberFormat('vi-VN').format(DEPOSIT_AMOUNT)} VND. Vui lòng nạp thêm tiền vào ví trước.`
+      });
+    }
+
+    // Trừ tiền cọc từ ví trước
+    await db.users.transactWallet(
+      req.user.id,
+      DEPOSIT_AMOUNT,
+      'Debit',
+      null,
+      `Đặt cọc thuê xe ${car.brand} ${car.model} — Chuyến đi sắp tạo`
+    );
+
     const booking = await db.bookings.create({
       userId: req.user.id,
       carId,
@@ -32,16 +50,33 @@ router.post('/api/bookings', auth, async (req, res) => {
       paymentMethod
     });
 
+    // Ghi lại payment record tiền cọc
+    const p = await getPool();
+    await p.request()
+      .input('bookingId', sql.Int, parseInt(booking.id))
+      .input('payerId', sql.Int, parseInt(req.user.id))
+      .input('amount', sql.Decimal(18, 2), DEPOSIT_AMOUNT)
+      .query(`
+        INSERT INTO Payment (booking_id, payer_id, amount, payment_type, payment_method, status, paid_at, created_at)
+        VALUES (@bookingId, @payerId, @amount, 'Deposit', 'Wallet', 'Success', GETDATE(), GETDATE())
+      `);
+
+    // Lấy số dư ví mới nhất trả về cho client
+    const updatedUser = await db.users.findOne({ id: req.user.id });
+
     res.status(201).json({
       message: booking.status === 'pending_owner'
-        ? 'Đặt xe và chuyển cọc thành công! Đang chờ Chủ xe phê duyệt chấp thuận hành trình.'
-        : 'Đặt xe và chuyển cọc thành công! Vé thuê xe của bạn đã được xác nhận.',
-      booking
+        ? 'Đặt xe và trừ cọc thành công! Đang chờ Chủ xe phê duyệt hành trình.'
+        : 'Đặt xe và trừ cọc thành công! Vé thuê xe của bạn đã được xác nhận.',
+      booking,
+      newWalletBalance: updatedUser.walletBalance
     });
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi tạo giao dịch đặt xe.' });
+    console.error('Create booking error:', error);
+    res.status(500).json({ message: error.message || 'Lỗi tạo giao dịch đặt xe.' });
   }
 });
+
 
 // 16. GET Trips (Chuyến đi của tôi)
 router.get('/api/bookings/my-trips', auth, async (req, res) => {
@@ -69,9 +104,15 @@ router.get('/api/bookings/my-trips', auth, async (req, res) => {
 router.put('/api/bookings/:id/cancel', auth, async (req, res) => {
   try {
     const { id } = req.params;
-    const booking = await db.bookings.findOne({ id, userId: req.user.id });
+    const booking = await db.bookings.findOne({ id });
 
     if (!booking) return res.status(404).json({ message: 'Không tìm thấy chuyến đi.' });
+    
+    // Kiểm tra quyền sở hữu đơn đặt xe
+    if (booking.userId !== String(req.user.id)) {
+      return res.status(403).json({ message: 'Bạn không có quyền hủy chuyến đi này.' });
+    }
+
     if (booking.status === 'cancelled') return res.status(400).json({ message: 'Chuyến đi này đã được hủy trước đó.' });
     if (booking.status === 'completed') return res.status(400).json({ message: 'Hành trình đã kết thúc, không thể hủy.' });
 
@@ -80,11 +121,29 @@ router.put('/api/bookings/:id/cancel', auth, async (req, res) => {
       depositStatus: 'refunded'
     });
 
-    const user = await db.users.findOne({ id: req.user.id });
-    await db.users.update(user.id, { walletBalance: (user.walletBalance || 0) + 5000000 });
+    // Thực hiện hoàn cọc bằng stored procedure an toàn
+    await db.users.transactWallet(
+      req.user.id,
+      5000000,
+      'Refund',
+      id,
+      `Hoàn trả tiền cọc thuê xe chuyến đi #${id} (người thuê hủy)`
+    );
+
+    // Ghi nhận bản ghi thanh toán hoàn cọc vào bảng Payment
+    const p = await getPool();
+    await p.request()
+      .input('bookingId', sql.Int, parseInt(id))
+      .input('payerId', sql.Int, parseInt(req.user.id))
+      .input('amount', sql.Decimal(18, 2), 5000000)
+      .query(`
+        INSERT INTO Payment (booking_id, payer_id, amount, payment_type, payment_method, status, paid_at, created_at)
+        VALUES (@bookingId, @payerId, @amount, 'Refund', 'Wallet', 'Success', GETDATE(), GETDATE())
+      `);
 
     res.json({ message: 'Hủy đơn đặt xe thành công! Tiền cọc 5.000.000 VND đã được hoàn trả lại vào Ví cá nhân của bạn.' });
   } catch (error) {
+    console.error('Cancel booking error:', error);
     res.status(500).json({ message: 'Lỗi hủy đơn đặt xe.' });
   }
 });
@@ -142,8 +201,13 @@ router.post('/api/bookings/:id/incident', auth, async (req, res) => {
 
     if (!description) return res.status(400).json({ message: 'Vui lòng cung cấp mô tả chi tiết sự cố phát sinh.' });
 
-    const booking = await db.bookings.findOne({ id, userId: req.user.id });
+    const booking = await db.bookings.findOne({ id });
     if (!booking) return res.status(404).json({ message: 'Không tìm thấy chuyến đi tương ứng.' });
+
+    // Kiểm tra quyền sở hữu đơn đặt xe
+    if (booking.userId !== String(req.user.id)) {
+      return res.status(403).json({ message: 'Bạn không có quyền báo cáo sự cố cho chuyến đi này.' });
+    }
 
     await db.bookings.update(id, {
       issueReport: {
@@ -170,8 +234,13 @@ router.post('/api/bookings/:id/reviews', auth, async (req, res) => {
 
     if (!rating) return res.status(400).json({ message: 'Vui lòng chấm điểm sao đánh giá.' });
 
-    const booking = await db.bookings.findOne({ id, userId: req.user.id });
+    const booking = await db.bookings.findOne({ id });
     if (!booking) return res.status(404).json({ message: 'Không tìm thấy chuyến đi.' });
+
+    // Kiểm tra quyền sở hữu đơn đặt xe
+    if (booking.userId !== String(req.user.id)) {
+      return res.status(403).json({ message: 'Bạn không có quyền đánh giá chuyến đi này.' });
+    }
 
     const review = await db.reviews.create({
       bookingId: id,

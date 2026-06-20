@@ -27,7 +27,8 @@ export const mapUserRow = async (p, userRow) => {
       bankAccount = {
         bankName: wallet.bank_name,
         accountNumber: wallet.bank_account_number,
-        accountHolder: userRow.full_name.toUpperCase()
+        // Ưu tiên dùng account_holder trong Wallet, fallback về full_name
+        accountHolder: wallet.account_holder || userRow.full_name.toUpperCase()
       };
     }
   }
@@ -246,6 +247,8 @@ export const userModel = {
     if (updateData.walletBalance !== undefined) {
       walletUpdates.push('balance = @balance');
       walletRequest.input('balance', sql.Decimal(18, 2), updateData.walletBalance);
+    } else {
+      walletRequest.input('balance', sql.Decimal(18, 2), null);
     }
     if (updateData.bankAccount !== undefined) {
       if (updateData.bankAccount) {
@@ -255,6 +258,9 @@ export const userModel = {
       } else {
         walletUpdates.push('bank_name = NULL, bank_account_number = NULL, is_bank_verified = 0');
       }
+    } else {
+      walletRequest.input('bankName', sql.NVarChar, null);
+      walletRequest.input('bankAccountNo', sql.VarChar, null);
     }
 
     if (walletUpdates.length > 0) {
@@ -357,6 +363,19 @@ export const userModel = {
         `);
     }
 
+    return await userModel.findOne({ id: String(userId) });
+  },
+
+  transactWallet: async (userId, amount, txnType, bookingId = null, description = null) => {
+    const p = await getPool();
+    const request = p.request()
+      .input('user_id', sql.Int, parseInt(userId))
+      .input('booking_id', sql.Int, bookingId ? parseInt(bookingId) : null)
+      .input('amount', sql.Decimal(18, 2), parseFloat(amount))
+      .input('txn_type', sql.NVarChar, txnType)
+      .input('description', sql.NVarChar, description);
+    
+    await request.execute('usp_ProcessWalletTransaction');
     return await userModel.findOne({ id: String(userId) });
   },
 

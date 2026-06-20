@@ -1,6 +1,11 @@
+/* ===================================================
+   MyTrips Page - Premium UI Styles
+   ViVuCar Platform | Car Rental Management
+=================================================== */
+
 .my-trips-page {
   width: 100%;
-  max-width: 850px;
+  max-width: 900px;
   animation: fadeIn 0.4s ease-out;
 }
 
@@ -12,11 +17,11 @@
 }
 
 .btn-refresh {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
-  width: 32px;
-  height: 32px;
+  background: rgba(0, 150, 152, 0.08);
+  border: 1px solid rgba(0, 150, 152, 0.15);
+  color: #009698;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -26,70 +31,108 @@
 }
 
 .btn-refresh:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: rgba(0, 150, 152, 0.15);
+  color: #00bfa5;
+  transform: rotate(180deg);
 }
 
+/* =========================================
+   Empty / Loading States
+========================================= */
 .trips-loading, .trips-empty-state {
-  padding: 60px 24px;
-  background: #11131c;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  color: #64748b;
+  padding: 64px 24px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  color: #94a3b8;
   text-align: center;
+  box-shadow: var(--glass-shadow);
 }
 
 .trips-empty-state h3 {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
-  color: #cbd5e1;
-  margin-top: 12px;
+  color: #475569;
+  margin-top: 16px;
 }
 
 .trips-empty-state p {
-  font-size: 12px;
-  color: #475569;
-  margin-top: 4px;
+  font-size: 13px;
+  color: #94a3b8;
+  margin-top: 6px;
 }
 
+/* =========================================
+   Trips List Container
+========================================= */
 .trips-list {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* Trip Card Glassmorphism */
+/* =========================================
+   Trip Card - Glassmorphism
+========================================= */
 .trip-card-glass {
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
-  border-radius: 16px;
+  border-radius: 20px;
   box-shadow: var(--glass-shadow);
   display: flex;
   overflow: hidden;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: left;
+  position: relative;
+}
+
+.trip-card-glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent-gradient);
+  opacity: 0;
+  transition: opacity 0.3s;
 }
 
 .trip-card-glass:hover {
-  border-color: rgba(99, 102, 241, 0.15);
+  border-color: rgba(0, 150, 152, 0.2);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.trip-card-glass:hover::before {
+  opacity: 1;
 }
 
 .trip-card-glass.cancelled {
   opacity: 0.6;
+  filter: grayscale(0.3);
 }
 
 .active-trip-glow {
-  border-color: rgba(99, 102, 241, 0.45) !important;
-  box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+  border-color: rgba(0, 150, 152, 0.35) !important;
+  box-shadow: 0 0 20px rgba(0, 150, 152, 0.12), var(--glass-shadow) !important;
 }
 
+.active-trip-glow::before {
+  opacity: 1 !important;
+}
+
+/* =========================================
+   Trip Card Image
+========================================= */
 .trip-car-img {
-  width: 220px;
+  width: 230px;
   height: auto;
   object-fit: cover;
-  background: #0a0b10;
+  background: #f1f5f9;
+  flex-shrink: 0;
 }
 
 @media (max-width: 640px) {
@@ -98,86 +141,96 @@
   }
   .trip-car-img {
     width: 100%;
-    height: 150px;
+    height: 160px;
   }
 }
 
+/* =========================================
+   Trip Card Body
+========================================= */
 .trip-card-body {
-  padding: 20px;
+  padding: 22px;
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .trip-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   gap: 12px;
   text-align: left;
 }
 
 .trip-brand-lbl {
   font-size: 10px;
-  font-weight: 700;
-  color: #6366f1;
+  font-weight: 800;
+  color: #009698;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
 }
 
 .trip-model-title {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
-  color: white;
+  color: #0f172a;
+  margin-top: 2px;
 }
 
-/* Status badges */
+/* =========================================
+   Status Badges
+========================================= */
 .trip-badge {
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 99px;
   white-space: nowrap;
+  letter-spacing: 0.2px;
 }
 
 .badge-confirmed {
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #34d399;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #059669;
 }
 
 .badge-active {
-  background: rgba(99, 102, 241, 0.15);
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  color: #818cf8;
+  background: rgba(0, 150, 152, 0.1);
+  border: 1px solid rgba(0, 150, 152, 0.25);
+  color: #009698;
 }
 
 .badge-cancelled {
-  background: rgba(244, 63, 94, 0.15);
-  border: 1px solid rgba(244, 63, 94, 0.3);
-  color: #fda4af;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #dc2626;
 }
 
 .badge-completed {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
+  background: rgba(71, 85, 105, 0.08);
+  border: 1px solid rgba(71, 85, 105, 0.15);
+  color: #475569;
 }
 
 .badge-pending {
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #d97706;
 }
 
 .badge-dispute {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #fda4af;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #dc2626;
 }
 
-/* Details */
+/* =========================================
+   Trip Meta Information
+========================================= */
 .trip-meta-grid {
   display: flex;
   flex-direction: column;
@@ -190,32 +243,38 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #94a3b8;
+  color: #64748b;
+  line-height: 1.4;
 }
 
 .trip-meta-item strong {
-  color: #e2e8f0;
+  color: #0f172a;
+  font-weight: 600;
 }
 
 .trip-incident-box {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: 10px;
   padding: 10px 14px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   font-size: 12.5px;
-  color: #fda4af;
+  color: #dc2626;
+  margin-top: 8px;
 }
 
 .trip-card-divider {
   border: none;
   height: 1px;
-  background: rgba(255, 255, 255, 0.05);
-  margin: 0 0 14px 0;
+  background: var(--border-color);
+  margin: 12px 0;
 }
 
+/* =========================================
+   Trip Card Footer & Action Buttons
+========================================= */
 .trip-card-footer {
   display: flex;
   justify-content: space-between;
@@ -227,7 +286,8 @@
 
 .booking-date-sub {
   font-size: 11px;
-  color: #64748b;
+  color: #94a3b8;
+  font-weight: 500;
 }
 
 .trip-actions-buttons-row {
@@ -238,129 +298,278 @@
 
 .btn-action-trip {
   width: auto;
-  padding: 6px 14px;
+  padding: 7px 16px;
   font-size: 12.5px;
   font-weight: 700;
-  border-radius: 6px;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.btn-action-trip:hover {
+  transform: translateY(-1px);
 }
 
 .btn-success-bg {
   background: #10b981 !important;
   border-color: #10b981 !important;
   color: white !important;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25) !important;
 }
 .btn-success-bg:hover {
   background: #059669 !important;
   border-color: #059669 !important;
+  box-shadow: 0 6px 14px rgba(16, 185, 129, 0.35) !important;
 }
 
 .border-danger-glow {
-  border: 1px solid rgba(244, 63, 94, 0.4) !important;
-  color: #fda4af !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: #dc2626 !important;
+  background: rgba(239, 68, 68, 0.05) !important;
 }
 .border-danger-glow:hover {
-  background: rgba(244, 63, 94, 0.1) !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.5) !important;
 }
 
 .btn-cancel-trip {
   width: auto;
-  padding: 6px 12px;
+  padding: 7px 14px;
   font-size: 12px;
-  border-radius: 6px;
-  background: rgba(244, 63, 94, 0.1);
-  border: 1px solid rgba(244, 63, 94, 0.2);
-  color: #fda4af;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  color: #dc2626;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .btn-cancel-trip:hover {
-  background: rgba(244, 63, 94, 0.2);
-  color: #ffe4e6;
-  border-color: rgba(244, 63, 94, 0.3);
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
 }
 
-/* Modals elements */
-.handover-notice {
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  padding: 12px 14px;
+/* =========================================
+   Lightbox Overlay Base
+========================================= */
+.lightbox-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+  padding: 16px;
+  animation: overlayFadeIn 0.2s ease-out;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.lightbox-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+  animation: lightboxSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+
+@keyframes lightboxSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* =========================================
+   Lightbox Header
+========================================= */
+.lightbox-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-radius: 20px 20px 0 0;
+  gap: 12px;
+}
+
+.lightbox-header h4 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.btn-close-lightbox {
+  background: rgba(15, 23, 42, 0.06);
+  border: none;
+  color: #64748b;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
-  color: #818cf8;
-  font-size: 12.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.btn-close-lightbox:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+/* =========================================
+   Lightbox Body
+========================================= */
+.lightbox-body {
+  padding: 24px;
+  display: block;
+  text-align: left;
+}
+
+/* =========================================
+   Handover Notice Banner
+========================================= */
+.handover-notice {
+  background: rgba(0, 150, 152, 0.06);
+  border: 1px solid rgba(0, 150, 152, 0.15);
+  padding: 12px 16px;
+  border-radius: 10px;
+  color: #0f766e;
+  font-size: 13px;
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  line-height: 1.4;
+  gap: 10px;
+  line-height: 1.5;
+  font-weight: 500;
 }
 
 .handover-notice.alert-red {
-  background: rgba(244, 63, 94, 0.08);
-  border-color: rgba(244, 63, 94, 0.2);
-  color: #fda4af;
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
 }
 
 .handover-notice.alert-orange {
-  background: rgba(245, 158, 11, 0.08);
-  border-color: rgba(245, 158, 11, 0.2);
-  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.06);
+  border-color: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+/* =========================================
+   Checklist Items
+========================================= */
+.checklist-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
 }
 
 .checkbox-item-custom {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
   cursor: pointer;
-  color: #cbd5e1;
+  color: #374151;
   font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  transition: background 0.15s;
+  border: 1px solid transparent;
+}
+
+.checkbox-item-custom:hover {
+  background: rgba(0, 150, 152, 0.04);
+  border-color: rgba(0, 150, 152, 0.1);
 }
 
 .checkbox-item-custom input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: #6366f1;
+  width: 17px;
+  height: 17px;
+  accent-color: #009698;
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
+/* =========================================
+   Image Upload Components
+========================================= */
 .image-upload-wrapper-cskh {
   margin-top: 8px;
 }
 
 .upload-placeholder-box {
-  border: 2px dashed rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.01);
+  border: 2px dashed var(--border-color);
+  background: #f8fafc;
   border-radius: 12px;
-  padding: 24px;
+  padding: 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  color: #64748b;
+  color: #94a3b8;
   transition: all 0.2s;
 }
 
 .upload-placeholder-box:hover {
-  border-color: #6366f1;
-  color: #e2e8f0;
-  background: rgba(99, 102, 241, 0.02);
+  border-color: #009698;
+  color: #009698;
+  background: rgba(0, 150, 152, 0.03);
+}
+
+.upload-placeholder-box span {
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .uploaded-preview-incident {
   width: 100%;
   max-height: 200px;
   object-fit: contain;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: #f8fafc;
 }
 
 .btn-remove-pic {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: #f43f5e;
+  background: #ef4444;
   color: white;
   border: none;
   padding: 4px 10px;
@@ -368,13 +577,183 @@
   cursor: pointer;
   font-size: 11px;
   font-weight: 700;
+  transition: all 0.2s;
 }
 
-/* Ticket sidebar custom styles */
+.btn-remove-pic:hover {
+  background: #dc2626;
+}
+
+/* =========================================
+   Star Rating Interactive
+========================================= */
+.star-interactive-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.star-interactive-btn:hover {
+  transform: scale(1.2);
+  background: rgba(251, 191, 36, 0.1);
+}
+
+/* =========================================
+   Popup Action Buttons
+========================================= */
+.popup-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+/* =========================================
+   Support Tickets Section
+========================================= */
+.support-tickets-section {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 24px;
+  text-align: left;
+  box-shadow: var(--glass-shadow);
+  margin-top: 32px;
+}
+
 .ticket-sidebar-item {
   transition: all 0.2s;
 }
 .ticket-sidebar-item:hover, .ticket-sidebar-item.active {
-  background: rgba(99, 102, 241, 0.08) !important;
-  border-color: rgba(99, 102, 241, 0.25) !important;
+  background: rgba(0, 150, 152, 0.06) !important;
+  border-color: rgba(0, 150, 152, 0.2) !important;
 }
+
+/* =========================================
+   Editor Modal (reused from Profile)
+========================================= */
+.editor-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9001;
+  padding: 16px;
+  animation: overlayFadeIn 0.2s ease-out;
+}
+
+.editor-modal-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+  animation: lightboxSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.editor-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background: #f8fafc;
+  border-radius: 20px 20px 0 0;
+}
+
+.editor-modal-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.editor-close-btn {
+  background: rgba(15, 23, 42, 0.06);
+  border: none;
+  color: #64748b;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.editor-close-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.editor-modal-body {
+  padding: 24px;
+  text-align: left;
+}
+
+.editor-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  background: #f8fafc;
+  border-radius: 0 0 20px 20px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* =========================================
+   Form Controls
+========================================= */
+.form-control {
+  width: 100%;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: #0f172a;
+  font-family: var(--font-primary);
+  font-size: 14px;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.form-control:focus {
+  border-color: #009698;
+  box-shadow: 0 0 0 3px rgba(0, 150, 152, 0.1);
+  background: #ffffff;
+}
+
+.form-control:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   Misc Utilities
+========================================= */
+.text-primary { color: #009698; }
+.text-success { color: #10b981; }
+.text-warning { color: #d97706; }
+.text-danger { color: #dc2626; }
+.text-muted { color: #94a3b8; }
+.text-info { color: #009698; }
+
+.mt-2 { margin-top: 8px; }
+.mt-4 { margin-top: 16px; }
+.mt-6 { margin-top: 24px; }
+.mt-12 { margin-top: 48px; }
+.mb-4 { margin-bottom: 16px; }
+.mb-6 { margin-bottom: 24px; }
+.ml-2 { margin-left: 8px; }

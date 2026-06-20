@@ -1,6 +1,7 @@
 import express from 'express';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
+import { sql, getPool } from '../config/db.js';
 
 const router = express.Router();
 
@@ -28,6 +29,7 @@ router.get('/api/cars', async (req, res) => {
 
     res.json(cars);
   } catch (error) {
+    console.error('Error fetching cars:', error);
     res.status(500).json({ message: 'Lỗi lấy danh sách xe.' });
   }
 });
@@ -129,13 +131,41 @@ router.put('/api/owner/bookings/:id/approve', auth, async (req, res) => {
     }
 
     const newStatus = approved ? 'confirmed' : 'cancelled';
-    await db.bookings.update(id, { status: newStatus });
+    const updateData = { status: newStatus };
+    if (!approved) {
+      updateData.depositStatus = 'refunded';
+    }
+
+    await db.bookings.update(id, updateData);
+
+    if (!approved) {
+      // Thực hiện hoàn tiền cọc 5.000.000đ về ví của khách thuê
+      await db.users.transactWallet(
+        booking.userId,
+        5000000,
+        'Refund',
+        id,
+        `Hoàn trả tiền cọc chuyến đi #${id} (Chủ xe từ chối duyệt hành trình)`
+      );
+
+      // Ghi nhận bản ghi thanh toán hoàn cọc vào bảng Payment
+      const p = await getPool();
+      await p.request()
+        .input('bookingId', sql.Int, parseInt(id))
+        .input('payerId', sql.Int, parseInt(booking.userId))
+        .input('amount', sql.Decimal(18, 2), 5000000)
+        .query(`
+          INSERT INTO Payment (booking_id, payer_id, amount, payment_type, payment_method, status, paid_at, created_at)
+          VALUES (@bookingId, @payerId, @amount, 'Refund', 'Wallet', 'Success', GETDATE(), GETDATE())
+        `);
+    }
 
     res.json({
       message: approved ? 'Đã phê duyệt yêu cầu đặt xe! Chuyến đi đã sẵn sàng.' : 'Đã từ chối đơn đặt xe và giải phóng phương tiện.',
       bookingStatus: newStatus
     });
   } catch (error) {
+    console.error('Owner approve booking error:', error);
     res.status(500).json({ message: 'Lỗi xét duyệt đơn đặt xe.' });
   }
 });

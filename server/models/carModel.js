@@ -15,6 +15,10 @@ export const mapCarRow = (row) => {
     image: row.image || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80',
     location: row.location_address,
     ownerId: row.owner_id ? String(row.owner_id) : null,
+    // Thông tin ngân hàng của chủ xe (dùng cho QR VietQR)
+    ownerBankName: row.owner_bank_name || null,
+    ownerAccountNumber: row.owner_account_number || null,
+    ownerAccountHolder: row.owner_account_holder || null,
     status: mappedStatus,
     plateNumber: row.license_plate,
     carPapers: null,
@@ -27,10 +31,14 @@ export const carModel = {
     const p = await getPool();
     let query = `
       SELECT v.*, b.brand_name, c.category_name,
-             (SELECT TOP 1 image_url FROM VehicleImage vi WHERE vi.vehicle_id = v.vehicle_id ORDER BY sort_order) as image
+             (SELECT TOP 1 image_url FROM VehicleImage vi WHERE vi.vehicle_id = v.vehicle_id ORDER BY sort_order) as image,
+             w.bank_name as owner_bank_name,
+             w.bank_account_number as owner_account_number,
+             w.account_holder as owner_account_holder
       FROM Vehicle v
       INNER JOIN Brand b ON v.brand_id = b.brand_id
       INNER JOIN VehicleCategory c ON v.category_id = c.category_id
+      LEFT JOIN Wallet w ON v.owner_id = w.user_id
       WHERE v.is_active = 1
     `;
     let where = [];
@@ -78,10 +86,14 @@ export const carModel = {
     const p = await getPool();
     let query = `
       SELECT v.*, b.brand_name, c.category_name,
-             (SELECT TOP 1 image_url FROM VehicleImage vi WHERE vi.vehicle_id = v.vehicle_id ORDER BY sort_order) as image
+             (SELECT TOP 1 image_url FROM VehicleImage vi WHERE vi.vehicle_id = v.vehicle_id ORDER BY sort_order) as image,
+             w.bank_name as owner_bank_name,
+             w.bank_account_number as owner_account_number,
+             w.account_holder as owner_account_holder
       FROM Vehicle v
       INNER JOIN Brand b ON v.brand_id = b.brand_id
       INNER JOIN VehicleCategory c ON v.category_id = c.category_id
+      LEFT JOIN Wallet w ON v.owner_id = w.user_id
     `;
     let where = [];
     const request = p.request();

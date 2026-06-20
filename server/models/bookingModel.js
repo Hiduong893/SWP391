@@ -29,7 +29,7 @@ export const mapBookingRow = async (p, row) => {
     pickupLocation: row.pickup_address,
     totalPrice: Number(row.rental_price),
     depositAmount: Number(row.deposit_amount),
-    depositStatus: 'paid', // Mark paid for QR checkout demo flow
+    depositStatus: row.deposit_status || 'paid', // Mark paid for QR checkout demo flow
     status: mappedStatus,
     paymentMethod: 'bank_transfer',
     handoverDocs: row.handover_docs ? JSON.parse(row.handover_docs) : { pickup: null, return: null },
@@ -118,8 +118,8 @@ export const bookingModel = {
       .input('status', sql.NVarChar, status);
 
     const insertBookingQuery = `
-      INSERT INTO Booking (renter_id, vehicle_id, start_datetime, end_datetime, pickup_address, return_address, rental_price, deposit_amount, platform_fee, total_amount, status, created_at, updated_at)
-      VALUES (@renterId, @vehicleId, CAST(@pickupDate AS DATETIME2), CAST(@returnDate AS DATETIME2), @pickupLocation, @pickupLocation, @price, @deposit, 0, @price + @deposit, @status, GETDATE(), GETDATE());
+      INSERT INTO Booking (renter_id, vehicle_id, start_datetime, end_datetime, pickup_address, return_address, rental_price, deposit_amount, platform_fee, total_amount, status, deposit_status, created_at, updated_at)
+      VALUES (@renterId, @vehicleId, CAST(@pickupDate AS DATETIME2), CAST(@returnDate AS DATETIME2), @pickupLocation, @pickupLocation, @price, @deposit, 0, @price + @deposit, @status, 'paid', GETDATE(), GETDATE());
       SELECT SCOPE_IDENTITY() as booking_id;
     `;
     const res = await request.query(insertBookingQuery);
@@ -168,6 +168,10 @@ export const bookingModel = {
           WHERE vehicle_id = (SELECT vehicle_id FROM Booking WHERE booking_id = @bookingId)
         `);
       }
+    }
+    if (updateData.depositStatus !== undefined) {
+      updates.push('deposit_status = @depositStatus');
+      request.input('depositStatus', sql.NVarChar, updateData.depositStatus);
     }
     if (updateData.handoverDocs !== undefined) {
       updates.push('handover_docs = @handoverDocs');

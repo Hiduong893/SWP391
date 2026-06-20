@@ -59,11 +59,17 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
         returnDate,
         pickupLocation,
         totalPrice,
-        paymentMethod: 'bank_transfer'
+        paymentMethod: 'wallet'
       };
 
-      await api.bookings.create(bookingData);
-      showToast('Xác nhận thanh toán thành công!', 'success');
+      const result = await api.bookings.create(bookingData);
+
+      // Cập nhật số dư ví mới nhất cho parent component
+      if (result.newWalletBalance !== undefined) {
+        onUpdateUser({ ...user, walletBalance: result.newWalletBalance });
+      }
+
+      showToast('Đặt xe và trừ cọc thành công! Đã trừ 5.000.000đ tiền cọc từ ví.', 'success');
       setStep(3);
     } catch (error) {
       showToast(error.message || 'Lỗi tạo giao dịch đặt xe.', 'error');
@@ -76,9 +82,21 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
+  // Lấy thông tin ngân hàng của chủ xe (nếu có) hoặc dùng tài khoản ViVuCar demo
+  const ownerBank = car.ownerBankName || 'MBBank';
+  const ownerAccount = car.ownerAccountNumber || '1900533588';
+  const ownerAccountName = car.ownerAccountHolder || 'VIVUCAR SYSTEM DEMO';
+
+  // Quy chia ngân hàng sang bank_id VietQR
+  const bankIdMap = {
+    'MBBank': 'mbbank', 'Vietcombank': 'vietcombank', 'Techcombank': 'techcombank',
+    'ACB': 'acb', 'VPBank': 'vpbank', 'BIDV': 'bidv', 'Agribank': 'agribank',
+    'VietinBank': 'vietinbank', 'TPBank': 'tpbank', 'OCB': 'ocb'
+  };
+  const bankId = bankIdMap[ownerBank] || 'mbbank';
+
   // VietQR Dynamic Link Generator
-  // Format: https://img.vietqr.io/image/<BANK_ID>-<ACCOUNT_NO>-<TEMPLATE>.png?amount=<AMOUNT>&addInfo=<MEMO>
-  const vietQrUrl = `https://img.vietqr.io/image/mbbank-1900533588-compact.png?amount=${totalPrice}&addInfo=SWP391%20THUEXE%20${car.brand}%20${bookingId}&accountName=ViVuCar%20DEMO`;
+  const vietQrUrl = `https://img.vietqr.io/image/${bankId}-${ownerAccount}-compact.png?amount=5000000&addInfo=VIVUCAR%20COC%20${bookingId}&accountName=${encodeURIComponent(ownerAccountName)}`;
 
   return (
     <div className="booking-modal-overlay">
@@ -92,6 +110,27 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
           <button className="btn-close-modal" onClick={onClose} disabled={loading}>
             <X size={20} />
           </button>
+        </div>
+
+        {/* Step Progress Bar */}
+        <div style={{ padding: '12px 24px 0', display: 'flex', alignItems: 'center', gap: 0 }}>
+          {[1, 2, 3].map((s, i) => (
+            <>
+              <div
+                key={s}
+                style={{
+                  width: 28, height: 28, borderRadius: '50%',
+                  background: step >= s ? '#009698' : '#e2e8f0',
+                  color: step >= s ? 'white' : '#94a3b8',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '12px', fontWeight: 800, flexShrink: 0,
+                  transition: 'all 0.3s ease',
+                  boxShadow: step >= s ? '0 2px 8px rgba(0,150,152,0.35)' : 'none'
+                }}
+              >{s}</div>
+              {i < 2 && <div style={{ flex: 1, height: 2, background: step > s ? '#009698' : '#e2e8f0', transition: 'background 0.3s ease' }} />}
+            </>
+          ))}
         </div>
 
         {/* Step 1: Confirmation & Driver License */}
@@ -144,6 +183,10 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
               <div className="cost-row total-row">
                 <span>Tổng cộng phí thuê xe</span>
                 <span className="text-primary">{formatCurrency(totalPrice)}</span>
+              </div>
+              <div className="cost-row" style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed rgba(0,150,152,0.15)', color: '#d97706', fontWeight: 700, fontSize: '14px' }}>
+                <span>💳 Tiền cọc bảo đảm (thu hồi sau chuyến)</span>
+                <span>5.000.000đ</span>
               </div>
             </div>
 
@@ -207,25 +250,25 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
               {/* Bank Transfer Details Text */}
               <div className="payment-text-details">
                 <div className="bank-detail-row">
-                  <span className="lbl">Tên ngân hàng</span>
-                  <strong className="val">Ngân hàng Quân Đội (MBBank)</strong>
+                  <span className="lbl">Ngân hàng nhận</span>
+                  <strong className="val">{ownerBank}</strong>
                 </div>
                 <div className="bank-detail-row">
                   <span className="lbl">Số tài khoản nhận</span>
-                  <strong className="val text-primary" style={{ fontSize: '16px' }}>1900533588</strong>
+                  <strong className="val text-primary" style={{ fontSize: '16px', letterSpacing: '1px', fontFamily: 'monospace' }}>{ownerAccount}</strong>
                 </div>
                 <div className="bank-detail-row">
                   <span className="lbl">Tên tài khoản</span>
-                  <strong className="val">ViVuCar DEMO SYSTEM</strong>
+                  <strong className="val">{ownerAccountName}</strong>
                 </div>
                 <div className="bank-detail-row">
-                  <span className="lbl">Số tiền cần chuyển</span>
-                  <strong className="val text-primary" style={{ fontSize: '18px' }}>{formatCurrency(totalPrice)}</strong>
+                  <span className="lbl">Số tiền cần chuyển (Tiền cọc)</span>
+                  <strong className="val text-primary" style={{ fontSize: '18px' }}>{formatCurrency(5000000)}</strong>
                 </div>
                 <div className="bank-detail-row">
                   <span className="lbl">Nội dung chuyển khoản (Memo)</span>
-                  <strong className="val text-warning" style={{ fontFamily: 'monospace', fontSize: '14px' }}>
-                    SWP391 THUEXE {car.brand} {bookingId}
+                  <strong className="val" style={{ fontFamily: 'monospace', fontSize: '13px', color: '#d97706' }}>
+                    VIVUCAR COC {bookingId}
                   </strong>
                 </div>
               </div>
@@ -329,38 +372,49 @@ const injectBookingStyles = () => {
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(5, 5, 8, 0.85);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 999;
-      animation: editorFadeIn 0.25s ease-out;
+      z-index: 9999;
+      animation: bm-fadeIn 0.2s ease-out;
       padding: 16px;
     }
 
+    @keyframes bm-fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
     .booking-modal-card {
-      background: #11131c;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
       border-radius: 20px;
       width: 100%;
-      max-width: 600px;
+      max-width: 620px;
       max-height: calc(100vh - 40px);
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      animation: editorScaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: bm-slideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes bm-slideIn {
+      from { opacity: 0; transform: scale(0.94) translateY(12px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
     }
 
     .booking-modal-header {
-      padding: 20px 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid #f1f5f9;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(255, 255, 255, 0.01);
+      background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+      border-radius: 20px 20px 0 0;
     }
 
     .header-title-box {
@@ -370,31 +424,35 @@ const injectBookingStyles = () => {
     .step-indicator {
       font-size: 10px;
       font-weight: 800;
-      color: #6366f1;
-      letter-spacing: 1px;
+      color: #009698;
+      letter-spacing: 1.5px;
       display: block;
-      margin-bottom: 2px;
+      margin-bottom: 3px;
     }
 
     .booking-modal-header h3 {
       font-size: 18px;
       font-weight: 700;
-      color: #f8fafc;
+      color: #0f172a;
+      margin: 0;
     }
 
     .btn-close-modal {
-      background: none;
+      background: rgba(15, 23, 42, 0.06);
       border: none;
       color: #64748b;
       cursor: pointer;
-      padding: 4px;
-      border-radius: 6px;
+      padding: 6px;
+      border-radius: 8px;
       transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .btn-close-modal:hover {
-      color: white;
-      background: rgba(255, 255, 255, 0.05);
+      color: #dc2626;
+      background: rgba(239, 68, 68, 0.1);
     }
 
     .booking-modal-body {
@@ -406,19 +464,19 @@ const injectBookingStyles = () => {
     .booking-car-summary {
       display: flex;
       gap: 16px;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      border-radius: 12px;
-      padding: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 14px;
       align-items: center;
     }
 
     .summary-car-img {
-      width: 110px;
-      height: 70px;
+      width: 120px;
+      height: 75px;
       object-fit: cover;
-      border-radius: 8px;
-      background: #0a0b10;
+      border-radius: 10px;
+      background: #e2e8f0;
     }
 
     .summary-car-info {
@@ -426,176 +484,194 @@ const injectBookingStyles = () => {
     }
 
     .car-brand-lbl {
-      font-size: 11px;
-      font-weight: 700;
-      color: #6366f1;
+      font-size: 10px;
+      font-weight: 800;
+      color: #009698;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 1px;
     }
 
     .summary-car-info h4 {
       font-size: 16px;
       font-weight: 700;
-      color: white;
+      color: #0f172a;
+      margin-top: 2px;
     }
 
     .car-desc-sub {
       font-size: 12px;
       color: #64748b;
-      margin-top: 2px;
+      margin-top: 3px;
     }
 
     /* Details Grid */
     .booking-details-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      gap: 12px;
     }
 
     .detail-item {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       align-items: flex-start;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.04);
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
       padding: 12px;
       border-radius: 12px;
+      transition: border-color 0.2s;
+    }
+
+    .detail-item:hover {
+      border-color: rgba(0, 150, 152, 0.2);
     }
 
     .detail-lbl {
       display: block;
       font-size: 11px;
-      color: #64748b;
-      font-weight: 500;
+      color: #94a3b8;
+      font-weight: 600;
       text-align: left;
     }
 
     .detail-val {
       font-size: 13px;
       font-weight: 600;
-      color: #e2e8f0;
+      color: #0f172a;
       text-align: left;
       display: block;
       margin-top: 2px;
     }
 
+    .text-info { color: #009698; }
+
     @media (max-width: 480px) {
       .booking-details-grid {
         grid-template-columns: 1fr;
-        gap: 10px;
+        gap: 8px;
       }
     }
 
     /* Cost Breakdown */
     .cost-breakdown-card {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 18px;
     }
 
     .cost-breakdown-card h5 {
-      font-size: 13px;
-      font-weight: 700;
-      color: #cbd5e1;
-      margin-bottom: 12px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 14px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.8px;
     }
 
     .cost-row {
       display: flex;
       justify-content: space-between;
       font-size: 13px;
-      color: #94a3b8;
+      color: #475569;
       margin-bottom: 10px;
     }
 
     .cost-divider {
       border: none;
       height: 1px;
-      background: rgba(255, 255, 255, 0.06);
-      margin: 12px 0;
+      background: #e2e8f0;
+      margin: 14px 0;
     }
 
     .total-row {
       font-weight: 700;
-      color: white;
+      color: #0f172a;
       font-size: 15px;
       margin-bottom: 0;
     }
 
+    .text-primary { color: #009698 !important; }
+
     /* License card */
     .license-verification-card {
       border-radius: 12px;
-      padding: 14px 18px;
+      padding: 4px 0;
     }
 
     .license-status-success {
-      background: rgba(16, 185, 129, 0.08);
+      background: rgba(16, 185, 129, 0.06);
       border: 1px solid rgba(16, 185, 129, 0.2);
-      color: #a7f3d0;
+      color: #059669;
       display: flex;
       gap: 12px;
       align-items: center;
       border-radius: 12px;
-      padding: 12px;
+      padding: 14px;
     }
 
+    .license-status-success strong { color: #059669; }
     .license-status-success p {
       font-size: 12px;
-      color: #34d399;
+      color: #047857;
       margin-top: 2px;
     }
 
     .license-status-warning {
-      background: rgba(245, 158, 11, 0.08);
+      background: rgba(245, 158, 11, 0.06);
       border: 1px solid rgba(245, 158, 11, 0.2);
-      color: #fde68a;
+      color: #d97706;
       display: flex;
       gap: 12px;
       align-items: flex-start;
       border-radius: 12px;
-      padding: 12px;
+      padding: 14px;
     }
 
+    .license-status-warning strong { color: #92400e; }
     .license-status-warning p {
       font-size: 12px;
-      color: #fbbf24;
-      margin-top: 2px;
-      line-height: 1.4;
+      color: #92400e;
+      margin-top: 3px;
+      line-height: 1.5;
     }
+
+    .text-success { color: #10b981 !important; }
+    .text-warning { color: #d97706 !important; }
 
     .upload-license-inline-btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: #fbbf24;
-      color: #1e1b4b;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 11px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #1c1917;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       border: none;
       transition: all 0.2s;
+      margin-top: 8px;
+      box-shadow: 0 2px 8px rgba(245,158,11,0.3);
     }
 
     .upload-license-inline-btn:hover {
-      background: #f59e0b;
       transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(245,158,11,0.4);
     }
 
     /* Step 2 Payments */
     .payment-tip-alert {
-      background: rgba(99, 102, 241, 0.08);
-      border: 1px solid rgba(99, 102, 241, 0.2);
-      color: #c7d2fe;
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-size: 13px;
+      background: rgba(0, 150, 152, 0.06);
+      border: 1px solid rgba(0, 150, 152, 0.2);
+      color: #0f766e;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13.5px;
       text-align: left;
-      line-height: 1.4;
+      line-height: 1.5;
+      font-weight: 500;
     }
 
     .payment-layout-grid {
@@ -608,11 +684,12 @@ const injectBookingStyles = () => {
     .qr-container-box {
       background: white;
       padding: 16px;
-      border-radius: 14px;
+      border-radius: 16px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e2e8f0;
     }
 
     .vietqr-image {
@@ -622,19 +699,20 @@ const injectBookingStyles = () => {
     }
 
     .qr-brand-sub {
-      color: #475569;
+      color: #64748b;
       font-size: 9px;
       font-weight: 700;
       margin-top: 8px;
+      text-align: center;
     }
 
     .payment-text-details {
       display: flex;
       flex-direction: column;
       gap: 12px;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.04);
-      padding: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 18px;
       border-radius: 14px;
       text-align: left;
     }
@@ -642,9 +720,9 @@ const injectBookingStyles = () => {
     .bank-detail-row {
       display: flex;
       flex-direction: column;
-      gap: 2px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-      padding-bottom: 8px;
+      gap: 3px;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 10px;
     }
 
     .bank-detail-row:last-child {
@@ -654,13 +732,14 @@ const injectBookingStyles = () => {
 
     .bank-detail-row .lbl {
       font-size: 11px;
-      color: #64748b;
-      font-weight: 500;
+      color: #94a3b8;
+      font-weight: 600;
     }
 
     .bank-detail-row .val {
       font-size: 13px;
-      color: #e2e8f0;
+      color: #0f172a;
+      font-weight: 600;
     }
 
     @media (max-width: 600px) {
@@ -677,13 +756,14 @@ const injectBookingStyles = () => {
     .printable-receipt-card {
       background: white;
       color: #0f172a;
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 24px;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
       position: relative;
       overflow: hidden;
-      max-width: 420px;
+      max-width: 440px;
       margin: 20px auto 0;
+      border: 1px solid #e2e8f0;
     }
 
     .receipt-header {
@@ -691,23 +771,23 @@ const injectBookingStyles = () => {
     }
 
     .receipt-header h4 {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 800;
-      color: #1e293b;
+      color: #0f172a;
       letter-spacing: 0.5px;
     }
 
     .receipt-id {
       font-size: 11px;
       font-weight: 600;
-      color: #64748b;
+      color: #94a3b8;
       display: block;
-      margin-top: 2px;
+      margin-top: 3px;
     }
 
     .receipt-line {
       border: none;
-      border-bottom: 1px dashed #cbd5e1;
+      border-bottom: 1px dashed #e2e8f0;
       margin: 14px 0;
     }
 
@@ -721,12 +801,13 @@ const injectBookingStyles = () => {
     .receipt-row {
       display: flex;
       justify-content: space-between;
-      font-size: 12px;
+      font-size: 12.5px;
       color: #475569;
     }
 
     .receipt-row strong {
       color: #0f172a;
+      font-weight: 600;
     }
 
     .total-receipt-row {
@@ -739,8 +820,8 @@ const injectBookingStyles = () => {
       position: absolute;
       bottom: 24px;
       right: 20px;
-      border: 3px double #10b981;
-      color: #10b981;
+      border: 3px double #009698;
+      color: #009698;
       font-size: 11px;
       font-weight: 800;
       padding: 4px 10px;
@@ -748,7 +829,7 @@ const injectBookingStyles = () => {
       border-radius: 4px;
       user-select: none;
       letter-spacing: 0.5px;
-      opacity: 0.95;
+      opacity: 0.9;
     }
 
     .booking-modal-footer {

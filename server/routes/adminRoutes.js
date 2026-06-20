@@ -1,6 +1,7 @@
 import express from 'express';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
+import { sql, getPool } from '../config/db.js';
 
 const router = express.Router();
 
@@ -220,8 +221,25 @@ router.put('/api/admin/bookings/:id/refund-deposit', auth, cskhOrAdminAuth, asyn
     await db.bookings.update(id, { depositStatus: status });
 
     if (status === 'refunded') {
-      const user = await db.users.findOne({ id: booking.userId });
-      await db.users.update(user.id, { walletBalance: (user.walletBalance || 0) + 5000000 });
+      // Thực hiện hoàn cọc bằng stored procedure an toàn
+      await db.users.transactWallet(
+        booking.userId,
+        5000000,
+        'Refund',
+        id,
+        `Hoàn trả tiền cọc chuyến đi #${id} (CSKH/Admin duyệt)`
+      );
+
+      // Ghi nhận bản ghi thanh toán hoàn cọc vào bảng Payment
+      const p = await getPool();
+      await p.request()
+        .input('bookingId', sql.Int, parseInt(id))
+        .input('payerId', sql.Int, parseInt(booking.userId))
+        .input('amount', sql.Decimal(18, 2), 5000000)
+        .query(`
+          INSERT INTO Payment (booking_id, payer_id, amount, payment_type, payment_method, status, paid_at, created_at)
+          VALUES (@bookingId, @payerId, @amount, 'Refund', 'Wallet', 'Success', GETDATE(), GETDATE())
+        `);
     }
 
     res.json({
@@ -230,6 +248,7 @@ router.put('/api/admin/bookings/:id/refund-deposit', auth, cskhOrAdminAuth, asyn
         : 'Đã giữ lại tiền đặt cọc do phát sinh các thiệt hại vật chất đối với xe.'
     });
   } catch (error) {
+    console.error('Admin refund deposit error:', error);
     res.status(500).json({ message: 'Lỗi xử lý tiền cọc.' });
   }
 });
