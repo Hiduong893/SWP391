@@ -20,6 +20,11 @@ export const mapBookingRow = async (p, row) => {
     mappedStatus = 'rejected';
   }
 
+  const payRes = await p.request().input('bookingId', sql.Int, row.booking_id)
+    .query('SELECT TOP 1 payment_method, status FROM Payment WHERE booking_id = @bookingId ORDER BY created_at DESC');
+  const paymentMethod = payRes.recordset.length > 0 ? payRes.recordset[0].payment_method.toLowerCase() : 'bank_transfer';
+  const paymentStatus = payRes.recordset.length > 0 ? payRes.recordset[0].status.toLowerCase() : 'pending';
+
   return {
     id: String(row.booking_id),
     userId: String(row.renter_id),
@@ -29,9 +34,9 @@ export const mapBookingRow = async (p, row) => {
     pickupLocation: row.pickup_address,
     totalPrice: Number(row.rental_price),
     depositAmount: Number(row.deposit_amount),
-    depositStatus: 'paid', // Mark paid for QR checkout demo flow
+    depositStatus: paymentStatus,
     status: mappedStatus,
-    paymentMethod: 'bank_transfer',
+    paymentMethod: paymentMethod,
     handoverDocs: row.handover_docs ? JSON.parse(row.handover_docs) : { pickup: null, return: null },
     issueReport: row.issue_report ? JSON.parse(row.issue_report) : null,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString()
@@ -107,11 +112,29 @@ export const bookingModel = {
     const price = parseInt(bookingData.totalPrice);
     const deposit = 5000000;
 
+    // Check wallet balance if paymentMethod is wallet
+    if (bookingData.paymentMethod === 'wallet') {
+      const walletRes = await p.request()
+        .input('userId', sql.Int, renterId)
+        .query('SELECT balance FROM Wallet WHERE user_id = @userId');
+      if (walletRes.recordset.length === 0 || Number(walletRes.recordset[0].balance) < 500000) {
+        throw new Error('Số dư ví không đủ để thanh toán giữ chỗ (500.000đ).');
+      }
+    }
+
+    // Append time segments to ensure end_datetime > start_datetime even for same-day rentals
+    const pickupDateTime = bookingData.pickupDate.includes(' ')
+      ? bookingData.pickupDate
+      : `${bookingData.pickupDate} 09:00:00`;
+    const returnDateTime = bookingData.returnDate.includes(' ')
+      ? bookingData.returnDate
+      : `${bookingData.returnDate} 21:00:00`;
+
     const request = p.request()
       .input('renterId', sql.Int, renterId)
       .input('vehicleId', sql.Int, vehicleId)
-      .input('pickupDate', sql.VarChar, bookingData.pickupDate)
-      .input('returnDate', sql.VarChar, bookingData.returnDate)
+      .input('pickupDate', sql.VarChar, pickupDateTime)
+      .input('returnDate', sql.VarChar, returnDateTime)
       .input('pickupLocation', sql.NVarChar, bookingData.pickupLocation)
       .input('price', sql.Decimal(18, 2), price)
       .input('deposit', sql.Decimal(18, 2), deposit)
@@ -128,15 +151,26 @@ export const bookingModel = {
     // Update car status
     await p.request().input('vehicleId', sql.Int, vehicleId).query('UPDATE Vehicle SET status = \'Rented\' WHERE vehicle_id = @vehicleId');
 
+    // If wallet payment, process wallet transaction (deduct 500,000 VND)
+    if (bookingData.paymentMethod === 'wallet') {
+      await p.request()
+        .input('userId', sql.Int, renterId)
+        .input('bookingId', sql.Int, bookingId)
+        .input('amount', sql.Decimal(18, 2), 500000)
+        .input('txnType', sql.NVarChar, 'BookingPayment')
+        .input('description', sql.NVarChar, `Thanh toán phí giữ chỗ cho mã đặt xe #${bookingId}`)
+        .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+    }
+
     // Create Payment row
     const payRequest = p.request()
       .input('bookingId', sql.Int, bookingId)
       .input('payerId', sql.Int, renterId)
-      .input('amount', sql.Decimal(18, 2), price + deposit)
+      .input('amount', sql.Decimal(18, 2), bookingData.paymentMethod === 'wallet' ? 500000 : price + deposit)
       .input('method', sql.NVarChar, bookingData.paymentMethod || 'bank_transfer');
     await payRequest.query(`
       INSERT INTO Payment (booking_id, payer_id, amount, payment_type, payment_method, status, paid_at, created_at)
-      VALUES (@bookingId, @payerId, @amount, 'RentalFee', @method, 'Success', GETDATE(), GETDATE())
+      VALUES (@bookingId, @payerId, @amount, 'RentalFee', @method, 'Success', GETDATE(), GETDATE());
     `);
 
     return await bookingModel.findOne({ id: String(bookingId) });
@@ -176,6 +210,23 @@ export const bookingModel = {
     if (updateData.issueReport !== undefined) {
       updates.push('issue_report = @issueReport');
       request.input('issueReport', sql.NVarChar, JSON.stringify(updateData.issueReport));
+    }
+    if (updateData.depositStatus !== undefined) {
+      const dbDepositStatusMap = {
+        'pending': 'Pending',
+        'paid': 'Paid',
+        'success': 'Paid',
+        'failed': 'Failed',
+        'refunded': 'Refunded'
+      };
+      const dbDepositStatus = dbDepositStatusMap[updateData.depositStatus.toLowerCase()] || updateData.depositStatus;
+      updates.push('payment_status = @depositStatus');
+      request.input('depositStatus', sql.NVarChar, dbDepositStatus);
+
+      await p.request()
+        .input('bookingId', sql.Int, bookingId)
+        .input('paymentStatus', sql.NVarChar, dbDepositStatus === 'Paid' ? 'Success' : dbDepositStatus)
+        .query('UPDATE Payment SET status = @paymentStatus WHERE booking_id = @bookingId');
     }
 
     if (updates.length > 0) {
