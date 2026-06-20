@@ -8,6 +8,14 @@ export const ConfigTab = ({
   setInsuranceMul,
   sysNotice,
   setSysNotice,
+  bankId,
+  setBankId,
+  bankName,
+  setBankName,
+  bankAccountNumber,
+  setBankAccountNumber,
+  bankAccountHolder,
+  setBankAccountHolder,
   handleUpdateConfig,
   actionLoading
 }) => {
@@ -66,7 +74,68 @@ export const ConfigTab = ({
             </div>
           </div>
 
-          <button type="submit" className="config-submit-btn" disabled={actionLoading}>
+          <div className="config-card-header mt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <Settings size={18} className="text-yellow" />
+            <span>Cấu hình tài khoản nhận thanh toán tập trung (VietQR)</span>
+          </div>
+
+          <div className="config-form-row">
+            <div className="config-input-group">
+              <label className="config-input-label">Mã định danh ngân hàng (VietQR Bank ID) *</label>
+              <input
+                type="text"
+                className="config-text-input"
+                value={bankId}
+                onChange={(e) => setBankId(e.target.value)}
+                placeholder="Ví dụ: mbbank, vietcombank, techcombank..."
+                required
+              />
+              <span className="input-helper-text">Mã định danh của ngân hàng được hỗ trợ bởi VietQR để tạo mã QR.</span>
+            </div>
+
+            <div className="config-input-group">
+              <label className="config-input-label">Tên hiển thị ngân hàng *</label>
+              <input
+                type="text"
+                className="config-text-input"
+                value={bankName}
+                onChange={(e) => setBankName(e.target.value)}
+                placeholder="Ví dụ: ViVuCar Bank"
+                required
+              />
+              <span className="input-helper-text">Tên ngân hàng ảo hoặc thật hiển thị cho người dùng (Ví dụ: ViVuCar Bank).</span>
+            </div>
+          </div>
+
+          <div className="config-form-row">
+            <div className="config-input-group">
+              <label className="config-input-label">Số tài khoản nhận *</label>
+              <input
+                type="text"
+                className="config-text-input"
+                value={bankAccountNumber}
+                onChange={(e) => setBankAccountNumber(e.target.value)}
+                placeholder="Nhập số tài khoản nhận..."
+                required
+              />
+              <span className="input-helper-text">Số tài khoản ngân hàng để nhận tiền chuyển khoản.</span>
+            </div>
+
+            <div className="config-input-group">
+              <label className="config-input-label">Tên chủ tài khoản *</label>
+              <input
+                type="text"
+                className="config-text-input"
+                value={bankAccountHolder}
+                onChange={(e) => setBankAccountHolder(e.target.value)}
+                placeholder="Ví dụ: VIVUCAR SYSTEM"
+                required
+              />
+              <span className="input-helper-text">Tên chủ tài khoản viết hoa không dấu đại diện cho hệ thống.</span>
+            </div>
+          </div>
+
+          <button type="submit" className="config-submit-btn" disabled={actionLoading} style={{ marginTop: '20px' }}>
             Lưu cấu hình hệ thống
           </button>
         </form>
