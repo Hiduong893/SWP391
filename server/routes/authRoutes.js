@@ -8,6 +8,13 @@ import { sendEmailWithRealFallback } from '../utils/emailHelper.js';
 
 const router = express.Router();
 
+if (!process.env.JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET is not defined in the environment variables! Server crashed for security reasons.');
+  } else {
+    console.warn('WARNING: JWT_SECRET is not defined in .env! Falling back to default insecure key for development.');
+  }
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'swp391-super-secret-key-12345';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '685695521533-f6f90q2icshojk8lcsbo2etf0oma73jc.apps.googleusercontent.com';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
