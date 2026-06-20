@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, MapPin, CreditCard, ShieldCheck, CheckCircle2, ChevronRight, Upload, Info, AlertTriangle } from 'lucide-react';
+import { X, Calendar, MapPin, CreditCard, ShieldCheck, CheckCircle2, ChevronRight, Upload, Info, AlertTriangle, Copy, Check } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from './Toast';
 
@@ -8,6 +8,14 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   const [loading, setLoading] = useState(false);
   const [licenseUploading, setLicenseUploading] = useState(false);
   const [bookingId] = useState(() => crypto.randomUUID().slice(0, 8).toUpperCase());
+  const [copiedField, setCopiedField] = useState(null); // 'account' | 'memo'
+
+  const handleCopy = (text, field) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    showToast('Đã sao chép nội dung chuyển khoản!', 'success');
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   const { car, pickupDate, returnDate, pickupLocation } = bookingDetails;
   const { showToast } = useToast();
@@ -255,7 +263,17 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                 </div>
                 <div className="bank-detail-row">
                   <span className="lbl">Số tài khoản nhận</span>
-                  <strong className="val text-primary" style={{ fontSize: '16px', letterSpacing: '1px', fontFamily: 'monospace' }}>{ownerAccount}</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                    <strong className="val text-primary" style={{ fontSize: '16px', letterSpacing: '1px', fontFamily: 'monospace', margin: 0 }}>{ownerAccount}</strong>
+                    <button
+                      onClick={() => handleCopy(ownerAccount, 'account')}
+                      className="btn-copy-action"
+                      style={{ background: 'rgba(0,150,152,0.06)', border: '1px solid rgba(0,150,152,0.15)', color: '#009698', borderRadius: '6px', padding: '3px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: 600 }}
+                    >
+                      {copiedField === 'account' ? <Check size={11} /> : <Copy size={11} />}
+                      <span>{copiedField === 'account' ? 'Đã sao chép' : 'Sao chép'}</span>
+                    </button>
+                  </div>
                 </div>
                 <div className="bank-detail-row">
                   <span className="lbl">Tên tài khoản</span>
@@ -267,9 +285,19 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                 </div>
                 <div className="bank-detail-row">
                   <span className="lbl">Nội dung chuyển khoản (Memo)</span>
-                  <strong className="val" style={{ fontFamily: 'monospace', fontSize: '13px', color: '#d97706' }}>
-                    VIVUCAR COC {bookingId}
-                  </strong>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                    <strong className="val" style={{ fontFamily: 'monospace', fontSize: '13px', color: '#d97706', margin: 0 }}>
+                      VIVUCAR COC {bookingId}
+                    </strong>
+                    <button
+                      onClick={() => handleCopy(`VIVUCAR COC ${bookingId}`, 'memo')}
+                      className="btn-copy-action"
+                      style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.15)', color: '#d97706', borderRadius: '6px', padding: '3px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: 600 }}
+                    >
+                      {copiedField === 'memo' ? <Check size={11} /> : <Copy size={11} />}
+                      <span>{copiedField === 'memo' ? 'Đã sao chép' : 'Sao chép'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -372,14 +400,14 @@ const injectBookingStyles = () => {
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(15, 23, 42, 0.65);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 9999;
-      animation: bm-fadeIn 0.2s ease-out;
+      animation: bm-fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       padding: 16px;
     }
 
@@ -389,32 +417,44 @@ const injectBookingStyles = () => {
     }
 
     .booking-modal-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
-      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(0, 150, 152, 0.12);
+      box-shadow: 0 25px 65px rgba(0, 150, 152, 0.15);
+      border-radius: 24px;
       width: 100%;
       max-width: 620px;
       max-height: calc(100vh - 40px);
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      animation: bm-slideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: bm-slideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 150, 152, 0.2) transparent;
+    }
+
+    .booking-modal-card::-webkit-scrollbar {
+      width: 6px;
+    }
+    .booking-modal-card::-webkit-scrollbar-thumb {
+      background: rgba(0, 150, 152, 0.2);
+      border-radius: 10px;
     }
 
     @keyframes bm-slideIn {
-      from { opacity: 0; transform: scale(0.94) translateY(12px); }
+      from { opacity: 0; transform: scale(0.93) translateY(16px); }
       to { opacity: 1; transform: scale(1) translateY(0); }
     }
 
     .booking-modal-header {
-      padding: 20px 24px 16px;
-      border-bottom: 1px solid #f1f5f9;
+      padding: 24px 28px 18px;
+      border-bottom: 1px solid rgba(0, 150, 152, 0.08);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-      border-radius: 20px 20px 0 0;
+      background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%);
+      border-radius: 24px 24px 0 0;
     }
 
     .header-title-box {
@@ -425,26 +465,28 @@ const injectBookingStyles = () => {
       font-size: 10px;
       font-weight: 800;
       color: #009698;
-      letter-spacing: 1.5px;
+      letter-spacing: 2px;
       display: block;
-      margin-bottom: 3px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
     }
 
     .booking-modal-header h3 {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 700;
       color: #0f172a;
       margin: 0;
+      letter-spacing: -0.3px;
     }
 
     .btn-close-modal {
-      background: rgba(15, 23, 42, 0.06);
-      border: none;
+      background: rgba(0, 150, 152, 0.05);
+      border: 1px solid rgba(0, 150, 152, 0.1);
       color: #64748b;
       cursor: pointer;
-      padding: 6px;
-      border-radius: 8px;
-      transition: all 0.2s;
+      padding: 8px;
+      border-radius: 10px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -452,31 +494,40 @@ const injectBookingStyles = () => {
 
     .btn-close-modal:hover {
       color: #dc2626;
-      background: rgba(239, 68, 68, 0.1);
+      background: rgba(239, 68, 68, 0.08);
+      border-color: rgba(239, 68, 68, 0.15);
+      transform: rotate(90deg);
     }
 
     .booking-modal-body {
-      padding: 24px;
+      padding: 28px;
       text-align: left;
     }
 
     /* Car Summary */
     .booking-car-summary {
       display: flex;
-      gap: 16px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 14px;
-      padding: 14px;
+      gap: 18px;
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px solid rgba(0, 150, 152, 0.1);
+      backdrop-filter: blur(5px);
+      border-radius: 16px;
+      padding: 16px;
       align-items: center;
+      transition: transform 0.2s;
+    }
+    .booking-car-summary:hover {
+      transform: translateY(-1px);
+      border-color: rgba(0, 150, 152, 0.2);
     }
 
     .summary-car-img {
-      width: 120px;
-      height: 75px;
+      width: 130px;
+      height: 80px;
       object-fit: cover;
-      border-radius: 10px;
-      background: #e2e8f0;
+      border-radius: 12px;
+      background: #f1f5f9;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 
     .summary-car-info {
@@ -488,42 +539,44 @@ const injectBookingStyles = () => {
       font-weight: 800;
       color: #009698;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 1.5px;
     }
 
     .summary-car-info h4 {
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 700;
       color: #0f172a;
-      margin-top: 2px;
+      margin-top: 3px;
     }
 
     .car-desc-sub {
       font-size: 12px;
       color: #64748b;
-      margin-top: 3px;
+      margin-top: 4px;
     }
 
     /* Details Grid */
     .booking-details-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 14px;
     }
 
     .detail-item {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       align-items: flex-start;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      padding: 12px;
-      border-radius: 12px;
-      transition: border-color 0.2s;
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(0, 150, 152, 0.08);
+      padding: 14px;
+      border-radius: 14px;
+      transition: all 0.2s;
     }
 
     .detail-item:hover {
-      border-color: rgba(0, 150, 152, 0.2);
+      border-color: rgba(0, 150, 152, 0.25);
+      background: rgba(255, 255, 255, 0.8);
+      transform: translateY(-1px);
     }
 
     .detail-lbl {
@@ -532,15 +585,17 @@ const injectBookingStyles = () => {
       color: #94a3b8;
       font-weight: 600;
       text-align: left;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .detail-val {
-      font-size: 13px;
+      font-size: 13.5px;
       font-weight: 600;
       color: #0f172a;
       text-align: left;
       display: block;
-      margin-top: 2px;
+      margin-top: 3px;
     }
 
     .text-info { color: #009698; }
@@ -548,46 +603,48 @@ const injectBookingStyles = () => {
     @media (max-width: 480px) {
       .booking-details-grid {
         grid-template-columns: 1fr;
-        gap: 8px;
+        gap: 10px;
       }
     }
 
     /* Cost Breakdown */
     .cost-breakdown-card {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 14px;
-      padding: 18px;
+      background: rgba(255, 255, 255, 0.65);
+      border: 1px solid rgba(0, 150, 152, 0.1);
+      border-radius: 16px;
+      padding: 20px;
     }
 
     .cost-breakdown-card h5 {
       font-size: 12px;
       font-weight: 800;
       color: #0f172a;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
+      letter-spacing: 1px;
+      border-left: 3px solid #009698;
+      padding-left: 8px;
     }
 
     .cost-row {
       display: flex;
       justify-content: space-between;
-      font-size: 13px;
+      font-size: 13.5px;
       color: #475569;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
 
     .cost-divider {
       border: none;
       height: 1px;
-      background: #e2e8f0;
-      margin: 14px 0;
+      background: rgba(0, 150, 152, 0.1);
+      margin: 16px 0;
     }
 
     .total-row {
       font-weight: 700;
       color: #0f172a;
-      font-size: 15px;
+      font-size: 16px;
       margin-bottom: 0;
     }
 
@@ -595,19 +652,23 @@ const injectBookingStyles = () => {
 
     /* License card */
     .license-verification-card {
-      border-radius: 12px;
-      padding: 4px 0;
+      border-radius: 14px;
+      overflow: hidden;
     }
 
     .license-status-success {
-      background: rgba(16, 185, 129, 0.06);
+      background: rgba(16, 185, 129, 0.05);
       border: 1px solid rgba(16, 185, 129, 0.2);
       color: #059669;
       display: flex;
       gap: 12px;
       align-items: center;
-      border-radius: 12px;
-      padding: 14px;
+      border-radius: 14px;
+      padding: 16px;
+      transition: all 0.2s;
+    }
+    .license-status-success:hover {
+      background: rgba(16, 185, 129, 0.08);
     }
 
     .license-status-success strong { color: #059669; }
@@ -618,21 +679,25 @@ const injectBookingStyles = () => {
     }
 
     .license-status-warning {
-      background: rgba(245, 158, 11, 0.06);
+      background: rgba(245, 158, 11, 0.05);
       border: 1px solid rgba(245, 158, 11, 0.2);
       color: #d97706;
       display: flex;
       gap: 12px;
       align-items: flex-start;
-      border-radius: 12px;
-      padding: 14px;
+      border-radius: 14px;
+      padding: 16px;
+      transition: all 0.2s;
+    }
+    .license-status-warning:hover {
+      background: rgba(245, 158, 11, 0.08);
     }
 
     .license-status-warning strong { color: #92400e; }
     .license-status-warning p {
       font-size: 12px;
       color: #92400e;
-      margin-top: 3px;
+      margin-top: 4px;
       line-height: 1.5;
     }
 
@@ -643,31 +708,31 @@ const injectBookingStyles = () => {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: #1c1917;
-      padding: 7px 14px;
-      border-radius: 8px;
-      font-size: 12px;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 12.5px;
       font-weight: 700;
       cursor: pointer;
       border: none;
-      transition: all 0.2s;
-      margin-top: 8px;
-      box-shadow: 0 2px 8px rgba(245,158,11,0.3);
+      transition: all 0.25s ease;
+      margin-top: 10px;
+      box-shadow: 0 4px 12px rgba(245,158,11,0.25);
     }
 
     .upload-license-inline-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(245,158,11,0.4);
+      transform: translateY(-1.5px);
+      box-shadow: 0 6px 16px rgba(245,158,11,0.35);
     }
 
     /* Step 2 Payments */
     .payment-tip-alert {
-      background: rgba(0, 150, 152, 0.06);
-      border: 1px solid rgba(0, 150, 152, 0.2);
+      background: rgba(0, 150, 152, 0.05);
+      border: 1px solid rgba(0, 150, 152, 0.15);
       color: #0f766e;
-      padding: 12px 16px;
-      border-radius: 12px;
+      padding: 14px 18px;
+      border-radius: 14px;
       font-size: 13.5px;
       text-align: left;
       line-height: 1.5;
@@ -676,20 +741,26 @@ const injectBookingStyles = () => {
 
     .payment-layout-grid {
       display: grid;
-      grid-template-columns: 1.2fr 1.8fr;
-      gap: 20px;
+      grid-template-columns: 1.25fr 1.75fr;
+      gap: 24px;
       align-items: center;
     }
 
     .qr-container-box {
       background: white;
-      padding: 16px;
-      border-radius: 16px;
+      padding: 20px;
+      border-radius: 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-      border: 1px solid #e2e8f0;
+      box-shadow: 0 10px 30px rgba(0, 150, 152, 0.08);
+      border: 1.5px solid rgba(0, 150, 152, 0.15);
+      transition: all 0.3s;
+    }
+    .qr-container-box:hover {
+      box-shadow: 0 12px 35px rgba(0, 150, 152, 0.15);
+      border-color: rgba(0, 150, 152, 0.3);
+      transform: scale(1.01);
     }
 
     .vietqr-image {
@@ -700,28 +771,30 @@ const injectBookingStyles = () => {
 
     .qr-brand-sub {
       color: #64748b;
-      font-size: 9px;
+      font-size: 9.5px;
       font-weight: 700;
-      margin-top: 8px;
+      margin-top: 10px;
       text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .payment-text-details {
       display: flex;
       flex-direction: column;
       gap: 12px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      padding: 18px;
-      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(0, 150, 152, 0.1);
+      padding: 20px;
+      border-radius: 16px;
       text-align: left;
     }
 
     .bank-detail-row {
       display: flex;
       flex-direction: column;
-      gap: 3px;
-      border-bottom: 1px solid #f1f5f9;
+      gap: 4px;
+      border-bottom: 1px solid rgba(0, 150, 152, 0.05);
       padding-bottom: 10px;
     }
 
@@ -734,17 +807,31 @@ const injectBookingStyles = () => {
       font-size: 11px;
       color: #94a3b8;
       font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .bank-detail-row .val {
-      font-size: 13px;
+      font-size: 13.5px;
       color: #0f172a;
       font-weight: 600;
+    }
+
+    .btn-copy-action {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-copy-action:hover {
+      transform: scale(1.04);
+      background: rgba(0, 150, 152, 0.12) !important;
+    }
+    .btn-copy-action:active {
+      transform: scale(0.96);
     }
 
     @media (max-width: 600px) {
       .payment-layout-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
       }
       .qr-container-box {
         max-width: 240px;
@@ -752,18 +839,40 @@ const injectBookingStyles = () => {
       }
     }
 
-    /* Receipt printable bill */
+    /* Receipt printable bill styled like a modern ticket voucher */
     .printable-receipt-card {
-      background: white;
+      background: rgba(255, 255, 255, 0.95);
       color: #0f172a;
-      border-radius: 14px;
-      padding: 24px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      border-radius: 20px;
+      padding: 26px 28px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.06);
       position: relative;
       overflow: hidden;
-      max-width: 440px;
-      margin: 20px auto 0;
-      border: 1px solid #e2e8f0;
+      max-width: 460px;
+      margin: 24px auto 0;
+      border: 1px solid rgba(0, 150, 152, 0.1);
+    }
+
+    /* Inset ticket notches */
+    .printable-receipt-card::before, .printable-receipt-card::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: #f8fafc; /* match parent background */
+      border-radius: 50%;
+      top: 52%;
+      z-index: 10;
+    }
+    .printable-receipt-card::before {
+      left: -10px;
+      box-shadow: inset -3px 0 5px rgba(0, 150, 152, 0.04);
+      border-right: 1px solid rgba(0, 150, 152, 0.1);
+    }
+    .printable-receipt-card::after {
+      right: -10px;
+      box-shadow: inset 3px 0 5px rgba(0, 150, 152, 0.04);
+      border-left: 1px solid rgba(0, 150, 152, 0.1);
     }
 
     .receipt-header {
@@ -771,37 +880,39 @@ const injectBookingStyles = () => {
     }
 
     .receipt-header h4 {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 800;
       color: #0f172a;
-      letter-spacing: 0.5px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
     }
 
     .receipt-id {
       font-size: 11px;
-      font-weight: 600;
-      color: #94a3b8;
+      font-weight: 700;
+      color: #009698;
       display: block;
-      margin-top: 3px;
+      margin-top: 4px;
+      letter-spacing: 0.5px;
     }
 
     .receipt-line {
       border: none;
-      border-bottom: 1px dashed #e2e8f0;
-      margin: 14px 0;
+      border-bottom: 2px dashed rgba(0, 150, 152, 0.15);
+      margin: 16px 0;
     }
 
     .receipt-grid {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
       text-align: left;
     }
 
     .receipt-row {
       display: flex;
       justify-content: space-between;
-      font-size: 12.5px;
+      font-size: 13px;
       color: #475569;
     }
 
@@ -811,31 +922,75 @@ const injectBookingStyles = () => {
     }
 
     .total-receipt-row {
-      font-size: 14px;
+      font-size: 15.5px;
       font-weight: 800;
       color: #0f172a;
+      margin-top: 6px;
     }
 
     .receipt-stamp {
       position: absolute;
       bottom: 24px;
-      right: 20px;
-      border: 3px double #009698;
-      color: #009698;
-      font-size: 11px;
-      font-weight: 800;
-      padding: 4px 10px;
-      transform: rotate(-12deg);
-      border-radius: 4px;
+      right: 28px;
+      border: 3px double #10b981;
+      color: #10b981;
+      font-size: 11.5px;
+      font-weight: 900;
+      padding: 5px 12px;
+      transform: rotate(-10deg);
+      border-radius: 6px;
       user-select: none;
-      letter-spacing: 0.5px;
-      opacity: 0.9;
+      letter-spacing: 1px;
+      opacity: 0.85;
+      background: rgba(16, 185, 129, 0.05);
     }
 
     .booking-modal-footer {
       display: grid;
       grid-template-columns: 1fr 1.5fr;
-      gap: 12px;
+      gap: 14px;
+    }
+
+    /* Buttons global enhancements inside BookingModal */
+    .booking-modal-card .btn {
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 13.5px;
+      padding: 12px 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      border: none;
+    }
+    .booking-modal-card .btn-primary {
+      background: var(--accent-gradient);
+      color: white;
+      box-shadow: 0 4px 14px rgba(0, 150, 152, 0.25);
+    }
+    .booking-modal-card .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover-gradient);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0, 150, 152, 0.35);
+    }
+    .booking-modal-card .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    .booking-modal-card .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .booking-modal-card .btn-secondary {
+      background: rgba(0, 0, 0, 0.04);
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+    .booking-modal-card .btn-secondary:hover:not(:disabled) {
+      background: rgba(0, 0, 0, 0.08);
+      color: #0f172a;
     }
   `;
   document.head.appendChild(style);

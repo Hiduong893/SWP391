@@ -4,10 +4,89 @@ import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
 import './MyTrips.css';
 
+// Custom Confirm Modal Component for beautiful dialogs
+const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel, confirmText = 'Xác nhận', cancelText = 'Hủy bỏ', type = 'info' }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="lightbox-overlay" style={{ zIndex: 10000 }}>
+      <div className="lightbox-card" style={{ maxWidth: '400px', borderRadius: '16px' }}>
+        <div className="lightbox-body" style={{ padding: '24px', textAlign: 'center' }}>
+          <div className={`confirm-icon-wrapper ${type}`} style={{ width: '56px', height: '56px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            {type === 'danger' ? <AlertTriangle size={28} style={{ color: '#ef4444' }} /> : <Info size={28} style={{ color: '#009698' }} />}
+          </div>
+          <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>{title}</h3>
+          <p style={{ fontSize: '13.5px', color: '#64748b', lineHeight: 1.5, marginBottom: '24px' }}>{message}</p>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ flex: 1, padding: '10px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 600, border: '1px solid #e2e8f0', background: 'rgba(0,0,0,0.03)', cursor: 'pointer' }}
+              onClick={onCancel}
+            >
+              {cancelText}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              style={{
+                flex: 1,
+                padding: '10px 16px',
+                borderRadius: '10px',
+                fontSize: '13px',
+                fontWeight: 700,
+                color: 'white',
+                background: type === 'danger' ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #009698 0%, #00bfa5 100%)',
+                border: 'none',
+                boxShadow: type === 'danger' ? '0 4px 12px rgba(239, 68, 68, 0.25)' : '0 4px 12px rgba(0, 150, 152, 0.25)',
+                cursor: 'pointer'
+              }}
+              onClick={onConfirm}
+            >
+              {confirmText}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const MyTrips = () => {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
+
+  // Confirm Modal States
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    type: 'info',
+    confirmText: 'Xác nhận',
+    cancelText: 'Hủy'
+  });
+
+  const requestConfirm = (config) => {
+    return new Promise((resolve) => {
+      setConfirmConfig({
+        isOpen: true,
+        title: config.title || 'Xác nhận hành động',
+        message: config.message || 'Bạn có chắc chắn muốn thực hiện hành động này?',
+        confirmText: config.confirmText || 'Đồng ý',
+        cancelText: config.cancelText || 'Hủy bỏ',
+        type: config.type || 'info',
+        onConfirm: () => {
+          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+          resolve(true);
+        },
+        onCancel: () => {
+          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+          resolve(false);
+        }
+      });
+    });
+  };
 
   // Support Tickets States (UC07)
   const [tickets, setTickets] = useState([]);
@@ -68,7 +147,13 @@ export const MyTrips = () => {
   }, []);
 
   const handleCancelTrip = async (id) => {
-    const confirmCancel = window.confirm('Xác nhận hủy đơn đặt xe?\n\nTiền cọc 5.000.000 VND sẽ được hoàn trả tự động về Ví của bạn trong vòng vài phút.');
+    const confirmCancel = await requestConfirm({
+      title: 'Xác nhận hủy đơn đặt xe?',
+      message: 'Tiền cọc 5.000.000 VND sẽ được hoàn trả tự động về Ví của bạn trong vòng vài phút.',
+      confirmText: 'Xác nhận hủy',
+      cancelText: 'Bỏ qua',
+      type: 'danger'
+    });
     if (!confirmCancel) return;
 
     try {
@@ -802,6 +887,7 @@ export const MyTrips = () => {
           </div>
         </div>
       )}
+      <ConfirmModal {...confirmConfig} />
     </div>
   );
 };
