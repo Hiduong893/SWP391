@@ -13,10 +13,49 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   const [pickupMethod, setPickupMethod] = useState('self'); // 'self' or 'delivery'
   const [deliveryAddress, setDeliveryAddress] = useState('');
 
+  const [paymentChoice, setPaymentChoice] = useState('vietqr'); // 'vietqr' or 'wallet'
+  const [sysConfig, setSysConfig] = useState({
+    bankId: 'mbbank',
+    bankName: 'ViVuCar Bank',
+    bankAccountNumber: '1900533588',
+    bankAccountHolder: 'VIVUCAR SYSTEM'
+  });
+  const [walletBalance, setWalletBalance] = useState(user?.walletBalance || 0);
+
   const { car, pickupLocation } = bookingDetails;
   const [pickupDate, setPickupDate] = useState(bookingDetails.pickupDate);
   const [returnDate, setReturnDate] = useState(bookingDetails.returnDate);
   const { showToast } = useToast();
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const config = await api.system.getConfig();
+        if (config) {
+          setSysConfig(config);
+        }
+      } catch (err) {
+        console.error('Lỗi tải cấu hình hệ thống:', err);
+      }
+    };
+    fetchConfig();
+  }, []);
+
+  useEffect(() => {
+    const fetchWallet = async () => {
+      try {
+        const res = await api.user.getWallet();
+        if (res && res.walletBalance !== undefined) {
+          setWalletBalance(res.walletBalance);
+        }
+      } catch (err) {
+        console.error('Lỗi tải ví người dùng:', err);
+      }
+    };
+    if (user) {
+      fetchWallet();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (step !== 2) return;
@@ -83,6 +122,10 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   };
 
   const handlePaymentSubmit = async () => {
+    if (paymentChoice === 'wallet' && walletBalance < 500000) {
+      showToast('Số dư ví không đủ. Vui lòng chọn phương thức khác hoặc nạp thêm tiền.', 'warning');
+      return;
+    }
     setLoading(true);
     try {
       const bookingData = {
@@ -91,12 +134,22 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
         returnDate,
         pickupLocation: displayLocation,
         totalPrice,
-        paymentMethod: 'vietqr'
+        paymentMethod: paymentChoice
       };
 
       await api.bookings.create(bookingData);
 
       showToast('Xác nhận thanh toán thành công!', 'success');
+      if (paymentChoice === 'wallet') {
+        const newBalance = walletBalance - 500000;
+        setWalletBalance(newBalance);
+        if (onUpdateUser) {
+          onUpdateUser({
+            ...user,
+            walletBalance: newBalance
+          });
+        }
+      }
       setStep(3);
     } catch (error) {
       showToast(error.message || 'Lỗi tạo giao dịch đặt xe.', 'error');
@@ -113,7 +166,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   const remainingDeposit = securityDeposit - reservationFee;
   const remainingPayment = totalPrice + remainingDeposit;
 
-  const vietQrUrl = `https://img.vietqr.io/image/970422-0383539328-compact.png?amount=${reservationFee}&addInfo=${encodeURIComponent(`THUEXE ${car.brand} ${bookingId}`)}&accountName=Ho%20Van%20Duong`;
+  const vietQrUrl = `https://img.vietqr.io/image/${sysConfig.bankId}-${sysConfig.bankAccountNumber}-compact.png?amount=${reservationFee}&addInfo=${encodeURIComponent(`THUEXE ${car.brand} ${bookingId}`)}&accountName=${encodeURIComponent(sysConfig.bankAccountHolder)}`;
 
   return (
     <div className="booking-modal-overlay">
@@ -157,7 +210,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                   <span className="detail-lbl">Thời gian thuê</span>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-                      <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600 }}>Ngày nhận</span>
+                      <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 600 }}>Ngày nhận</span>
                       <input
                         type="date"
                         value={pickupDate}
@@ -171,16 +224,16 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                           }
                         }}
                         style={{
-                          background: 'rgba(255,255,255,0.04)',
-                          border: '1px solid rgba(255,255,255,0.15)',
+                          background: '#ffffff',
+                          border: '1px solid #cbd5e1',
                           borderRadius: '8px',
-                          color: '#ffffff',
+                          color: '#0f172a',
                           padding: '8px 10px',
                           fontSize: '13px',
                           fontFamily: "'Outfit', sans-serif",
                           outline: 'none',
                           width: '100%',
-                          colorScheme: 'dark',
+                          colorScheme: 'light',
                           cursor: 'pointer',
                           fontWeight: '500',
                           boxSizing: 'border-box'
@@ -189,23 +242,23 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                     </div>
                     <span style={{ color: '#64748b', marginTop: '14px', fontSize: '10px' }}>➔</span>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-                      <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600 }}>Ngày trả</span>
+                      <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 600 }}>Ngày trả</span>
                       <input
                         type="date"
                         value={returnDate}
                         min={pickupDate}
                         onChange={(e) => setReturnDate(e.target.value)}
                         style={{
-                          background: 'rgba(255,255,255,0.04)',
-                          border: '1px solid rgba(255,255,255,0.15)',
+                          background: '#ffffff',
+                          border: '1px solid #cbd5e1',
                           borderRadius: '8px',
-                          color: '#ffffff',
+                          color: '#0f172a',
                           padding: '8px 10px',
                           fontSize: '13px',
                           fontFamily: "'Outfit', sans-serif",
                           outline: 'none',
                           width: '100%',
-                          colorScheme: 'dark',
+                          colorScheme: 'light',
                           cursor: 'pointer',
                           fontWeight: '500',
                           boxSizing: 'border-box'
@@ -222,7 +275,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
 
             {/* Delivery Method Selection */}
             <div className="delivery-method-card mt-4" style={{ marginTop: '20px' }}>
-              <h5 style={{ fontSize: '13px', fontWeight: 800, color: '#f8fafc', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              <h5 style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
                 Hình thức nhận xe
               </h5>
               <div style={{ display: 'flex', gap: '12px' }}>
@@ -232,9 +285,9 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                     flex: 1,
                     padding: '14px',
                     borderRadius: '12px',
-                    border: pickupMethod === 'self' ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.08)',
-                    background: pickupMethod === 'self' ? 'rgba(99, 102, 241, 0.08)' : 'rgba(255,255,255,0.02)',
-                    color: pickupMethod === 'self' ? '#c7d2fe' : '#94a3b8',
+                    border: pickupMethod === 'self' ? '2px solid #6366f1' : '1px solid #e2e8f0',
+                    background: pickupMethod === 'self' ? '#f5f3ff' : '#ffffff',
+                    color: pickupMethod === 'self' ? '#4f46e5' : '#64748b',
                     fontWeight: '700',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
@@ -242,42 +295,50 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                   }}
                   onClick={() => setPickupMethod('self')}
                 >
-                  <div style={{ fontSize: '13px', color: pickupMethod === 'self' ? '#ffffff' : '#e2e8f0', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '13px', color: pickupMethod === 'self' ? '#4f46e5' : '#1e293b', marginBottom: '4px', fontWeight: '700' }}>
                     🙋 Tự nhận xe
                   </div>
-                  <div style={{ fontSize: '11px', fontWeight: 500, color: '#94a3b8', lineHeight: 1.4 }}>
+                  <div style={{ fontSize: '11px', fontWeight: 500, color: '#64748b', lineHeight: 1.4 }}>
                     Khách nhận tại vị trí xe đậu (Miễn phí)
                   </div>
                 </button>
 
                 <button
                   type="button"
+                  disabled={!!car.ownerId}
                   style={{
                     flex: 1,
                     padding: '14px',
                     borderRadius: '12px',
-                    border: pickupMethod === 'delivery' ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.08)',
-                    background: pickupMethod === 'delivery' ? 'rgba(99, 102, 241, 0.08)' : 'rgba(255,255,255,0.02)',
-                    color: pickupMethod === 'delivery' ? '#c7d2fe' : '#94a3b8',
+                    border: !!car.ownerId
+                      ? '1px dashed #cbd5e1'
+                      : (pickupMethod === 'delivery' ? '2px solid #6366f1' : '1px solid #e2e8f0'),
+                    background: !!car.ownerId
+                      ? '#f1f5f9'
+                      : (pickupMethod === 'delivery' ? '#f5f3ff' : '#ffffff'),
+                    color: !!car.ownerId
+                      ? '#94a3b8'
+                      : (pickupMethod === 'delivery' ? '#4f46e5' : '#64748b'),
                     fontWeight: '700',
-                    cursor: 'pointer',
+                    cursor: !!car.ownerId ? 'not-allowed' : 'pointer',
                     transition: 'all 0.2s',
-                    textAlign: 'left'
+                    textAlign: 'left',
+                    opacity: !!car.ownerId ? 0.6 : 1
                   }}
-                  onClick={() => setPickupMethod('delivery')}
+                  onClick={() => !car.ownerId && setPickupMethod('delivery')}
                 >
-                  <div style={{ fontSize: '13px', color: pickupMethod === 'delivery' ? '#ffffff' : '#e2e8f0', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '13px', color: !!car.ownerId ? '#94a3b8' : (pickupMethod === 'delivery' ? '#4f46e5' : '#1e293b'), marginBottom: '4px', fontWeight: '700' }}>
                     🚚 Giao nhận tận nơi
                   </div>
-                  <div style={{ fontSize: '11px', fontWeight: 500, color: '#94a3b8', lineHeight: 1.4 }}>
-                    Bonbon giao xe tận nơi (+100.000đ)
+                  <div style={{ fontSize: '11px', fontWeight: 500, color: !!car.ownerId ? '#94a3b8' : '#64748b', lineHeight: 1.4 }}>
+                    {car.ownerId ? 'Chỉ áp dụng nhận xe trực tiếp từ Chủ xe' : 'Bonbon giao xe tận nơi (+100.000đ)'}
                   </div>
                 </button>
               </div>
 
-              {pickupMethod === 'delivery' && (
+              {pickupMethod === 'delivery' && !car.ownerId && (
                 <div style={{ marginTop: '14px' }}>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginBottom: '6px', fontWeight: 600 }}>
+                  <label style={{ display: 'block', fontSize: '11px', color: '#475569', marginBottom: '6px', fontWeight: 600 }}>
                     Địa chỉ nhận xe chi tiết
                   </label>
                   <input
@@ -289,11 +350,12 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                       width: '100%',
                       padding: '12px',
                       borderRadius: '8px',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      background: 'rgba(255,255,255,0.02)',
-                      color: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      background: '#ffffff',
+                      color: '#0f172a',
                       fontSize: '13px',
-                      outline: 'none'
+                      outline: 'none',
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
@@ -374,9 +436,75 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
           </div>
         )}
 
-        {/* Step 2: VietQR Payment */}
+        {/* Step 2: Payment Selector & Details */}
         {step === 2 && (
           <div className="booking-modal-body new-payment-layout">
+            {/* Payment Method Selector */}
+            <div className="payment-method-selection" style={{ marginBottom: '24px' }}>
+              <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Chọn phương thức thanh toán giữ chỗ (500.000đ)
+              </h4>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type="button"
+                  style={{
+                    flex: 1,
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    border: paymentChoice === 'wallet' ? '2.5px solid #6366f1' : '1px solid #e2e8f0',
+                    background: paymentChoice === 'wallet' ? '#f5f3ff' : '#ffffff',
+                    color: '#1e293b',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'left',
+                    boxShadow: paymentChoice === 'wallet' ? '0 4px 12px rgba(99, 102, 241, 0.1)' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                  onClick={() => setPaymentChoice('wallet')}
+                >
+                  <span style={{ fontSize: '20px' }}>💼</span>
+                  <div>
+                    <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: '750' }}>Ví ViVuCar</div>
+                    <div style={{ fontSize: '11px', fontWeight: '500', color: '#64748b', marginTop: '1px' }}>
+                      Số dư: <span style={{ color: walletBalance >= 500000 ? '#10b981' : '#ef4444', fontWeight: '700' }}>{formatCurrency(walletBalance)}</span>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  style={{
+                    flex: 1,
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    border: paymentChoice === 'vietqr' ? '2.5px solid #6366f1' : '1px solid #e2e8f0',
+                    background: paymentChoice === 'vietqr' ? '#f5f3ff' : '#ffffff',
+                    color: '#1e293b',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'left',
+                    boxShadow: paymentChoice === 'vietqr' ? '0 4px 12px rgba(99, 102, 241, 0.1)' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                  onClick={() => setPaymentChoice('vietqr')}
+                >
+                  <span style={{ fontSize: '20px' }}>🏧</span>
+                  <div>
+                    <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: '750' }}>Chuyển khoản (VietQR)</div>
+                    <div style={{ fontSize: '11px', fontWeight: '500', color: '#64748b', marginTop: '1px' }}>
+                      Quét mã VietQR chuyển khoản nhanh
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
             <div className="payment-grid-columns">
               {/* Left Column */}
               <div className="payment-column-left">
@@ -406,61 +534,115 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                   </div>
                 </div>
 
-                {/* Card 2: Thanh toán bằng mã QR */}
-                <div className="payment-card-sub white-card text-center mt-4">
-                  <h4 className="card-sub-title">Thanh toán bằng mã QR</h4>
-                  <p className="card-sub-description">
-                    Vui lòng quét mã QR Code hoặc chụp ảnh màn hình QR Code để thanh toán bằng ứng dụng ngân hàng
-                  </p>
+                {/* Card 2: VietQR Pay Flow */}
+                {paymentChoice === 'vietqr' && (
+                  <div className="payment-card-sub white-card text-center mt-4">
+                    <h4 className="card-sub-title">Thanh toán bằng mã QR</h4>
+                    <p className="card-sub-description">
+                      Vui lòng quét mã QR Code hoặc chụp ảnh màn hình QR Code để thanh toán bằng ứng dụng ngân hàng
+                    </p>
 
-                  <div className="vietqr-logo-container">
-                    <img src="https://vietqr.net/portal-service/img/Logo-VietQR.png" alt="VietQR" className="vietqr-inline-logo" />
-                  </div>
-
-                  <div className="vietqr-frame-box">
-                    <img src={vietQrUrl} alt="VietQR Payment Code" className="vietqr-image-render" />
-                    <div className="vietqr-napas-brand">napas 247 | 🏧 MB</div>
-                  </div>
-
-                  <div className="divider-or-text">Hoặc</div>
-
-                  <h5 className="bank-title-transfer">Chuyển khoản qua ngân hàng</h5>
-                  <p className="alert-memo-warn text-red">
-                    Vui lòng nhập chính xác nội dung chuyển khoản để hệ thống ghi nhận thông tin đơn hàng
-                  </p>
-
-                  <div className="bank-copyable-fields">
-                    <div className="copyable-field-row">
-                      <div className="field-value-col">
-                        <span className="lbl">Nội dung CK:</span>
-                        <strong className="val text-orange" style={{ fontFamily: 'monospace' }}>THUEXE {car.brand} {bookingId}</strong>
-                      </div>
-                      <button type="button" className="btn-copy-action" onClick={() => handleCopyText(`THUEXE ${car.brand} ${bookingId}`, 'Nội dung chuyển khoản')}>
-                        📋 Sao chép
-                      </button>
+                    <div className="vietqr-logo-container">
+                      <img src="https://vietqr.net/portal-service/img/Logo-VietQR.png" alt="VietQR" className="vietqr-inline-logo" />
                     </div>
 
-                    <div className="copyable-field-row">
-                      <div className="field-value-col">
-                        <span className="lbl">Số tài khoản:</span>
-                        <strong className="val">0383539328</strong>
-                      </div>
-                      <button type="button" className="btn-copy-action" onClick={() => handleCopyText('0383539328', 'Số tài khoản')}>
-                        📋 Sao chép
-                      </button>
+                    <div className="vietqr-frame-box">
+                      <img src={vietQrUrl} alt="VietQR Payment Code" className="vietqr-image-render" />
+                      <div className="vietqr-napas-brand">napas 247 | 🏧 {sysConfig.bankName}</div>
                     </div>
 
-                    <div className="copyable-field-row">
-                      <div className="field-value-col">
-                        <span className="lbl">Ngân hàng:</span>
-                        <strong className="val">MBBank</strong>
+                    <div className="divider-or-text">Hoặc</div>
+
+                    <h5 className="bank-title-transfer">Chuyển khoản qua ngân hàng</h5>
+                    <p className="alert-memo-warn text-red">
+                      Vui lòng nhập chính xác nội dung chuyển khoản để hệ thống ghi nhận thông tin đơn hàng
+                    </p>
+
+                    <div className="bank-copyable-fields">
+                      <div className="copyable-field-row">
+                        <div className="field-value-col">
+                          <span className="lbl">Nội dung CK:</span>
+                          <strong className="val text-orange" style={{ fontFamily: 'monospace' }}>THUEXE {car.brand} {bookingId}</strong>
+                        </div>
+                        <button type="button" className="btn-copy-action" onClick={() => handleCopyText(`THUEXE ${car.brand} ${bookingId}`, 'Nội dung chuyển khoản')}>
+                          📋 Sao chép
+                        </button>
                       </div>
-                      <button type="button" className="btn-copy-action" onClick={() => handleCopyText('MBBank', 'Tên ngân hàng')}>
-                        📋 Sao chép
-                      </button>
+
+                      <div className="copyable-field-row">
+                        <div className="field-value-col">
+                          <span className="lbl">Số tài khoản:</span>
+                          <strong className="val">{sysConfig.bankAccountNumber}</strong>
+                        </div>
+                        <button type="button" className="btn-copy-action" onClick={() => handleCopyText(sysConfig.bankAccountNumber, 'Số tài khoản')}>
+                          📋 Sao chép
+                        </button>
+                      </div>
+
+                      <div className="copyable-field-row">
+                        <div className="field-value-col">
+                          <span className="lbl">Ngân hàng:</span>
+                          <strong className="val">{sysConfig.bankName}</strong>
+                        </div>
+                        <button type="button" className="btn-copy-action" onClick={() => handleCopyText(sysConfig.bankName, 'Tên ngân hàng')}>
+                          📋 Sao chép
+                        </button>
+                      </div>
+
+                      <div className="copyable-field-row">
+                        <div className="field-value-col">
+                          <span className="lbl">Chủ tài khoản:</span>
+                          <strong className="val">{sysConfig.bankAccountHolder}</strong>
+                        </div>
+                        <button type="button" className="btn-copy-action" onClick={() => handleCopyText(sysConfig.bankAccountHolder, 'Chủ tài khoản')}>
+                          📋 Sao chép
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* Card 2: Wallet Pay Flow */}
+                {paymentChoice === 'wallet' && (
+                  <div className="payment-card-sub white-card text-center mt-4">
+                    <h4 className="card-sub-title">Thanh toán bằng số dư Ví</h4>
+                    <p className="card-sub-description">
+                      Hệ thống sẽ khấu trừ trực tiếp 500.000đ từ ví ViVuCar của bạn
+                    </p>
+
+                    <div style={{
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                      padding: '20px',
+                      margin: '16px 0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px' }}>
+                        <span style={{ color: '#64748b' }}>Phí đặt cọc giữ chỗ:</span>
+                        <strong style={{ color: '#0f172a' }}>{formatCurrency(reservationFee)}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
+                        <span style={{ color: '#64748b' }}>Số dư ví hiện tại:</span>
+                        <strong style={{ color: walletBalance >= reservationFee ? '#10b981' : '#ef4444' }}>
+                          {formatCurrency(walletBalance)}
+                        </strong>
+                      </div>
+                    </div>
+
+                    {walletBalance < reservationFee ? (
+                      <div className="alert-memo-warn text-red" style={{ background: '#fef2f2', borderColor: '#fca5a5', color: '#dc2626', margin: 0 }}>
+                        ⚠️ Số dư Ví của bạn không đủ. Vui lòng nạp thêm tiền hoặc chọn phương thức chuyển khoản VietQR ở trên.
+                      </div>
+                    ) : (
+                      <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', padding: '12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: '600', textAlign: 'center' }}>
+                        ✅ Số dư khả dụng. Bạn có thể sử dụng Ví để thanh toán giữ chỗ.
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Right Column */}
@@ -484,7 +666,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                     </div>
                     <div className="info-row">
                       <span className="lbl">Số điện thoại:</span>
-                      <strong className="val">0383539328</strong>
+                      <strong className="val">{user.phone || 'Chưa cập nhật'}</strong>
                     </div>
                     <div className="info-row">
                       <span className="lbl">Ngày nhận:</span>
@@ -571,10 +753,12 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                 type="button"
                 className="btn btn-primary"
                 onClick={handlePaymentSubmit}
-                disabled={loading}
+                disabled={loading || (paymentChoice === 'wallet' && walletBalance < reservationFee)}
               >
                 {loading ? (
                   <span>Đang xử lý...</span>
+                ) : paymentChoice === 'wallet' ? (
+                  'Xác nhận trừ số dư Ví'
                 ) : (
                   'Xác nhận đã chuyển khoản'
                 )}
@@ -621,7 +805,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                 </div>
                 <div className="receipt-row">
                   <span>Phương thức:</span>
-                  <strong>Chuyển khoản (VietQR)</strong>
+                  <strong>{paymentChoice === 'wallet' ? 'Số dư Ví ViVuCar' : 'Chuyển khoản (VietQR)'}</strong>
                 </div>
                 <div className="receipt-row">
                   <span>Phí thuê xe:</span>
