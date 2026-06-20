@@ -129,7 +129,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
       car,
       pickupDate,
       returnDate,
-      pickupLocation: location
+      pickupLocation: location || car.location || 'Không xác định'
     });
     setSelectedCarDetails(null); // Close details modal if open
   };
@@ -818,64 +818,89 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
             </button>
 
             <div className="premium-car-row-scrollable" ref={luxuryScrollRef}>
-              {luxuryCars.map((car) => (
-                <div key={car.id} className="premium-row-car-card" onClick={() => handleViewCarDetails(car)}>
-                  {/* Image Container */}
-                  <div className="card-image-box">
-                    <img src={car.image} alt={car.model} className="card-image-element" />
+              {(() => {
+                const dbLuxuryCars = cars.filter(c => c.pricePerDay >= 1500000);
+                const listToRender = dbLuxuryCars.length > 0 ? dbLuxuryCars : luxuryCars;
 
-                    {/* Top badges */}
-                    <div className="card-badge-top-container">
-                      <span className="promo-badge-glow-yellow">👑 Xế xịn</span>
+                return listToRender.map((car) => {
+                  const isDbCar = !String(car.id).startsWith('lux-car-');
+                  
+                  // Compute dynamic pricing or use mock values
+                  const fourHourOrig = isDbCar ? Math.round((car.pricePerDay * 0.55) / 1000) + 'K' : car.fourHourPriceOrig;
+                  const fourHourActual = isDbCar ? Math.round((car.pricePerDay * 0.50) / 1000) + 'K' : car.fourHourPrice;
+                  const dayPriceOrig = isDbCar ? Math.round((car.pricePerDay * 1.1) / 1000) + 'K' : car.dayPriceOrig;
+                  const dayPriceActual = isDbCar ? Math.round(car.pricePerDay / 1000) + 'K' : car.dayPrice;
+
+                  return (
+                    <div key={car.id} className="premium-row-car-card" onClick={() => handleViewCarDetails(car)}>
+                      {/* Image Container */}
+                      <div className="card-image-box">
+                        <img src={car.image} alt={car.model} className="card-image-element" />
+
+                        {/* Top badges */}
+                        <div className="card-badge-top-container">
+                          <span className="promo-badge-glow-yellow">👑 Xế xịn</span>
+                        </div>
+
+                        {/* Bottom badge */}
+                        <div className="card-badge-bottom-container">
+                          {isDbCar ? (
+                            !car.ownerId ? (
+                              <span className="info-badge-deliver">📱 Tự nhận xe</span>
+                            ) : (
+                              <span className="info-badge-owner">🔑 Gặp chủ xe</span>
+                            )
+                          ) : (
+                            car.id === 'lux-car-1' ? (
+                              <span className="info-badge-deliver">📱 Tự nhận xe</span>
+                            ) : (
+                              <span className="info-badge-owner">🔑 Gặp chủ xe</span>
+                            )
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Body Content */}
+                      <div className="card-body-content-premium">
+                        <h3 className="card-title-main-premium">{car.brand.toUpperCase()} {car.model}</h3>
+                        <p className="card-location-subtext">
+                          {isDbCar ? `Quận ${car.location.replace('Quận ', '')}` : car.location}
+                        </p>
+
+                        {/* Double pricing row */}
+                        <div className="double-pricing-spec-grid">
+                          <div className="pricing-line-item">
+                            <span className="price-label-small" style={{ textDecoration: 'line-through' }}>{fourHourOrig}</span>
+                            <span className="price-actual-green">{fourHourActual}</span>
+                            <span className="price-unit-gray">/4h</span>
+                          </div>
+                          <div className="pricing-line-item">
+                            <span className="price-label-small" style={{ textDecoration: 'line-through' }}>{dayPriceOrig}</span>
+                            <span className="price-actual-green">{dayPriceActual}</span>
+                            <span className="price-unit-gray">/24h</span>
+                          </div>
+                        </div>
+
+                        {/* Specs Icons */}
+                        <div className="card-flat-specs-row">
+                          <div className="flat-spec-unit">
+                            <Users size={13} className="flat-spec-icon" />
+                            <span>{car.seats}</span>
+                          </div>
+                          <div className="flat-spec-unit">
+                            <SlidersHorizontal size={13} className="flat-spec-icon" />
+                            <span>{car.transmission || 'Số tự động'}</span>
+                          </div>
+                          <div className="flat-spec-unit">
+                            <Fuel size={13} className="flat-spec-icon" />
+                            <span>{car.fuel || 'Xăng'}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-
-                    {/* Bottom badge */}
-                    <div className="card-badge-bottom-container">
-                      {car.id === 'lux-car-1' ? (
-                        <span className="info-badge-deliver">📱 Tự nhận xe</span>
-                      ) : (
-                        <span className="info-badge-owner">🔑 Gặp chủ xe</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Body Content */}
-                  <div className="card-body-content-premium">
-                    <h3 className="card-title-main-premium">{car.brand} {car.model}</h3>
-                    <p className="card-location-subtext">{car.location}</p>
-
-                    {/* Double pricing row */}
-                    <div className="double-pricing-spec-grid">
-                      <div className="pricing-line-item">
-                        <span className="price-label-small">{car.fourHourPriceOrig}</span>
-                        <span className="price-actual-green">{car.fourHourPrice}</span>
-                        <span className="price-unit-gray">/4h</span>
-                      </div>
-                      <div className="pricing-line-item">
-                        <span className="price-label-small">{car.dayPriceOrig}</span>
-                        <span className="price-actual-green">{car.dayPrice}</span>
-                        <span className="price-unit-gray">/24h</span>
-                      </div>
-                    </div>
-
-                    {/* Specs Icons */}
-                    <div className="card-flat-specs-row">
-                      <div className="flat-spec-unit">
-                        <Users size={13} className="flat-spec-icon" />
-                        <span>{car.seats}</span>
-                      </div>
-                      <div className="flat-spec-unit">
-                        <SlidersHorizontal size={13} className="flat-spec-icon" />
-                        <span>Số tự động</span>
-                      </div>
-                      <div className="flat-spec-unit">
-                        <Fuel size={13} className="flat-spec-icon" />
-                        <span>Xăng</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                });
+              })()}
             </div>
 
             <button className="carousel-nav-arrow right" onClick={() => scrollContainer(luxuryScrollRef, 'right')}>

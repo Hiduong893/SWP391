@@ -3,9 +3,18 @@ import { sql, getPool } from '../config/db.js';
 export const mapUserRow = async (p, userRow) => {
   const userId = userRow.user_id;
 
-  // 1. Get Role
-  const roleRes = await p.request().input('userId', sql.Int, userId)
-    .query('SELECT r.role_name FROM UserRole ur INNER JOIN Role r ON ur.role_id = r.role_id WHERE ur.user_id = @userId');
+  // Fetch Role, Wallet, KYC, and OTP tokens in parallel to avoid sequential query latency
+  const [roleRes, walletRes, kycRes, otpRes] = await Promise.all([
+    p.request().input('userId', sql.Int, userId)
+      .query('SELECT r.role_name FROM UserRole ur INNER JOIN Role r ON ur.role_id = r.role_id WHERE ur.user_id = @userId'),
+    p.request().input('userId', sql.Int, userId)
+      .query('SELECT * FROM Wallet WHERE user_id = @userId'),
+    p.request().input('userId', sql.Int, userId)
+      .query('SELECT * FROM KYC WHERE user_id = @userId'),
+    p.request().input('userId', sql.Int, userId)
+      .query('SELECT * FROM OTPVerification WHERE user_id = @userId AND is_used = 0')
+  ]);
+
   let role = 'renter';
   if (roleRes.recordset.length > 0) {
     const roleName = roleRes.recordset[0].role_name;
@@ -15,9 +24,6 @@ export const mapUserRow = async (p, userRow) => {
     else role = 'renter';
   }
 
-  // 2. Get Wallet
-  const walletRes = await p.request().input('userId', sql.Int, userId)
-    .query('SELECT * FROM Wallet WHERE user_id = @userId');
   let walletBalance = 0;
   let bankAccount = null;
   if (walletRes.recordset.length > 0) {
@@ -32,9 +38,6 @@ export const mapUserRow = async (p, userRow) => {
     }
   }
 
-  // 3. Get KYC
-  const kycRes = await p.request().input('userId', sql.Int, userId)
-    .query('SELECT * FROM KYC WHERE user_id = @userId');
   let licenseStatus = 'not_uploaded';
   let licenseImage = null;
   let kycDocuments = { cccd: null, cccdBack: null, license: null, carPapers: null };
@@ -56,9 +59,6 @@ export const mapUserRow = async (p, userRow) => {
     }
   }
 
-  // 4. Get verification tokens
-  const otpRes = await p.request().input('userId', sql.Int, userId)
-    .query('SELECT * FROM OTPVerification WHERE user_id = @userId AND is_used = 0');
   let emailVerificationToken = null;
   let resetPasswordToken = null;
   let resetPasswordExpires = null;

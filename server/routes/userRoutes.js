@@ -71,9 +71,11 @@ router.put('/kyc', auth, async (req, res) => {
     const user = await db.users.findOne({ id: req.user.id });
 
     let autoVerifySuccess = false;
-    let qrErrorMsg = null;
+    let qrErrorMsg = '';
 
+    let kycAttempted = false;
     if (cccdImage && cccdImage !== user.kycDocuments?.cccd) {
+      kycAttempted = true;
       console.log('Validating uploaded CCCD QR code...');
       const qrResult = await verifyCCCDQr(cccdImage, user.name);
       if (qrResult.verified) {
@@ -83,12 +85,6 @@ router.put('/kyc', auth, async (req, res) => {
       }
     }
 
-    if (cccdImage && cccdImage !== user.kycDocuments?.cccd && !autoVerifySuccess) {
-      return res.status(400).json({ 
-        message: `Xác thực giấy tờ thất bại: ${qrErrorMsg}` 
-      });
-    }
-
     const newKyc = {
       cccd: cccdImage || user.kycDocuments?.cccd || null,
       cccdBack: cccdBackImage || user.kycDocuments?.cccdBack || null,
@@ -96,20 +92,28 @@ router.put('/kyc', auth, async (req, res) => {
       carPapers: carPapersImage || user.kycDocuments?.carPapers || null
     };
 
-    const licenseStatus = 'verified';
+    // If license image is uploaded, auto-verify it for this demo
+    const licenseStatus = licenseImage ? 'verified' : user.licenseStatus;
 
     const updatedUser = await db.users.update(req.user.id, {
       kycDocuments: newKyc,
       licenseStatus,
       licenseImage: licenseImage || user.licenseImage,
-      cccdStatus: cccdImage ? 'verified' : undefined,
-      cccdBackStatus: cccdBackImage ? 'verified' : undefined
+      cccdStatus: cccdImage ? (autoVerifySuccess ? 'verified' : 'pending') : undefined,
+      cccdBackStatus: cccdBackImage ? (autoVerifySuccess ? 'verified' : 'pending') : undefined
     });
 
-    res.json({
-      message: 'Xác thực hồ sơ KYC thành công! Trạng thái hoạt động của bạn đã được kích hoạt.',
-      user: sanitizeUser(updatedUser)
-    });
+    if (kycAttempted && !autoVerifySuccess) {
+      res.json({
+        message: `Hồ sơ KYC đã được gửi! Quét QR tự động không thành công (${qrErrorMsg}), ảnh của bạn đã được chuyển cho CSKH kiểm duyệt thủ công.`,
+        user: sanitizeUser(updatedUser)
+      });
+    } else {
+      res.json({
+        message: 'Xác thực hồ sơ KYC thành công! Trạng thái hoạt động của bạn đã được kích hoạt.',
+        user: sanitizeUser(updatedUser)
+      });
+    }
   } catch (error) {
     console.error('KYC upload error:', error);
     res.status(500).json({ message: 'Lỗi cập nhật hồ sơ KYC.' });

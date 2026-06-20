@@ -8,9 +8,76 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   const [loading, setLoading] = useState(false);
   const [licenseUploading, setLicenseUploading] = useState(false);
   const [bookingId] = useState(() => crypto.randomUUID().slice(0, 8).toUpperCase());
+  const [payMethod, setPayMethod] = useState('vietqr'); // 'vietqr' or 'vnpay'
+  const [timeLeft, setTimeLeft] = useState(900); // 15 minutes = 900 seconds
+  const [pickupMethod, setPickupMethod] = useState('self'); // 'self' or 'delivery'
+  const [deliveryAddress, setDeliveryAddress] = useState('');
 
-  const { car, pickupDate, returnDate, pickupLocation } = bookingDetails;
+  const [paymentChoice, setPaymentChoice] = useState('vietqr'); // 'vietqr' or 'wallet'
+  const [sysConfig, setSysConfig] = useState({
+    bankId: 'mbbank',
+    bankName: 'ViVuCar Bank',
+    bankAccountNumber: '1900533588',
+    bankAccountHolder: 'VIVUCAR SYSTEM'
+  });
+  const [walletBalance, setWalletBalance] = useState(user?.walletBalance || 0);
+
+  const { car, pickupLocation } = bookingDetails;
+  const [pickupDate, setPickupDate] = useState(bookingDetails.pickupDate);
+  const [returnDate, setReturnDate] = useState(bookingDetails.returnDate);
   const { showToast } = useToast();
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const config = await api.system.getConfig();
+        if (config) {
+          setSysConfig(config);
+        }
+      } catch (err) {
+        console.error('Lỗi tải cấu hình hệ thống:', err);
+      }
+    };
+    fetchConfig();
+  }, []);
+
+  useEffect(() => {
+    const fetchWallet = async () => {
+      try {
+        const res = await api.user.getWallet();
+        if (res && res.walletBalance !== undefined) {
+          setWalletBalance(res.walletBalance);
+        }
+      } catch (err) {
+        console.error('Lỗi tải ví người dùng:', err);
+      }
+    };
+    if (user) {
+      fetchWallet();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (step !== 2) return;
+    if (timeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [step, timeLeft]);
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  const handleCopyText = (text, label) => {
+    navigator.clipboard.writeText(text);
+    showToast(`Đã sao chép ${label} vào bộ nhớ tạm.`, 'success');
+  };
 
   // Calculate rental days
   const start = new Date(pickupDate);
@@ -22,7 +89,11 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   const basePrice = car.pricePerDay * diffDays;
   const insurancePrice = 50000 * diffDays; // 50,000 VND / day for standard insurance
   const serviceFee = 80000;
-  const totalPrice = basePrice + insurancePrice + serviceFee;
+  const deliveryFee = pickupMethod === 'delivery' ? 100000 : 0;
+  const totalPrice = basePrice + insurancePrice + serviceFee + deliveryFee;
+  const securityDeposit = 5000000;
+  const totalPayment = totalPrice + securityDeposit;
+  const displayLocation = pickupMethod === 'delivery' ? deliveryAddress : pickupLocation;
 
   const handleLicenseUpload = async (e) => {
     const file = e.target.files[0];
@@ -51,19 +122,34 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   };
 
   const handlePaymentSubmit = async () => {
+    if (paymentChoice === 'wallet' && walletBalance < 500000) {
+      showToast('Số dư ví không đủ. Vui lòng chọn phương thức khác hoặc nạp thêm tiền.', 'warning');
+      return;
+    }
     setLoading(true);
     try {
       const bookingData = {
         carId: car.id,
         pickupDate,
         returnDate,
-        pickupLocation,
+        pickupLocation: displayLocation,
         totalPrice,
-        paymentMethod: 'bank_transfer'
+        paymentMethod: paymentChoice
       };
 
       await api.bookings.create(bookingData);
+
       showToast('Xác nhận thanh toán thành công!', 'success');
+      if (paymentChoice === 'wallet') {
+        const newBalance = walletBalance - 500000;
+        setWalletBalance(newBalance);
+        if (onUpdateUser) {
+          onUpdateUser({
+            ...user,
+            walletBalance: newBalance
+          });
+        }
+      }
       setStep(3);
     } catch (error) {
       showToast(error.message || 'Lỗi tạo giao dịch đặt xe.', 'error');
@@ -76,13 +162,15 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
-  // VietQR Dynamic Link Generator
-  // Format: https://img.vietqr.io/image/<BANK_ID>-<ACCOUNT_NO>-<TEMPLATE>.png?amount=<AMOUNT>&addInfo=<MEMO>
-  const vietQrUrl = `https://img.vietqr.io/image/mbbank-1900533588-compact.png?amount=${totalPrice}&addInfo=SWP391%20THUEXE%20${car.brand}%20${bookingId}&accountName=ViVuCar%20DEMO`;
+  const reservationFee = 500000;
+  const remainingDeposit = securityDeposit - reservationFee;
+  const remainingPayment = totalPrice + remainingDeposit;
+
+  const vietQrUrl = `https://img.vietqr.io/image/${sysConfig.bankId}-${sysConfig.bankAccountNumber}-compact.png?amount=${reservationFee}&addInfo=${encodeURIComponent(`THUEXE ${car.brand} ${bookingId}`)}&accountName=${encodeURIComponent(sysConfig.bankAccountHolder)}`;
 
   return (
     <div className="booking-modal-overlay">
-      <div className="booking-modal-card">
+      <div className={`booking-modal-card ${step === 2 ? 'wide-payment-modal' : ''}`}>
         {/* Header */}
         <div className="booking-modal-header">
           <div className="header-title-box">
@@ -113,16 +201,165 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                 <MapPin size={16} className="text-info" />
                 <div>
                   <span className="detail-lbl">Địa điểm nhận/trả xe</span>
-                  <span className="detail-val">{pickupLocation}</span>
+                  <span className="detail-val">{displayLocation || 'Chưa nhập địa chỉ'}</span>
                 </div>
               </div>
-              <div className="detail-item">
-                <Calendar size={16} className="text-info" />
-                <div>
+              <div className="detail-item edit-dates-item" style={{ minWidth: '220px' }}>
+                <Calendar size={16} className="text-info" style={{ marginTop: '2px' }} />
+                <div style={{ flex: 1 }}>
                   <span className="detail-lbl">Thời gian thuê</span>
-                  <span className="detail-val">{pickupDate} ➔ {returnDate} ({diffDays} ngày)</span>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+                      <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 600 }}>Ngày nhận</span>
+                      <input
+                        type="date"
+                        value={pickupDate}
+                        onChange={(e) => {
+                          const newPickup = e.target.value;
+                          setPickupDate(newPickup);
+                          if (new Date(newPickup) >= new Date(returnDate)) {
+                            const tomorrow = new Date(newPickup);
+                            tomorrow.setDate(tomorrow.getDate() + 1);
+                            setReturnDate(tomorrow.toISOString().split('T')[0]);
+                          }
+                        }}
+                        style={{
+                          background: '#ffffff',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '8px',
+                          color: '#0f172a',
+                          padding: '8px 10px',
+                          fontSize: '13px',
+                          fontFamily: "'Outfit', sans-serif",
+                          outline: 'none',
+                          width: '100%',
+                          colorScheme: 'light',
+                          cursor: 'pointer',
+                          fontWeight: '500',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                    <span style={{ color: '#64748b', marginTop: '14px', fontSize: '10px' }}>➔</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+                      <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 600 }}>Ngày trả</span>
+                      <input
+                        type="date"
+                        value={returnDate}
+                        min={pickupDate}
+                        onChange={(e) => setReturnDate(e.target.value)}
+                        style={{
+                          background: '#ffffff',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '8px',
+                          color: '#0f172a',
+                          padding: '8px 10px',
+                          fontSize: '13px',
+                          fontFamily: "'Outfit', sans-serif",
+                          outline: 'none',
+                          width: '100%',
+                          colorScheme: 'light',
+                          cursor: 'pointer',
+                          fontWeight: '500',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <span style={{ display: 'block', fontSize: '11px', color: '#6366f1', marginTop: '8px', fontWeight: 700 }}>
+                    Tổng thời gian: {diffDays} ngày
+                  </span>
                 </div>
               </div>
+            </div>
+
+            {/* Delivery Method Selection */}
+            <div className="delivery-method-card mt-4" style={{ marginTop: '20px' }}>
+              <h5 style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                Hình thức nhận xe
+              </h5>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type="button"
+                  style={{
+                    flex: 1,
+                    padding: '14px',
+                    borderRadius: '12px',
+                    border: pickupMethod === 'self' ? '2px solid #6366f1' : '1px solid #e2e8f0',
+                    background: pickupMethod === 'self' ? '#f5f3ff' : '#ffffff',
+                    color: pickupMethod === 'self' ? '#4f46e5' : '#64748b',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'left'
+                  }}
+                  onClick={() => setPickupMethod('self')}
+                >
+                  <div style={{ fontSize: '13px', color: pickupMethod === 'self' ? '#4f46e5' : '#1e293b', marginBottom: '4px', fontWeight: '700' }}>
+                    🙋 Tự nhận xe
+                  </div>
+                  <div style={{ fontSize: '11px', fontWeight: 500, color: '#64748b', lineHeight: 1.4 }}>
+                    Khách nhận tại vị trí xe đậu (Miễn phí)
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!!car.ownerId}
+                  style={{
+                    flex: 1,
+                    padding: '14px',
+                    borderRadius: '12px',
+                    border: !!car.ownerId
+                      ? '1px dashed #cbd5e1'
+                      : (pickupMethod === 'delivery' ? '2px solid #6366f1' : '1px solid #e2e8f0'),
+                    background: !!car.ownerId
+                      ? '#f1f5f9'
+                      : (pickupMethod === 'delivery' ? '#f5f3ff' : '#ffffff'),
+                    color: !!car.ownerId
+                      ? '#94a3b8'
+                      : (pickupMethod === 'delivery' ? '#4f46e5' : '#64748b'),
+                    fontWeight: '700',
+                    cursor: !!car.ownerId ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'left',
+                    opacity: !!car.ownerId ? 0.6 : 1
+                  }}
+                  onClick={() => !car.ownerId && setPickupMethod('delivery')}
+                >
+                  <div style={{ fontSize: '13px', color: !!car.ownerId ? '#94a3b8' : (pickupMethod === 'delivery' ? '#4f46e5' : '#1e293b'), marginBottom: '4px', fontWeight: '700' }}>
+                    🚚 Giao nhận tận nơi
+                  </div>
+                  <div style={{ fontSize: '11px', fontWeight: 500, color: !!car.ownerId ? '#94a3b8' : '#64748b', lineHeight: 1.4 }}>
+                    {car.ownerId ? 'Chỉ áp dụng nhận xe trực tiếp từ Chủ xe' : 'Bonbon giao xe tận nơi (+100.000đ)'}
+                  </div>
+                </button>
+              </div>
+
+              {pickupMethod === 'delivery' && !car.ownerId && (
+                <div style={{ marginTop: '14px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', color: '#475569', marginBottom: '6px', fontWeight: 600 }}>
+                    Địa chỉ nhận xe chi tiết
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Nhập địa chỉ giao xe của bạn..."
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      background: '#ffffff',
+                      color: '#0f172a',
+                      fontSize: '13px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Cost Breakdown */}
@@ -140,10 +377,20 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                 <span>Phí dịch vụ công nghệ</span>
                 <span>{formatCurrency(serviceFee)}</span>
               </div>
+              {pickupMethod === 'delivery' && (
+                <div className="cost-row">
+                  <span>Phí giao nhận xe tận nơi</span>
+                  <span>{formatCurrency(deliveryFee)}</span>
+                </div>
+              )}
+              <div className="cost-row">
+                <span>Tiền đặt cọc bảo đảm (Hoàn trả sau)</span>
+                <span>{formatCurrency(securityDeposit)}</span>
+              </div>
               <hr className="cost-divider" />
               <div className="cost-row total-row">
-                <span>Tổng cộng phí thuê xe</span>
-                <span className="text-primary">{formatCurrency(totalPrice)}</span>
+                <span>Tổng tiền cần thanh toán</span>
+                <span className="text-primary">{formatCurrency(totalPayment)}</span>
               </div>
             </div>
 
@@ -180,78 +427,351 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
               <button
                 type="button"
                 className="btn btn-primary"
-                disabled={user.licenseStatus !== 'verified'}
+                disabled={user.licenseStatus !== 'verified' || (pickupMethod === 'delivery' && !deliveryAddress.trim())}
                 onClick={() => setStep(2)}
               >
-                <span>Tiếp tục thanh toán</span>
-                <ChevronRight size={16} />
+                Tiếp tục thanh toán
               </button>
             </div>
           </div>
         )}
 
-        {/* Step 2: VietQR Payment Simulation */}
+        {/* Step 2: Payment Selector & Details */}
         {step === 2 && (
-          <div className="booking-modal-body text-center">
-            <p className="payment-tip-alert">
-              🔒 Hãy quét mã **VietQR** ngân hàng phía dưới bằng app ngân hàng của bạn để thanh toán đặt xe tự động.
-            </p>
+          <div className="booking-modal-body new-payment-layout">
+            {/* Payment Method Selector */}
+            <div className="payment-method-selection" style={{ marginBottom: '24px' }}>
+              <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Chọn phương thức thanh toán giữ chỗ (500.000đ)
+              </h4>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type="button"
+                  style={{
+                    flex: 1,
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    border: paymentChoice === 'wallet' ? '2.5px solid #6366f1' : '1px solid #e2e8f0',
+                    background: paymentChoice === 'wallet' ? '#f5f3ff' : '#ffffff',
+                    color: '#1e293b',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'left',
+                    boxShadow: paymentChoice === 'wallet' ? '0 4px 12px rgba(99, 102, 241, 0.1)' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                  onClick={() => setPaymentChoice('wallet')}
+                >
+                  <span style={{ fontSize: '20px' }}>💼</span>
+                  <div>
+                    <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: '750' }}>Ví ViVuCar</div>
+                    <div style={{ fontSize: '11px', fontWeight: '500', color: '#64748b', marginTop: '1px' }}>
+                      Số dư: <span style={{ color: walletBalance >= 500000 ? '#10b981' : '#ef4444', fontWeight: '700' }}>{formatCurrency(walletBalance)}</span>
+                    </div>
+                  </div>
+                </button>
 
-            <div className="payment-layout-grid mt-4">
-              {/* QR Code Container */}
-              <div className="qr-container-box">
-                <img src={vietQrUrl} alt="VietQR Payment Code" className="vietqr-image" />
-                <span className="qr-brand-sub">Quét bằng ứng dụng Ngân hàng / Ví điện tử</span>
+                <button
+                  type="button"
+                  style={{
+                    flex: 1,
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    border: paymentChoice === 'vietqr' ? '2.5px solid #6366f1' : '1px solid #e2e8f0',
+                    background: paymentChoice === 'vietqr' ? '#f5f3ff' : '#ffffff',
+                    color: '#1e293b',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'left',
+                    boxShadow: paymentChoice === 'vietqr' ? '0 4px 12px rgba(99, 102, 241, 0.1)' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                  onClick={() => setPaymentChoice('vietqr')}
+                >
+                  <span style={{ fontSize: '20px' }}>🏧</span>
+                  <div>
+                    <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: '750' }}>Chuyển khoản (VietQR)</div>
+                    <div style={{ fontSize: '11px', fontWeight: '500', color: '#64748b', marginTop: '1px' }}>
+                      Quét mã VietQR chuyển khoản nhanh
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div className="payment-grid-columns">
+              {/* Left Column */}
+              <div className="payment-column-left">
+                {/* Card 1: Thanh toán phí giữ chỗ */}
+                <div className="payment-card-sub white-card text-center">
+                  <h4 className="card-sub-title">Thanh toán phí giữ chỗ</h4>
+                  <div className="highlighted-price">{formatCurrency(reservationFee)}</div>
+                  
+                  <div className="timer-box-lbl">Thời gian giữ chỗ còn lại</div>
+                  <div className="timer-countdown-clock">
+                    {formatTime(timeLeft)}
+                  </div>
+                  
+                  <div className="booking-code-line">
+                    Mã đặt xe của bạn: <strong>{bookingId}</strong>
+                  </div>
+                  
+                  <div className="car-detail-inline-box">
+                    <div className="detail-inline-row">
+                      <span className="lbl">Loại xe:</span>
+                      <strong className="val">{car.brand} {car.model}</strong>
+                    </div>
+                    <div className="detail-inline-row">
+                      <span className="lbl">Ngày nhận trả xe:</span>
+                      <strong className="val">{pickupDate} đến {returnDate}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 2: VietQR Pay Flow */}
+                {paymentChoice === 'vietqr' && (
+                  <div className="payment-card-sub white-card text-center mt-4">
+                    <h4 className="card-sub-title">Thanh toán bằng mã QR</h4>
+                    <p className="card-sub-description">
+                      Vui lòng quét mã QR Code hoặc chụp ảnh màn hình QR Code để thanh toán bằng ứng dụng ngân hàng
+                    </p>
+
+                    <div className="vietqr-logo-container">
+                      <img src="https://vietqr.net/portal-service/img/Logo-VietQR.png" alt="VietQR" className="vietqr-inline-logo" />
+                    </div>
+
+                    <div className="vietqr-frame-box">
+                      <img src={vietQrUrl} alt="VietQR Payment Code" className="vietqr-image-render" />
+                      <div className="vietqr-napas-brand">napas 247 | 🏧 {sysConfig.bankName}</div>
+                    </div>
+
+                    <div className="divider-or-text">Hoặc</div>
+
+                    <h5 className="bank-title-transfer">Chuyển khoản qua ngân hàng</h5>
+                    <p className="alert-memo-warn text-red">
+                      Vui lòng nhập chính xác nội dung chuyển khoản để hệ thống ghi nhận thông tin đơn hàng
+                    </p>
+
+                    <div className="bank-copyable-fields">
+                      <div className="copyable-field-row">
+                        <div className="field-value-col">
+                          <span className="lbl">Nội dung CK:</span>
+                          <strong className="val text-orange" style={{ fontFamily: 'monospace' }}>THUEXE {car.brand} {bookingId}</strong>
+                        </div>
+                        <button type="button" className="btn-copy-action" onClick={() => handleCopyText(`THUEXE ${car.brand} ${bookingId}`, 'Nội dung chuyển khoản')}>
+                          📋 Sao chép
+                        </button>
+                      </div>
+
+                      <div className="copyable-field-row">
+                        <div className="field-value-col">
+                          <span className="lbl">Số tài khoản:</span>
+                          <strong className="val">{sysConfig.bankAccountNumber}</strong>
+                        </div>
+                        <button type="button" className="btn-copy-action" onClick={() => handleCopyText(sysConfig.bankAccountNumber, 'Số tài khoản')}>
+                          📋 Sao chép
+                        </button>
+                      </div>
+
+                      <div className="copyable-field-row">
+                        <div className="field-value-col">
+                          <span className="lbl">Ngân hàng:</span>
+                          <strong className="val">{sysConfig.bankName}</strong>
+                        </div>
+                        <button type="button" className="btn-copy-action" onClick={() => handleCopyText(sysConfig.bankName, 'Tên ngân hàng')}>
+                          📋 Sao chép
+                        </button>
+                      </div>
+
+                      <div className="copyable-field-row">
+                        <div className="field-value-col">
+                          <span className="lbl">Chủ tài khoản:</span>
+                          <strong className="val">{sysConfig.bankAccountHolder}</strong>
+                        </div>
+                        <button type="button" className="btn-copy-action" onClick={() => handleCopyText(sysConfig.bankAccountHolder, 'Chủ tài khoản')}>
+                          📋 Sao chép
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Card 2: Wallet Pay Flow */}
+                {paymentChoice === 'wallet' && (
+                  <div className="payment-card-sub white-card text-center mt-4">
+                    <h4 className="card-sub-title">Thanh toán bằng số dư Ví</h4>
+                    <p className="card-sub-description">
+                      Hệ thống sẽ khấu trừ trực tiếp 500.000đ từ ví ViVuCar của bạn
+                    </p>
+
+                    <div style={{
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                      padding: '20px',
+                      margin: '16px 0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px' }}>
+                        <span style={{ color: '#64748b' }}>Phí đặt cọc giữ chỗ:</span>
+                        <strong style={{ color: '#0f172a' }}>{formatCurrency(reservationFee)}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
+                        <span style={{ color: '#64748b' }}>Số dư ví hiện tại:</span>
+                        <strong style={{ color: walletBalance >= reservationFee ? '#10b981' : '#ef4444' }}>
+                          {formatCurrency(walletBalance)}
+                        </strong>
+                      </div>
+                    </div>
+
+                    {walletBalance < reservationFee ? (
+                      <div className="alert-memo-warn text-red" style={{ background: '#fef2f2', borderColor: '#fca5a5', color: '#dc2626', margin: 0 }}>
+                        ⚠️ Số dư Ví của bạn không đủ. Vui lòng nạp thêm tiền hoặc chọn phương thức chuyển khoản VietQR ở trên.
+                      </div>
+                    ) : (
+                      <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', padding: '12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: '600', textAlign: 'center' }}>
+                        ✅ Số dư khả dụng. Bạn có thể sử dụng Ví để thanh toán giữ chỗ.
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Bank Transfer Details Text */}
-              <div className="payment-text-details">
-                <div className="bank-detail-row">
-                  <span className="lbl">Tên ngân hàng</span>
-                  <strong className="val">Ngân hàng Quân Đội (MBBank)</strong>
+              {/* Right Column */}
+              <div className="payment-column-right">
+                {/* Card 1: Thông tin đơn thuê */}
+                <div className="payment-card-sub white-card text-left">
+                  <h4 className="card-sub-title text-center">Thông tin đơn thuê</h4>
+                  
+                  <div className="car-preview-img-container">
+                    <img src={car.image} alt={car.model} className="car-preview-image" />
+                  </div>
+
+                  <div className="rental-info-rows">
+                    <div className="info-row">
+                      <span className="lbl">Mã đặt xe:</span>
+                      <strong className="val">{bookingId}</strong>
+                    </div>
+                    <div className="info-row">
+                      <span className="lbl">Tên khách thuê:</span>
+                      <strong className="val">{user.name}</strong>
+                    </div>
+                    <div className="info-row">
+                      <span className="lbl">Số điện thoại:</span>
+                      <strong className="val">{user.phone || 'Chưa cập nhật'}</strong>
+                    </div>
+                    <div className="info-row">
+                      <span className="lbl">Ngày nhận:</span>
+                      <strong className="val">{pickupDate}</strong>
+                    </div>
+                    <div className="info-row">
+                      <span className="lbl">Ngày trả:</span>
+                      <strong className="val">{returnDate}</strong>
+                    </div>
+                    <div className="info-row">
+                      <span className="lbl">Loại xe:</span>
+                      <strong className="val">{car.brand} {car.model}</strong>
+                    </div>
+                    
+                    <div className="total-rental-box mt-4">
+                      <div className="lbl-box">
+                        <span className="main">Tổng cộng tiền thuê xe</span>
+                        <span className="sub">Bạn sẽ thanh toán khi nhận xe</span>
+                      </div>
+                      <strong className="val-price">{formatCurrency(totalPrice)}</strong>
+                    </div>
+                  </div>
                 </div>
-                <div className="bank-detail-row">
-                  <span className="lbl">Số tài khoản nhận</span>
-                  <strong className="val text-primary" style={{ fontSize: '16px' }}>1900533588</strong>
-                </div>
-                <div className="bank-detail-row">
-                  <span className="lbl">Tên tài khoản</span>
-                  <strong className="val">ViVuCar DEMO SYSTEM</strong>
-                </div>
-                <div className="bank-detail-row">
-                  <span className="lbl">Số tiền cần chuyển</span>
-                  <strong className="val text-primary" style={{ fontSize: '18px' }}>{formatCurrency(totalPrice)}</strong>
-                </div>
-                <div className="bank-detail-row">
-                  <span className="lbl">Nội dung chuyển khoản (Memo)</span>
-                  <strong className="val text-warning" style={{ fontFamily: 'monospace', fontSize: '14px' }}>
-                    SWP391 THUEXE {car.brand} {bookingId}
-                  </strong>
+
+                {/* Card 2: Các bước thanh toán */}
+                <div className="payment-card-sub white-card text-left mt-4">
+                  <h4 className="card-sub-title">Các bước thanh toán</h4>
+
+                  <div className="payment-steps-list">
+                    <div className="step-item">
+                      <div className="step-circle">1</div>
+                      <div className="step-content">
+                        <div className="step-header">
+                          <span>Thanh toán giữ chỗ qua BonbonCar</span>
+                          <strong>{formatCurrency(reservationFee)}</strong>
+                        </div>
+                        <p className="step-desc">
+                          Tiền này để xác nhận đơn thuê và giữ xe, sẽ được trừ vào tiền thế chấp khi nhận xe
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="step-item mt-4">
+                      <div className="step-circle">2</div>
+                      <div className="step-content">
+                        <div className="step-header">
+                          <span>Thanh toán khi nhận xe</span>
+                          <strong className="text-primary">{formatCurrency(remainingPayment)}</strong>
+                        </div>
+                        <div className="step-breakdown-details mt-2">
+                          <div className="breakdown-row">
+                            <span>Tiền thuê</span>
+                            <strong>{formatCurrency(totalPrice)}</strong>
+                          </div>
+                          <div className="breakdown-row">
+                            <span>Tiền thế chấp</span>
+                            <div>
+                              <span className="strike-text mr-2">{formatCurrency(securityDeposit)}</span>
+                              <strong className="text-orange">{formatCurrency(remainingDeposit)}</strong>
+                            </div>
+                          </div>
+                        </div>
+                        <p className="step-desc mt-2">
+                          Sẽ hoàn lại khi trả xe
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Step 2 Footer Action */}
-            <div className="booking-modal-footer mt-6" style={{ gridTemplateColumns: '1fr 2fr' }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setStep(1)} disabled={loading}>Quay lại</button>
+            <div className="booking-modal-footer mt-6" style={{ marginTop: '24px' }}>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={() => setStep(1)}
+                disabled={loading}
+              >
+                Quay lại
+              </button>
               <button
                 type="button"
                 className="btn btn-primary"
                 onClick={handlePaymentSubmit}
-                disabled={loading}
+                disabled={loading || (paymentChoice === 'wallet' && walletBalance < reservationFee)}
               >
-                <CreditCard size={18} />
-                {loading ? 'Đang xử lý đặt xe...' : 'Xác Nhận Đã Chuyển Khoản'}
+                {loading ? (
+                  <span>Đang xử lý...</span>
+                ) : paymentChoice === 'wallet' ? (
+                  'Xác nhận trừ số dư Ví'
+                ) : (
+                  'Xác nhận đã chuyển khoản'
+                )}
               </button>
             </div>
           </div>
         )}
 
-        {/* Step 3: Success Printable Receipt */}
+        {/* Step 3: Success Screen */}
         {step === 3 && (
           <div className="booking-modal-body text-center">
-            <CheckCircle2 className="success-lottie-icon animate-bounce text-success mb-2" size={60} style={{ display: 'inline' }} />
-            <h2 style={{ fontSize: '22px', fontWeight: 8, color: '#10b981' }}>Thuê Xe Thành Công!</h2>
+            <CheckCircle2 className="success-lottie-icon animate-bounce text-success mb-2" size={60} style={{ display: 'inline-block' }} />
+            <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#10b981', marginBottom: '8px' }}>Thuê Xe Thành Công!</h2>
             <p className="subtitle mt-1" style={{ color: '#64748b' }}>Hệ thống đã nhận được thanh toán đặt xe của bạn.</p>
 
             {/* Premium Printable Bill Receipt */}
@@ -281,16 +801,24 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                 </div>
                 <div className="receipt-row">
                   <span>Vị trí nhận xe:</span>
-                  <strong>{pickupLocation}</strong>
+                  <strong>{displayLocation}</strong>
                 </div>
                 <div className="receipt-row">
                   <span>Phương thức:</span>
-                  <strong>Chuyển khoản (VietQR)</strong>
+                  <strong>{paymentChoice === 'wallet' ? 'Số dư Ví ViVuCar' : 'Chuyển khoản (VietQR)'}</strong>
+                </div>
+                <div className="receipt-row">
+                  <span>Phí thuê xe:</span>
+                  <strong>{formatCurrency(totalPrice)}</strong>
+                </div>
+                <div className="receipt-row">
+                  <span>Đặt cọc bảo đảm:</span>
+                  <strong>{formatCurrency(securityDeposit)}</strong>
                 </div>
                 <hr className="receipt-line" />
                 <div className="receipt-row total-receipt-row">
                   <span>Tổng tiền đã thanh toán:</span>
-                  <strong className="text-primary">{formatCurrency(totalPrice)}</strong>
+                  <strong className="text-primary">{formatCurrency(totalPayment)}</strong>
                 </div>
               </div>
 
@@ -352,6 +880,7 @@ const injectBookingStyles = () => {
       display: flex;
       flex-direction: column;
       animation: editorScaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      font-family: 'Outfit', sans-serif;
     }
 
     .booking-modal-header {
@@ -387,14 +916,18 @@ const injectBookingStyles = () => {
       border: none;
       color: #64748b;
       cursor: pointer;
-      padding: 4px;
-      border-radius: 6px;
-      transition: all 0.2s;
+      padding: 6px;
+      border-radius: 50%;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .btn-close-modal:hover {
-      color: white;
-      background: rgba(255, 255, 255, 0.05);
+      color: #0f172a;
+      background: #f1f5f9;
+      transform: rotate(90deg);
     }
 
     .booking-modal-body {
@@ -411,11 +944,18 @@ const injectBookingStyles = () => {
       border-radius: 12px;
       padding: 12px;
       align-items: center;
+      transition: all 0.3s ease;
+    }
+
+    .booking-car-summary:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
     }
 
     .summary-car-img {
-      width: 110px;
-      height: 70px;
+      width: 120px;
+      height: 75px;
       object-fit: cover;
       border-radius: 8px;
       background: #f1f5f9;
@@ -427,10 +967,10 @@ const injectBookingStyles = () => {
 
     .car-brand-lbl {
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 800;
       color: #6366f1;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 1px;
     }
 
     .summary-car-info h4 {
@@ -441,14 +981,14 @@ const injectBookingStyles = () => {
 
     .car-desc-sub {
       font-size: 12px;
-      color: #64748b;
-      margin-top: 2px;
+      color: #94a3b8;
+      margin-top: 4px;
     }
 
     /* Details Grid */
     .booking-details-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 16px;
     }
 
@@ -465,7 +1005,7 @@ const injectBookingStyles = () => {
     .detail-lbl {
       display: block;
       font-size: 11px;
-      color: #64748b;
+      color: #94a3b8;
       font-weight: 500;
       text-align: left;
     }
@@ -476,7 +1016,7 @@ const injectBookingStyles = () => {
       color: #1e293b;
       text-align: left;
       display: block;
-      margin-top: 2px;
+      margin-top: 4px;
     }
 
     @media (max-width: 480px) {
@@ -496,19 +1036,19 @@ const injectBookingStyles = () => {
 
     .cost-breakdown-card h5 {
       font-size: 13px;
-      font-weight: 700;
-      color: #cbd5e1;
-      margin-bottom: 12px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 16px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 1px;
     }
 
     .cost-row {
       display: flex;
       justify-content: space-between;
-      font-size: 13px;
-      color: #94a3b8;
-      margin-bottom: 10px;
+      font-size: 13.5px;
+      color: #475569;
+      margin-bottom: 12px;
     }
 
     .cost-divider {
@@ -527,43 +1067,55 @@ const injectBookingStyles = () => {
 
     /* License card */
     .license-verification-card {
-      border-radius: 12px;
-      padding: 14px 18px;
+      border-radius: 14px;
+      padding: 0;
     }
 
     .license-status-success {
-      background: rgba(16, 185, 129, 0.08);
-      border: 1px solid rgba(16, 185, 129, 0.2);
-      color: #a7f3d0;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
       display: flex;
       gap: 12px;
       align-items: center;
-      border-radius: 12px;
-      padding: 12px;
+      border-radius: 14px;
+      padding: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .license-status-success:hover {
+      background: #d1fae5;
+      border-color: #34d399;
     }
 
     .license-status-success p {
-      font-size: 12px;
-      color: #34d399;
-      margin-top: 2px;
+      font-size: 12.5px;
+      color: #047857;
+      margin-top: 3px;
     }
 
     .license-status-warning {
-      background: rgba(245, 158, 11, 0.08);
-      border: 1px solid rgba(245, 158, 11, 0.2);
-      color: #fde68a;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #92400e;
       display: flex;
       gap: 12px;
       align-items: flex-start;
-      border-radius: 12px;
-      padding: 12px;
+      border-radius: 14px;
+      padding: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .license-status-warning:hover {
+      background: #fef3c7;
+      border-color: #fbbf24;
     }
 
     .license-status-warning p {
-      font-size: 12px;
-      color: #fbbf24;
-      margin-top: 2px;
-      line-height: 1.4;
+      font-size: 12.5px;
+      color: #b45309;
+      margin-top: 3px;
+      line-height: 1.5;
     }
 
     .upload-license-inline-btn {
@@ -572,94 +1124,435 @@ const injectBookingStyles = () => {
       gap: 6px;
       background: #fbbf24;
       color: #1e1b4b;
-      padding: 6px 12px;
-      border-radius: 6px;
+      padding: 7px 14px;
+      border-radius: 8px;
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 800;
       cursor: pointer;
       border: none;
       transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
     }
 
     .upload-license-inline-btn:hover {
       background: #f59e0b;
       transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3);
     }
 
-    /* Step 2 Payments */
-    .payment-tip-alert {
-      background: #f5f3ff;
-      border: 1px solid #ddd6fe;
-      color: #5b21b6;
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-size: 13px;
-      text-align: left;
-      line-height: 1.4;
+    /* Step 2 Payments Redesign */
+    .booking-modal-card.wide-payment-modal {
+      max-width: 1000px;
+      width: 95%;
     }
 
-    .payment-tip-alert strong {
-      color: #4338ca;
+    .new-payment-layout {
+      color: #1e293b;
     }
 
-    .payment-layout-grid {
+    .payment-grid-columns {
       display: grid;
-      grid-template-columns: 1.2fr 1.8fr;
-      gap: 20px;
-      align-items: center;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 24px;
+      align-items: start;
     }
 
-    .qr-container-box {
-      background: white;
-      padding: 16px;
-      border-radius: 14px;
+    @media (max-width: 850px) {
+      .payment-grid-columns {
+        grid-template-columns: 1fr;
+      }
+      .booking-modal-card.wide-payment-modal {
+        max-width: 600px;
+      }
+    }
+
+    .white-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+      color: #475569;
+    }
+
+    .card-sub-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 12px;
+      text-align: left;
+    }
+
+    .card-sub-title.text-center {
+      text-align: center;
+    }
+
+    .card-sub-description {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .highlighted-price {
+      font-size: 32px;
+      font-weight: 800;
+      color: #6366f1;
+      text-align: center;
+      margin: 12px 0;
+    }
+
+    .timer-box-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748b;
+      text-align: center;
+    }
+
+    .timer-countdown-clock {
+      font-size: 24px;
+      font-weight: 800;
+      color: #dc2626;
+      text-align: center;
+      margin: 6px auto 16px auto;
+      font-family: monospace;
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      padding: 6px 16px;
+      border-radius: 8px;
+      display: table;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.05);
+    }
+
+    .booking-code-line {
+      font-size: 13px;
+      color: #475569;
+      text-align: center;
+      background: #f8fafc;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px dashed #cbd5e1;
+      margin-bottom: 16px;
+    }
+
+    .car-detail-inline-box {
+      font-size: 13px;
+      background: #f8fafc;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      gap: 8px;
     }
 
-    .vietqr-image {
-      width: 100%;
-      aspect-ratio: 1;
+    .detail-inline-row {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .detail-inline-row .lbl {
+      color: #64748b;
+    }
+
+    .detail-inline-row .val {
+      color: #1e293b;
+      font-weight: 600;
+    }
+
+    .vietqr-logo-container {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .vietqr-inline-logo {
+      height: 32px;
       object-fit: contain;
     }
 
-    .qr-brand-sub {
-      color: #475569;
-      font-size: 9px;
+    .vietqr-frame-box {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      display: inline-block;
+      background: #ffffff;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+      margin: 0 auto 16px auto;
+      text-align: center;
+    }
+
+    .vietqr-image-render {
+      width: 180px;
+      height: 180px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .vietqr-napas-brand {
+      font-size: 10px;
       font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 1px;
       margin-top: 8px;
     }
 
-    .payment-text-details {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      padding: 16px;
-      border-radius: 14px;
-      text-align: left;
+    .divider-or-text {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #64748b;
+      margin: 16px 0;
+      position: relative;
     }
 
-    .bank-detail-row {
+    .divider-or-text::before,
+    .divider-or-text::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 40%;
+      height: 1px;
+      background: #e2e8f0;
+    }
+
+    .divider-or-text::before { left: 0; }
+    .divider-or-text::after { right: 0; }
+
+    .bank-title-transfer {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .alert-memo-warn {
+      font-size: 11px;
+      line-height: 1.4;
+      background: #fff5f5;
+      border: 1px solid #fee2e2;
+      color: #dc2626;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .bank-copyable-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .copyable-field-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+
+    .field-value-col {
       display: flex;
       flex-direction: column;
       gap: 2px;
+      text-align: left;
+    }
+
+    .field-value-col .lbl {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .field-value-col .val {
+      font-size: 13px;
+      color: #1e293b;
+      font-weight: 600;
+    }
+
+    .btn-copy-action {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-copy-action:hover {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+
+    .car-preview-img-container {
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+    }
+
+    .car-preview-image {
+      max-width: 100%;
+      height: 110px;
+      object-fit: contain;
+    }
+
+    .rental-info-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
       border-bottom: 1px solid #f1f5f9;
       padding-bottom: 8px;
     }
 
-    .bank-detail-row:last-child {
-      border: none;
+    .info-row:last-child {
+      border-bottom: none;
       padding-bottom: 0;
     }
 
-    .bank-detail-row .lbl {
-      font-size: 11px;
+    .info-row .lbl {
       color: #64748b;
-      font-weight: 500;
+    }
+
+    .info-row .val {
+      color: #1e293b;
+      font-weight: 600;
+    }
+
+    .total-rental-box {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      padding: 12px 14px;
+      border-radius: 10px;
+    }
+
+    .lbl-box {
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+
+    .lbl-box .main {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #059669;
+    }
+
+    .lbl-box .sub {
+      font-size: 10px;
+      color: #059669;
+      margin-top: 1px;
+    }
+
+    .val-price {
+      font-size: 18px;
+      font-weight: 800;
+      color: #059669;
+    }
+
+    .payment-steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .step-circle {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      flex-shrink: 0;
+      box-shadow: 0 0 8px rgba(99, 102, 241, 0.2);
+    }
+
+    .step-content {
+      flex: 1;
+      text-align: left;
+    }
+
+    .step-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .step-desc {
+      font-size: 11.5px;
+      color: #64748b;
+      margin-top: 4px;
+      line-height: 1.45;
+    }
+
+    .step-breakdown-details {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      color: #64748b;
+    }
+
+    .breakdown-row strong {
+      color: #1e293b;
+    }
+
+    .strike-text {
+      text-decoration: line-through;
+      color: #94a3b8;
+    }
+
+    .text-orange {
+      color: #f97316;
+      font-weight: 700;
     }
 
     .bank-detail-row .val {
@@ -667,27 +1560,40 @@ const injectBookingStyles = () => {
       color: #1e293b;
     }
 
-    @media (max-width: 600px) {
-      .payment-layout-grid {
-        grid-template-columns: 1fr;
-      }
-      .qr-container-box {
-        max-width: 240px;
-        margin: 0 auto;
-      }
-    }
-
-    /* Receipt printable bill */
+    /* Receipt printable bill with zig-zag edge */
     .printable-receipt-card {
-      background: white;
+      background: #ffffff;
       color: #0f172a;
       border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+      padding: 32px 24px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+      border: 1px solid #e2e8f0;
       position: relative;
       overflow: hidden;
       max-width: 420px;
       margin: 20px auto 0;
+    }
+
+    .printable-receipt-card::before,
+    .printable-receipt-card::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(-135deg, #f1f5f9 4px, transparent 0), linear-gradient(135deg, #f1f5f9 4px, transparent 0);
+      background-size: 8px 6px;
+      background-repeat: repeat-x;
+      z-index: 10;
+    }
+
+    .printable-receipt-card::before {
+      top: 0;
+    }
+
+    .printable-receipt-card::after {
+      bottom: 0;
+      transform: rotate(180deg);
     }
 
     .receipt-header {
@@ -765,3 +1671,4 @@ const injectBookingStyles = () => {
 };
 
 injectBookingStyles();
+

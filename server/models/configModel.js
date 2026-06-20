@@ -54,6 +54,10 @@ export const configModel = {
     let serviceFeePercent = 5;
     let insuranceMultiplier = 1.1;
     let systemNotice = 'Chào mừng bạn đến với ViVuCar - Nền tảng Cho thuê và Ký gửi xe tự lái hàng đầu Việt Nam. Hãy hoàn tất KYC bằng lái xe trong mục Hồ sơ để bắt đầu trải nghiệm thuê xe ngay!';
+    let bankId = process.env.BANK_ID || 'mbbank';
+    let bankName = process.env.BANK_NAME || 'ViVuCar Bank';
+    let bankAccountNumber = process.env.BANK_ACCOUNT_NUMBER || '1900533588';
+    let bankAccountHolder = process.env.BANK_ACCOUNT_HOLDER || 'VIVUCAR SYSTEM';
 
     for (const config of res.recordset) {
       if (config.config_key === 'PLATFORM_FEE_PERCENT') {
@@ -62,13 +66,25 @@ export const configModel = {
         insuranceMultiplier = parseFloat(config.config_value) || insuranceMultiplier;
       } else if (config.config_key === 'SYSTEM_NOTICE') {
         systemNotice = config.config_value;
+      } else if (config.config_key === 'BANK_ID') {
+        bankId = config.config_value || bankId;
+      } else if (config.config_key === 'BANK_NAME') {
+        bankName = config.config_value || bankName;
+      } else if (config.config_key === 'BANK_ACCOUNT_NUMBER') {
+        bankAccountNumber = config.config_value || bankAccountNumber;
+      } else if (config.config_key === 'BANK_ACCOUNT_HOLDER') {
+        bankAccountHolder = config.config_value || bankAccountHolder;
       }
     }
 
     return {
       serviceFeePercent,
       insuranceMultiplier,
-      systemNotice
+      systemNotice,
+      bankId,
+      bankName,
+      bankAccountNumber,
+      bankAccountHolder
     };
   },
 
@@ -91,6 +107,10 @@ export const configModel = {
     await upsertConfig('PLATFORM_FEE_PERCENT', newConfig.serviceFeePercent, 'Number');
     await upsertConfig('INSURANCE_MULTIPLIER', newConfig.insuranceMultiplier, 'Number');
     await upsertConfig('SYSTEM_NOTICE', newConfig.systemNotice, 'String');
+    await upsertConfig('BANK_ID', newConfig.bankId, 'String');
+    await upsertConfig('BANK_NAME', newConfig.bankName, 'String');
+    await upsertConfig('BANK_ACCOUNT_NUMBER', newConfig.bankAccountNumber, 'String');
+    await upsertConfig('BANK_ACCOUNT_HOLDER', newConfig.bankAccountHolder, 'String');
 
     return await configModel.get();
   }
