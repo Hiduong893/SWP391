@@ -1,4 +1,4 @@
-import { db } from './database.js';
+import { db } from './models/index.js';
 import crypto from 'crypto';
 
 function sortObject(obj) {
