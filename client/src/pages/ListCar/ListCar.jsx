@@ -232,24 +232,24 @@ export const ListCar = ({ setCurrentTab }) => {
       <div className="owner-stats-grid mb-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
         <div className="owner-stat-card-glass">
           <div>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Tổng Thu Nhập</span>
-            <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#a855f7', marginTop: 4 }}>{formatCurrency(totalEarnings)}</h3>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tổng Thu Nhập</span>
+            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--accent-primary)', marginTop: 4 }}>{formatCurrency(totalEarnings)}</h3>
           </div>
           <div className="owner-stat-icon bg-purple"><DollarSign size={20} /></div>
         </div>
 
         <div className="owner-stat-card-glass">
           <div>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Đội Xe Sở Hữu</span>
-            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'white', marginTop: 4 }}>{myCarsList.length} xe</h3>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Đội Xe Sở Hữu</span>
+            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>{myCarsList.length} xe</h3>
           </div>
           <div className="owner-stat-icon bg-blue"><Car size={20} /></div>
         </div>
 
         <div className="owner-stat-card-glass">
           <div>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Số Đơn Đặt Lịch</span>
-            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'white', marginTop: 4 }}>{ownerBookings.length} lượt</h3>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Số Đơn Đặt Lịch</span>
+            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>{ownerBookings.length} lượt</h3>
           </div>
           <div className="owner-stat-icon bg-green"><BarChart3 size={20} /></div>
         </div>
@@ -285,51 +285,51 @@ export const ListCar = ({ setCurrentTab }) => {
       {/* VIEWPORT CONTROLS */}
       <div className="owner-viewport-box">
         {loading ? (
-          <div className="owner-loading-box" style={{ padding: 48, background: '#11131c', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, color: '#64748b', textAlign: 'center' }}>
+          <div className="owner-loading-box" style={{ padding: 48, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 16, color: 'var(--text-muted)', textAlign: 'center' }}>
             Đang tải kho dữ liệu chủ xe...
           </div>
         ) : (
           <>
             {/* SUB-TAB 1: STATS & BOOKINGS QUEUE (UC22, UC23) */}
             {activeSubTab === 'stats' && (
-              <div className="owner-glass-table-container" style={{ background: 'rgba(17,19,28,0.5)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 20 }}>
-                <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left' }}>
+              <div className="owner-glass-table-container" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-shadow)', borderRadius: 16, padding: 20 }}>
+                <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left' }}>
                   Yêu cầu đặt thuê xe chờ chủ xe duyệt (UC22)
                 </h4>
 
                 {pendingBookings.length === 0 ? (
-                  <div style={{ padding: 32, background: 'rgba(255,255,255,0.01)', border: '1px dashed rgba(255,255,255,0.05)', borderRadius: 12, color: '#64748b', textAlign: 'center', fontSize: '13px' }}>
+                  <div style={{ padding: 32, background: 'var(--bg-primary)', border: '1px dashed var(--border-color)', borderRadius: 12, color: 'var(--text-muted)', textAlign: 'center', fontSize: '13px' }}>
                     Không có lịch thuê xe nào đang chờ duyệt. Đội xe của bạn đang sẵn sàng đón nhận những chuyến đi mới!
                   </div>
                 ) : (
                   <table className="owner-data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                        <th style={{ padding: 12, fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>Khách Hàng</th>
-                        <th style={{ padding: 12, fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>Xe Yêu Cầu</th>
-                        <th style={{ padding: 12, fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>Thời Gian Nhận/Trả</th>
-                        <th style={{ padding: 12, fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>Doanh Thu</th>
-                        <th style={{ padding: 12, fontSize: '11px', color: '#64748b', textTransform: 'uppercase', textAlign: 'center' }}>Duyệt Đơn</th>
+                      <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Khách Hàng</th>
+                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Xe Yêu Cầu</th>
+                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Thời Gian Nhận/Trả</th>
+                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Doanh Thu</th>
+                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Duyệt Đơn</th>
                       </tr>
                     </thead>
                     <tbody>
                       {pendingBookings.map((b) => (
-                        <tr key={b.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                          <td style={{ padding: 14, fontSize: '13px', color: '#cbd5e1' }}>
+                        <tr key={b.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                          <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
                             <strong>{b.userName}</strong>
-                            <span style={{ fontSize: '11px', color: '#64748b', display: 'block' }}>{b.userEmail}</span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{b.userEmail}</span>
                           </td>
-                          <td style={{ padding: 14, fontSize: '13px', color: '#cbd5e1' }}>
+                          <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <img src={b.carImage} alt={b.carName} style={{ width: 44, height: 28, objectFit: 'cover', borderRadius: 4 }} />
                               <strong>{b.carName}</strong>
                             </div>
                           </td>
-                          <td style={{ padding: 14, fontSize: '12px', color: '#94a3b8' }}>
+                          <td style={{ padding: 14, fontSize: '12px', color: 'var(--text-secondary)' }}>
                             <strong>{b.pickupLocation}</strong>
-                            <span style={{ display: 'block', fontSize: '11px', color: '#64748b' }}>{b.pickupDate} ➔ {b.returnDate}</span>
+                            <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)' }}>{b.pickupDate} ➔ {b.returnDate}</span>
                           </td>
-                          <td style={{ padding: 14, fontSize: '13px', color: '#a855f7', fontWeight: 700 }}>{formatCurrency(b.totalPrice)}</td>
+                          <td style={{ padding: 14, fontSize: '13px', color: 'var(--accent-primary)', fontWeight: 700 }}>{formatCurrency(b.totalPrice)}</td>
                           <td style={{ padding: 14 }}>
                             <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
                               <button 
@@ -359,33 +359,33 @@ export const ListCar = ({ setCurrentTab }) => {
                 {/* All Bookings History Log */}
                 {ownerBookings.length > pendingBookings.length && (
                   <div className="mt-8">
-                    <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#34d399', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left' }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left' }}>
                       Lịch sử cho thuê & Lịch trình hành trình
                     </h4>
                     <table className="owner-data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                       <thead>
-                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                          <th style={{ padding: 12, fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>Khách Hàng</th>
-                          <th style={{ padding: 12, fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>Phương Tiện</th>
-                          <th style={{ padding: 12, fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>Thời Gian</th>
-                          <th style={{ padding: 12, fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>Doanh Thu</th>
-                          <th style={{ padding: 12, fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>Trạng Thái</th>
+                        <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                          <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Khách Hàng</th>
+                          <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Phương Tiện</th>
+                          <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Thời Gian</th>
+                          <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Doanh Thu</th>
+                          <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Trạng Thái</th>
                         </tr>
                       </thead>
                       <tbody>
                         {ownerBookings.filter(b => b.status !== 'pending_owner').map((b) => (
-                          <tr key={b.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                            <td style={{ padding: 14, fontSize: '13px', color: '#cbd5e1' }}>
+                          <tr key={b.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                            <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
                               <strong>{b.userName}</strong>
-                              <span style={{ fontSize: '11px', color: '#64748b', display: 'block' }}>{b.userEmail}</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{b.userEmail}</span>
                             </td>
-                            <td style={{ padding: 14, fontSize: '13px', color: '#cbd5e1' }}>
+                            <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
                               <strong>{b.carName}</strong>
                             </td>
-                            <td style={{ padding: 14, fontSize: '12px', color: '#94a3b8' }}>
+                            <td style={{ padding: 14, fontSize: '12px', color: 'var(--text-secondary)' }}>
                               <span>{b.pickupDate} ➔ {b.returnDate}</span>
                             </td>
-                            <td style={{ padding: 14, fontSize: '13px', color: '#a855f7', fontWeight: 700 }}>{formatCurrency(b.totalPrice)}</td>
+                            <td style={{ padding: 14, fontSize: '13px', color: 'var(--accent-primary)', fontWeight: 700 }}>{formatCurrency(b.totalPrice)}</td>
                             <td style={{ padding: 14 }}>
                               <span className={`owner-booking-status-badge badge-${b.status}`}>
                                 {b.status === 'confirmed' ? 'Đã duyệt' : b.status === 'active' ? 'Đang thuê' : b.status === 'completed' ? 'Hoàn thành ✓' : b.status === 'disputed' ? 'Khiếu nại' : 'Đã hủy'}
@@ -402,35 +402,35 @@ export const ListCar = ({ setCurrentTab }) => {
 
             {/* SUB-TAB 2: MY OWN REGISTERED VEHICLES GRID (UC25) */}
             {activeSubTab === 'my-cars' && (
-              <div className="owner-glass-table-container" style={{ background: 'rgba(17,19,28,0.5)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 20 }}>
-                <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left' }}>
+              <div className="owner-glass-table-container" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-shadow)', borderRadius: 16, padding: 20 }}>
+                <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left' }}>
                   Danh sách đội phương tiện ký gửi đã đăng ký (UC25)
                 </h4>
 
                 {myCarsList.length === 0 ? (
-                  <div style={{ padding: 32, background: 'rgba(255,255,255,0.01)', border: '1px dashed rgba(255,255,255,0.05)', borderRadius: 12, color: '#64748b', textAlign: 'center', fontSize: '13px' }}>
+                  <div style={{ padding: 32, background: 'var(--bg-primary)', border: '1px dashed var(--border-color)', borderRadius: 12, color: 'var(--text-muted)', textAlign: 'center', fontSize: '13px' }}>
                     Bạn chưa ký gửi chiếc xe nào trên sàn. Hãy nhấn 'Ký Gửi Xe Mới' để đăng ký chiếc xe đầu tiên của bạn!
                   </div>
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
                     {myCarsList.map((car) => (
-                      <div key={car.id} style={{ display: 'flex', gap: 12, background: '#11131c', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 12, textAlign: 'left' }}>
+                      <div key={car.id} style={{ display: 'flex', gap: 12, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 12, textAlign: 'left' }}>
                         <img src={car.image} alt={car.model} style={{ width: 100, height: 60, objectFit: 'cover', borderRadius: 6, background: '#050508' }} />
                         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1 }}>
                           <div>
-                            <strong style={{ fontSize: '10px', color: '#6366f1', display: 'block', textTransform: 'uppercase' }}>{car.brand}</strong>
-                            <strong style={{ fontSize: '14px', color: 'white' }}>{car.model}</strong>
-                            <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginTop: 2 }}>Biển số: {car.plateNumber}</span>
+                            <strong style={{ fontSize: '10px', color: 'var(--accent-primary)', display: 'block', textTransform: 'uppercase' }}>{car.brand}</strong>
+                            <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{car.model}</strong>
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: 2 }}>Biển số: {car.plateNumber}</span>
                           </div>
                           
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                            <strong style={{ fontSize: '12px', color: '#c084fc' }}>{formatCurrency(car.pricePerDay)}/ngày</strong>
+                            <strong style={{ fontSize: '12px', color: 'var(--accent-primary)' }}>{formatCurrency(car.pricePerDay)}/ngày</strong>
                             
                             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                               <button 
                                 type="button"
                                 className="owner-booking-status-badge badge-confirmed" 
-                                style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)', color: '#818cf8', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
+                                style={{ background: 'rgba(0, 150, 152, 0.15)', border: '1px solid rgba(0, 150, 152, 0.3)', color: 'var(--accent-primary)', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
                                 onClick={() => handleStartEditCar(car)}
                               >
                                 Sửa xe
@@ -450,7 +450,7 @@ export const ListCar = ({ setCurrentTab }) => {
 
             {/* SUB-TAB 3: REGISTER NEW VEHICLE (UC21) */}
             {activeSubTab === 'register' && (
-              <div className="glass-card" style={{ maxWidth: '640px', margin: '0 auto', background: 'rgba(17,19,28,0.5)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="glass-card" style={{ maxWidth: '640px', margin: '0 auto', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-shadow)' }}>
                 {!success ? (
                   <>
                     <h2 className="title" style={{ fontSize: '18px', textAlign: 'left' }}>Đăng Ký Ký Gửi Xe Mới</h2>
@@ -600,7 +600,7 @@ export const ListCar = ({ setCurrentTab }) => {
                   <div className="text-center" style={{ padding: '30px 10px' }}>
                     <Sparkles className="success-lottie-icon animate-bounce text-success mb-4" size={56} style={{ display: 'inline' }} />
                     <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#10b981' }}>Đăng Ký Ký Gửi Xe Thành Công!</h2>
-                    <p className="subtitle mt-2" style={{ color: '#cbd5e1', fontSize: '13px' }}>
+                    <p className="subtitle mt-2" style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
                       Cảm ơn bạn! Xe **{brand} {model}** đã được nộp hồ sơ phê duyệt lên hệ thống. CSKH sẽ kiểm duyệt hồ sơ xe và đăng tải lên sàn trong chốc lát!
                     </p>
 
@@ -634,7 +634,7 @@ export const ListCar = ({ setCurrentTab }) => {
               </div>
               <form onSubmit={handleSubmitEditCar} className="list-car-form">
                 <div style={{ marginBottom: 16 }}>
-                  <strong style={{ color: '#cbd5e1', fontSize: '13.5px' }}>
+                  <strong style={{ color: 'var(--text-primary)', fontSize: '13.5px' }}>
                     Xe: {editingCar.brand} {editingCar.model} ({editingCar.plateNumber})
                   </strong>
                 </div>
