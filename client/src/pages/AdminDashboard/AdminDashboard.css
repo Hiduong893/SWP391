@@ -7,7 +7,7 @@
   top: 0;
   left: 0;
   z-index: 100;
-  font-family: 'Outfit', sans-serif;
+font-family: 'Inter', sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
   overflow: hidden;
 }
@@ -143,7 +143,7 @@
   background: transparent;
   border: none;
   color: var(--admin-sidebar-text);
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14.5px;
   font-weight: 550;
   text-align: left;
@@ -287,7 +287,7 @@
 }
 
 .dashboard-datepicker-pill {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   padding: 8px 16px;
   border-radius: 20px;
   border: 1px solid var(--admin-border-color);
@@ -334,7 +334,7 @@
   color: var(--admin-text-primary);
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
   margin-right: 8px;
 }
@@ -411,7 +411,7 @@
   color: var(--admin-text-primary);
   font-size: 13.5px;
   width: 100%;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .header-actions {
@@ -429,7 +429,7 @@
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
@@ -563,7 +563,7 @@
 }
 
 .action-btn {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 13.5px;
   font-weight: 600;
   padding: 8px 16px;
@@ -585,7 +585,7 @@
 }
 
 .period-select {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   padding: 8px 12px;
   border-radius: 8px;
   border: 1px solid var(--admin-border-color);
@@ -606,7 +606,7 @@
 
 .subtab-btn {
   padding: 6px 16px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   font-weight: 600;
   border-radius: 6px;
@@ -785,7 +785,7 @@
 .chart-axis-text {
   fill: var(--admin-text-muted);
   font-size: 9px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 /* Donut Chart panel */
@@ -813,13 +813,13 @@
   font-size: 24px;
   font-weight: 800;
   fill: var(--admin-text-primary);
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .donut-center-lbl {
   font-size: 9px;
   fill: var(--admin-text-muted);
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
@@ -944,7 +944,7 @@
 }
 
 .role-select-badge {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
   font-weight: 600;
   padding: 4px 10px;
@@ -1118,7 +1118,7 @@ input:checked + .toggle-slider:before {
 }
 
 .btn-approve {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
   font-size: 12px;
   padding: 6px 12px;
@@ -1138,7 +1138,7 @@ input:checked + .toggle-slider:before {
 .btn-danger:hover { background: #e11d48; }
 
 .role-change-select {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 12.5px;
   padding: 4px 8px;
   border-radius: 6px;
@@ -1335,7 +1335,7 @@ input:checked + .toggle-slider:before {
   flex: 1;
   border-radius: 18px;
   padding: 8px 16px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   background: var(--admin-bg-tertiary);
   border: 1px solid var(--admin-border-color);
@@ -1353,7 +1353,7 @@ input:checked + .toggle-slider:before {
   border: none;
   border-radius: 18px;
   padding: 0 16px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -1403,7 +1403,7 @@ input:checked + .toggle-slider:before {
   width: 100%;
   border-radius: 8px;
   padding: 10px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   background: var(--admin-bg-tertiary);
   border: 1px solid var(--admin-border-color);
@@ -1424,7 +1424,7 @@ input:checked + .toggle-slider:before {
   padding: 8px 18px;
   cursor: pointer;
   align-self: flex-end;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 /* AI risk alerts tab layouts */
@@ -1625,7 +1625,7 @@ input:checked + .toggle-slider:before {
 }
 
 .config-text-input {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 13.5px;
   padding: 8px 12px;
   border-radius: 8px;
@@ -1643,7 +1643,7 @@ input:checked + .toggle-slider:before {
 }
 
 .config-textarea-input {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 13.5px;
   padding: 10px 12px;
   border-radius: 8px;
@@ -1659,7 +1659,7 @@ input:checked + .toggle-slider:before {
 .config-submit-btn {
   background: linear-gradient(135deg, #009698 0%, #00bfa5 100%);
   color: white;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 700;
   padding: 10px 24px;

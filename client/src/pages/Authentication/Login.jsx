@@ -476,7 +476,7 @@ const injectLoginStyles = () => {
       gap: 8px;
       padding: 10px 8px;
       border-radius: 8px;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
