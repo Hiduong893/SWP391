@@ -230,7 +230,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                           color: '#0f172a',
                           padding: '8px 10px',
                           fontSize: '13px',
-                          fontFamily: "'Outfit', sans-serif",
+                          fontFamily: "'Inter', sans-serif",
                           outline: 'none',
                           width: '100%',
                           colorScheme: 'light',
@@ -255,7 +255,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                           color: '#0f172a',
                           padding: '8px 10px',
                           fontSize: '13px',
-                          fontFamily: "'Outfit', sans-serif",
+                          fontFamily: "'Inter', sans-serif",
                           outline: 'none',
                           width: '100%',
                           colorScheme: 'light',
@@ -880,7 +880,7 @@ const injectBookingStyles = () => {
       display: flex;
       flex-direction: column;
       animation: editorScaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
     }
 
     .booking-modal-header {

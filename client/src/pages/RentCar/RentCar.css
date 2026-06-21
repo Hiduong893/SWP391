@@ -63,7 +63,7 @@
   color: #ffffff;
   line-height: 1.15;
   letter-spacing: -1.5px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
@@ -78,7 +78,7 @@
   font-weight: 500;
   color: rgba(255, 255, 255, 0.9);
   margin-top: 12px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   letter-spacing: 0.5px;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
@@ -187,7 +187,7 @@
 
 .search-tab-btn {
   padding: 12px 28px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14.5px;
   font-weight: 700;
   border: none;
@@ -272,7 +272,7 @@
   background: transparent;
   border: none;
   color: #0f172a;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14.5px;
   font-weight: 700;
   outline: none;
@@ -303,7 +303,7 @@
   background: #009698;
   border: none;
   color: #ffffff;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -349,7 +349,7 @@
   color: #0f172a;
   letter-spacing: -0.5px;
   margin-bottom: 32px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 /* Slider Carousels with Smooth Scroll */
@@ -607,7 +607,7 @@
   font-size: 15px;
   font-weight: 700;
   color: #0f172a;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   margin-bottom: 2px;
 }
 
@@ -647,7 +647,7 @@
   font-size: 14.5px;
   color: #009698;
   font-weight: 800;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .price-unit-gray {
@@ -748,7 +748,7 @@
   font-weight: 800;
   color: #ffffff;
   margin-bottom: 2px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .location-card-car-count {
@@ -764,7 +764,7 @@
   color: #ffffff;
   padding: 6px 16px;
   border-radius: 8px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
@@ -849,7 +849,7 @@
   font-size: 18px;
   font-weight: 800;
   color: #0f172a;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .mini-cars-cta-subtitle {
@@ -863,7 +863,7 @@
   background: #009698;
   border: none;
   color: #ffffff;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 13.5px;
   font-weight: 700;
   padding: 8px 24px;
@@ -901,7 +901,7 @@
   margin-bottom: 40px;
   z-index: 2;
   position: relative;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .steps-grid-items {
@@ -1068,7 +1068,7 @@
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.5px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 /* "Bộ lọc nâng cao */
@@ -1133,7 +1133,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   color: #1e293b;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   outline: none;
   transition: all 0.2s;
@@ -1157,7 +1157,7 @@
   background: none;
   border: none;
   color: #64748b;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
@@ -1283,7 +1283,7 @@
   font-size: 16px;
   font-weight: 700;
   color: #0f172a;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   text-align: left;
 }
 
@@ -1308,7 +1308,7 @@
   font-size: 18px;
   font-weight: 800;
   color: #009698;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .price-unit {
@@ -1389,7 +1389,7 @@
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -1419,7 +1419,7 @@
   font-size: 22px;
   font-weight: 800;
   color: #0f172a;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .accordion-item-glass {
@@ -1447,7 +1447,7 @@
   padding: 18px 24px;
   cursor: pointer;
   color: #1e293b;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   text-align: left;
 }
 
@@ -1582,7 +1582,7 @@
   font-weight: 800;
   color: #0f172a;
   margin-top: 2px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .popup-body-content {
@@ -1742,7 +1742,7 @@
   font-size: 20px;
   font-weight: 800;
   color: #009698;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .popup-price-info .price-unit {
@@ -1785,7 +1785,7 @@
   color: #0f172a;
   margin-bottom: 20px;
   letter-spacing: -0.2px;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .footer-contact-list,

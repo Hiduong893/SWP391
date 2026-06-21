@@ -70,6 +70,47 @@ export const getPool = async () => {
             ALTER TABLE Booking ADD issue_report NVARCHAR(MAX) NULL;
         END
 
+        -- Normalize Review schema used by the trip-review feature
+        IF OBJECT_ID('dbo.Review', 'U') IS NOT NULL
+        BEGIN
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Review') AND name = 'owner_id')
+            BEGIN
+                ALTER TABLE Review ADD owner_id INT NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Review') AND name = 'rating_vehicle')
+            BEGIN
+                ALTER TABLE Review ADD rating_vehicle INT NULL;
+                IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Review') AND name = 'rating')
+                    EXEC('UPDATE Review SET rating_vehicle = rating WHERE rating_vehicle IS NULL');
+            END
+            IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Review') AND name = 'rating' AND is_nullable = 0)
+            BEGIN
+                ALTER TABLE Review ALTER COLUMN rating INT NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Review') AND name = 'rating_owner')
+            BEGIN
+                ALTER TABLE Review ADD rating_owner INT NULL;
+                EXEC('UPDATE Review SET rating_owner = ISNULL(rating_vehicle, 5) WHERE rating_owner IS NULL');
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Review') AND name = 'is_visible')
+            BEGIN
+                ALTER TABLE Review ADD is_visible BIT NOT NULL DEFAULT 1;
+                IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Review') AND name = 'status')
+                    EXEC('UPDATE Review SET is_visible = CASE WHEN LOWER(status) = ''hidden'' THEN 0 ELSE 1 END');
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Review') AND name = 'updated_at')
+            BEGIN
+                ALTER TABLE Review ADD updated_at DATETIME NULL;
+                EXEC('UPDATE Review SET updated_at = created_at WHERE updated_at IS NULL');
+            END
+
+            UPDATE r
+            SET owner_id = ISNULL(v.owner_id, 1)
+            FROM Review r
+            INNER JOIN Vehicle v ON r.vehicle_id = v.vehicle_id
+            WHERE r.owner_id IS NULL;
+        END
+
         -- Create simulated Emails table if missing for the Inbox view
         IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Emails')
         BEGIN

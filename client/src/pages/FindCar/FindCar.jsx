@@ -754,7 +754,7 @@ const injectFindCarStyles = () => {
       max-width: 1440px;
       margin: 0 auto;
       padding: 40px 24px 80px 24px;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
       background: #f8fafc;
       animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     }
@@ -798,7 +798,7 @@ const injectFindCarStyles = () => {
       -webkit-text-fill-color: transparent;
       margin: 0;
       letter-spacing: -0.8px;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
       z-index: 1;
     }
 
@@ -845,7 +845,7 @@ const injectFindCarStyles = () => {
       border: none;
       background: transparent;
       outline: none;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 15px;
       color: #0f172a;
       width: 170px;
@@ -864,7 +864,7 @@ const injectFindCarStyles = () => {
       border: none;
       background: transparent;
       outline: none;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 14px;
       color: #0f172a;
       width: 135px;
@@ -896,7 +896,7 @@ const injectFindCarStyles = () => {
       font-size: 15px;
       cursor: pointer;
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
       letter-spacing: 0.5px;
       box-shadow: 0 4px 15px rgba(0, 150, 152, 0.25);
     }
@@ -1099,7 +1099,7 @@ const injectFindCarStyles = () => {
       color: #0f172a;
       margin: 0 0 4px 0;
       line-height: 1.3;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
       cursor: pointer;
       transition: color 0.2s;
     }
@@ -1157,7 +1157,7 @@ const injectFindCarStyles = () => {
       font-size: 20px;
       font-weight: 900;
       color: #009698;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
     }
 
     .price-estimation-text {
@@ -1213,7 +1213,7 @@ const injectFindCarStyles = () => {
       background: linear-gradient(135deg, #009698 0%, #00b2b4 100%);
       border: none;
       color: #ffffff;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 13px;
       font-weight: 800;
       padding: 12px 0;
@@ -1293,7 +1293,7 @@ const injectFindCarStyles = () => {
       font-weight: 800;
       color: #0f172a;
       margin: 0;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
       letter-spacing: -0.3px;
     }
 

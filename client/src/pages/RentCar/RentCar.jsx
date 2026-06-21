@@ -979,7 +979,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                       {brand.name === 'MG' && (
                         <>
                           <polygon points="50,12 77,23 88,50 77,77 50,88 23,77 12,50 23,23" fill="none" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
-                          <text x="50" y="59" textAnchor="middle" fill="currentColor" fontFamily="'Outfit', sans-serif" fontWeight="900" fontSize="28" letterSpacing="-1">MG</text>
+                          <text x="50" y="59" textAnchor="middle" fill="currentColor" fontFamily="'Inter', sans-serif" fontWeight="900" fontSize="28" letterSpacing="-1">MG</text>
                         </>
                       )}
                       {brand.name === 'Suzuki' && (
