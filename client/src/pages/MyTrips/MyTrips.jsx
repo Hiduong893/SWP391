@@ -458,10 +458,10 @@ export const MyTrips = () => {
                 key={t.id}
                 className="ticket-mini-row"
                 onClick={() => setSelectedMyTicket(t)}
-                    style={{ padding: '12px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.2s' }}
+                style={{ padding: '12px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.2s' }}
               >
                 <div>
-                      <strong style={{ fontSize: '13.5px', color: '#0f172a', display: 'block' }}>{t.subject}</strong>
+                  <strong style={{ fontSize: '13.5px', color: '#0f172a', display: 'block' }}>{t.subject}</strong>
                   <span style={{ fontSize: '11px', color: '#64748b' }}>Gửi ngày: {new Date(t.createdAt).toLocaleDateString('vi-VN')} • Trạng thái:
                     <strong style={{ color: t.status === 'replied' ? '#a855f7' : t.status === 'resolved' ? '#34d399' : '#fbbf24' }}>
                       {t.status === 'open' ? ' Đang xử lý' : t.status === 'replied' ? ' Đã có phản hồi ✓' : ' Đã đóng'}
@@ -524,7 +524,7 @@ export const MyTrips = () => {
 
               <div className="editor-modal-footer" style={{ padding: '12px 0 0 0', borderTop: '1px solid #e2e8f0', background: 'none', width: '100%', display: 'flex', gap: 8 }}>
                 {selectedMyTicket.status !== 'resolved' ? (
-                  <form 
+                  <form
                     style={{ display: 'flex', width: '100%', gap: 8 }}
                     onSubmit={(e) => {
                       e.preventDefault();
@@ -535,9 +535,9 @@ export const MyTrips = () => {
                       showToast('Đã gửi phản hồi thành công!', 'success');
                     }}
                   >
-                    <input 
-                      type="text" 
-                      placeholder="Nhập tin nhắn..." 
+                    <input
+                      type="text"
+                      placeholder="Nhập tin nhắn..."
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
                       style={{ flex: 1, fontSize: '13.5px', padding: '10px 16px', border: '1px solid #cbd5e1', borderRadius: '24px', outline: 'none', color: '#0f172a', background: '#f8fafc' }}
