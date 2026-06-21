@@ -1,6 +1,7 @@
 import express from 'express';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
+import { notificationService } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -130,6 +131,18 @@ router.put('/api/owner/bookings/:id/approve', auth, async (req, res) => {
 
     const newStatus = approved ? 'confirmed' : 'cancelled';
     await db.bookings.update(id, { status: newStatus });
+
+    // Send notification to Renter
+    await notificationService.createNotification(
+      booking.userId,
+      approved ? 'Yêu cầu thuê xe được xác nhận' : 'Yêu cầu thuê xe bị từ chối',
+      approved 
+        ? `Chủ xe đã đồng ý yêu cầu thuê xe ${car.brand} ${car.model} của bạn (Mã: #${id}). Chuyến đi đã sẵn sàng!`
+        : `Chủ xe đã từ chối yêu cầu thuê xe ${car.brand} ${car.model} của bạn (Mã: #${id}). Tiền đặt cọc đã được hoàn trả.`,
+      'BookingUpdate',
+      id,
+      'Booking'
+    );
 
     res.json({
       message: approved ? 'Đã phê duyệt yêu cầu đặt xe! Chuyến đi đã sẵn sàng.' : 'Đã từ chối đơn đặt xe và giải phóng phương tiện.',

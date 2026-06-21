@@ -2,6 +2,7 @@ import express from 'express';
 import crypto from 'crypto';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
+import { notificationService } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -151,6 +152,26 @@ router.get('/api/payments/vnpay/return', async (req, res) => {
             targetStatus: targetBookingStatus
           });
           console.log(`VNPAY Return: Database successfully updated as Paid for booking ${bookingId}`);
+
+          // Send notifications
+          const user = await db.users.findOne({ id: booking.userId });
+          if (car && car.ownerId) {
+            await notificationService.createNotification(
+              car.ownerId,
+              'Yêu cầu đặt xe mới',
+              `Khách hàng ${user ? user.name : 'Khách hàng'} đã thanh toán cọc và đặt xe ${car.brand} ${car.model} của bạn (Mã: #${bookingId}).`,
+              'BookingUpdate',
+              bookingId,
+              'Booking'
+            );
+          }
+          await notificationService.notifyCSKH(
+            'Yêu cầu đặt xe mới',
+            `Khách hàng ${user ? user.name : 'Khách hàng'} đã thanh toán cọc và đặt xe ${car.brand} ${car.model} (Mã: #${bookingId}).`,
+            'BookingUpdate',
+            bookingId,
+            'Booking'
+          );
         }
         res.redirect(`${clientUrl}/?vnpay_status=success&booking_id=${bookingId}`);
       } else {
@@ -246,6 +267,27 @@ router.get('/api/payments/vnpay/ipn', async (req, res) => {
       });
 
       console.log(`VNPAY IPN successful for booking ${bookingId}`);
+
+      // Send notifications
+      const user = await db.users.findOne({ id: booking.userId });
+      if (car && car.ownerId) {
+        await notificationService.createNotification(
+          car.ownerId,
+          'Yêu cầu đặt xe mới',
+          `Khách hàng ${user ? user.name : 'Khách hàng'} đã thanh toán cọc và đặt xe ${car.brand} ${car.model} của bạn (Mã: #${bookingId}).`,
+          'BookingUpdate',
+          bookingId,
+          'Booking'
+        );
+      }
+      await notificationService.notifyCSKH(
+        'Yêu cầu đặt xe mới',
+        `Khách hàng ${user ? user.name : 'Khách hàng'} đã thanh toán cọc và đặt xe ${car.brand} ${car.model} (Mã: #${bookingId}).`,
+        'BookingUpdate',
+        bookingId,
+        'Booking'
+      );
+
       return res.status(200).json({ RspCode: '00', Message: 'Confirm success' });
     } else {
       // Payment failed or cancelled

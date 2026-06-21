@@ -2,6 +2,7 @@ import express from 'express';
 import { renterActionService } from '../services/renterActionService.js';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
+import { notificationService } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -42,6 +43,31 @@ definePut('/api/bookings/:id/cancel', '/api/renter/bookings/:id/cancel-with-refu
     const refundMsg = result.refundAmount > 0
       ? `Phí giữ chỗ hoàn trả: ${result.refundAmount.toLocaleString('vi-VN')} VND (${result.refundPercent}%) đã được chuyển vào Ví cá nhân của bạn.`
       : 'Phí giữ chỗ không được hoàn trả do hủy trễ (theo chính sách hủy của BonBonCar).';
+
+    // Send notifications
+    const booking = await db.bookings.findOne({ id });
+    if (booking) {
+      const car = await db.cars.findOne({ id: booking.carId });
+      const user = await db.users.findOne({ id: req.user.id });
+      if (car && car.ownerId) {
+        await notificationService.createNotification(
+          car.ownerId,
+          'Hủy đơn đặt xe',
+          `Khách hàng ${user ? user.name : 'Khách hàng'} đã hủy đơn đặt xe ${car.brand} ${car.model} của bạn (Mã: #${id}).`,
+          'BookingUpdate',
+          id,
+          'Booking'
+        );
+      }
+      await notificationService.notifyCSKH(
+        'Hủy đơn đặt xe',
+        `Khách hàng ${user ? user.name : 'Khách hàng'} đã hủy đơn đặt xe ${car.brand} ${car.model} (Mã: #${id}).`,
+        'BookingUpdate',
+        id,
+        'Booking'
+      );
+    }
+
     res.json({
       message: `Hủy đơn đặt xe thành công! ${refundMsg}`,
       ...result
@@ -60,6 +86,31 @@ definePost('/api/bookings/:id/incident', '/api/renter/bookings/:id/emergency-rep
     if (!description) return res.status(400).json({ message: 'Vui lòng cung cấp mô tả chi tiết sự cố phát sinh.' });
 
     await renterActionService.reportIncident(id, req.user.id, description, image);
+
+    // Send notifications
+    const booking = await db.bookings.findOne({ id });
+    if (booking) {
+      const car = await db.cars.findOne({ id: booking.carId });
+      const user = await db.users.findOne({ id: req.user.id });
+      if (car && car.ownerId) {
+        await notificationService.createNotification(
+          car.ownerId,
+          'Báo cáo sự cố chuyến đi',
+          `Khách hàng ${user ? user.name : 'Khách hàng'} đã báo cáo sự cố trên chuyến đi xe ${car.brand} ${car.model} (Mã: #${id}).`,
+          'IncidentAlert',
+          id,
+          'Booking'
+        );
+      }
+      await notificationService.notifyCSKH(
+        'Báo cáo sự cố chuyến đi',
+        `Khách hàng ${user ? user.name : 'Khách hàng'} đã báo cáo sự cố trên chuyến đi xe ${car.brand} ${car.model} (Mã: #${id}).`,
+        'IncidentAlert',
+        id,
+        'Booking'
+      );
+    }
+
     res.json({
       message: 'Báo cáo sự cố đã được gửi khẩn cấp đến đội ngũ CSKH. Chúng tôi sẽ liên hệ hỗ trợ bạn ngay lập tức.',
       supportHotline: '1900.8888'

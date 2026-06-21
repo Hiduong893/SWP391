@@ -1,6 +1,7 @@
 import express from 'express';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
+import { notificationService } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -31,6 +32,26 @@ router.post('/api/bookings', auth, async (req, res) => {
       totalPrice,
       paymentMethod
     });
+
+    if (paymentMethod !== 'vnpay') {
+      if (car.ownerId) {
+        await notificationService.createNotification(
+          car.ownerId,
+          'Yêu cầu đặt xe mới',
+          `Khách hàng ${user.name} đã đặt xe ${car.brand} ${car.model} của bạn (Mã: #${booking.id}).`,
+          'BookingUpdate',
+          booking.id,
+          'Booking'
+        );
+      }
+      await notificationService.notifyCSKH(
+        'Yêu cầu đặt xe mới',
+        `Khách hàng ${user.name} đã đặt xe ${car.brand} ${car.model} (Mã: #${booking.id}).`,
+        'BookingUpdate',
+        booking.id,
+        'Booking'
+      );
+    }
 
     res.status(201).json({
       message: booking.status === 'pending_owner'
@@ -101,6 +122,20 @@ router.put('/api/bookings/:id/handover', auth, async (req, res) => {
       handoverDocs: updatedHandover,
       status: nextStatus
     });
+
+    const car = await db.cars.findOne({ id: booking.carId });
+    if (car && car.ownerId) {
+      const typeText = type === 'pickup' ? 'nhận xe (pickup)' : 'trả xe (return)';
+      const statusText = type === 'pickup' ? 'bắt đầu hành trình' : 'hoàn thành chuyến đi';
+      await notificationService.createNotification(
+        car.ownerId,
+        type === 'pickup' ? 'Biên bản nhận xe đã ký' : 'Biên bản trả xe đã ký',
+        `Khách hàng đã ký biên bản bàn giao ${typeText} cho xe ${car.brand} ${car.model} (#${id}) và ${statusText}.`,
+        'BookingUpdate',
+        id,
+        'Booking'
+      );
+    }
 
     res.json({
       message: type === 'pickup'
