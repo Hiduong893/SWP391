@@ -176,4 +176,40 @@ router.post('/api/chatbot/message', async (req, res) => {
   }
 });
 
+// 5. User reply to ticket
+router.post('/api/support/tickets/:id/reply', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { replyText } = req.body;
+
+    if (!replyText) {
+      return res.status(400).json({ message: 'Vui lòng nhập nội dung phản hồi.' });
+    }
+
+    const ticket = await db.support_tickets.findOne({ id, userId: req.user.id });
+    if (!ticket) {
+      return res.status(404).json({ message: 'Yêu cầu hỗ trợ không tồn tại.' });
+    }
+
+    const replies = [...(ticket.replies || []), {
+      senderId: String(req.user.id),
+      senderName: req.user.name,
+      senderRole: req.user.role,
+      message: replyText,
+      sentAt: new Date().toISOString()
+    }];
+
+    await db.support_tickets.update(id, {
+      replies,
+      status: 'open'
+    });
+
+    const updatedTicket = await db.support_tickets.findOne({ id });
+    res.json({ message: 'Gửi phản hồi thành công!', ticket: updatedTicket });
+  } catch (error) {
+    console.error("Error in user reply to ticket:", error);
+    res.status(500).json({ message: 'Lỗi gửi phản hồi.' });
+  }
+});
+
 export default router;
