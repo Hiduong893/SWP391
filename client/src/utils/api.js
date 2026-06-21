@@ -245,6 +245,12 @@ export const api = {
         method: 'PUT'
       }),
 
+    replyTicket: (id, replyText) =>
+      request(`/support/tickets/${id}/reply`, {
+        method: 'POST',
+        body: JSON.stringify({ replyText })
+      }),
+
     createDispute: (bookingId, description) =>
       request('/support/disputes', {
         method: 'POST',
@@ -317,6 +323,11 @@ export const api = {
       request(`/admin/support/tickets/${id}/reply`, {
         method: 'POST',
         body: JSON.stringify({ replyText })
+      }),
+
+    resolveSupportTicket: (id) =>
+      request(`/admin/support/tickets/${id}/resolve`, {
+        method: 'PUT'
       }),
 
     getReviews: () =>
