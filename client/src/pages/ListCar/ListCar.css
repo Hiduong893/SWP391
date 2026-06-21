@@ -3,9 +3,9 @@
 }
 
 .btn-refresh {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -17,21 +17,21 @@
 }
 
 .btn-refresh:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--border-color);
+  color: var(--text-primary);
 }
 
 /* Owner stats card */
 .owner-stat-card-glass {
-  background: rgba(17, 19, 28, 0.6);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
   padding: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  box-shadow: var(--glass-shadow);
   text-align: left;
 }
 
@@ -53,7 +53,7 @@
 .owner-nav-btn {
   background: none;
   border: none;
-  color: #64748b;
+  color: var(--text-secondary);
   font-family: 'Inter', sans-serif;
   font-size: 13.5px;
   font-weight: 600;
@@ -68,11 +68,11 @@
 }
 
 .owner-nav-btn:hover {
-  color: white;
+  color: var(--text-primary);
 }
 
 .owner-nav-btn.active {
-  color: #6366f1;
+  color: var(--accent-primary);
 }
 
 .owner-nav-btn.active::after {
@@ -82,7 +82,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: #6366f1;
+  background: var(--accent-primary);
 }
 
 /* Custom badges */
@@ -135,8 +135,8 @@
 
 /* Car Photo Upload Zone */
 .car-photo-upload-zone {
-  border: 2px dashed rgba(255,255,255,0.08);
-  background: rgba(10,11,16,0.4);
+  border: 2px dashed var(--border-color);
+  background: var(--bg-primary);
   border-radius: 12px;
   padding: 24px;
   text-align: center;
@@ -144,8 +144,8 @@
 }
 
 .car-photo-upload-zone:hover {
-  border-color: #6366f1;
-  background: rgba(99, 102, 241, 0.03);
+  border-color: var(--accent-primary);
+  background: var(--bg-tertiary);
 }
 
 .photo-upload-label {
@@ -157,19 +157,19 @@
 }
 
 .upload-photo-icon {
-  color: #64748b;
+  color: var(--text-muted);
   margin-bottom: 4px;
 }
 
 .photo-upload-label span {
   font-size: 13px;
   font-weight: 700;
-  color: #cbd5e1;
+  color: var(--text-secondary);
 }
 
 .photo-upload-label p {
   font-size: 11px;
-  color: #475569;
+  color: var(--text-muted);
 }
 
 .uploaded-car-preview {
@@ -228,13 +228,13 @@
 }
 
 .owner-modal-card {
-  background: rgba(17, 19, 28, 0.95) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
   border-radius: 16px;
   width: 100%;
   max-width: 580px;
   padding: 24px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--glass-shadow);
   animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
 }
@@ -244,7 +244,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 12px;
 }
 
@@ -252,7 +252,7 @@
   margin: 0;
   font-size: 15px;
   font-weight: 700;
-  color: white;
+  color: var(--text-primary);
   text-transform: uppercase;
 }
 
