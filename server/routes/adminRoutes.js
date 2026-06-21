@@ -135,9 +135,26 @@ router.post('/api/admin/support/tickets/:id/reply', auth, cskhOrAdminAuth, async
       status: 'replied'
     });
 
-    res.json({ message: 'Đã gửi câu trả lời phản hồi cho khách hàng!' });
+    const updatedTicket = await db.support_tickets.findOne({ id });
+    res.json({
+      message: 'Đã gửi câu trả lời phản hồi cho khách hàng!',
+      ticket: updatedTicket
+    });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi gửi phản hồi.' });
+  }
+});
+
+router.put('/api/admin/support/tickets/:id/resolve', auth, cskhOrAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ticket = await db.support_tickets.findOne({ id });
+    if (!ticket) return res.status(404).json({ message: 'Ticket hỗ trợ không tồn tại.' });
+
+    await db.support_tickets.update(id, { status: 'resolved' });
+    res.json({ message: 'Đã đóng ticket hỗ trợ thành công!' });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi đóng ticket hỗ trợ.' });
   }
 });
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, X, Send, Bot, Sparkles, RefreshCw, Trash2 } from 'lucide-react';
 import { api } from '../utils/api';
 
-export function ChatbotWidget({ user }) {
+export function ChatbotWidget({ user, setCurrentTab }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -124,8 +124,19 @@ export function ChatbotWidget({ user }) {
 
   const renderMessageContent = (text) => {
     if (!text) return '';
+
+    let actionType = null;
+    let cleanText = text;
+
+    const actionRegex = /\[ACTION:(GO_TO_\w+)\]/;
+    const match = text.match(actionRegex);
+    if (match) {
+      actionType = match[1];
+      cleanText = text.replace(actionRegex, '').trim();
+    }
+
     // Sanitize basic HTML to prevent XSS
-    let html = text
+    let html = cleanText
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
@@ -134,7 +145,30 @@ export function ChatbotWidget({ user }) {
       // Convert list item "* word" at start of line to "• word"
       .replace(/^\*\s+/gm, '• ');
 
-    return <span dangerouslySetInnerHTML={{ __html: html }} />;
+    const actionButtons = {
+      'GO_TO_WALLET': { label: '💳 Đi đến Ví điện tử', tab: 'profile' },
+      'GO_TO_PROFILE': { label: '👤 Đi đến Hồ sơ cá nhân', tab: 'profile' },
+      'GO_TO_FIND_CAR': { label: '🚗 Tìm xe thuê ngay', tab: 'rent-car' },
+      'GO_TO_MY_TRIPS': { label: '✈️ Chuyến đi của tôi', tab: 'my-trips' }
+    };
+
+    const action = actionButtons[actionType];
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <span dangerouslySetInnerHTML={{ __html: html }} />
+        {action && setCurrentTab && (
+          <button 
+            onClick={() => {
+              setCurrentTab(action.tab);
+            }}
+            className="chatbot-action-btn"
+          >
+            {action.label}
+          </button>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -377,6 +411,28 @@ export function ChatbotWidget({ user }) {
         @keyframes chatbotTypingPulse {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-4px); }
+        }
+
+        .chatbot-action-btn {
+          margin-top: 6px;
+          background: rgba(0, 150, 152, 0.1);
+          color: var(--accent-primary);
+          border: 1px solid var(--accent-primary);
+          border-radius: var(--radius-sm);
+          padding: 6px 12px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: fit-content;
+        }
+        .chatbot-action-btn:hover {
+          background: var(--accent-primary);
+          color: white;
+          transform: translateY(-1px);
         }
 
         /* Mobile Responsive adjustments */
