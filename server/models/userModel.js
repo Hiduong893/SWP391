@@ -90,6 +90,7 @@ export const mapUserRow = async (p, userRow) => {
     walletBalance,
     bankAccount,
     kycDocuments,
+    kycRejectionReason: userRow.kyc_rejection_reason || null,
     createdAt: userRow.created_at ? new Date(userRow.created_at).toISOString() : new Date().toISOString()
   };
 };
@@ -213,6 +214,10 @@ export const userModel = {
     if (updateData.googleId !== undefined) {
       userUpdates.push('google_id = @googleId');
       userRequest.input('googleId', sql.VarChar, updateData.googleId);
+    }
+    if (updateData.kycRejectionReason !== undefined) {
+      userUpdates.push('kyc_rejection_reason = @kycRejectionReason');
+      userRequest.input('kycRejectionReason', sql.NVarChar, updateData.kycRejectionReason);
     }
 
     if (userUpdates.length > 0) {
