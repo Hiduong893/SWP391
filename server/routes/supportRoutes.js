@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
 import { askChatbotAI } from '../utils/aiHelper.js';
+import { notificationService } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -21,6 +22,15 @@ router.post('/api/support/tickets', auth, async (req, res) => {
       subject,
       message
     });
+
+    // Notify CSKH
+    await notificationService.notifyCSKH(
+      'Yêu cầu hỗ trợ mới',
+      `Khách hàng ${req.user.name} đã gửi yêu cầu hỗ trợ mới: "${subject}" (Mã: #${ticket.id}).`,
+      'TicketUpdate',
+      ticket.id,
+      'SupportTicket'
+    );
 
     res.status(201).json({
       message: 'Gửi yêu cầu hỗ trợ thành công! Nhân viên chăm sóc khách hàng sẽ phản hồi trong chốc lát.',
@@ -203,6 +213,15 @@ router.post('/api/support/tickets/:id/reply', auth, async (req, res) => {
       replies,
       status: 'open'
     });
+
+    // Notify CSKH
+    await notificationService.notifyCSKH(
+      'Tin nhắn hỗ trợ mới',
+      `Khách hàng ${req.user.name} đã gửi phản hồi cho ticket #${id}.`,
+      'TicketUpdate',
+      id,
+      'SupportTicket'
+    );
 
     const updatedTicket = await db.support_tickets.findOne({ id });
     res.json({ message: 'Gửi phản hồi thành công!', ticket: updatedTicket });
