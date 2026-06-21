@@ -37,6 +37,7 @@ export const MyTrips = () => {
 
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
   const [disputeDesc, setDisputeDesc] = useState('');
 
@@ -134,8 +135,15 @@ export const MyTrips = () => {
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
+    const normalizedComment = reviewComment.trim();
+    if (!normalizedComment) {
+      showToast('Vui lòng nhập nhận xét chi tiết.', 'warning');
+      return;
+    }
+
+    setReviewSubmitting(true);
     try {
-      const data = await api.reviews.createReview(activeReviewTrip.id, reviewRating, reviewComment);
+      const data = await api.reviews.createReview(activeReviewTrip.id, reviewRating, normalizedComment);
       showToast(data.message, 'success');
       setActiveReviewTrip(null);
       setReviewRating(5);
@@ -143,6 +151,8 @@ export const MyTrips = () => {
       fetchTrips(true);
     } catch (error) {
       showToast(error.message || 'Lỗi đăng đánh giá.', 'error');
+    } finally {
+      setReviewSubmitting(false);
     }
   };
 
@@ -732,7 +742,7 @@ export const MyTrips = () => {
 
               <div className="popup-actions mt-6" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setActiveReviewTrip(null)}>Hủy</button>
-                <button type="submit" className="btn btn-primary btn-gold" style={{ width: 'auto', padding: '10px 24px', background: '#fbbf24', borderColor: '#fbbf24', color: '#090a0f' }}>
+                <button type="submit" className="btn btn-primary btn-gold" disabled={reviewSubmitting} style={{ width: 'auto', padding: '10px 24px', background: '#fbbf24', borderColor: '#fbbf24', color: '#090a0f', opacity: reviewSubmitting ? 0.7 : 1 }}>
                   Gửi Đánh Giá
                 </button>
               </div>
