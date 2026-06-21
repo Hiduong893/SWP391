@@ -252,6 +252,15 @@ export const reviewModel = {
       where.push('r.booking_id = @bookingId');
       request.input('bookingId', sql.Int, parseInt(filter.bookingId));
     }
+    if (filter.userId) {
+      where.push('r.reviewer_id = @userId');
+      request.input('userId', sql.Int, parseInt(filter.userId));
+    }
+    if (filter.status === 'visible') {
+      where.push('r.is_visible = 1');
+    } else if (filter.status === 'hidden') {
+      where.push('r.is_visible = 0');
+    }
 
     if (where.length > 0) {
       query += ' WHERE ' + where.join(' AND ');
@@ -277,7 +286,8 @@ export const reviewModel = {
     const bookingId = parseInt(reviewData.bookingId);
     const carId = parseInt(reviewData.carId);
     const userId = parseInt(reviewData.userId);
-    const rating = parseInt(reviewData.rating) || 5;
+    const rating = Math.min(5, Math.max(1, parseInt(reviewData.rating, 10) || 5));
+    const comment = String(reviewData.comment || '').trim();
 
     const ownerRes = await p.request().input('carId', sql.Int, carId)
       .query('SELECT owner_id FROM Vehicle WHERE vehicle_id = @carId');
@@ -289,7 +299,7 @@ export const reviewModel = {
       .input('vehicleId', sql.Int, carId)
       .input('ownerId', sql.Int, ownerId)
       .input('rating', sql.Int, rating)
-      .input('comment', sql.NVarChar, reviewData.comment || '');
+      .input('comment', sql.NVarChar, comment);
 
     const insertReviewQuery = `
       INSERT INTO Review (booking_id, reviewer_id, vehicle_id, owner_id, rating_vehicle, rating_owner, comment, is_visible, created_at, updated_at)
@@ -309,7 +319,7 @@ export const reviewModel = {
       userId: String(userId),
       userName,
       rating,
-      comment: reviewData.comment || '',
+      comment,
       status: 'visible',
       createdAt: new Date().toISOString()
     };
