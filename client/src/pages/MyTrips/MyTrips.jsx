@@ -503,36 +503,46 @@ export const MyTrips = () => {
                 </div>
 
                 {/* Replies from CSKH */}
-                {selectedMyTicket.replies.map((rep, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      alignSelf: rep.sender === 'cskh' ? 'flex-start' : 'flex-end',
-                      background: rep.sender === 'cskh' ? '#f1f5f9' : 'rgba(0, 150, 152, 0.1)',
-                      border: rep.sender === 'cskh' ? '1px solid #e2e8f0' : '1px solid rgba(0, 150, 152, 0.2)',
-                      padding: '10px 14px',
-                      borderRadius: rep.sender === 'cskh' ? '14px 14px 14px 0' : '14px 14px 0 14px',
-                      maxWidth: '80%',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <p style={{ margin: 0, fontSize: '13.5px', color: '#0f172a', lineHeight: '1.5' }}>{rep.text}</p>
-                    <span style={{ fontSize: '10px', color: rep.sender === 'cskh' ? '#64748b' : '#009698', display: 'block', marginTop: 6, fontWeight: 500 }}>{rep.sender === 'cskh' ? 'CSKH Minh Anh' : 'Bạn'} - {new Date(rep.sentAt).toLocaleTimeString()}</span>
-                  </div>
-                ))}
+                {selectedMyTicket.replies.map((rep, idx) => {
+                  const isCSKH = rep.senderRole === 'cskh' || rep.senderRole === 'admin' || rep.sender === 'cskh';
+                  const text = rep.message || rep.text;
+                  const senderName = isCSKH ? (rep.senderName || 'Hỗ trợ CSKH') : 'Bạn';
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        alignSelf: isCSKH ? 'flex-start' : 'flex-end',
+                        background: isCSKH ? '#f1f5f9' : 'rgba(0, 150, 152, 0.1)',
+                        border: isCSKH ? '1px solid #e2e8f0' : '1px solid rgba(0, 150, 152, 0.2)',
+                        padding: '10px 14px',
+                        borderRadius: isCSKH ? '14px 14px 14px 0' : '14px 14px 0 14px',
+                        maxWidth: '80%',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <p style={{ margin: 0, fontSize: '13.5px', color: '#0f172a', lineHeight: '1.5' }}>{text}</p>
+                      <span style={{ fontSize: '10px', color: isCSKH ? '#64748b' : '#009698', display: 'block', marginTop: 6, fontWeight: 500 }}>{senderName} - {new Date(rep.sentAt).toLocaleTimeString()}</span>
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="editor-modal-footer" style={{ padding: '12px 0 0 0', borderTop: '1px solid #e2e8f0', background: 'none', width: '100%', display: 'flex', gap: 8 }}>
                 {selectedMyTicket.status !== 'resolved' ? (
                   <form
                     style={{ display: 'flex', width: '100%', gap: 8 }}
-                    onSubmit={(e) => {
+                    onSubmit={async (e) => {
                       e.preventDefault();
                       if (!replyText.trim()) return;
-                      const newReply = { sender: 'renter', text: replyText, sentAt: new Date().toISOString() };
-                      setSelectedMyTicket(prev => ({ ...prev, replies: [...prev.replies, newReply] }));
-                      setReplyText('');
-                      showToast('Đã gửi phản hồi thành công!', 'success');
+                      try {
+                        const data = await api.support.replyTicket(selectedMyTicket.id, replyText);
+                        setSelectedMyTicket(data.ticket);
+                        setReplyText('');
+                        showToast('Đã gửi phản hồi thành công!', 'success');
+                        fetchMyTickets();
+                      } catch (error) {
+                        showToast(error.message || 'Lỗi gửi phản hồi.', 'error');
+                      }
                     }}
                   >
                     <input

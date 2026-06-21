@@ -180,10 +180,31 @@ export const AdminDashboard = ({ setCurrentTab }) => {
       const data = await api.admin.replySupportTicket(selectedTicket.id, replyText);
       showToast(data.message, 'success');
       setReplyText('');
-      setSelectedTicket(null);
+      if (data.ticket) {
+        setSelectedTicket(data.ticket);
+      } else {
+        setSelectedTicket(null);
+      }
       fetchDashboardData(true);
     } catch (error) {
       showToast(error.message || 'Lỗi gửi phản hồi.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResolveTicket = async (ticketId) => {
+    const confirmResolve = window.confirm("Bạn có chắc chắn muốn đóng và hoàn tất yêu cầu hỗ trợ này?");
+    if (!confirmResolve) return;
+
+    setActionLoading(true);
+    try {
+      const data = await api.admin.resolveSupportTicket(ticketId);
+      showToast(data.message, 'success');
+      setSelectedTicket(null);
+      fetchDashboardData(true);
+    } catch (error) {
+      showToast(error.message || 'Lỗi đóng ticket hỗ trợ.', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -610,6 +631,7 @@ export const AdminDashboard = ({ setCurrentTab }) => {
               replyText={replyText}
               setReplyText={setReplyText}
               handleReplyTicket={handleReplyTicket}
+              handleResolveTicket={handleResolveTicket}
               reviewsList={reviewsList}
               handleToggleReviewVisibility={handleToggleReviewVisibility}
               incidentsList={incidentsList}
