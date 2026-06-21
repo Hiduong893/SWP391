@@ -4,16 +4,17 @@ import { api } from '../utils/api';
 import { useToast } from './Toast';
 
 export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setCurrentTab }) => {
-  const [step, setStep] = useState(1); // 1: Confirmation & License, 2: VietQR Pay, 3: Success
+  const [step, setStep] = useState(1); // 1: Confirmation & License, 2: Payment, 3: Success
   const [loading, setLoading] = useState(false);
   const [licenseUploading, setLicenseUploading] = useState(false);
   const [bookingId] = useState(() => crypto.randomUUID().slice(0, 8).toUpperCase());
-  const [payMethod, setPayMethod] = useState('vietqr'); // 'vietqr' or 'vnpay'
+  const [payMethod, setPayMethod] = useState('vietqr'); // 'vietqr', 'vnpay', or 'wallet'
   const [timeLeft, setTimeLeft] = useState(900); // 15 minutes = 900 seconds
   const [pickupMethod, setPickupMethod] = useState('self'); // 'self' or 'delivery'
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [manualPickupAddress, setManualPickupAddress] = useState('');
 
-  const [paymentChoice, setPaymentChoice] = useState('vietqr'); // 'vietqr' or 'wallet'
+  const [paymentChoice, setPaymentChoice] = useState('vietqr'); // 'vietqr', 'wallet', or 'vnpay'
   const [sysConfig, setSysConfig] = useState({
     bankId: 'mbbank',
     bankName: 'ViVuCar Bank',
@@ -21,6 +22,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
     bankAccountHolder: 'VIVUCAR SYSTEM'
   });
   const [walletBalance, setWalletBalance] = useState(user?.walletBalance || 0);
+  const [walletAnimating, setWalletAnimating] = useState(false);
 
   const { car, pickupLocation } = bookingDetails;
   const [pickupDate, setPickupDate] = useState(bookingDetails.pickupDate);
@@ -93,7 +95,32 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   const totalPrice = basePrice + insurancePrice + serviceFee + deliveryFee;
   const securityDeposit = 5000000;
   const totalPayment = totalPrice + securityDeposit;
-  const displayLocation = pickupMethod === 'delivery' ? deliveryAddress : pickupLocation;
+  // Determine display and submission location with robust fallbacks
+  const isCityOnly = (addr) => {
+    if (!addr) return true;
+    const cities = ['hà nội', 'tp. hồ chí minh', 'tp.hồ chí minh', 'tp hcm', 'tphcm', 'đà nẵng', 'bình dương', 'đồng nai', 'đà lạt', 'khánh hòa', 'hải phòng', 'cần thơ', 'không xác định'];
+    return cities.includes(addr.trim().toLowerCase());
+  };
+
+  const getFakeOwnerAddress = (location) => {
+    const loc = (location || '').toLowerCase();
+    if (loc.includes('hà nội') || loc.includes('ha noi')) {
+      return 'Bãi xe Chủ xe - Số 15 Lê Văn Lương, Nhân Chính, Thanh Xuân, Hà Nội';
+    }
+    if (loc.includes('hồ chí minh') || loc.includes('ho chi minh') || loc.includes('hcm')) {
+      return 'Bãi xe Chủ xe - Số 120 Trần Hưng Đạo, Phường Phạm Ngũ Lão, Quận 1, TP. Hồ Chí Minh';
+    }
+    if (loc.includes('đà nẵng') || loc.includes('da nang')) {
+      return 'Bãi xe Chủ xe - Số 45 Nguyễn Văn Linh, Bình Hiên, Hải Châu, Đà Nẵng';
+    }
+    return 'Bãi xe Chủ xe - ' + (location || 'Khu vực trung tâm');
+  };
+
+  const selfLocation = car.ownerId 
+    ? getFakeOwnerAddress(car.location)
+    : (manualPickupAddress.trim() || (!isCityOnly(pickupLocation) ? pickupLocation : ''));
+
+  const displayLocation = pickupMethod === 'delivery' && !car.ownerId ? deliveryAddress : selfLocation;
 
   const handleLicenseUpload = async (e) => {
     const file = e.target.files[0];
@@ -122,26 +149,38 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   };
 
   const handlePaymentSubmit = async () => {
-    if (paymentChoice === 'wallet' && walletBalance < 500000) {
-      showToast('Số dư ví không đủ. Vui lòng chọn phương thức khác hoặc nạp thêm tiền.', 'warning');
+    // Wallet needs to cover totalPrice + 5,000,000 deposit
+    if (paymentChoice === 'wallet' && walletBalance < totalPayment) {
+      showToast(`Số dư ví không đủ. Cần tối thiểu ${formatCurrency(totalPayment)} (tiền thuê + cọc).`, 'warning');
       return;
     }
     setLoading(true);
     try {
+      const finalPickupLocation = displayLocation.trim() || pickupLocation || car.location || 'Không xác định';
       const bookingData = {
         carId: car.id,
         pickupDate,
         returnDate,
-        pickupLocation: displayLocation,
+        pickupLocation: finalPickupLocation,
         totalPrice,
         paymentMethod: paymentChoice
       };
 
-      await api.bookings.create(bookingData);
+      const newBooking = await api.bookings.create(bookingData);
+
+      if (paymentChoice === 'vnpay') {
+        const vnpayRes = await api.bookings.createVnpayUrl(newBooking.id);
+        if (vnpayRes && vnpayRes.paymentUrl) {
+          window.location.href = vnpayRes.paymentUrl;
+          return;
+        } else {
+          throw new Error('Không nhận được liên kết thanh toán từ VNPAY.');
+        }
+      }
 
       showToast('Xác nhận thanh toán thành công!', 'success');
       if (paymentChoice === 'wallet') {
-        const newBalance = walletBalance - 500000;
+        const newBalance = walletBalance - totalPayment;
         setWalletBalance(newBalance);
         if (onUpdateUser) {
           onUpdateUser({
@@ -197,12 +236,50 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
 
             {/* Trip Details Grid */}
             <div className="booking-details-grid mt-4">
-              <div className="detail-item">
-                <MapPin size={16} className="text-info" />
-                <div>
-                  <span className="detail-lbl">Địa điểm nhận/trả xe</span>
-                  <span className="detail-val">{displayLocation || 'Chưa nhập địa chỉ'}</span>
+              <div className="detail-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <MapPin size={16} className="text-info" />
+                  <span className="detail-lbl" style={{ margin: 0 }}>Địa điểm nhận/trả xe</span>
                 </div>
+                {car.ownerId ? (
+                  <span className="detail-val" style={{ paddingLeft: '24px', color: '#1e293b', fontWeight: 'bold' }}>
+                    {selfLocation}
+                  </span>
+                ) : (
+                  <>
+                    {pickupMethod !== 'delivery' && (
+                      <>
+                        {(selfLocation) ? (
+                          <span className="detail-val" style={{ paddingLeft: '24px' }}>{selfLocation}</span>
+                        ) : null}
+                        <input
+                          type="text"
+                          placeholder={selfLocation ? 'Sửa địa chỉ nhận xe...' : 'Nhập địa chỉ nhận xe của bạn...'}
+                          value={manualPickupAddress}
+                          onChange={(e) => setManualPickupAddress(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            border: selfLocation ? '1px solid #e2e8f0' : '2px solid #f59e0b',
+                            background: selfLocation ? '#f8fafc' : '#fffbeb',
+                            color: '#0f172a',
+                            fontSize: '13px',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                            fontFamily: "'Outfit', sans-serif"
+                          }}
+                        />
+                        {!selfLocation && (
+                          <span style={{ fontSize: '11px', color: '#d97706', fontWeight: 600, paddingLeft: '4px' }}>⚠️ Vui lòng nhập địa chỉ nhận xe để tiến hành đặt.</span>
+                        )}
+                      </>
+                    )}
+                    {pickupMethod === 'delivery' && (
+                      <span className="detail-val" style={{ paddingLeft: '24px' }}>{deliveryAddress || 'Chưa nhập địa chỉ giao'}</span>
+                    )}
+                  </>
+                )}
               </div>
               <div className="detail-item edit-dates-item" style={{ minWidth: '220px' }}>
                 <Calendar size={16} className="text-info" style={{ marginTop: '2px' }} />
@@ -274,93 +351,96 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
             </div>
 
             {/* Delivery Method Selection */}
-            <div className="delivery-method-card mt-4" style={{ marginTop: '20px' }}>
-              <h5 style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Hình thức nhận xe
-              </h5>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button
-                  type="button"
-                  style={{
-                    flex: 1,
-                    padding: '14px',
-                    borderRadius: '12px',
-                    border: pickupMethod === 'self' ? '2px solid #6366f1' : '1px solid #e2e8f0',
-                    background: pickupMethod === 'self' ? '#f5f3ff' : '#ffffff',
-                    color: pickupMethod === 'self' ? '#4f46e5' : '#64748b',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    textAlign: 'left'
-                  }}
-                  onClick={() => setPickupMethod('self')}
-                >
-                  <div style={{ fontSize: '13px', color: pickupMethod === 'self' ? '#4f46e5' : '#1e293b', marginBottom: '4px', fontWeight: '700' }}>
-                    🙋 Tự nhận xe
-                  </div>
-                  <div style={{ fontSize: '11px', fontWeight: 500, color: '#64748b', lineHeight: 1.4 }}>
-                    Khách nhận tại vị trí xe đậu (Miễn phí)
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={!!car.ownerId}
-                  style={{
-                    flex: 1,
-                    padding: '14px',
-                    borderRadius: '12px',
-                    border: !!car.ownerId
-                      ? '1px dashed #cbd5e1'
-                      : (pickupMethod === 'delivery' ? '2px solid #6366f1' : '1px solid #e2e8f0'),
-                    background: !!car.ownerId
-                      ? '#f1f5f9'
-                      : (pickupMethod === 'delivery' ? '#f5f3ff' : '#ffffff'),
-                    color: !!car.ownerId
-                      ? '#94a3b8'
-                      : (pickupMethod === 'delivery' ? '#4f46e5' : '#64748b'),
-                    fontWeight: '700',
-                    cursor: !!car.ownerId ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.2s',
-                    textAlign: 'left',
-                    opacity: !!car.ownerId ? 0.6 : 1
-                  }}
-                  onClick={() => !car.ownerId && setPickupMethod('delivery')}
-                >
-                  <div style={{ fontSize: '13px', color: !!car.ownerId ? '#94a3b8' : (pickupMethod === 'delivery' ? '#4f46e5' : '#1e293b'), marginBottom: '4px', fontWeight: '700' }}>
-                    🚚 Giao nhận tận nơi
-                  </div>
-                  <div style={{ fontSize: '11px', fontWeight: 500, color: !!car.ownerId ? '#94a3b8' : '#64748b', lineHeight: 1.4 }}>
-                    {car.ownerId ? 'Chỉ áp dụng nhận xe trực tiếp từ Chủ xe' : 'Bonbon giao xe tận nơi (+100.000đ)'}
-                  </div>
-                </button>
-              </div>
-
-              {pickupMethod === 'delivery' && !car.ownerId && (
-                <div style={{ marginTop: '14px' }}>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#475569', marginBottom: '6px', fontWeight: 600 }}>
-                    Địa chỉ nhận xe chi tiết
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Nhập địa chỉ giao xe của bạn..."
-                    value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
+            {!car.ownerId ? (
+              <div className="delivery-method-card mt-4" style={{ marginTop: '20px' }}>
+                <h5 style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  Hình thức nhận xe
+                </h5>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    type="button"
                     style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      background: '#ffffff',
-                      color: '#0f172a',
-                      fontSize: '13px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
+                      flex: 1,
+                      padding: '14px',
+                      borderRadius: '12px',
+                      border: pickupMethod === 'self' ? '2px solid #6366f1' : '1px solid #e2e8f0',
+                      background: pickupMethod === 'self' ? '#f5f3ff' : '#ffffff',
+                      color: pickupMethod === 'self' ? '#4f46e5' : '#64748b',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      textAlign: 'left'
                     }}
-                  />
+                    onClick={() => setPickupMethod('self')}
+                  >
+                    <div style={{ fontSize: '13px', color: pickupMethod === 'self' ? '#4f46e5' : '#1e293b', marginBottom: '4px', fontWeight: '700' }}>
+                      🙋 Tự nhận xe
+                    </div>
+                    <div style={{ fontSize: '11px', fontWeight: 500, color: '#64748b', lineHeight: 1.4 }}>
+                      Khách nhận tại vị trí xe đậu (Miễn phí)
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    style={{
+                      flex: 1,
+                      padding: '14px',
+                      borderRadius: '12px',
+                      border: pickupMethod === 'delivery' ? '2px solid #6366f1' : '1px solid #e2e8f0',
+                      background: pickupMethod === 'delivery' ? '#f5f3ff' : '#ffffff',
+                      color: pickupMethod === 'delivery' ? '#4f46e5' : '#64748b',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      textAlign: 'left'
+                    }}
+                    onClick={() => setPickupMethod('delivery')}
+                  >
+                    <div style={{ fontSize: '13px', color: pickupMethod === 'delivery' ? '#4f46e5' : '#1e293b', marginBottom: '4px', fontWeight: '700' }}>
+                      🚚 Giao nhận tận nơi
+                    </div>
+                    <div style={{ fontSize: '11px', fontWeight: 500, color: '#64748b', lineHeight: 1.4 }}>
+                      Bonbon giao xe tận nơi (+100.000đ)
+                    </div>
+                  </button>
                 </div>
-              )}
-            </div>
+
+                {pickupMethod === 'delivery' && (
+                  <div style={{ marginTop: '14px' }}>
+                    <label style={{ display: 'block', fontSize: '11px', color: '#475569', marginBottom: '6px', fontWeight: 600 }}>
+                      Địa chỉ nhận xe chi tiết
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Nhập địa chỉ giao xe của bạn..."
+                      value={deliveryAddress}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        background: '#ffffff',
+                        color: '#0f172a',
+                        fontSize: '13px',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="delivery-method-card mt-4" style={{ marginTop: '20px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px', padding: '16px' }}>
+                <h5 style={{ fontSize: '13px', fontWeight: 800, color: '#0369a1', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  🔑 Hình thức nhận xe: Gặp chủ xe
+                </h5>
+                <p style={{ fontSize: '12.5px', color: '#0284c7', margin: 0, lineHeight: 1.5 }}>
+                  Đây là phương tiện được ký gửi bởi Chủ xe cá nhân. Quý khách vui lòng di chuyển đến địa chỉ bãi đỗ của Chủ xe để nhận và kiểm tra xe trực tiếp.
+                </p>
+              </div>
+            )}
 
             {/* Cost Breakdown */}
             <div className="cost-breakdown-card mt-4">
@@ -427,7 +507,11 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
               <button
                 type="button"
                 className="btn btn-primary"
-                disabled={user.licenseStatus !== 'verified' || (pickupMethod === 'delivery' && !deliveryAddress.trim())}
+                disabled={
+                  user.licenseStatus !== 'verified' ||
+                  (pickupMethod === 'delivery' && !deliveryAddress.trim()) ||
+                  (pickupMethod === 'self' && !selfLocation && !manualPickupAddress.trim())
+                }
                 onClick={() => setStep(2)}
               >
                 Tiếp tục thanh toán
@@ -439,107 +523,137 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
         {/* Step 2: Payment Selector & Details */}
         {step === 2 && (
           <div className="booking-modal-body new-payment-layout">
+
+            {/* ===== TỔNG TIỀN CẦN THANH TOÁN ===== */}
+            <div style={{
+              background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+              borderRadius: '16px',
+              padding: '20px 24px',
+              marginBottom: '20px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              color: '#fff',
+              boxShadow: '0 8px 24px rgba(99,102,241,0.3)'
+            }}>
+              <div>
+                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.8, marginBottom: '4px' }}>
+                  {paymentChoice === 'wallet' ? 'Tổng tiền trừ vào ví' : 'Số tiền thanh toán online'}
+                </div>
+                <div style={{ fontSize: '28px', fontWeight: 900, letterSpacing: '-0.5px' }}>
+                  {formatCurrency(paymentChoice === 'wallet' ? totalPayment : 500000)}
+                </div>
+                <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.75 }}>
+                  {paymentChoice === 'wallet' 
+                    ? `Bao gồm ${formatCurrency(totalPrice)} tiền thuê + ${formatCurrency(securityDeposit)} tiền cọc (hoàn lại)`
+                    : `Đặt cọc giữ xe 500.000đ. Phần còn lại ${formatCurrency(totalPayment - 500000)} sẽ thanh toán khi nhận xe.`
+                  }
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '11px', opacity: 0.8, marginBottom: '4px' }}>Mã đặt xe</div>
+                <div style={{ fontSize: '16px', fontWeight: 800, fontFamily: 'monospace', background: 'rgba(255,255,255,0.15)', padding: '6px 12px', borderRadius: '8px' }}>{bookingId}</div>
+                <div style={{ fontSize: '10px', opacity: 0.7, marginTop: '4px' }}>⏱ Hết hạn: {formatTime(timeLeft)}</div>
+              </div>
+            </div>
+
             {/* Payment Method Selector */}
-            <div className="payment-method-selection" style={{ marginBottom: '24px' }}>
-              <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Chọn phương thức thanh toán giữ chỗ (500.000đ)
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ fontSize: '12px', fontWeight: 800, color: '#475569', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                Chọn phương thức thanh toán
               </h4>
-              <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {/* Wallet Option */}
                 <button
                   type="button"
+                  id="pay-method-wallet"
                   style={{
-                    flex: 1,
-                    padding: '12px 14px',
-                    borderRadius: '12px',
-                    border: paymentChoice === 'wallet' ? '2.5px solid #6366f1' : '1px solid #e2e8f0',
-                    background: paymentChoice === 'wallet' ? '#f5f3ff' : '#ffffff',
-                    color: '#1e293b',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    textAlign: 'left',
-                    boxShadow: paymentChoice === 'wallet' ? '0 4px 12px rgba(99, 102, 241, 0.1)' : 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px'
+                    flex: 1, padding: '14px', borderRadius: '14px',
+                    border: paymentChoice === 'wallet' ? '2.5px solid #6366f1' : '1.5px solid #e2e8f0',
+                    background: paymentChoice === 'wallet' ? 'linear-gradient(135deg, #f5f3ff, #ede9fe)' : '#fff',
+                    cursor: 'pointer', transition: 'all 0.25s', textAlign: 'left',
+                    boxShadow: paymentChoice === 'wallet' ? '0 4px 16px rgba(99,102,241,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                    position: 'relative'
                   }}
                   onClick={() => setPaymentChoice('wallet')}
                 >
-                  <span style={{ fontSize: '20px' }}>💼</span>
-                  <div>
-                    <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: '750' }}>Ví ViVuCar</div>
-                    <div style={{ fontSize: '11px', fontWeight: '500', color: '#64748b', marginTop: '1px' }}>
-                      Số dư: <span style={{ color: walletBalance >= 500000 ? '#10b981' : '#ef4444', fontWeight: '700' }}>{formatCurrency(walletBalance)}</span>
-                    </div>
+                  {paymentChoice === 'wallet' && (
+                    <span style={{ position: 'absolute', top: '8px', right: '10px', background: '#6366f1', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#fff', fontWeight: 700 }}>✓</span>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '22px' }}>💼</span>
+                    <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: 750 }}>Ví ViVuCar</div>
                   </div>
+                  <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>
+                    Số dư: <span style={{ color: walletBalance >= totalPayment ? '#10b981' : '#ef4444', fontWeight: 700, fontSize: '12px' }}>{formatCurrency(walletBalance)}</span>
+                  </div>
+                  {walletBalance < totalPayment && (
+                    <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '4px', fontWeight: 600 }}>
+                      ⚠ Thiếu {formatCurrency(totalPayment - walletBalance)}
+                    </div>
+                  )}
                 </button>
 
+                {/* VietQR Option */}
                 <button
                   type="button"
+                  id="pay-method-vietqr"
                   style={{
-                    flex: 1,
-                    padding: '12px 14px',
-                    borderRadius: '12px',
-                    border: paymentChoice === 'vietqr' ? '2.5px solid #6366f1' : '1px solid #e2e8f0',
-                    background: paymentChoice === 'vietqr' ? '#f5f3ff' : '#ffffff',
-                    color: '#1e293b',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    textAlign: 'left',
-                    boxShadow: paymentChoice === 'vietqr' ? '0 4px 12px rgba(99, 102, 241, 0.1)' : 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px'
+                    flex: 1, padding: '14px', borderRadius: '14px',
+                    border: paymentChoice === 'vietqr' ? '2.5px solid #6366f1' : '1.5px solid #e2e8f0',
+                    background: paymentChoice === 'vietqr' ? 'linear-gradient(135deg, #f5f3ff, #ede9fe)' : '#fff',
+                    cursor: 'pointer', transition: 'all 0.25s', textAlign: 'left',
+                    boxShadow: paymentChoice === 'vietqr' ? '0 4px 16px rgba(99,102,241,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                    position: 'relative'
                   }}
                   onClick={() => setPaymentChoice('vietqr')}
                 >
-                  <span style={{ fontSize: '20px' }}>🏧</span>
-                  <div>
-                    <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: '750' }}>Chuyển khoản (VietQR)</div>
-                    <div style={{ fontSize: '11px', fontWeight: '500', color: '#64748b', marginTop: '1px' }}>
-                      Quét mã VietQR chuyển khoản nhanh
-                    </div>
+                  {paymentChoice === 'vietqr' && (
+                    <span style={{ position: 'absolute', top: '8px', right: '10px', background: '#6366f1', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#fff', fontWeight: 700 }}>✓</span>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '22px' }}>🏧</span>
+                    <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: 750 }}>Chuyển khoản QR</div>
                   </div>
+                  <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>Quét mã VietQR · Napas 247</div>
+                </button>
+
+                {/* VNPAY Option */}
+                <button
+                  type="button"
+                  id="pay-method-vnpay"
+                  style={{
+                    flex: 1, padding: '14px', borderRadius: '14px',
+                    border: paymentChoice === 'vnpay' ? '2.5px solid #6366f1' : '1.5px solid #e2e8f0',
+                    background: paymentChoice === 'vnpay' ? 'linear-gradient(135deg, #f5f3ff, #ede9fe)' : '#fff',
+                    cursor: 'pointer', transition: 'all 0.25s', textAlign: 'left',
+                    boxShadow: paymentChoice === 'vnpay' ? '0 4px 16px rgba(99,102,241,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                    position: 'relative'
+                  }}
+                  onClick={() => setPaymentChoice('vnpay')}
+                >
+                  {paymentChoice === 'vnpay' && (
+                    <span style={{ position: 'absolute', top: '8px', right: '10px', background: '#6366f1', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#fff', fontWeight: 700 }}>✓</span>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '22px' }}>💳</span>
+                    <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: 750 }}>Cổng VNPAY</div>
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>Thẻ ATM / Quốc tế / QR Pay</div>
                 </button>
               </div>
             </div>
 
             <div className="payment-grid-columns">
-              {/* Left Column */}
+              {/* Left Column - Payment Details */}
               <div className="payment-column-left">
-                {/* Card 1: Thanh toán phí giữ chỗ */}
-                <div className="payment-card-sub white-card text-center">
-                  <h4 className="card-sub-title">Thanh toán phí giữ chỗ</h4>
-                  <div className="highlighted-price">{formatCurrency(reservationFee)}</div>
-                  
-                  <div className="timer-box-lbl">Thời gian giữ chỗ còn lại</div>
-                  <div className="timer-countdown-clock">
-                    {formatTime(timeLeft)}
-                  </div>
-                  
-                  <div className="booking-code-line">
-                    Mã đặt xe của bạn: <strong>{bookingId}</strong>
-                  </div>
-                  
-                  <div className="car-detail-inline-box">
-                    <div className="detail-inline-row">
-                      <span className="lbl">Loại xe:</span>
-                      <strong className="val">{car.brand} {car.model}</strong>
-                    </div>
-                    <div className="detail-inline-row">
-                      <span className="lbl">Ngày nhận trả xe:</span>
-                      <strong className="val">{pickupDate} đến {returnDate}</strong>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Card 2: VietQR Pay Flow */}
+                {/* VietQR Pay Flow */}
                 {paymentChoice === 'vietqr' && (
-                  <div className="payment-card-sub white-card text-center mt-4">
-                    <h4 className="card-sub-title">Thanh toán bằng mã QR</h4>
-                    <p className="card-sub-description">
-                      Vui lòng quét mã QR Code hoặc chụp ảnh màn hình QR Code để thanh toán bằng ứng dụng ngân hàng
+                  <div className="payment-card-sub white-card text-center">
+                    <h4 className="card-sub-title">Quét mã QR để thanh toán</h4>
+                    <p className="card-sub-description" style={{ color: '#ef4444', fontWeight: 600, fontSize: '12px' }}>
+                      ⚠️ Vui lòng chuyển khoản đúng số tiền đặt cọc giữ xe: <strong>{formatCurrency(500000)}</strong>
                     </p>
 
                     <div className="vietqr-logo-container">
@@ -551,12 +665,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                       <div className="vietqr-napas-brand">napas 247 | 🏧 {sysConfig.bankName}</div>
                     </div>
 
-                    <div className="divider-or-text">Hoặc</div>
-
-                    <h5 className="bank-title-transfer">Chuyển khoản qua ngân hàng</h5>
-                    <p className="alert-memo-warn text-red">
-                      Vui lòng nhập chính xác nội dung chuyển khoản để hệ thống ghi nhận thông tin đơn hàng
-                    </p>
+                    <div className="divider-or-text">Hoặc chuyển khoản thủ công</div>
 
                     <div className="bank-copyable-fields">
                       <div className="copyable-field-row">
@@ -602,52 +711,82 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                   </div>
                 )}
 
-                {/* Card 2: Wallet Pay Flow */}
+                {/* Wallet Pay Flow */}
                 {paymentChoice === 'wallet' && (
-                  <div className="payment-card-sub white-card text-center mt-4">
-                    <h4 className="card-sub-title">Thanh toán bằng số dư Ví</h4>
-                    <p className="card-sub-description">
-                      Hệ thống sẽ khấu trừ trực tiếp 500.000đ từ ví ViVuCar của bạn
-                    </p>
+                  <div className="payment-card-sub white-card text-center">
+                    <h4 className="card-sub-title">Thanh toán bằng Ví ViVuCar</h4>
 
-                    <div style={{
-                      background: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '12px',
-                      padding: '20px',
-                      margin: '16px 0',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '12px'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px' }}>
-                        <span style={{ color: '#64748b' }}>Phí đặt cọc giữ chỗ:</span>
-                        <strong style={{ color: '#0f172a' }}>{formatCurrency(reservationFee)}</strong>
+                    <div style={{ fontSize: '48px', marginBottom: '12px' }}>💼</div>
+
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', margin: '12px 0', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <span style={{ color: '#64748b' }}>Tiền thuê xe ({diffDays} ngày):</span>
+                        <strong style={{ color: '#0f172a' }}>{formatCurrency(totalPrice)}</strong>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <span style={{ color: '#64748b' }}>Tiền cọc bảo đảm (hoàn sau):</span>
+                        <strong style={{ color: '#f59e0b' }}>{formatCurrency(securityDeposit)}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderTop: '1px dashed #e2e8f0', paddingTop: '10px', fontWeight: 700 }}>
+                        <span style={{ color: '#0f172a' }}>Tổng trừ vào ví:</span>
+                        <strong style={{ color: '#6366f1', fontSize: '16px' }}>{formatCurrency(totalPayment)}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', borderTop: '1px solid #e2e8f0', paddingTop: '10px' }}>
                         <span style={{ color: '#64748b' }}>Số dư ví hiện tại:</span>
-                        <strong style={{ color: walletBalance >= reservationFee ? '#10b981' : '#ef4444' }}>
-                          {formatCurrency(walletBalance)}
-                        </strong>
+                        <strong style={{ color: walletBalance >= totalPayment ? '#10b981' : '#ef4444' }}>{formatCurrency(walletBalance)}</strong>
                       </div>
+                      {walletBalance >= totalPayment && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                          <span style={{ color: '#64748b' }}>Số dư sau thanh toán:</span>
+                          <strong style={{ color: '#0f172a' }}>{formatCurrency(walletBalance - totalPayment)}</strong>
+                        </div>
+                      )}
                     </div>
 
-                    {walletBalance < reservationFee ? (
+                    {walletBalance < totalPayment ? (
                       <div className="alert-memo-warn text-red" style={{ background: '#fef2f2', borderColor: '#fca5a5', color: '#dc2626', margin: 0 }}>
-                        ⚠️ Số dư Ví của bạn không đủ. Vui lòng nạp thêm tiền hoặc chọn phương thức chuyển khoản VietQR ở trên.
+                        ⚠️ Số dư Ví không đủ. Cần thêm {formatCurrency(totalPayment - walletBalance)}. Vui lòng nạp thêm hoặc chọn VietQR.
                       </div>
                     ) : (
                       <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', padding: '12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: '600', textAlign: 'center' }}>
-                        ✅ Số dư khả dụng. Bạn có thể sử dụng Ví để thanh toán giữ chỗ.
+                        ✅ Số dư đủ. Bấm xác nhận để hoàn tất đặt xe ngay lập tức.
                       </div>
                     )}
                   </div>
                 )}
+
+                {/* VNPAY Pay Flow */}
+                {paymentChoice === 'vnpay' && (
+                  <div className="payment-card-sub white-card text-center">
+                    <h4 className="card-sub-title">Thanh toán qua cổng VNPAY</h4>
+
+                    <div style={{ fontSize: '48px', marginBottom: '12px' }}>💳</div>
+
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', margin: '12px 0', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <span style={{ color: '#64748b' }}>Phí đặt cọc giữ xe online:</span>
+                        <strong style={{ color: '#0f172a' }}>{formatCurrency(500000)}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <span style={{ color: '#64748b' }}>Cổng thanh toán:</span>
+                        <strong style={{ color: '#6366f1' }}>VNPAY Sandbox</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderTop: '1px dashed #e2e8f0', paddingTop: '10px', fontWeight: 700 }}>
+                        <span style={{ color: '#0f172a' }}>Tổng thanh toán qua VNPAY:</span>
+                        <strong style={{ color: '#10b981', fontSize: '16px' }}>{formatCurrency(500000)}</strong>
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e3a8a', padding: '12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: '600', textAlign: 'left', lineHeight: 1.5 }}>
+                      💡 <strong>Hướng dẫn thanh toán:</strong> Bạn sẽ được chuyển hướng sang trang thanh toán bảo mật của VNPAY. Sau khi thanh toán đặt cọc 500.000đ thành công, đơn hàng sẽ được kích hoạt tự động và bạn sẽ được chuyển hướng về trang quản lý chuyến đi.
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Right Column */}
+              {/* Right Column - Order Summary */}
               <div className="payment-column-right">
-                {/* Card 1: Thông tin đơn thuê */}
+                {/* Thông tin đơn thuê */}
                 <div className="payment-card-sub white-card text-left">
                   <h4 className="card-sub-title text-center">Thông tin đơn thuê</h4>
                   
@@ -658,81 +797,61 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                   <div className="rental-info-rows">
                     <div className="info-row">
                       <span className="lbl">Mã đặt xe:</span>
-                      <strong className="val">{bookingId}</strong>
+                      <strong className="val" style={{ fontFamily: 'monospace', color: '#6366f1' }}>{bookingId}</strong>
                     </div>
                     <div className="info-row">
-                      <span className="lbl">Tên khách thuê:</span>
+                      <span className="lbl">Khách thuê:</span>
                       <strong className="val">{user.name}</strong>
                     </div>
                     <div className="info-row">
-                      <span className="lbl">Số điện thoại:</span>
-                      <strong className="val">{user.phone || 'Chưa cập nhật'}</strong>
+                      <span className="lbl">Xe:</span>
+                      <strong className="val">{car.brand} {car.model}</strong>
                     </div>
                     <div className="info-row">
-                      <span className="lbl">Ngày nhận:</span>
+                      <span className="lbl">Nhận xe:</span>
                       <strong className="val">{pickupDate}</strong>
                     </div>
                     <div className="info-row">
-                      <span className="lbl">Ngày trả:</span>
+                      <span className="lbl">Trả xe:</span>
                       <strong className="val">{returnDate}</strong>
                     </div>
                     <div className="info-row">
-                      <span className="lbl">Loại xe:</span>
-                      <strong className="val">{car.brand} {car.model}</strong>
-                    </div>
-                    
-                    <div className="total-rental-box mt-4">
-                      <div className="lbl-box">
-                        <span className="main">Tổng cộng tiền thuê xe</span>
-                        <span className="sub">Bạn sẽ thanh toán khi nhận xe</span>
-                      </div>
-                      <strong className="val-price">{formatCurrency(totalPrice)}</strong>
+                      <span className="lbl">Số ngày:</span>
+                      <strong className="val">{diffDays} ngày</strong>
                     </div>
                   </div>
-                </div>
 
-                {/* Card 2: Các bước thanh toán */}
-                <div className="payment-card-sub white-card text-left mt-4">
-                  <h4 className="card-sub-title">Các bước thanh toán</h4>
-
-                  <div className="payment-steps-list">
-                    <div className="step-item">
-                      <div className="step-circle">1</div>
-                      <div className="step-content">
-                        <div className="step-header">
-                          <span>Thanh toán giữ chỗ qua BonbonCar</span>
-                          <strong>{formatCurrency(reservationFee)}</strong>
-                        </div>
-                        <p className="step-desc">
-                          Tiền này để xác nhận đơn thuê và giữ xe, sẽ được trừ vào tiền thế chấp khi nhận xe
-                        </p>
-                      </div>
+                  {/* Chi tiết hóa đơn */}
+                  <div style={{ marginTop: '14px', borderTop: '1px dashed #e2e8f0', paddingTop: '14px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '8px' }}>Chi tiết hóa đơn</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                      <span style={{ color: '#64748b' }}>Đơn giá × {diffDays} ngày</span>
+                      <span>{formatCurrency(basePrice)}</span>
                     </div>
-
-                    <div className="step-item mt-4">
-                      <div className="step-circle">2</div>
-                      <div className="step-content">
-                        <div className="step-header">
-                          <span>Thanh toán khi nhận xe</span>
-                          <strong className="text-primary">{formatCurrency(remainingPayment)}</strong>
-                        </div>
-                        <div className="step-breakdown-details mt-2">
-                          <div className="breakdown-row">
-                            <span>Tiền thuê</span>
-                            <strong>{formatCurrency(totalPrice)}</strong>
-                          </div>
-                          <div className="breakdown-row">
-                            <span>Tiền thế chấp</span>
-                            <div>
-                              <span className="strike-text mr-2">{formatCurrency(securityDeposit)}</span>
-                              <strong className="text-orange">{formatCurrency(remainingDeposit)}</strong>
-                            </div>
-                          </div>
-                        </div>
-                        <p className="step-desc mt-2">
-                          Sẽ hoàn lại khi trả xe
-                        </p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                      <span style={{ color: '#64748b' }}>Bảo hiểm chuyến đi</span>
+                      <span>{formatCurrency(insurancePrice)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                      <span style={{ color: '#64748b' }}>Phí dịch vụ</span>
+                      <span>{formatCurrency(serviceFee)}</span>
+                    </div>
+                    {pickupMethod === 'delivery' && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                        <span style={{ color: '#64748b' }}>Phí giao xe</span>
+                        <span>{formatCurrency(deliveryFee)}</span>
                       </div>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                      <span style={{ color: '#64748b' }}>Tiền cọc bảo đảm 🔒</span>
+                      <span style={{ color: '#f59e0b', fontWeight: 700 }}>{formatCurrency(securityDeposit)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 800, borderTop: '2px solid #e2e8f0', paddingTop: '10px', marginTop: '4px' }}>
+                      <span style={{ color: '#0f172a' }}>TỔNG THANH TOÁN</span>
+                      <span style={{ color: '#6366f1' }}>{formatCurrency(totalPayment)}</span>
+                    </div>
+                    <div style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '6px', lineHeight: 1.5 }}>
+                      💡 Tiền cọc {formatCurrency(securityDeposit)} sẽ được hoàn lại 100% vào ví sau khi trả xe (nếu không phát sinh sự cố).
                     </div>
                   </div>
                 </div>
@@ -753,12 +872,14 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                 type="button"
                 className="btn btn-primary"
                 onClick={handlePaymentSubmit}
-                disabled={loading || (paymentChoice === 'wallet' && walletBalance < reservationFee)}
+                disabled={loading || (paymentChoice === 'wallet' && walletBalance < totalPayment)}
               >
                 {loading ? (
                   <span>Đang xử lý...</span>
                 ) : paymentChoice === 'wallet' ? (
-                  'Xác nhận trừ số dư Ví'
+                  `Xác nhận trừ ${formatCurrency(totalPayment)} từ Ví`
+                ) : paymentChoice === 'vnpay' ? (
+                  'Chuyển hướng thanh toán VNPAY'
                 ) : (
                   'Xác nhận đã chuyển khoản'
                 )}
@@ -805,7 +926,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
                 </div>
                 <div className="receipt-row">
                   <span>Phương thức:</span>
-                  <strong>{paymentChoice === 'wallet' ? 'Số dư Ví ViVuCar' : 'Chuyển khoản (VietQR)'}</strong>
+                  <strong>{paymentChoice === 'wallet' ? 'Số dư Ví ViVuCar' : paymentChoice === 'vnpay' ? 'Cổng thanh toán VNPAY' : 'Chuyển khoản (VietQR)'}</strong>
                 </div>
                 <div className="receipt-row">
                   <span>Phí thuê xe:</span>
