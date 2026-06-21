@@ -124,6 +124,24 @@ export const getPool = async () => {
             );
         END
 
+        -- Create Notification table if missing
+        IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Notification')
+        BEGIN
+            CREATE TABLE Notification (
+                notification_id   INT            IDENTITY(1,1) PRIMARY KEY,
+                user_id           INT            NOT NULL,
+                title             NVARCHAR(200)  NOT NULL,
+                message           NVARCHAR(1000) NOT NULL,
+                notification_type NVARCHAR(50)   NULL,
+                reference_id      INT            NULL,
+                reference_type    NVARCHAR(50)   NULL,
+                is_read           BIT            NOT NULL DEFAULT 0,
+                created_at        DATETIME2      NOT NULL DEFAULT GETDATE(),
+                CONSTRAINT FK_Notification_User FOREIGN KEY (user_id) REFERENCES [User](user_id)
+            );
+            CREATE INDEX IX_Notification_UserId ON Notification(user_id, is_read, created_at DESC);
+        END
+
         -- Alter columns to NVARCHAR(MAX) to support base64 image uploads without truncation error
         IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('[User]') AND name = 'avatar_url' AND max_length <> -1)
         BEGIN
