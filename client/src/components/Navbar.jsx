@@ -1,9 +1,79 @@
-import React from 'react';
-import { ShieldCheck, LogOut, User, Key, Car, PlusCircle, Compass, BookOpen, Briefcase } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ShieldCheck, LogOut, User, Key, Car, PlusCircle, Compass, BookOpen, Briefcase, Bell } from 'lucide-react';
 import { useToast } from './Toast';
+import { api } from '../utils/api';
 
 export const Navbar = ({ user, onLogout, currentTab, setCurrentTab }) => {
   const { showToast } = useToast();
+
+  const [notifications, setNotifications] = useState([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const fetchNotifications = async () => {
+    if (!user) return;
+    try {
+      const data = await api.notifications.getNotifications();
+      setNotifications(data);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+    fetchNotifications();
+
+    const interval = setInterval(fetchNotifications, 10000); // Polling every 10s
+
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [user]);
+
+  const handleNotificationClick = async (notif) => {
+    try {
+      if (!notif.isRead) {
+        await api.notifications.markAsRead(notif.id);
+        setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+      }
+      setIsOpen(false);
+      
+      // Smart navigation
+      if (user.role === 'renter') {
+        setCurrentTab('my-trips');
+      } else if (user.role === 'owner') {
+        setCurrentTab('list-car');
+      } else if (user.role === 'cskh' || user.role === 'admin') {
+        setCurrentTab('admin-dashboard');
+      }
+    } catch (err) {
+      console.error('Failed to process notification click:', err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await api.notifications.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      showToast('Đã đánh dấu tất cả thông báo là đã đọc.', 'success');
+    } catch (err) {
+      console.error('Failed to mark all read:', err);
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const handleDummyClick = (title) => {
     showToast(`Tính năng "${title}" đang được phát triển. Cảm ơn bạn đã quan tâm!`, 'info');
@@ -89,6 +159,55 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab }) => {
 
           {user ? (
             <div className="nav-user-area">
+              <div className="nav-notification-container" ref={dropdownRef}>
+                <button 
+                  className={`nav-notification-btn ${unreadCount > 0 ? 'has-unread' : ''}`}
+                  onClick={() => setIsOpen(!isOpen)}
+                  title="Thông báo"
+                >
+                  <Bell size={18} />
+                  {unreadCount > 0 && <span className="nav-notification-badge">{unreadCount}</span>}
+                </button>
+
+                {isOpen && (
+                  <div className="nav-notification-dropdown">
+                    <div className="nav-notif-header">
+                      <h3>Thông báo</h3>
+                      {unreadCount > 0 && (
+                        <button className="nav-notif-mark-all" onClick={handleMarkAllRead}>
+                          Đọc tất cả
+                        </button>
+                      )}
+                    </div>
+                    <div className="nav-notif-body">
+                      {notifications.length === 0 ? (
+                        <div className="nav-notif-empty">Không có thông báo mới.</div>
+                      ) : (
+                        notifications.map((notif) => (
+                          <div 
+                            key={notif.id} 
+                            className={`nav-notif-item ${notif.isRead ? 'read' : 'unread'}`}
+                            onClick={() => handleNotificationClick(notif)}
+                          >
+                            <div className="notif-dot-container">
+                              {!notif.isRead && <span className="notif-unread-dot"></span>}
+                            </div>
+                            <div className="notif-content">
+                              <h4 className="notif-title">{notif.title}</h4>
+                              <p className="notif-message">{notif.message}</p>
+                              <span className="notif-time">
+                                {new Date(notif.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}{' - '}
+                                {new Date(notif.createdAt).toLocaleDateString('vi-VN')}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="nav-profile-summary" onClick={() => setCurrentTab('profile')} title="Xem hồ sơ cá nhân">
                 <img src={user.avatar} alt={user.name} className="nav-avatar" />
                 <span className="nav-username">{user.name}</span>
@@ -247,6 +366,196 @@ const injectNavbarStyles = () => {
       display: flex;
       align-items: center;
       gap: 16px;
+    }
+
+    .nav-notification-container {
+      position: relative;
+    }
+
+    .nav-notification-btn {
+      background: #f8fafc;
+      border: 1px solid #f1f5f9;
+      color: #64748b;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .nav-notification-btn:hover {
+      background: #f1f5f9;
+      border-color: #e2e8f0;
+      color: #009698;
+    }
+
+    .nav-notification-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+    }
+
+    .nav-notification-dropdown {
+      position: absolute;
+      top: 48px;
+      right: 0;
+      width: 350px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 2px 10px rgba(0, 0, 0, 0.05);
+      border: 1px solid #f1f5f9;
+      z-index: 1000;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      animation: navNotifFadeIn 0.2s ease-out;
+    }
+
+    @keyframes navNotifFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .nav-notif-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      background: #f8fafc;
+    }
+
+    .nav-notif-header h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+      text-transform: none;
+    }
+
+    .nav-notif-mark-all {
+      background: none;
+      border: none;
+      color: #009698;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: background 0.15s ease;
+    }
+
+    .nav-notif-mark-all:hover {
+      background: rgba(0, 150, 152, 0.08);
+      color: #00797b;
+    }
+
+    .nav-notif-body {
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .nav-notif-empty {
+      padding: 30px 16px;
+      text-align: center;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .nav-notif-item {
+      display: flex;
+      padding: 14px 16px;
+      border-bottom: 1px solid #f8fafc;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      gap: 10px;
+      text-align: left;
+    }
+
+    .nav-notif-item:hover {
+      background: #f8fafc;
+    }
+
+    .nav-notif-item.unread {
+      background: rgba(0, 150, 152, 0.03);
+    }
+
+    .nav-notif-item.unread:hover {
+      background: rgba(0, 150, 152, 0.06);
+    }
+
+    .notif-dot-container {
+      display: flex;
+      align-items: flex-start;
+      padding-top: 4px;
+    }
+
+    .notif-unread-dot {
+      width: 8px;
+      height: 8px;
+      background: #009698;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 6px rgba(0, 150, 152, 0.6);
+    }
+
+    .notif-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .notif-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #1e293b;
+      margin: 0;
+      text-transform: none;
+    }
+
+    .nav-notif-item.unread .notif-title {
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    .notif-message {
+      font-size: 12.5px;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .nav-notif-item.unread .notif-message {
+      color: #334155;
+    }
+
+    .notif-time {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 2px;
     }
 
     .nav-profile-summary {

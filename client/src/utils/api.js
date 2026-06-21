@@ -410,5 +410,22 @@ export const api = {
       request('/emails/clear', {
         method: 'POST'
       })
+  },
+
+  notifications: {
+    getNotifications: () =>
+      request('/notifications', {
+        method: 'GET'
+      }),
+      
+    markAsRead: (id) =>
+      request(`/notifications/${id}/read`, {
+        method: 'PUT'
+      }),
+      
+    markAllAsRead: () =>
+      request('/notifications/read-all', {
+        method: 'POST'
+      })
   }
 };
