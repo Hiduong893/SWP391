@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, MapPin, DollarSign, RefreshCw, XCircle, ShieldCheck, Compass, Info, FileText, AlertTriangle, Star, ShieldAlert, Award, Upload, MessageSquare, PhoneCall, Send, HelpCircle } from 'lucide-react';
 import { api } from '../../utils/api';
+import { renterActionApi } from '../../utils/renterActionApi';
 import { useToast } from '../../components/Toast';
 import './MyTrips.css';
 
@@ -31,14 +32,85 @@ export const MyTrips = () => {
     tiresOk: false
   });
   const [renterSignature, setRenterSignature] = useState('');
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasSigned, setHasSigned] = useState(false);
+
+  useEffect(() => {
+    if (activeHandoverTrip && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const rect = canvas.parentNode.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height || 160;
+      setHasSigned(false);
+      setIsDrawing(false);
+    }
+  }, [activeHandoverTrip]);
+
+  const startDrawing = (e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    if (e.cancelable) e.preventDefault();
+    
+    ctx.beginPath();
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    ctx.moveTo(x, y);
+    setIsDrawing(true);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    if (e.cancelable) e.preventDefault();
+    
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    setHasSigned(true);
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasSigned(false);
+  };
 
   const [incidentDesc, setIncidentDesc] = useState('');
   const [incidentImage, setIncidentImage] = useState(null);
+  const [incidentType, setIncidentType] = useState('other');
 
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
 
   const [disputeDesc, setDisputeDesc] = useState('');
+
+  // Cancel with refund preview state
+  const [cancelPreview, setCancelPreview] = useState(null); // { trip, preview }
+  const [cancelPreviewLoading, setCancelPreviewLoading] = useState(false);
+  const [cancelConfirmLoading, setCancelConfirmLoading] = useState(false);
 
   const fetchTrips = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -67,35 +139,52 @@ export const MyTrips = () => {
     fetchMyTickets();
   }, []);
 
-  const handleCancelTrip = async (id) => {
-    const confirmCancel = window.confirm('Bạn có thực sự chắc chắn muốn hủy đơn đặt xe này không? Tiền cọc 5.000.000 VND sẽ được tự động hoàn lại vào Ví của bạn.');
-    if (!confirmCancel) return;
-
+  const handleCancelPreview = async (trip) => {
+    setCancelPreviewLoading(true);
     try {
-      const data = await api.bookings.cancel(id);
+      const preview = await renterActionApi.cancelBooking.getRefundPreview(trip.id);
+      setCancelPreview({ trip, preview });
+    } catch (error) {
+      showToast(error.message || 'Không thể lấy thông tin hoàn cọc.', 'error');
+    } finally {
+      setCancelPreviewLoading(false);
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelPreview) return;
+    setCancelConfirmLoading(true);
+    try {
+      const data = await renterActionApi.cancelBooking.cancelWithRefund(cancelPreview.trip.id);
       showToast(data.message, 'success');
+      setCancelPreview(null);
       fetchTrips(true);
     } catch (error) {
       showToast(error.message || 'Lỗi hủy đơn đặt xe.', 'error');
+    } finally {
+      setCancelConfirmLoading(false);
     }
   };
 
   const handleHandoverSubmit = async (e) => {
     e.preventDefault();
-    if (!renterSignature.trim()) {
-      showToast('Vui lòng ký tên xác nhận biên bản bàn giao xe.', 'warning');
+    if (!hasSigned) {
+      showToast('Vui lòng vẽ chữ ký xác nhận biên bản bàn giao xe.', 'warning');
       return;
     }
 
     const { trip, type } = activeHandoverTrip;
     const checklist = Object.keys(handoverChecks).filter(k => handoverChecks[k]);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const signatureBase64 = canvas.toDataURL('image/png');
 
     try {
-      const data = await api.bookings.signHandover(trip.id, type, checklist, renterSignature);
+      const data = await api.bookings.signHandover(trip.id, type, checklist, signatureBase64);
       showToast(data.message, 'success');
       setActiveHandoverTrip(null);
-      setRenterSignature('');
       setHandoverChecks({ noScratches: false, fuelOk: false, cleanCar: false, tiresOk: false });
+      setHasSigned(false);
       fetchTrips(true);
     } catch (error) {
       showToast(error.message || 'Lỗi ký biên bản bàn giao.', 'error');
@@ -121,11 +210,16 @@ export const MyTrips = () => {
     }
 
     try {
-      const data = await api.bookings.reportIncident(activeIncidentTrip.id, incidentDesc, incidentImage);
+      const data = await renterActionApi.emergencyReport.submit(activeIncidentTrip.id, {
+        description: incidentDesc,
+        image: incidentImage,
+        incidentType: incidentType
+      });
       showToast(data.message, 'success');
       setActiveIncidentTrip(null);
       setIncidentDesc('');
       setIncidentImage(null);
+      setIncidentType('other');
       fetchTrips(true);
     } catch (error) {
       showToast(error.message || 'Lỗi báo cáo sự cố.', 'error');
@@ -362,11 +456,12 @@ export const MyTrips = () => {
 
                       {isCancellable && (
                         <button
-                          onClick={() => handleCancelTrip(trip.id)}
+                          onClick={() => handleCancelPreview(trip)}
                           className="btn btn-secondary btn-cancel-trip"
+                          disabled={cancelPreviewLoading}
                         >
                           <XCircle size={14} />
-                          Hủy đặt xe
+                          {cancelPreviewLoading ? 'Đang tải...' : 'Hủy đặt xe'}
                         </button>
                       )}
                     </div>
@@ -469,8 +564,86 @@ export const MyTrips = () => {
         )}
       </div>
 
+      {/* --- MODAL XÁC NHẬN HỦY ĐẶT XE VỚI PREVIEW HOÀN CỌC THỰC TẾ --- */}
+      {cancelPreview && (
+        <div className="editor-modal-overlay" onClick={() => setCancelPreview(null)}>
+          <div className="editor-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px', background: '#ffffff', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)' }}>
+            {/* Header */}
+            <div style={{ padding: '18px 22px', borderBottom: '1px solid #fee2e2', background: 'linear-gradient(135deg, #fff1f2, #fef2f2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <XCircle size={20} color="#ef4444" />
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#991b1b', fontWeight: 800 }}>Xác nhận hủy đặt xe</h3>
+              </div>
+              <button onClick={() => setCancelPreview(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex' }}><XCircle size={18} /></button>
+            </div>
+
+            {/* Car info */}
+            <div style={{ padding: '16px 22px', display: 'flex', gap: 12, alignItems: 'center', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              <img src={cancelPreview.trip.car.image} alt="" style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 8 }} />
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{cancelPreview.trip.car.brand} {cancelPreview.trip.car.model}</div>
+                <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: 2 }}>
+                  Mã vé: <strong>{cancelPreview.trip.id.slice(0,8).toUpperCase()}</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Refund Policy Info */}
+            <div style={{ padding: '18px 22px' }}>
+              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
+                <div style={{ fontSize: '11px', color: '#166534', fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chính sách hoàn cọc giữ chỗ</div>
+                <div style={{ fontSize: '13px', color: '#15803d', fontWeight: 600 }}>{cancelPreview.preview.policyLabel}</div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: 4 }}>
+                  Còn <strong style={{ color: '#0f172a' }}>{cancelPreview.preview.daysUntilPickup} ngày</strong> đến ngày nhận xe
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontSize: '11px', color: '#92400e', fontWeight: 600 }}>Phí giữ chỗ (500.000đ)</div>
+                  <div style={{ fontSize: '12px', color: '#78716c', marginTop: 2 }}>Hoàn trả {cancelPreview.preview.refundPercent}% = </div>
+                </div>
+                <div style={{ fontSize: '20px', fontWeight: 900, color: cancelPreview.preview.refundAmount > 0 ? '#059669' : '#dc2626' }}>
+                  {cancelPreview.preview.refundAmount > 0
+                    ? `+${cancelPreview.preview.refundAmount.toLocaleString('vi-VN')}đ`
+                    : '0đ (Không hoàn)'}
+                </div>
+              </div>
+
+              <div style={{ background: '#f1f5f9', borderRadius: 10, padding: '10px 14px', fontSize: '11.5px', color: '#475569', lineHeight: 1.6, marginBottom: 18 }}>
+                ⚠️ <strong>Lưu ý:</strong> Tiền cọc bảo đảm <strong>5.000.000đ</strong> sẽ được giữ nguyên và hoàn trả sau khi Admin xác nhận.
+                {cancelPreview.preview.refundAmount === 0 && (
+                  <span style={{ color: '#dc2626', display: 'block', marginTop: 4 }}>
+                    ❌ Hủy trễ — Phí giữ chỗ <strong>500.000đ không được hoàn trả</strong> theo chính sách.
+                  </span>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setCancelPreview(null)}
+                  style={{ flex: 1, padding: '11px', borderRadius: 10, border: '1px solid #e2e8f0', background: '#ffffff', color: '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                >
+                  Giữ lại
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmCancel}
+                  disabled={cancelConfirmLoading}
+                  style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#ffffff', fontWeight: 700, cursor: cancelConfirmLoading ? 'not-allowed' : 'pointer', fontSize: '13px', opacity: cancelConfirmLoading ? 0.7 : 1 }}
+                >
+                  {cancelConfirmLoading ? 'Đang xử lý...' : '✓ Xác nhận hủy'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* --- POPUP CHAT VỚI CSKH THÀNH VIÊN (UC07) --- */}
       {selectedMyTicket && (
+
         <div className="editor-modal-overlay" onClick={() => setSelectedMyTicket(null)}>
           <div className="editor-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px', background: '#ffffff', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
             <div className="editor-modal-header" style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
@@ -603,16 +776,64 @@ export const MyTrips = () => {
               </div>
 
               <div className="form-group mt-4">
-                <label className="form-label">Ký tên xác nhận (Nhập họ tên của bạn):</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Ví dụ: NGUYEN VAN A"
-                  value={renterSignature}
-                  onChange={(e) => setRenterSignature(e.target.value)}
-                  style={{ textTransform: 'uppercase' }}
-                  required
-                />
+                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Vẽ chữ ký xác nhận (Dùng chuột hoặc chạm màn hình):</span>
+                  <button
+                    type="button"
+                    onClick={clearSignature}
+                    style={{
+                      fontSize: '11px',
+                      background: 'none',
+                      border: 'none',
+                      color: '#4f46e5',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      textDecoration: 'underline'
+                    }}
+                  >
+                    Xóa chữ ký
+                  </button>
+                </label>
+                <div style={{
+                  border: '2px dashed #cbd5e1',
+                  borderRadius: '12px',
+                  background: '#f8fafc',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  height: '160px',
+                  marginTop: '6px',
+                  cursor: 'crosshair'
+                }}>
+                  <canvas
+                    ref={canvasRef}
+                    onMouseDown={startDrawing}
+                    onMouseMove={draw}
+                    onMouseUp={stopDrawing}
+                    onMouseLeave={stopDrawing}
+                    onTouchStart={startDrawing}
+                    onTouchMove={draw}
+                    onTouchEnd={stopDrawing}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      height: '100%'
+                    }}
+                  />
+                  {!hasSigned && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      pointerEvents: 'none',
+                      color: '#94a3b8',
+                      fontSize: '12.5px',
+                      fontWeight: 500
+                    }}>
+                      Ký tên vào đây
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="popup-actions mt-6" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -639,6 +860,33 @@ export const MyTrips = () => {
               <div className="handover-notice alert-red mb-4">
                 <AlertTriangle size={16} />
                 <span>Khai báo sự cố va quẹt, tai nạn hoặc lỗi hỏng hóc để kích hoạt gói bảo hiểm chuyến đi bảo vệ quyền lợi của bạn.</span>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label">Loại sự cố phát sinh:</label>
+                <select
+                  value={incidentType}
+                  onChange={(e) => setIncidentType(e.target.value)}
+                  className="form-control"
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '14px',
+                    color: '#0f172a',
+                    background: '#f8fafc',
+                    outline: 'none'
+                  }}
+                >
+                  <option value="accident">Tai nạn va chạm</option>
+                  <option value="breakdown">Hỏng hóc động cơ / chết máy</option>
+                  <option value="flat_tire">Xịt lốp / hỏng lốp</option>
+                  <option value="theft">Trộm cắp bộ phận / mất xe</option>
+                  <option value="fuel_issue">Hết nhiên liệu / lỗi nhiên liệu</option>
+                  <option value="medical">Sự cố y tế / sức khỏe tài xế</option>
+                  <option value="other">Khác</option>
+                </select>
               </div>
 
               <div className="form-group">
@@ -688,96 +936,275 @@ export const MyTrips = () => {
       )}
 
       {/* --- POPUP 3: ĐÁNH GIÁ DỊCH VỤ CHUYẾN ĐI (UC16) --- */}
-      {activeReviewTrip && (
-        <div className="lightbox-overlay" onClick={() => setActiveReviewTrip(null)}>
-          <div className="lightbox-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-            <div className="lightbox-header">
-              <h4>Viết Đánh Giá Dịch Vụ</h4>
-              <button className="btn-close-lightbox" onClick={() => setActiveReviewTrip(null)}><XCircle size={20} /></button>
-            </div>
+      {activeReviewTrip && (() => {
+        const car = activeReviewTrip.car;
+        const ratingLabels = {
+          1: 'Rất tệ 😞',
+          2: 'Không hài lòng 🙁',
+          3: 'Bình thường 😐',
+          4: 'Hài lòng 🙂',
+          5: 'Tuyệt vời! 😍'
+        };
+        return (
+          <div className="lightbox-overlay" onClick={() => setActiveReviewTrip(null)}>
+            <div className="lightbox-card review-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+              <div className="lightbox-header">
+                <h4>Đánh Giá Chuyến Đi</h4>
+                <button className="btn-close-lightbox" onClick={() => setActiveReviewTrip(null)}><XCircle size={20} /></button>
+              </div>
 
-            <form onSubmit={handleReviewSubmit} className="lightbox-body" style={{ display: 'block', padding: '24px', textAlign: 'left' }}>
-              <div className="form-group" style={{ textAlign: 'center' }}>
-                <label className="form-label" style={{ display: 'block', marginBottom: 12 }}>Chấm điểm sao chuyến đi của bạn:</label>
-                <div className="stars-rating-interactive-row" style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-                  {[1, 2, 3, 4, 5].map((val) => (
-                    <button
-                      type="button"
-                      key={val}
-                      className="star-interactive-btn"
-                      onClick={() => setReviewRating(val)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                    >
-                      <Star
-                        size={32}
-                        fill={val <= reviewRating ? "#fbbf24" : "none"}
-                        color={val <= reviewRating ? "#fbbf24" : "#475569"}
-                      />
-                    </button>
-                  ))}
+              <form onSubmit={handleReviewSubmit} className="lightbox-body" style={{ display: 'block', padding: '24px', textAlign: 'left' }}>
+                
+                {/* Car info preview card */}
+                <div className="review-car-preview-card mb-6" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  marginBottom: '20px'
+                }}>
+                  <img src={car.image} alt={car.model} style={{
+                    width: '100px',
+                    height: '60px',
+                    objectFit: 'cover',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    background: '#fff'
+                  }} />
+                  <div>
+                    <span style={{ fontSize: '10px', fontWeight: '800', color: '#009698', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {car.brand}
+                    </span>
+                    <h5 style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a', margin: '2px 0 4px 0' }}>
+                      {car.model}
+                    </h5>
+                    <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
+                      Mã đơn: <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{activeReviewTrip.id.slice(0, 8).toUpperCase()}</span>
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="form-group mt-6">
-                <label className="form-label">Nhận xét chi tiết về xe và chủ xe:</label>
-                <textarea
-                  rows={4}
-                  className="form-control"
-                  placeholder="Hãy chia sẻ trải nghiệm về độ sạch sẽ của xe, tính thân thiện của chủ xe để giúp cộng đồng thuê xe..."
-                  value={reviewComment}
-                  onChange={(e) => setReviewComment(e.target.value)}
-                  required
-                ></textarea>
-              </div>
+                {/* Star rating selection */}
+                <div className="form-group" style={{ textAlign: 'center', marginBottom: '24px' }}>
+                  <label className="form-label" style={{ display: 'block', marginBottom: '14px', fontWeight: '600', color: '#475569' }}>
+                    Chất lượng dịch vụ thế nào?
+                  </label>
+                  <div className="stars-rating-interactive-row" style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center' }}>
+                    {[1, 2, 3, 4, 5].map((val) => {
+                      const isSelected = val <= reviewRating;
+                      return (
+                        <button
+                          type="button"
+                          key={val}
+                          className={`star-interactive-btn ${isSelected ? 'selected' : ''}`}
+                          onClick={() => setReviewRating(val)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '4px',
+                            transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
+                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                          <Star
+                            size={38}
+                            fill={isSelected ? "#fbbf24" : "none"}
+                            color={isSelected ? "#fbbf24" : "#94a3b8"}
+                            style={{ filter: isSelected ? 'drop-shadow(0 0 4px rgba(251,191,36,0.3))' : 'none', transition: 'all 0.2s' }}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="rating-desc-label" style={{
+                    marginTop: '10px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    color: '#6366f1',
+                    minHeight: '20px',
+                    transition: 'all 0.2s'
+                  }}>
+                    {ratingLabels[reviewRating]}
+                  </div>
+                </div>
 
-              <div className="popup-actions mt-6" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setActiveReviewTrip(null)}>Hủy</button>
-                <button type="submit" className="btn btn-primary btn-gold" style={{ width: 'auto', padding: '10px 24px', background: '#fbbf24', borderColor: '#fbbf24', color: '#090a0f' }}>
-                  Gửi Đánh Giá
-                </button>
-              </div>
-            </form>
+                {/* Review comment field */}
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label" style={{ fontWeight: '600', color: '#475569', marginBottom: '8px' }}>
+                    Viết nhận xét đánh giá:
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <textarea
+                      rows={4}
+                      className="form-control review-textarea"
+                      placeholder="Chia sẻ trải nghiệm thực tế của bạn về chiếc xe (độ sạch sẽ, vận hành) và chủ xe (đưa đón đúng giờ, thân thiện)..."
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: '12px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '14px',
+                        color: '#0f172a',
+                        outline: 'none',
+                        resize: 'none',
+                        transition: 'all 0.25s',
+                        background: '#f8fafc'
+                      }}
+                      required
+                    ></textarea>
+                  </div>
+                </div>
+
+                {/* Popup Action buttons */}
+                <div className="popup-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setActiveReviewTrip(null)}
+                    style={{ width: 'auto', padding: '10px 20px', borderRadius: '8px' }}
+                  >
+                    Đóng
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    style={{
+                      width: 'auto',
+                      padding: '10px 28px',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #009698 0%, #00bfa5 100%)',
+                      boxShadow: '0 4px 12px rgba(0, 150, 152, 0.2)'
+                    }}
+                  >
+                    Gửi Đánh Giá
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* --- POPUP 4: GỬI KHIẾU NẠI TRANH CHẤP LÊN CSKH (UC34) --- */}
-      {activeDisputeTrip && (
-        <div className="lightbox-overlay" onClick={() => setActiveDisputeTrip(null)}>
-          <div className="lightbox-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-            <div className="lightbox-header">
-              <h4>Nộp Đơn Khiếu Nại Tranh Chấp</h4>
-              <button className="btn-close-lightbox" onClick={() => setActiveDisputeTrip(null)}><XCircle size={20} /></button>
+      {activeDisputeTrip && (() => {
+        const car = activeDisputeTrip.car;
+        return (
+          <div className="lightbox-overlay" onClick={() => setActiveDisputeTrip(null)}>
+            <div className="lightbox-card dispute-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+              <div className="lightbox-header" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#b45309' }}>
+                  <ShieldAlert className="text-warning" size={20} />
+                  <span>Khiếu Nại Tranh Chấp</span>
+                </h4>
+                <button className="btn-close-lightbox" onClick={() => setActiveDisputeTrip(null)}><XCircle size={20} /></button>
+              </div>
+
+              <form onSubmit={handleDisputeSubmit} className="lightbox-body" style={{ display: 'block', padding: '24px', textAlign: 'left' }}>
+                
+                {/* Trip & Car context details */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  background: '#fcf8f2',
+                  border: '1px solid #fed7aa',
+                  borderRadius: '10px',
+                  padding: '12px 16px',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{ fontSize: '24px' }}>🛡️</div>
+                  <div>
+                    <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#451a03' }}>
+                      Đơn hàng: {car.brand} {car.model}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#b45309', marginTop: '2px' }}>
+                      Mã đặt xe: <strong style={{ fontFamily: 'monospace' }}>{activeDisputeTrip.id.toUpperCase()}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="handover-notice alert-orange mb-4" style={{
+                  background: '#fffbeb',
+                  border: '1px solid #fde68a',
+                  color: '#b45309',
+                  padding: '14px',
+                  borderRadius: '10px',
+                  fontSize: '12.5px',
+                  lineHeight: '1.5',
+                  display: 'flex',
+                  gap: '10px',
+                  alignItems: 'flex-start',
+                  marginBottom: '18px'
+                }}>
+                  <Info size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <span>
+                    Hệ thống CSKH ViVuCar đóng vai trò là bên thứ ba trung lập đứng ra phân xử và bảo vệ quyền lợi của bạn dựa trên bằng chứng, hợp đồng và lịch sử bàn giao xe.
+                  </span>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label" style={{ fontWeight: '600', color: '#475569', marginBottom: '8px' }}>
+                    Nội dung khiếu nại chi tiết:
+                  </label>
+                  <textarea
+                    rows={5}
+                    className="form-control dispute-textarea"
+                    placeholder="Vui lòng cung cấp chi tiết sự việc phát sinh mâu thuẫn (Ví dụ: Chủ xe trừ tiền cọc vô lý, xe hỏng hóc hoặc không đúng mô tả, thái độ bàn giao xe không đúng cam kết...)"
+                    value={disputeDesc}
+                    onChange={(e) => setDisputeDesc(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '12px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '14px',
+                      color: '#0f172a',
+                      outline: 'none',
+                      resize: 'none',
+                      transition: 'all 0.25s',
+                      background: '#f8fafc'
+                    }}
+                    required
+                  ></textarea>
+                </div>
+
+                <div className="popup-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setActiveDisputeTrip(null)}
+                    style={{ width: 'auto', padding: '10px 20px', borderRadius: '8px' }}
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    style={{
+                      width: 'auto',
+                      padding: '10px 28px',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                      boxShadow: '0 4px 12px rgba(245, 158, 11, 0.2)',
+                      border: 'none',
+                      color: 'white'
+                    }}
+                  >
+                    Gửi Khiếu Nại
+                  </button>
+                </div>
+              </form>
             </div>
-
-            <form onSubmit={handleDisputeSubmit} className="lightbox-body" style={{ display: 'block', padding: '24px', textAlign: 'left' }}>
-              <div className="handover-notice alert-orange mb-4">
-                <ShieldAlert size={16} />
-                <span>Trường hợp phát sinh mâu thuẫn bất đồng ý kiến về tiền đền bù hoặc trả cọc bảo đảm, đội ngũ CSKH sẽ đứng ra phán quyết độc lập.</span>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Lý do khiếu nại tranh chấp:</label>
-                <textarea
-                  rows={5}
-                  className="form-control"
-                  placeholder="Vui lòng nêu rõ các điểm bất đồng ý kiến đối với chủ xe nhàn rỗi (ví dụ: bị trừ tiền cọc vô lý, chủ xe bàn giao không đúng thỏa thuận...)"
-                  value={disputeDesc}
-                  onChange={(e) => setDisputeDesc(e.target.value)}
-                  required
-                ></textarea>
-              </div>
-
-              <div className="popup-actions mt-6" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setActiveDisputeTrip(null)}>Bỏ qua</button>
-                <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '10px 24px', background: '#f59e0b', borderColor: '#f59e0b' }}>
-                  Gửi Khiếu Nại Lên Hệ Thống
-                </button>
-              </div>
-            </form>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

@@ -104,8 +104,96 @@ export const getPool = async () => {
             ALTER TABLE VehicleImage ALTER COLUMN image_url NVARCHAR(MAX) NOT NULL;
         END
       `);
+
+      // Ensure stored procedure is created or updated with support for DepositRefund and auto-wallet creation
+      await pool.request().query(`
+        CREATE OR ALTER PROCEDURE usp_ProcessWalletTransaction
+            @user_id     INT,
+            @booking_id  INT = NULL,
+            @amount      DECIMAL(18,2),
+            @txn_type    NVARCHAR(30),
+            @description NVARCHAR(500) = NULL
+        AS
+        BEGIN
+            SET NOCOUNT ON;
+            SET XACT_ABORT ON;
+
+            BEGIN TRY
+                BEGIN TRANSACTION;
+
+                DECLARE @wallet_id     INT;
+                DECLARE @balance_before DECIMAL(18,2);
+                DECLARE @balance_after  DECIMAL(18,2);
+
+                SELECT @wallet_id = wallet_id, @balance_before = balance
+                FROM Wallet WITH (UPDLOCK, ROWLOCK)
+                WHERE user_id = @user_id;
+
+                IF @wallet_id IS NULL
+                BEGIN
+                    INSERT INTO Wallet (user_id, balance, is_bank_verified, created_at, updated_at)
+                    VALUES (@user_id, 0, 0, GETDATE(), GETDATE());
+                    
+                    SET @wallet_id = SCOPE_IDENTITY();
+                    SET @balance_before = 0;
+                END
+
+                -- Calculate new balance (DepositRefund is an addition credit txn)
+                IF @txn_type IN ('TopUp', 'Refund', 'Income', 'DepositRefund')
+                    SET @balance_after = @balance_before + @amount;
+                ELSE
+                    SET @balance_after = @balance_before - @amount;
+
+                IF @balance_after < 0
+                BEGIN
+                    RAISERROR(N'Insufficient wallet balance.', 16, 1);
+                END
+
+                UPDATE Wallet
+                SET balance = @balance_after, updated_at = GETDATE()
+                WHERE wallet_id = @wallet_id;
+
+                INSERT INTO WalletTransaction
+                    (wallet_id, booking_id, amount, txn_type, balance_before, balance_after, description)
+                VALUES
+                    (@wallet_id, @booking_id, @amount, @txn_type, @balance_before, @balance_after, @description);
+
+                COMMIT TRANSACTION;
+            END TRY
+            BEGIN CATCH
+                IF @@TRANCOUNT > 0 
+                    ROLLBACK TRANSACTION;
+                
+                DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+                RAISERROR(@ErrorMessage, 16, 1);
+            END CATCH
+        END;
+      `);
+
       // Seed default values if database is empty
       await seedDb(pool);
+
+      // Perform partitioning of vehicles to satisfy "half Gặp chủ xe, half Tự nhận xe"
+      // owner@bonboncar.vn is Owner (Gặp chủ xe)
+      // admin@bonboncar.vn is Admin (Tự nhận xe)
+      const adminRes = await pool.request().query("SELECT user_id FROM [User] WHERE email = 'admin@bonboncar.vn'");
+      const ownerRes = await pool.request().query("SELECT user_id FROM [User] WHERE email = 'owner@bonboncar.vn'");
+      if (adminRes.recordset.length > 0 && ownerRes.recordset.length > 0) {
+        const adminId = adminRes.recordset[0].user_id;
+        const ownerId = ownerRes.recordset[0].user_id;
+        
+        const carsRes = await pool.request().query("SELECT vehicle_id FROM Vehicle ORDER BY vehicle_id");
+        const carIds = carsRes.recordset.map(r => r.vehicle_id);
+        
+        for (let i = 0; i < carIds.length; i++) {
+          const targetOwnerId = i < Math.ceil(carIds.length / 2) ? adminId : ownerId;
+          await pool.request()
+            .input('vehicleId', sql.Int, carIds[i])
+            .input('ownerId', sql.Int, targetOwnerId)
+            .query("UPDATE Vehicle SET owner_id = @ownerId WHERE vehicle_id = @vehicleId");
+        }
+        console.log(`Vehicles ownership partitioned: ${Math.ceil(carIds.length / 2)} cars owned by Admin (Tự nhận xe), ${carIds.length - Math.ceil(carIds.length / 2)} cars owned by Owner (Gặp chủ xe)`);
+      }
     } catch (err) {
       console.error('Error running SQL migrations or seeding database:', err);
     }

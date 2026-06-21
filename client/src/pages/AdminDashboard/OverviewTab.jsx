@@ -4,6 +4,7 @@ import { DollarSign, Car, Users, CreditCard } from 'lucide-react';
 export const OverviewTab = ({
   stats = { totalUsers: 0, totalCars: 0, totalBookings: 0, totalRevenue: 0 },
   usersList = [],
+  monthlyStats = [],
   handleUpdateUserRole,
   handleApproveKyc,
   actionLoading,
@@ -12,6 +13,60 @@ export const OverviewTab = ({
   setActiveSubTab,
   formatCurrency
 }) => {
+  // Build dynamic SVG chart from monthlyStats
+  // Chart area: x from 50 to 480, y from 40 to 210 (170px height)
+  const chartMonths = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
+  const revenues = monthlyStats.length > 0
+    ? monthlyStats.map(m => m.revenue)
+    : Array(12).fill(0);
+  const maxRev = Math.max(...revenues, 1);
+
+  // Map month index to x coordinate (0..11 → 50..480)
+  const toX = (i) => 50 + (i / 11) * 430;
+  // Map revenue to y coordinate (high revenue = low y)
+  const toY = (rev) => 210 - Math.round((rev / maxRev) * 170);
+
+  const points = revenues.map((rev, i) => ({ x: toX(i), y: toY(rev) }));
+
+  // Build SVG polyline path
+  const polyPath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+  const areaPath = polyPath + ` L ${points[points.length - 1].x} 210 L 50 210 Z`;
+
+  // Y-axis labels
+  const yLabels = [
+    { y: 40, val: maxRev },
+    { y: 90, val: maxRev * 0.75 },
+    { y: 140, val: maxRev * 0.50 },
+    { y: 190, val: maxRev * 0.25 },
+  ];
+
+  const formatM = (v) => {
+    if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+    if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K`;
+    return String(Math.round(v));
+  };
+
+  // Donut chart calculations
+  const totalCars = stats.totalCars || 0;
+  const denom = totalCars || 1;
+  const rentedVal = stats.rentedCars || 0;
+  const availableVal = stats.availableCars || 0;
+  const maintenanceVal = (stats.maintenanceCars || 0) + (stats.pendingCars || 0) + (stats.rejectedCars || 0);
+
+  const rentedPct = totalCars > 0 ? Math.round((rentedVal / denom) * 100) : 0;
+  const availablePct = totalCars > 0 ? Math.round((availableVal / denom) * 100) : 0;
+  const maintenancePct = totalCars > 0 ? Math.max(0, 100 - rentedPct - availablePct) : 0;
+
+  const circ = 314.16;
+  const strokeRented = (rentedPct / 100) * circ;
+  const strokeAvailable = (availablePct / 100) * circ;
+  const strokeMaintenance = (maintenancePct / 100) * circ;
+
+  const offsetRented = 0;
+  const offsetAvailable = -strokeRented;
+  const offsetMaintenance = -(strokeRented + strokeAvailable);
+
+
   return (
     <div className="tab-pane-content fade-in-animation">
 
@@ -117,52 +172,36 @@ export const OverviewTab = ({
               <line x1="40" y1="190" x2="480" y2="190" stroke="var(--admin-border-color)" strokeWidth="0.5" strokeDasharray="3" />
               <line x1="40" y1="210" x2="480" y2="210" stroke="var(--admin-border-color)" strokeWidth="1" />
 
-              {/* Y-Axis Labels */}
-              <text x="30" y="44" className="chart-axis-text" textAnchor="end">$40k</text>
-              <text x="30" y="94" className="chart-axis-text" textAnchor="end">$30k</text>
-              <text x="30" y="144" className="chart-axis-text" textAnchor="end">$20k</text>
-              <text x="30" y="194" className="chart-axis-text" textAnchor="end">$10k</text>
-              <text x="30" y="214" className="chart-axis-text" textAnchor="end">$0</text>
+              {/* Y-Axis Labels (dynamic) */}
+              {yLabels.map((yl, i) => (
+                <text key={i} x="30" y={yl.y + 4} className="chart-axis-text" textAnchor="end">{formatM(yl.val)}</text>
+              ))}
 
-              {/* X-Axis Labels */}
-              <text x="50" y="230" className="chart-axis-text" textAnchor="middle">T1</text>
-              <text x="120" y="230" className="chart-axis-text" textAnchor="middle">T2</text>
-              <text x="190" y="230" className="chart-axis-text" textAnchor="middle">T3</text>
-              <text x="260" y="230" className="chart-axis-text" textAnchor="middle">T4</text>
-              <text x="330" y="230" className="chart-axis-text" textAnchor="middle">T5</text>
-              <text x="400" y="230" className="chart-axis-text" textAnchor="middle">T6</text>
-              <text x="470" y="230" className="chart-axis-text" textAnchor="middle">T7</text>
+              {/* X-Axis Labels (months) */}
+              {chartMonths.map((m, i) => (
+                <text key={i} x={toX(i)} y="230" className="chart-axis-text" textAnchor="middle">{m}</text>
+              ))}
 
-              {/* Wave Line - Last Month (Dashed grey) */}
+              {/* Area Under Curve Fill (dynamic) */}
+              <path d={areaPath} fill="url(#gradient-chart-fill)" opacity="0.15" />
+
+              {/* Revenue Line (dynamic) */}
               <path
-                d="M 50 190 Q 120 160 190 170 T 330 150 T 470 120"
-                fill="none"
-                stroke="#94a3b8"
-                strokeWidth="2"
-                strokeDasharray="4 4"
-                opacity="0.6"
-              />
-
-              {/* Wave Line - This Month (Gradient Green) */}
-              <path
-                d="M 50 180 Q 120 130 190 150 T 330 120 T 470 70"
+                d={polyPath}
                 fill="none"
                 stroke="#00bfa5"
-                strokeWidth="3.5"
+                strokeWidth="3"
                 strokeLinecap="round"
+                strokeLinejoin="round"
               />
 
-              {/* Coordinates markers */}
-              <circle cx="190" cy="150" r="4" fill="#ffffff" stroke="#009698" strokeWidth="2" />
-              <circle cx="330" cy="120" r="4" fill="#ffffff" stroke="#009698" strokeWidth="2" />
-              <circle cx="400" cy="85" r="4" fill="#ffffff" stroke="#009698" strokeWidth="2" />
-
-              {/* Area Under Curve Fill */}
-              <path
-                d="M 50 180 Q 120 130 190 150 T 330 120 T 470 70 L 470 210 L 50 210 Z"
-                fill="url(#gradient-chart-fill)"
-                opacity="0.1"
-              />
+              {/* Data Points */}
+              {points.map((p, i) => revenues[i] > 0 && (
+                <g key={i}>
+                  <circle cx={p.x} cy={p.y} r="4" fill="#ffffff" stroke="#009698" strokeWidth="2" />
+                  <title>{chartMonths[i]}: {formatM(revenues[i])}đ</title>
+                </g>
+              ))}
 
               {/* SVG Definitions */}
               <defs>
@@ -173,6 +212,7 @@ export const OverviewTab = ({
               </defs>
             </svg>
           </div>
+
         </div>
 
         {/* COLUMN 2: VEHICLE ALLOCATION (SVG DONUT CHART) */}
@@ -187,41 +227,41 @@ export const OverviewTab = ({
                 {/* Circle Segments */}
                 {/* Total Circumference = 2 * pi * r = 2 * 3.14159 * 50 = 314.15 */}
 
-                {/* Segment 1: Rented (Blue) - 60% = dasharray="188.5 125.6" offset="0" */}
+                {/* Segment 1: Rented */}
                 <circle
                   cx="80" cy="80" r="50"
                   fill="transparent"
                   stroke="#1e3a8a"
                   strokeWidth="14"
-                  strokeDasharray="188.5 125.6"
-                  strokeDashoffset="0"
+                  strokeDasharray={`${strokeRented} ${circ}`}
+                  strokeDashoffset={offsetRented}
                   transform="rotate(-90 80 80)"
                 />
 
-                {/* Segment 2: Ready (Green) - 30% = dasharray="94.2 219.9" offset="-188.5" */}
+                {/* Segment 2: Ready */}
                 <circle
                   cx="80" cy="80" r="50"
                   fill="transparent"
                   stroke="#10b981"
                   strokeWidth="14"
-                  strokeDasharray="94.2 219.9"
-                  strokeDashoffset="-188.5"
+                  strokeDasharray={`${strokeAvailable} ${circ}`}
+                  strokeDashoffset={offsetAvailable}
                   transform="rotate(-90 80 80)"
                 />
 
-                {/* Segment 3: Maintenance (Grey) - 10% = dasharray="31.4 282.7" offset="-282.7" */}
+                {/* Segment 3: Maintenance */}
                 <circle
                   cx="80" cy="80" r="50"
                   fill="transparent"
                   stroke="#94a3b8"
                   strokeWidth="14"
-                  strokeDasharray="31.4 282.7"
-                  strokeDashoffset="-282.7"
+                  strokeDasharray={`${strokeMaintenance} ${circ}`}
+                  strokeDashoffset={offsetMaintenance}
                   transform="rotate(-90 80 80)"
                 />
 
                 {/* Center label */}
-                <text x="80" y="75" className="donut-center-num" textAnchor="middle">{stats.totalCars || 57}</text>
+                <text x="80" y="75" className="donut-center-num" textAnchor="middle">{totalCars}</text>
                 <text x="80" y="93" className="donut-center-lbl" textAnchor="middle">Tổng xe</text>
               </svg>
             </div>
@@ -230,25 +270,25 @@ export const OverviewTab = ({
               <div className="legend-row">
                 <div className="legend-info">
                   <span className="legend-color-indicator bg-blue-dark"></span>
-                  <span className="legend-name">Đang thuê</span>
+                  <span className="legend-name">Đang thuê ({rentedVal})</span>
                 </div>
-                <span className="legend-value-bold">60%</span>
+                <span className="legend-value-bold">{rentedPct}%</span>
               </div>
 
               <div className="legend-row">
                 <div className="legend-info">
                   <span className="legend-color-indicator bg-green-emerald"></span>
-                  <span className="legend-name">Sẵn sàng</span>
+                  <span className="legend-name">Sẵn sàng ({availableVal})</span>
                 </div>
-                <span className="legend-value-bold">30%</span>
+                <span className="legend-value-bold">{availablePct}%</span>
               </div>
 
               <div className="legend-row">
                 <div className="legend-info">
                   <span className="legend-color-indicator bg-slate-grey"></span>
-                  <span className="legend-name">Bảo dưỡng</span>
+                  <span className="legend-name">Bảo dưỡng/Khác ({maintenanceVal})</span>
                 </div>
-                <span className="legend-value-bold">10%</span>
+                <span className="legend-value-bold">{maintenancePct}%</span>
               </div>
             </div>
           </div>

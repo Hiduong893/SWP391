@@ -264,6 +264,11 @@ export const api = {
       request('/admin/stats', {
         method: 'GET'
       }),
+
+    getMonthlyStats: () =>
+      request('/admin/stats/monthly', {
+        method: 'GET'
+      }),
       
     getUsers: () => 
       request('/admin/users', {

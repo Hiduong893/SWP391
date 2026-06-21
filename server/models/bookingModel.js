@@ -2,8 +2,14 @@ import { sql, getPool } from '../config/db.js';
 
 export const mapBookingRow = async (p, row) => {
   const carRes = await p.request().input('vehicleId', sql.Int, row.vehicle_id)
-    .query('SELECT owner_id FROM Vehicle WHERE vehicle_id = @vehicleId');
-  const isOwnerCar = carRes.recordset.length > 0 && carRes.recordset[0].owner_id !== null;
+    .query(`
+      SELECT v.owner_id, r.role_name 
+      FROM Vehicle v 
+      LEFT JOIN UserRole ur ON v.owner_id = ur.user_id
+      LEFT JOIN Role r ON ur.role_id = r.role_id
+      WHERE v.vehicle_id = @vehicleId
+    `);
+  const isOwnerCar = carRes.recordset.length > 0 && carRes.recordset[0].role_name === 'CarOwner';
 
   let mappedStatus = 'pending';
   if (row.status === 'Pending') {
@@ -23,7 +29,8 @@ export const mapBookingRow = async (p, row) => {
   const payRes = await p.request().input('bookingId', sql.Int, row.booking_id)
     .query('SELECT TOP 1 payment_method, status FROM Payment WHERE booking_id = @bookingId ORDER BY created_at DESC');
   const paymentMethod = payRes.recordset.length > 0 ? payRes.recordset[0].payment_method.toLowerCase() : 'bank_transfer';
-  const paymentStatus = payRes.recordset.length > 0 ? payRes.recordset[0].status.toLowerCase() : 'pending';
+  const rawStatus = payRes.recordset.length > 0 ? payRes.recordset[0].status.toLowerCase() : 'pending';
+  const paymentStatus = rawStatus === 'success' ? 'paid' : rawStatus;
 
   return {
     id: String(row.booking_id),
@@ -105,20 +112,28 @@ export const bookingModel = {
     const vehicleId = parseInt(bookingData.carId);
 
     const carRes = await p.request().input('vehicleId', sql.Int, vehicleId)
-      .query('SELECT owner_id FROM Vehicle WHERE vehicle_id = @vehicleId');
-    const isOwnerCar = carRes.recordset.length > 0 && carRes.recordset[0].owner_id !== null;
+      .query(`
+        SELECT v.owner_id, r.role_name 
+        FROM Vehicle v 
+        LEFT JOIN UserRole ur ON v.owner_id = ur.user_id
+        LEFT JOIN Role r ON ur.role_id = r.role_id
+        WHERE v.vehicle_id = @vehicleId
+      `);
+    const isOwnerCar = carRes.recordset.length > 0 && carRes.recordset[0].role_name === 'CarOwner';
 
     const status = isOwnerCar ? 'Pending' : 'Approved';
     const price = parseInt(bookingData.totalPrice);
     const deposit = 5000000;
 
     // Check wallet balance if paymentMethod is wallet
+    // When using wallet: must deduct FULL amount = totalPrice + 5,000,000 deposit
+    const walletTotalAmount = price + deposit; // = totalPrice + 5,000,000
     if (bookingData.paymentMethod === 'wallet') {
       const walletRes = await p.request()
         .input('userId', sql.Int, renterId)
         .query('SELECT balance FROM Wallet WHERE user_id = @userId');
-      if (walletRes.recordset.length === 0 || Number(walletRes.recordset[0].balance) < 500000) {
-        throw new Error('Số dư ví không đủ để thanh toán giữ chỗ (500.000đ).');
+      if (walletRes.recordset.length === 0 || Number(walletRes.recordset[0].balance) < walletTotalAmount) {
+        throw new Error(`Số dư ví không đủ. Cần tối thiểu ${walletTotalAmount.toLocaleString('vi-VN')}đ (tiền thuê + 5.000.000đ cọc).`);
       }
     }
 
@@ -151,14 +166,14 @@ export const bookingModel = {
     // Update car status
     await p.request().input('vehicleId', sql.Int, vehicleId).query('UPDATE Vehicle SET status = \'Rented\' WHERE vehicle_id = @vehicleId');
 
-    // If wallet payment, process wallet transaction (deduct 500,000 VND)
+    // If wallet payment, process wallet transaction (deduct FULL amount: totalPrice + 5,000,000 deposit)
     if (bookingData.paymentMethod === 'wallet') {
       await p.request()
         .input('userId', sql.Int, renterId)
         .input('bookingId', sql.Int, bookingId)
-        .input('amount', sql.Decimal(18, 2), 500000)
+        .input('amount', sql.Decimal(18, 2), walletTotalAmount)
         .input('txnType', sql.NVarChar, 'BookingPayment')
-        .input('description', sql.NVarChar, `Thanh toán phí giữ chỗ cho mã đặt xe #${bookingId}`)
+        .input('description', sql.NVarChar, `Thanh toán tiền thuê + cọc bảo đảm cho đặt xe #${bookingId}`)
         .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
     }
 
@@ -166,7 +181,7 @@ export const bookingModel = {
     const payRequest = p.request()
       .input('bookingId', sql.Int, bookingId)
       .input('payerId', sql.Int, renterId)
-      .input('amount', sql.Decimal(18, 2), bookingData.paymentMethod === 'wallet' ? 500000 : price + deposit)
+      .input('amount', sql.Decimal(18, 2), price + deposit)
       .input('method', sql.NVarChar, bookingData.paymentMethod || 'bank_transfer');
     await payRequest.query(`
       INSERT INTO Payment (booking_id, payer_id, amount, payment_type, payment_method, status, paid_at, created_at)
