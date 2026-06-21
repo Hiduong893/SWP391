@@ -1,6 +1,7 @@
 import express from 'express';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
+import { notificationService } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -48,6 +49,18 @@ router.put('/api/admin/users/:id/kyc', auth, cskhOrAdminAuth, async (req, res) =
         license: status === 'rejected' ? null : user.licenseImage
       }
     });
+
+    // Send KYC notifications
+    await notificationService.createNotification(
+      id,
+      status === 'verified' ? 'Xác thực KYC thành công' : 'Xác thực KYC thất bại',
+      status === 'verified'
+        ? 'Hồ sơ KYC (CCCD & Bằng lái) của bạn đã được xác minh thành công. Bạn đã có thể thuê xe!'
+        : 'Hồ sơ KYC (CCCD & Bằng lái) của bạn đã bị từ chối. Vui lòng cập nhật lại thông tin chính xác.',
+      'KYCResult',
+      null,
+      'KYC'
+    );
 
     res.json({
       message: `Đã phê duyệt trạng thái KYC thành công sang: ${status === 'verified' ? 'Đã xác minh ✓' : 'Từ chối ✕'}`,
@@ -135,6 +148,18 @@ router.post('/api/admin/support/tickets/:id/reply', auth, cskhOrAdminAuth, async
       status: 'replied'
     });
 
+    // Notify Renter
+    if (ticket.userId) {
+      await notificationService.createNotification(
+        ticket.userId,
+        'Phản hồi hỗ trợ mới',
+        `CSKH đã phản hồi yêu cầu hỗ trợ của bạn cho ticket #${id}.`,
+        'TicketUpdate',
+        id,
+        'SupportTicket'
+      );
+    }
+
     const updatedTicket = await db.support_tickets.findOne({ id });
     res.json({
       message: 'Đã gửi câu trả lời phản hồi cho khách hàng!',
@@ -152,6 +177,19 @@ router.put('/api/admin/support/tickets/:id/resolve', auth, cskhOrAdminAuth, asyn
     if (!ticket) return res.status(404).json({ message: 'Ticket hỗ trợ không tồn tại.' });
 
     await db.support_tickets.update(id, { status: 'resolved' });
+
+    // Notify Renter
+    if (ticket.userId) {
+      await notificationService.createNotification(
+        ticket.userId,
+        'Yêu cầu hỗ trợ đã được đóng',
+        `Ticket hỗ trợ #${id} của bạn đã được đánh dấu là Đã giải quyết.`,
+        'TicketUpdate',
+        id,
+        'SupportTicket'
+      );
+    }
+
     res.json({ message: 'Đã đóng ticket hỗ trợ thành công!' });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi đóng ticket hỗ trợ.' });
@@ -301,6 +339,20 @@ router.put('/api/admin/cars/:id/moderation', auth, cskhOrAdminAuth, async (req, 
       status,
       rejectionReason: status === 'rejected' ? rejectionReason : null
     });
+
+    // Notify Owner
+    if (car.ownerId) {
+      await notificationService.createNotification(
+        car.ownerId,
+        status === 'available' ? 'Phương tiện ký gửi đã được duyệt' : 'Phương tiện ký gửi bị từ chối',
+        status === 'available'
+          ? `Xe ${car.brand} ${car.model} của bạn đã được kiểm duyệt và hiển thị trên sàn cho thuê xe.`
+          : `Xe ${car.brand} ${car.model} của bạn đã bị từ chối kiểm duyệt. Lý do: ${rejectionReason || 'Không rõ lý do'}.`,
+        'SystemAlert',
+        id,
+        'Car'
+      );
+    }
 
     res.json({
       message: status === 'available'
