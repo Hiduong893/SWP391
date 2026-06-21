@@ -12,9 +12,9 @@
 }
 
 .btn-refresh {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -26,29 +26,30 @@
 }
 
 .btn-refresh:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--border-color);
+  color: var(--text-primary);
 }
 
 .trips-loading, .trips-empty-state {
   padding: 60px 24px;
-  background: #11131c;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 16px;
-  color: #64748b;
+  color: var(--text-secondary);
   text-align: center;
+  box-shadow: var(--glass-shadow);
 }
 
 .trips-empty-state h3 {
   font-size: 16px;
   font-weight: 700;
-  color: #cbd5e1;
+  color: var(--text-primary);
   margin-top: 12px;
 }
 
 .trips-empty-state p {
   font-size: 12px;
-  color: #475569;
+  color: var(--text-muted);
   margin-top: 4px;
 }
 
@@ -129,7 +130,7 @@
 .trip-model-title {
   font-size: 16px;
   font-weight: 700;
-  color: white;
+  color: var(--text-primary);
 }
 
 /* Status badges */
@@ -190,11 +191,11 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 .trip-meta-item strong {
-  color: #e2e8f0;
+  color: var(--text-primary);
 }
 
 .trip-incident-box {
@@ -212,7 +213,7 @@
 .trip-card-divider {
   border: none;
   height: 1px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--border-color);
   margin: 0 0 14px 0;
 }
 
@@ -314,7 +315,7 @@
   gap: 10px;
   margin-bottom: 12px;
   cursor: pointer;
-  color: #cbd5e1;
+  color: var(--text-secondary);
   font-size: 13.5px;
 }
 
@@ -329,8 +330,8 @@
 }
 
 .upload-placeholder-box {
-  border: 2px dashed rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.01);
+  border: 2px dashed var(--border-color);
+  background: var(--bg-primary);
   border-radius: 12px;
   padding: 24px;
   display: flex;
@@ -338,14 +339,14 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  color: #64748b;
+  color: var(--text-muted);
   transition: all 0.2s;
 }
 
 .upload-placeholder-box:hover {
-  border-color: #6366f1;
-  color: #e2e8f0;
-  background: rgba(99, 102, 241, 0.02);
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
 }
 
 .uploaded-preview-incident {
@@ -353,7 +354,7 @@
   max-height: 200px;
   object-fit: contain;
   border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid var(--border-color);
 }
 
 .btn-remove-pic {

@@ -295,7 +295,7 @@
 }
 
 /* --- PREMIUM WALLET & BANK LINK STYLES --- */
-.wallet-card-premium {
+.glass-card.wallet-card-premium {
   position: relative;
   background: linear-gradient(135deg, #009698 0%, #03686a 100%) !important;
   border: none !important;
