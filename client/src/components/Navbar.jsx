@@ -181,7 +181,7 @@ const injectNavbarStyles = () => {
       font-size: 24px;
       font-weight: 800;
       letter-spacing: -0.5px;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
     }
 
     .brand-dark {
@@ -202,7 +202,7 @@ const injectNavbarStyles = () => {
       background: none;
       border: none;
       color: #334155;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 15px;
       font-weight: 500;
       cursor: pointer;
@@ -288,7 +288,7 @@ const injectNavbarStyles = () => {
       background: none;
       border: 1px solid #f1f5f9;
       color: #64748b;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
@@ -316,7 +316,7 @@ const injectNavbarStyles = () => {
       background: none;
       border: none;
       color: #334155;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
@@ -332,7 +332,7 @@ const injectNavbarStyles = () => {
       background: #009698;
       border: none;
       color: #ffffff;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
