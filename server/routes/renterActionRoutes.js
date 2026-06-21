@@ -88,9 +88,11 @@ definePost('/api/bookings/:id/reviews', '/api/renter/bookings/:id/trip-review', 
   try {
     const { id } = req.params;
     const { rating, comment } = req.body;
+    const numericRating = Number(rating);
+    const normalizedComment = String(comment || '').trim();
 
-    if (!rating) return res.status(400).json({ message: 'Vui lòng chấm điểm sao đánh giá.' });
-    if (!comment) return res.status(400).json({ message: 'Vui lòng nhập nhận xét chi tiết.' });
+    if (!Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) return res.status(400).json({ message: 'Vui lòng chấm điểm từ 1 đến 5 sao.' });
+    if (!normalizedComment) return res.status(400).json({ message: 'Vui lòng nhập nhận xét chi tiết.' });
 
     const booking = await db.bookings.findOne({ id });
     if (!booking || booking.userId !== String(req.user.id)) {
@@ -101,7 +103,7 @@ definePost('/api/bookings/:id/reviews', '/api/renter/bookings/:id/trip-review', 
       return res.status(400).json({ message: 'Chỉ có thể đánh giá sau khi chuyến đi đã hoàn thành và trả xe thành công.' });
     }
 
-    const existing = await db.reviews.findMany({ bookingId: id });
+    const existing = await db.reviews.findMany({ bookingId: id, userId: req.user.id });
     if (existing && existing.length > 0) {
       return res.status(409).json({ message: 'Bạn đã gửi đánh giá cho chuyến đi này rồi.' });
     }
@@ -110,8 +112,8 @@ definePost('/api/bookings/:id/reviews', '/api/renter/bookings/:id/trip-review', 
       bookingId: id,
       carId: booking.carId,
       userId: req.user.id,
-      rating,
-      comment
+      rating: numericRating,
+      comment: normalizedComment
     });
 
     res.status(201).json({
