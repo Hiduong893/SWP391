@@ -274,7 +274,7 @@ function App() {
       )}
 
       {/* --- AI SUPPORT CHATBOT WIDGET --- */}
-      <ChatbotWidget user={user} />
+      <ChatbotWidget user={user} setCurrentTab={setCurrentTab} />
     </>
   );
 }

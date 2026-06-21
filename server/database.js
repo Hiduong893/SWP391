@@ -334,6 +334,12 @@ const getPool = async () => {
             ALTER TABLE [User] ADD bio NVARCHAR(MAX) NULL;
         END
 
+        -- Add kyc_rejection_reason if missing in User
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('[User]') AND name = 'kyc_rejection_reason')
+        BEGIN
+            ALTER TABLE [User] ADD kyc_rejection_reason NVARCHAR(MAX) NULL;
+        END
+
         -- Add transmission and fuel if missing in Vehicle
         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Vehicle') AND name = 'transmission')
         BEGIN

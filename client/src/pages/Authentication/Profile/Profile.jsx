@@ -167,7 +167,7 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
     }
   };
 
-  // CCCD & Bằng lái upload KYC (UC04)
+  // CCCD & Bằng lái upload KYC (UC04 - Enhanced with AI Verification)
   const handleKycUpload = async (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -177,20 +177,27 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
       return;
     }
 
-    if (type === 'cccd') setCccdUploading(true);
+    if (type === 'cccd' || type === 'cccdBack') setCccdUploading(true);
     else setLicenseUploading(true);
 
     const reader = new FileReader();
     reader.onloadend = async () => {
       try {
         const base64Data = reader.result;
-        let payload = {};
-        if (type === 'cccd') payload.cccdImage = base64Data;
-        else payload.licenseImage = base64Data;
+        let cccdFront = type === 'cccd' ? base64Data : null;
+        let cccdBack = type === 'cccdBack' ? base64Data : null;
+        let license = type === 'license' ? base64Data : null;
 
-        const data = await api.user.uploadKyc(payload.cccdImage, payload.licenseImage, null);
+        showToast('AI đang quét và đối chiếu dữ liệu hình ảnh giấy tờ...', 'info');
+
+        const data = await api.user.uploadKyc(cccdFront, license, null, cccdBack);
         onUpdateUser(data.user);
-        showToast(data.message, 'success');
+        
+        if (data.user.licenseStatus === 'rejected') {
+          showToast(data.message, 'error');
+        } else {
+          showToast(data.message, 'success');
+        }
       } catch (error) {
         showToast(error.message || 'Lỗi tải ảnh KYC.', 'error');
       } finally {
@@ -385,52 +392,91 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
             <div className="kyc-verifications-card-box mt-4">
               <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <ShieldCheck size={16} />
-                <span>Hồ Sơ Xác Minh KYC Danh Tính (UC04)</span>
+                <span>Hồ Sơ Xác Minh KYC Bằng AI (UC04)</span>
               </h4>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                {/* 1. CCCD */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                {/* 1. CCCD Mặt Trước */}
                 <div className="kyc-item-box">
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>CĂN CƯỚC CÔNG DÂN (CCCD)</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>CCCD MẶT TRƯỚC</span>
                   {user.kycDocuments?.cccd ? (
                     <div style={{ marginTop: 4 }}>
-                      <span className="badge-verified" style={{ fontSize: '10px' }}>Đã Tải Lên ✓</span>
-                      <button type="button" onClick={() => setPreviewImage({ src: user.kycDocuments.cccd, title: 'Mặt trước Căn cước công dân (CCCD)' })} style={{ display: 'block', background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh CCCD</button>
+                      <span className={`badge-verified ${user.licenseStatus === 'rejected' ? 'badge-rejected-style' : ''}`} style={{ fontSize: '10px', background: user.licenseStatus === 'rejected' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: user.licenseStatus === 'rejected' ? '#ef4444' : '#059669' }}>
+                        {user.licenseStatus === 'rejected' ? 'Từ chối ✗' : 'Đã tải lên ✓'}
+                      </span>
+                      <button type="button" onClick={() => setPreviewImage({ src: user.kycDocuments.cccd, title: 'Mặt trước Căn cước công dân (CCCD)' })} style={{ display: 'block', background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh</button>
                     </div>
                   ) : (
                     <div style={{ marginTop: 6 }}>
                       <label className="upload-license-inline-btn" style={{ cursor: 'pointer', fontSize: '10.5px', color: 'var(--accent-primary)', fontWeight: 600, display: 'inline-flex', gap: 4, alignItems: 'center' }}>
                         <Upload size={11} />
-                        <span>{cccdUploading ? 'Đang tải...' : 'Tải ảnh CCCD'}</span>
+                        <span>{cccdUploading ? 'Đang tải...' : 'Tải mặt trước'}</span>
                         <input type="file" onChange={(e) => handleKycUpload(e, 'cccd')} accept="image/*" style={{ display: 'none' }} disabled={cccdUploading} />
                       </label>
                     </div>
                   )}
                 </div>
 
-                {/* 2. Bằng lái */}
+                {/* 2. CCCD Mặt Sau */}
                 <div className="kyc-item-box">
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>BẰNG LÁI XE HẠNG B1/B2</span>
-                  {user.licenseStatus === 'verified' ? (
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>CCCD MẶT SAU</span>
+                  {user.kycDocuments?.cccdBack ? (
                     <div style={{ marginTop: 4 }}>
-                      <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}>Verified ✓</span>
-                      {user.licenseImage && <button type="button" onClick={() => setPreviewImage({ src: user.licenseImage, title: 'Bằng lái xe B1/B2' })} style={{ display: 'block', background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh Bằng lái</button>}
-                    </div>
-                  ) : user.licenseStatus === 'pending' ? (
-                    <div style={{ marginTop: 4 }}>
-                      <span className="badge-pending" style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Đang chờ duyệt</span>
+                      <span className={`badge-verified ${user.licenseStatus === 'rejected' ? 'badge-rejected-style' : ''}`} style={{ fontSize: '10px', background: user.licenseStatus === 'rejected' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: user.licenseStatus === 'rejected' ? '#ef4444' : '#059669' }}>
+                        {user.licenseStatus === 'rejected' ? 'Từ chối ✗' : 'Đã tải lên ✓'}
+                      </span>
+                      <button type="button" onClick={() => setPreviewImage({ src: user.kycDocuments.cccdBack, title: 'Mặt sau Căn cước công dân (CCCD)' })} style={{ display: 'block', background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh</button>
                     </div>
                   ) : (
                     <div style={{ marginTop: 6 }}>
                       <label className="upload-license-inline-btn" style={{ cursor: 'pointer', fontSize: '10.5px', color: 'var(--accent-primary)', fontWeight: 600, display: 'inline-flex', gap: 4, alignItems: 'center' }}>
                         <Upload size={11} />
-                        <span>{licenseUploading ? 'Đang tải...' : 'Tải bằng lái xe'}</span>
+                        <span>{cccdUploading ? 'Đang tải...' : 'Tải mặt sau'}</span>
+                        <input type="file" onChange={(e) => handleKycUpload(e, 'cccdBack')} accept="image/*" style={{ display: 'none' }} disabled={cccdUploading} />
+                      </label>
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Bằng lái */}
+                <div className="kyc-item-box">
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>BẰNG LÁI B1/B2/C</span>
+                  {user.licenseStatus === 'verified' ? (
+                    <div style={{ marginTop: 4 }}>
+                      <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}>Đã duyệt ✓</span>
+                      {user.licenseImage && <button type="button" onClick={() => setPreviewImage({ src: user.licenseImage, title: 'Bằng lái xe B1/B2/C' })} style={{ display: 'block', background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh</button>}
+                    </div>
+                  ) : user.licenseStatus === 'pending' ? (
+                    <div style={{ marginTop: 4 }}>
+                      <span className="badge-pending" style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Chờ duyệt</span>
+                    </div>
+                  ) : user.licenseStatus === 'rejected' ? (
+                    <div style={{ marginTop: 4 }}>
+                      <span className="badge-rejected" style={{ fontSize: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Từ chối ✗</span>
+                      {user.licenseImage && <button type="button" onClick={() => setPreviewImage({ src: user.licenseImage, title: 'Bằng lái xe B1/B2/C' })} style={{ display: 'block', background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh</button>}
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 6 }}>
+                      <label className="upload-license-inline-btn" style={{ cursor: 'pointer', fontSize: '10.5px', color: 'var(--accent-primary)', fontWeight: 600, display: 'inline-flex', gap: 4, alignItems: 'center' }}>
+                        <Upload size={11} />
+                        <span>{licenseUploading ? 'Đang tải...' : 'Tải bằng lái'}</span>
                         <input type="file" onChange={(e) => handleKycUpload(e, 'license')} accept="image/*" style={{ display: 'none' }} disabled={licenseUploading} />
                       </label>
                     </div>
                   )}
                 </div>
               </div>
+
+              {/* ⚠️ AI REJECTION FEEDBACK ALERT */}
+              {user.kycRejectionReason && (
+                <div style={{ background: 'rgba(239, 68, 68, 0.08)', color: '#fda4af', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '12px 16px', borderRadius: '10px', fontSize: '12.5px', marginTop: 14, display: 'flex', flexDirection: 'column', gap: 4, lineHeight: 1.4 }}>
+                  <span style={{ fontWeight: 700, color: '#f87171', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <ShieldAlert size={14} />
+                    <span>AI Từ chối Xác minh KYC tự động:</span>
+                  </span>
+                  <span>{user.kycRejectionReason}</span>
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: 12 }} className="mt-6">
