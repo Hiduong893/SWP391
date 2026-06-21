@@ -39,3 +39,4 @@ server/update-*.js
 server/*.txt
 server/db.json.backup
 
+server/.env
