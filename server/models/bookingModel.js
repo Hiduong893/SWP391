@@ -281,9 +281,18 @@ export const bookingModel = {
       updates.push('payment_status = @depositStatus');
       request.input('depositStatus', sql.NVarChar, dbDepositStatus);
 
+      let paymentStatusVal = 'Success';
+      if (dbDepositStatus === 'Refunded') {
+        paymentStatusVal = 'Refunded';
+      } else if (dbDepositStatus === 'Failed') {
+        paymentStatusVal = 'Failed';
+      } else if (dbDepositStatus === 'Pending') {
+        paymentStatusVal = 'Pending';
+      }
+
       await p.request()
         .input('bookingId', sql.Int, bookingId)
-        .input('paymentStatus', sql.NVarChar, dbDepositStatus === 'Paid' ? 'Success' : dbDepositStatus)
+        .input('paymentStatus', sql.NVarChar, paymentStatusVal)
         .query('UPDATE Payment SET status = @paymentStatus WHERE booking_id = @bookingId');
     }
 
