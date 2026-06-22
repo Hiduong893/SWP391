@@ -2,6 +2,7 @@ import express from 'express';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
 import { notificationService } from '../services/notificationService.js';
+import { sql, getPool } from '../config/db.js';
 
 const router = express.Router();
 
@@ -272,12 +273,30 @@ router.put('/api/admin/bookings/:id/refund-deposit', auth, cskhOrAdminAuth, asyn
     const booking = await db.bookings.findOne({ id });
     if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
 
+    if (booking.depositStatus === 'refunded') {
+      return res.status(400).json({ message: 'Tiền cọc này đã được hoàn trả rồi.' });
+    }
+
     await db.bookings.update(id, { depositStatus: status });
 
     if (status === 'refunded') {
-      const user = await db.users.findOne({ id: booking.userId });
-      await db.users.update(user.id, { walletBalance: (user.walletBalance || 0) + 5000000 });
+      // Cộng 5.000.000đ tiền cọc vào ví người dùng qua stored procedure (an toàn, atomic)
+      const p = await getPool();
+      const refundAmount = 5000000;
+      const userId = parseInt(booking.userId);
+      const bookingIdInt = parseInt(id);
+
+      await p.request()
+        .input('userId', sql.Int, userId)
+        .input('bookingId', sql.Int, bookingIdInt)
+        .input('amount', sql.Decimal(18, 2), refundAmount)
+        .input('txnType', sql.NVarChar, 'DepositRefund')
+        .input('description', sql.NVarChar, `Hoàn trả tiền cọc bảo đảm cho đặt xe #${id}`)
+        .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+
+      console.log(`Deposit refunded: ${refundAmount} VND to userId=${userId} for bookingId=${id}`);
     }
+
 
     res.json({
       message: status === 'refunded'
@@ -285,6 +304,7 @@ router.put('/api/admin/bookings/:id/refund-deposit', auth, cskhOrAdminAuth, asyn
         : 'Đã giữ lại tiền đặt cọc do phát sinh các thiệt hại vật chất đối với xe.'
     });
   } catch (error) {
+    console.error('Lỗi hoàn cọc:', error);
     res.status(500).json({ message: 'Lỗi xử lý tiền cọc.' });
   }
 });
@@ -398,16 +418,57 @@ router.get('/api/admin/stats', auth, cskhOrAdminAuth, async (req, res) => {
     const confirmedBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'completed' || b.status === 'active');
     const totalRevenue = confirmedBookings.reduce((sum, b) => sum + b.totalPrice, 0);
 
+    const rentedCount = cars.filter(c => c.status === 'rented').length;
+    const availableCount = cars.filter(c => c.status === 'available').length;
+    const maintenanceCount = cars.filter(c => c.status === 'maintenance' || c.status === 'inactive').length;
+    const pendingCount = cars.filter(c => c.status === 'pending_moderation').length;
+    const rejectedCount = cars.filter(c => c.status === 'rejected').length;
+
     res.json({
       stats: {
         totalUsers: users.length,
         totalCars: cars.length,
         totalBookings: bookings.length,
-        totalRevenue
+        totalRevenue,
+        rentedCars: rentedCount,
+        availableCars: availableCount,
+        maintenanceCars: maintenanceCount,
+        pendingCars: pendingCount,
+        rejectedCars: rejectedCount
       }
     });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi lấy số liệu thống kê.' });
+  }
+});
+
+// Thống kê doanh thu theo tháng (cho chart)
+router.get('/api/admin/stats/monthly', auth, cskhOrAdminAuth, async (req, res) => {
+  try {
+    const p = await getPool();
+    const result = await p.request().query(`
+      SELECT 
+        MONTH(b.created_at) as month,
+        ISNULL(SUM(b.rental_price), 0) as revenue,
+        COUNT(*) as bookings
+      FROM Booking b
+      WHERE b.status IN ('Approved', 'Active', 'Completed')
+        AND YEAR(b.created_at) = YEAR(GETDATE())
+      GROUP BY MONTH(b.created_at)
+      ORDER BY month ASC
+    `);
+    // Build full 12-month array with 0 for months with no data
+    const monthMap = {};
+    result.recordset.forEach(r => { monthMap[r.month] = { revenue: Number(r.revenue), bookings: r.bookings }; });
+    const monthlyStats = Array.from({ length: 12 }, (_, i) => ({
+      month: i + 1,
+      revenue: monthMap[i + 1]?.revenue || 0,
+      bookings: monthMap[i + 1]?.bookings || 0
+    }));
+    res.json({ monthlyStats });
+  } catch (error) {
+    console.error('Monthly stats error:', error);
+    res.status(500).json({ message: 'Lỗi lấy thống kê tháng.' });
   }
 });
 
