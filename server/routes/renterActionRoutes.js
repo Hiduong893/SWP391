@@ -77,15 +77,15 @@ definePut('/api/bookings/:id/cancel', '/api/renter/bookings/:id/cancel-with-refu
   }
 });
 
-// 3. Submit Incident Report
+  // 3. Submit Incident Report
 definePost('/api/bookings/:id/incident', '/api/renter/bookings/:id/emergency-report', async (req, res) => {
   try {
     const { id } = req.params;
-    const { description, image } = req.body;
+    const { description, image, incidentType, location: incidentLocation } = req.body;
 
     if (!description) return res.status(400).json({ message: 'Vui lòng cung cấp mô tả chi tiết sự cố phát sinh.' });
 
-    await renterActionService.reportIncident(id, req.user.id, description, image);
+    await renterActionService.reportIncident(id, req.user.id, description, image, incidentType, incidentLocation);
 
     // Send notifications
     const booking = await db.bookings.findOne({ id });
@@ -110,7 +110,6 @@ definePost('/api/bookings/:id/incident', '/api/renter/bookings/:id/emergency-rep
         'Booking'
       );
     }
-
     res.json({
       message: 'Báo cáo sự cố đã được gửi khẩn cấp đến đội ngũ CSKH. Chúng tôi sẽ liên hệ hỗ trợ bạn ngay lập tức.',
       supportHotline: '1900.8888'

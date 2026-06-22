@@ -251,7 +251,10 @@ export const userModel = {
     if (updateData.walletBalance !== undefined) {
       walletUpdates.push('balance = @balance');
       walletRequest.input('balance', sql.Decimal(18, 2), updateData.walletBalance);
+    } else {
+      walletRequest.input('balance', sql.Decimal(18, 2), null);
     }
+
     if (updateData.bankAccount !== undefined) {
       if (updateData.bankAccount) {
         walletUpdates.push('bank_name = @bankName, bank_account_number = @bankAccountNo, is_bank_verified = 1');
@@ -259,7 +262,12 @@ export const userModel = {
         walletRequest.input('bankAccountNo', sql.VarChar, updateData.bankAccount.accountNumber);
       } else {
         walletUpdates.push('bank_name = NULL, bank_account_number = NULL, is_bank_verified = 0');
+        walletRequest.input('bankName', sql.NVarChar, null);
+        walletRequest.input('bankAccountNo', sql.VarChar, null);
       }
+    } else {
+      walletRequest.input('bankName', sql.NVarChar, null);
+      walletRequest.input('bankAccountNo', sql.VarChar, null);
     }
 
     if (walletUpdates.length > 0) {

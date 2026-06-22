@@ -159,7 +159,7 @@ export const renterActionService = {
     }
   },
 
-  reportIncident: async (bookingId, reporterId, description, imageUrl) => {
+  reportIncident: async (bookingId, reporterId, description, imageUrl, incidentType = 'Other', incidentLocation = null) => {
     const p = await getPool();
     // 1. Find the booking
     const bookingRes = await p.request()
@@ -170,6 +170,13 @@ export const renterActionService = {
     if (bookingRes.recordset.length === 0) {
       throw new Error('Không tìm thấy chuyến đi tương ứng.');
     }
+
+    // Map frontend incidentType values to DB-compatible values
+    const incidentTypeMap = {
+      accident: 'Accident', breakdown: 'Breakdown', flat_tire: 'FlatTire',
+      theft: 'Theft', fuel_issue: 'FuelIssue', medical: 'Medical', other: 'Other'
+    };
+    const dbIncidentType = incidentTypeMap[incidentType?.toLowerCase()] || 'Other';
 
     // 2. Start SQL Transaction
     const transaction = new sql.Transaction(p);
@@ -182,7 +189,7 @@ export const renterActionService = {
         .input('reporterId', sql.Int, reporterId)
         .input('title', sql.NVarChar, 'Sự cố chuyến đi')
         .input('description', sql.NVarChar, description)
-        .input('incidentType', sql.NVarChar, 'Other')
+        .input('incidentType', sql.NVarChar, dbIncidentType)
         .input('severity', sql.NVarChar, 'Medium')
         .input('status', sql.NVarChar, 'Open');
       
@@ -207,6 +214,8 @@ export const renterActionService = {
       // Update Booking issue_report JSON column for admin dashboard view compatibility
       const issueReport = {
         description,
+        incidentType: dbIncidentType,
+        location: incidentLocation || null,
         image: imageUrl || null,
         reportedAt: new Date().toISOString(),
         status: 'pending'
@@ -224,3 +233,4 @@ export const renterActionService = {
     }
   }
 };
+
