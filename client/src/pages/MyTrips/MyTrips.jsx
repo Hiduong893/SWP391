@@ -394,7 +394,7 @@ export const MyTrips = () => {
           <div>
             <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '16px' }}>
               <MessageSquare className="text-primary animate-bounce" size={20} />
-              <span>Hỗ Trợ Trực Tuyến &amp; Hotline CSKH (UC07)</span>
+              <span>Hỗ Trợ Trực Tuyến &amp; Hotline CSKH</span>
             </h3>
             <p style={{ fontSize: '12.5px', color: '#94a3b8', marginTop: 4 }}>
               Gửi tin nhắn yêu cầu hỗ trợ hoặc gọi điện trực tiếp đến hotline 1900.8888 để được cứu hộ khẩn cấp 24/7.

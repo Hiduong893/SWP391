@@ -502,7 +502,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
         {/* Lớp phủ tối giúp chữ dễ đọc hơn */}
         <div className="hero-overlay"></div>
         <div className="hero-content">
-          <span className="hero-badge">🚗 NỀN TẢNG THUÊ XE TỰ LÁI & KÝ GỬI THẾ HỆ MỚI</span>
+          {/* <span className="hero-badge">🚗 NỀN TẢNG THUÊ XE TỰ LÁI & KÝ GỬI THẾ HỆ MỚI</span> */}
           <h1 className="hero-title">Thuê xe tự lái ngắn hạn & ký gửi xe</h1>
           <p className="hero-subtitle">
             Trải nghiệm dịch vụ chia sẻ ô tô công nghệ hàng đầu Việt Nam. Thủ tục đơn giản, xe đời mới sạch sẽ, bảo hiểm chuyến đi trọn gói.

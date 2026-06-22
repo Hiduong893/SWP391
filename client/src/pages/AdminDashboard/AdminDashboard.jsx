@@ -140,6 +140,16 @@ export const AdminDashboard = ({ setCurrentTab }) => {
     fetchDashboardData();
   }, []);
 
+  // Reset chat reply inputs when switching between tickets
+  useEffect(() => {
+    setReplyText('');
+  }, [selectedTicket]);
+
+  // Reset dispute resolution text when switching between disputes
+  useEffect(() => {
+    setDisputeVerdict('');
+  }, [selectedDispute]);
+
   // 1. Duyệt KYC (UC31)
   const handleApproveKyc = async (userId, approve) => {
     setActionLoading(true);
