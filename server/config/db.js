@@ -69,6 +69,10 @@ export const getPool = async () => {
         BEGIN
             ALTER TABLE Booking ADD issue_report NVARCHAR(MAX) NULL;
         END
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Booking') AND name = 'payment_status')
+        BEGIN
+            ALTER TABLE Booking ADD payment_status NVARCHAR(50) NULL;
+        END
 
         -- Create simulated Emails table if missing for the Inbox view
         IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Emails')
