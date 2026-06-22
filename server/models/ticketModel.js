@@ -43,6 +43,11 @@ export const mapTicketRow = async (p, row) => {
     else if (roleName === 'CarOwner') userRole = 'owner';
   }
 
+  let mappedStatus = row.status.toLowerCase();
+  if (mappedStatus === 'inprogress') {
+    mappedStatus = 'replied';
+  }
+
   return {
     id: String(row.ticket_id),
     userId: String(row.user_id),
@@ -50,7 +55,7 @@ export const mapTicketRow = async (p, row) => {
     userRole,
     subject: row.subject,
     message: firstMsg.message,
-    status: row.status.toLowerCase(),
+    status: mappedStatus,
     replies,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString()
   };
@@ -129,9 +134,16 @@ export const ticketModel = {
     const ticketId = parseInt(id);
 
     if (updateData.status !== undefined) {
+      let dbStatus = updateData.status;
+      const lower = dbStatus.toLowerCase();
+      if (lower === 'open') dbStatus = 'Open';
+      else if (lower === 'inprogress' || lower === 'replied') dbStatus = 'InProgress';
+      else if (lower === 'resolved') dbStatus = 'Resolved';
+      else if (lower === 'closed') dbStatus = 'Closed';
+
       await p.request()
         .input('ticketId', sql.Int, ticketId)
-        .input('status', sql.NVarChar, updateData.status)
+        .input('status', sql.NVarChar, dbStatus)
         .query('UPDATE SupportTicket SET status = @status, updated_at = GETDATE() WHERE ticket_id = @ticketId');
     }
 
