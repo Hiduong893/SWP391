@@ -39,6 +39,7 @@ export const AdminDashboard = ({ setCurrentTab }) => {
   const [ticketsList, setTicketsList] = useState([]);
   const [incidentsList, setIncidentsList] = useState([]);
   const [disputesList, setDisputesList] = useState([]);
+  const [monthlyStats, setMonthlyStats] = useState([]);
 
   // Settings Config State (UC29)
   const [serviceFee, setServiceFee] = useState(5);
@@ -126,6 +127,14 @@ export const AdminDashboard = ({ setCurrentTab }) => {
       setBankName(config.bankName || 'ViVuCar Bank');
       setBankAccountNumber(config.bankAccountNumber || '1900533588');
       setBankAccountHolder(config.bankAccountHolder || 'VIVUCAR SYSTEM');
+
+      // 11. Monthly Revenue Stats (for chart)
+      try {
+        const monthly = await api.admin.getMonthlyStats();
+        setMonthlyStats(monthly.monthlyStats || []);
+      } catch (e) {
+        console.warn('Monthly stats unavailable:', e.message);
+      }
 
     } catch (error) {
       console.error('Fetch command center error:', error);
@@ -588,6 +597,7 @@ export const AdminDashboard = ({ setCurrentTab }) => {
             <OverviewTab
               stats={stats}
               usersList={usersList}
+              monthlyStats={monthlyStats}
               handleUpdateUserRole={handleUpdateUserRole}
               handleApproveKyc={handleApproveKyc}
               actionLoading={actionLoading}
