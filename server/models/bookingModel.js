@@ -30,7 +30,11 @@ export const mapBookingRow = async (p, row) => {
     .query('SELECT TOP 1 payment_method, status FROM Payment WHERE booking_id = @bookingId ORDER BY created_at DESC');
   const paymentMethod = payRes.recordset.length > 0 ? payRes.recordset[0].payment_method.toLowerCase() : 'bank_transfer';
   const rawStatus = payRes.recordset.length > 0 ? payRes.recordset[0].status.toLowerCase() : 'pending';
-  const paymentStatus = rawStatus === 'success' ? 'paid' : rawStatus;
+  
+  let paymentStatus = rawStatus === 'success' ? 'paid' : rawStatus;
+  if (row.payment_status) {
+    paymentStatus = row.payment_status.toLowerCase();
+  }
 
   return {
     id: String(row.booking_id),
