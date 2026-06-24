@@ -181,7 +181,7 @@ function App() {
           <p style={{ marginTop: 16, color: '#94a3b8', fontSize: '15px' }}>Đang tải ứng dụng...</p>
         </div>
       ) : (
-        <div className="app-container">
+        <div className={`app-container ${currentTab === 'rent-car' ? 'rent-car-layout' : ''}`}>
           <main className="main-content">
             {/* Core Marketplace Tab */}
             {currentTab === 'rent-car' && (
