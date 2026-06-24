@@ -70,8 +70,9 @@ export const renterActionService = {
       .input('bookingId', sql.Int, bookingId)
       .input('userId', sql.Int, userId)
       .query(`
-        SELECT b.booking_id, b.status, b.start_datetime, b.vehicle_id, 
-               ISNULL((SELECT TOP 1 status FROM Payment WHERE booking_id = b.booking_id ORDER BY created_at DESC), 'Pending') as payment_status 
+        SELECT b.booking_id, b.status, b.start_datetime, b.vehicle_id, b.rental_price, b.deposit_amount,
+               ISNULL((SELECT TOP 1 status FROM Payment WHERE booking_id = b.booking_id ORDER BY created_at DESC), 'Pending') as payment_status,
+               (SELECT TOP 1 payment_method FROM Payment WHERE booking_id = b.booking_id ORDER BY created_at DESC) as payment_method
         FROM Booking b 
         WHERE b.booking_id = @bookingId AND b.renter_id = @userId
       `);
@@ -133,15 +134,34 @@ export const renterActionService = {
 
       const isPaid = paymentStatusStr && 
         (paymentStatusStr.toLowerCase() === 'paid' || paymentStatusStr.toLowerCase() === 'success');
-      if (isPaid && refundAmount > 0) {
-        // Refund fee to renter's wallet
-        await new sql.Request(transaction)
-          .input('userId', sql.Int, userId)
-          .input('bookingId', sql.Int, bookingId)
-          .input('amount', sql.Decimal(18, 2), refundAmount)
-          .input('txnType', sql.NVarChar, 'Refund')
-          .input('description', sql.NVarChar, `Hoàn trả phí giữ chỗ (${refundPercent}%) cho đơn thuê xe #${bookingId} do hủy chuyến.`)
-          .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+      
+      if (isPaid) {
+        if (booking.payment_method === 'wallet') {
+          // Renter paid FULL (rental_price + deposit_amount)
+          // Refund: deposit_amount + (rental_price - 500k) + refundAmount
+          const rentalPriceVal = Number(booking.rental_price);
+          const depositVal = Number(booking.deposit_amount);
+          const walletRefund = depositVal + Math.max(0, rentalPriceVal - 500000) + refundAmount;
+          
+          if (walletRefund > 0) {
+            await new sql.Request(transaction)
+              .input('userId', sql.Int, userId)
+              .input('bookingId', sql.Int, bookingId)
+              .input('amount', sql.Decimal(18, 2), walletRefund)
+              .input('txnType', sql.NVarChar, 'Refund')
+              .input('description', sql.NVarChar, `Hoàn trả tiền thuê & cọc giữ xe cho đơn đặt xe #${bookingId} do hủy chuyến (Hoàn cọc ${depositVal.toLocaleString('vi-VN')}đ + hoàn phí thuê xe theo chính sách).`)
+              .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+          }
+        } else if (refundAmount > 0) {
+          // Paid via VNPAY or other offline methods
+          await new sql.Request(transaction)
+            .input('userId', sql.Int, userId)
+            .input('bookingId', sql.Int, bookingId)
+            .input('amount', sql.Decimal(18, 2), refundAmount)
+            .input('txnType', sql.NVarChar, 'Refund')
+            .input('description', sql.NVarChar, `Hoàn trả phí giữ chỗ (${refundPercent}%) cho đơn thuê xe #${bookingId} do hủy chuyến.`)
+            .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+        }
       }
 
       await transaction.commit();

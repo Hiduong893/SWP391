@@ -30,7 +30,11 @@ export const mapBookingRow = async (p, row) => {
     .query('SELECT TOP 1 payment_method, status FROM Payment WHERE booking_id = @bookingId ORDER BY created_at DESC');
   const paymentMethod = payRes.recordset.length > 0 ? payRes.recordset[0].payment_method.toLowerCase() : 'bank_transfer';
   const rawStatus = payRes.recordset.length > 0 ? payRes.recordset[0].status.toLowerCase() : 'pending';
-  const paymentStatus = rawStatus === 'success' ? 'paid' : rawStatus;
+  
+  let paymentStatus = rawStatus === 'success' ? 'paid' : rawStatus;
+  if (row.payment_status) {
+    paymentStatus = row.payment_status.toLowerCase();
+  }
 
   return {
     id: String(row.booking_id),
@@ -178,14 +182,19 @@ export const bookingModel = {
     }
 
     // Create Payment row
+    const initialStatus = bookingData.paymentMethod === 'vnpay' ? 'Pending' : 'Success';
+    const hasPaidAt = bookingData.paymentMethod === 'vnpay' ? null : new Date();
+
     const payRequest = p.request()
       .input('bookingId', sql.Int, bookingId)
       .input('payerId', sql.Int, renterId)
       .input('amount', sql.Decimal(18, 2), price + deposit)
-      .input('method', sql.NVarChar, bookingData.paymentMethod || 'bank_transfer');
+      .input('method', sql.NVarChar, bookingData.paymentMethod || 'bank_transfer')
+      .input('status', sql.NVarChar, initialStatus)
+      .input('paidAt', sql.DateTime2, hasPaidAt);
     await payRequest.query(`
       INSERT INTO Payment (booking_id, payer_id, amount, payment_type, payment_method, status, paid_at, created_at)
-      VALUES (@bookingId, @payerId, @amount, 'RentalFee', @method, 'Success', GETDATE(), GETDATE());
+      VALUES (@bookingId, @payerId, @amount, 'RentalFee', @method, @status, @paidAt, GETDATE());
     `);
 
     return await bookingModel.findOne({ id: String(bookingId) });
@@ -208,6 +217,44 @@ export const bookingModel = {
         'rejected': 'Rejected'
       };
       const dbStatus = dbStatusMap[updateData.status] || updateData.status;
+
+      if (dbStatus === 'Completed') {
+        const currentRes = await p.request().input('bookingId', sql.Int, bookingId)
+          .query('SELECT status, vehicle_id, rental_price FROM Booking WHERE booking_id = @bookingId');
+        if (currentRes.recordset.length > 0) {
+          const current = currentRes.recordset[0];
+          if (current.status !== 'Completed') {
+            const configRes = await p.request().query("SELECT config_value FROM SystemConfig WHERE config_key = 'PLATFORM_FEE_PERCENT'");
+            const serviceFeePercent = configRes.recordset.length > 0 ? parseInt(configRes.recordset[0].config_value) : 5;
+            
+            const rentalPrice = Number(current.rental_price);
+            const platformFee = Math.floor(rentalPrice * (serviceFeePercent / 100));
+            const ownerIncome = rentalPrice - platformFee;
+
+            const carRes = await p.request().input('vehicleId', sql.Int, current.vehicle_id)
+              .query('SELECT owner_id FROM Vehicle WHERE vehicle_id = @vehicleId');
+            const ownerId = carRes.recordset.length > 0 ? carRes.recordset[0].owner_id : null;
+
+            if (ownerId) {
+              await p.request()
+                .input('userId', sql.Int, ownerId)
+                .input('bookingId', sql.Int, bookingId)
+                .input('amount', sql.Decimal(18, 2), ownerIncome)
+                .input('txnType', sql.NVarChar, 'Income')
+                .input('description', sql.NVarChar, `Doanh thu cho thuê xe từ hành trình #${bookingId} (đã khấu trừ ${serviceFeePercent}% phí dịch vụ)`)
+                .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+              
+              await p.request()
+                .input('vehicleId', sql.Int, current.vehicle_id)
+                .query("UPDATE Vehicle SET status = 'Available' WHERE vehicle_id = @vehicleId");
+
+              updates.push('platform_fee = @platformFee');
+              request.input('platformFee', sql.Decimal(18, 2), platformFee);
+            }
+          }
+        }
+      }
+
       updates.push('status = @status');
       request.input('status', sql.NVarChar, dbStatus);
 
@@ -238,9 +285,18 @@ export const bookingModel = {
       updates.push('payment_status = @depositStatus');
       request.input('depositStatus', sql.NVarChar, dbDepositStatus);
 
+      let paymentStatusVal = 'Success';
+      if (dbDepositStatus === 'Refunded') {
+        paymentStatusVal = 'Refunded';
+      } else if (dbDepositStatus === 'Failed') {
+        paymentStatusVal = 'Failed';
+      } else if (dbDepositStatus === 'Pending') {
+        paymentStatusVal = 'Pending';
+      }
+
       await p.request()
         .input('bookingId', sql.Int, bookingId)
-        .input('paymentStatus', sql.NVarChar, dbDepositStatus === 'Paid' ? 'Success' : dbDepositStatus)
+        .input('paymentStatus', sql.NVarChar, paymentStatusVal)
         .query('UPDATE Payment SET status = @paymentStatus WHERE booking_id = @bookingId');
     }
 
