@@ -479,13 +479,15 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
   return (
     <div className="rent-car-page">
       {/* 📢 SYSTEM NOTICE BANNER */}
-      {systemConfig && systemConfig.systemNotice && (
-        <div className="system-notice-alert-wrapper">
-          <div className="system-notice-alert">
-            <div className="alert-glow-dot"></div>
-            <Info size={16} className="text-primary-teal flex-shrink-0" />
-            <div className="alert-msg-container">
-              <strong>Thông báo hệ thống:</strong> {systemConfig.systemNotice}
+      {systemConfig && systemConfig.systemNotice && (!user || (user.role !== 'renter' && user.role !== 'owner')) && (
+        <div className="homepage-notice-container">
+          <div className="system-notice-alert-wrapper">
+            <div className="system-notice-alert">
+              <div className="alert-glow-dot"></div>
+              <Info size={16} className="text-primary-teal flex-shrink-0" />
+              <div className="alert-msg-container">
+                <strong>Thông báo hệ thống:</strong> {systemConfig.systemNotice}
+              </div>
             </div>
           </div>
         </div>

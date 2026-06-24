@@ -34,6 +34,12 @@ export const getPool = async () => {
             ALTER TABLE [User] ADD bio NVARCHAR(MAX) NULL;
         END
 
+        -- Add kyc_rejection_reason column if missing in User
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('[User]') AND name = 'kyc_rejection_reason')
+        BEGIN
+            ALTER TABLE [User] ADD kyc_rejection_reason NVARCHAR(MAX) NULL;
+        END
+
         -- Drop standard UNIQUE constraint on google_id (relying on the filtered index instead to allow multiple NULLs)
         DECLARE @IndexName NVARCHAR(200);
         SELECT @IndexName = i.name
