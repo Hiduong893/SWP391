@@ -280,27 +280,33 @@ router.put('/api/admin/bookings/:id/refund-deposit', auth, cskhOrAdminAuth, asyn
     await db.bookings.update(id, { depositStatus: status });
 
     if (status === 'refunded') {
-      // Cộng 5.000.000đ tiền cọc vào ví người dùng qua stored procedure (an toàn, atomic)
-      const p = await getPool();
-      const refundAmount = 5000000;
-      const userId = parseInt(booking.userId);
-      const bookingIdInt = parseInt(id);
+      if (booking.paymentMethod === 'wallet') {
+        // Cộng 5.000.000đ tiền cọc vào ví người dùng qua stored procedure (an toàn, atomic)
+        const p = await getPool();
+        const refundAmount = 5000000;
+        const userId = parseInt(booking.userId);
+        const bookingIdInt = parseInt(id);
 
-      await p.request()
-        .input('userId', sql.Int, userId)
-        .input('bookingId', sql.Int, bookingIdInt)
-        .input('amount', sql.Decimal(18, 2), refundAmount)
-        .input('txnType', sql.NVarChar, 'DepositRefund')
-        .input('description', sql.NVarChar, `Hoàn trả tiền cọc bảo đảm cho đặt xe #${id}`)
-        .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+        await p.request()
+          .input('userId', sql.Int, userId)
+          .input('bookingId', sql.Int, bookingIdInt)
+          .input('amount', sql.Decimal(18, 2), refundAmount)
+          .input('txnType', sql.NVarChar, 'DepositRefund')
+          .input('description', sql.NVarChar, `Hoàn trả tiền cọc bảo đảm cho đặt xe #${id}`)
+          .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
 
-      console.log(`Deposit refunded: ${refundAmount} VND to userId=${userId} for bookingId=${id}`);
+        console.log(`Deposit refunded to wallet: ${refundAmount} VND to userId=${userId} for bookingId=${id}`);
+      } else {
+        console.log(`Deposit marked as refunded offline/vnpay: bookingId=${id}`);
+      }
     }
 
 
     res.json({
       message: status === 'refunded'
-        ? 'Đã duyệt hoàn trả tiền cọc 5.000.000 VND thành công! Tiền đã được cộng vào ví của người dùng.'
+        ? (booking.paymentMethod === 'wallet'
+            ? 'Đã duyệt hoàn trả tiền cọc 5.000.000 VND thành công! Tiền đã được cộng vào ví của người dùng.'
+            : 'Đã duyệt hoàn cọc 5.000.000 VND! Do đơn đặt xe này thanh toán ngoại tuyến/VNPAY, tiền cọc sẽ do chủ xe hoàn trả trực tiếp.')
         : 'Đã giữ lại tiền đặt cọc do phát sinh các thiệt hại vật chất đối với xe.'
     });
   } catch (error) {

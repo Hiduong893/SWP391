@@ -5,7 +5,7 @@ const servers = ['localhost', '.', 'DESKTOP-DF1VL3V', 'GHUY-LAP'];
 for (const server of servers) {
   const config = {
     user: 'sa',
-    password: 'sa',
+    password: '123',
     server: server,
     database: 'CarRentalPlatform',
     options: {
