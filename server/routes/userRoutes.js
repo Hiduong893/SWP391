@@ -68,7 +68,7 @@ router.put('/change-password', auth, async (req, res) => {
 // 11. Upload KYC Documents (Enhanced with Automated AI Vision Verification using Gemini)
 router.put('/kyc', auth, async (req, res) => {
   try {
-    const { cccdImage, cccdBackImage, licenseImage, carPapersImage } = req.body;
+    const { cccdImage, cccdBackImage, licenseImage, carPapersImage, faceImage } = req.body;
     const user = await db.users.findOne({ id: req.user.id });
 
     // Identify if any new images are being uploaded
@@ -95,12 +95,17 @@ router.put('/kyc', auth, async (req, res) => {
       cccd: cccdImage || user.kycDocuments?.cccd || null,
       cccdBack: cccdBackImage || user.kycDocuments?.cccdBack || null,
       license: licenseImage || user.kycDocuments?.license || null,
-      carPapers: carPapersImage || user.kycDocuments?.carPapers || null
+      carPapers: carPapersImage || user.kycDocuments?.carPapers || null,
+      faceImage: faceImage || user.kycDocuments?.faceImage || null
     };
 
     let licenseStatus = user.licenseStatus;
     let cccdStatus = user.kycDocuments?.cccd ? 'verified' : undefined;
     let cccdBackStatus = user.kycDocuments?.cccdBack ? 'verified' : undefined;
+    let faceStatus = user.kycDocuments?.faceImage ? 'verified' : undefined;
+    if (faceImage) {
+      faceStatus = 'verified';
+    }
     let kycRejectionReason = null;
 
     if (kycAttempted && aiResult) {
@@ -126,6 +131,7 @@ router.put('/kyc', auth, async (req, res) => {
       licenseImage: licenseImage || user.licenseImage,
       cccdStatus,
       cccdBackStatus,
+      faceStatus,
       kycRejectionReason
     });
 
@@ -136,7 +142,9 @@ router.put('/kyc', auth, async (req, res) => {
       });
     } else {
       res.json({
-        message: 'Hồ sơ KYC của bạn đã được xác minh thành công bằng AI!',
+        message: faceImage 
+          ? 'Xác thực khuôn mặt KYC của bạn thành công!' 
+          : 'Hồ sơ KYC của bạn đã được xác minh thành công bằng AI!',
         user: sanitizeUser(updatedUser)
       });
     }
@@ -197,9 +205,25 @@ router.put('/bank-account', auth, async (req, res) => {
 // Register as a Car Owner
 router.post('/register-owner', auth, async (req, res) => {
   try {
+    const user = await db.users.findOne({ id: req.user.id });
+    
+    // Check KYC (driver license verification status)
+    if (user.licenseStatus !== 'verified') {
+      return res.status(400).json({
+        message: 'Bạn chưa hoàn tất xác thực bằng lái xe (KYC). Vui lòng cập nhật hình ảnh CCCD và bằng lái xe trong mục Hồ sơ cá nhân trước khi đăng ký làm Chủ xe.'
+      });
+    }
+
+    // Check bank account association
+    if (!user.bankAccount || !user.bankAccount.bankName || !user.bankAccount.accountNumber) {
+      return res.status(400).json({
+        message: 'Bạn chưa liên kết tài khoản ngân hàng. Vui lòng thêm tài khoản ngân hàng trong mục Ví cá nhân để nhận tiền thuê xe trước khi đăng ký làm Chủ xe.'
+      });
+    }
+
     const updatedUser = await db.users.update(req.user.id, { role: 'owner' });
     res.json({
-      message: 'Nâng cấp tài khoản thành Chủ xe (Car Owner) thành công! Bây giờ bạn có thể ký gửi xe lên hệ thống.',
+      message: 'Nâng cấp tài khoản thành Chủ xe (Car Owner) thành công! Bây giờ bạn có thể đăng ký xe cho thuê lên hệ thống.',
       user: sanitizeUser(updatedUser)
     });
   } catch (error) {

@@ -12,6 +12,123 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
   const [licenseUploading, setLicenseUploading] = useState(false);
   const [cccdUploading, setCccdUploading] = useState(false);
 
+  // Face Verification States
+  const [showFaceScanner, setShowFaceScanner] = useState(false);
+  const [faceScanStep, setFaceScanStep] = useState('idle'); // 'idle' | 'streaming' | 'countdown' | 'captured' | 'uploading'
+  const [capturedFace, setCapturedFace] = useState(null);
+  const [faceCountdown, setFaceCountdown] = useState(3);
+  const faceVideoRef = useRef(null);
+  const faceStreamRef = useRef(null);
+  const faceCountdownIntervalRef = useRef(null);
+
+  // Stop camera stream when component unmounts
+  useEffect(() => {
+    return () => {
+      if (faceStreamRef.current) {
+        faceStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (faceCountdownIntervalRef.current) {
+        clearInterval(faceCountdownIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const startFaceScan = async () => {
+    setShowFaceScanner(true);
+    setFaceScanStep('streaming');
+    setCapturedFace(null);
+    setFaceCountdown(3);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 400, height: 400, facingMode: 'user' } });
+      faceStreamRef.current = stream;
+      if (faceVideoRef.current) {
+        faceVideoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      showToast('Không thể truy cập camera. Vui lòng cấp quyền truy cập camera cho ứng dụng.', 'error');
+      setShowFaceScanner(false);
+    }
+  };
+
+  const stopFaceScanStream = () => {
+    if (faceStreamRef.current) {
+      faceStreamRef.current.getTracks().forEach(track => track.stop());
+      faceStreamRef.current = null;
+    }
+    if (faceCountdownIntervalRef.current) {
+      clearInterval(faceCountdownIntervalRef.current);
+      faceCountdownIntervalRef.current = null;
+    }
+  };
+
+  const handleStartCountdown = () => {
+    setFaceScanStep('countdown');
+    setFaceCountdown(3);
+
+    faceCountdownIntervalRef.current = setInterval(() => {
+      setFaceCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(faceCountdownIntervalRef.current);
+          captureFacePhoto();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const captureFacePhoto = () => {
+    if (!faceVideoRef.current) return;
+
+    const video = faceVideoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = 400;
+    canvas.height = 400;
+
+    const ctx = canvas.getContext('2d');
+    // Mirror the image horizontally to match the preview mirror view
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+
+    // Draw only a centered square from the video source
+    const minDim = Math.min(video.videoWidth, video.videoHeight);
+    const sx = (video.videoWidth - minDim) / 2;
+    const sy = (video.videoHeight - minDim) / 2;
+    ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, canvas.width, canvas.height);
+
+    const base64 = canvas.toDataURL('image/jpeg', 0.9);
+    setCapturedFace(base64);
+    setFaceScanStep('captured');
+
+    stopFaceScanStream();
+  };
+
+  const handleUploadFace = async () => {
+    if (!capturedFace) return;
+
+    setFaceScanStep('uploading');
+    try {
+      showToast('Đang tải ảnh khuôn mặt lên hệ thống KYC...', 'info');
+      const data = await api.user.uploadKyc(null, null, null, null, capturedFace);
+      onUpdateUser(data.user);
+      showToast('Tải ảnh và xác minh khuôn mặt KYC thành công!', 'success');
+      setShowFaceScanner(false);
+      setCapturedFace(null);
+      setFaceScanStep('idle');
+    } catch (err) {
+      showToast(err.message || 'Lỗi tải ảnh khuôn mặt.', 'error');
+      setFaceScanStep('captured');
+    }
+  };
+
+  const handleCloseFaceScanner = () => {
+    stopFaceScanStream();
+    setShowFaceScanner(false);
+    setCapturedFace(null);
+    setFaceScanStep('idle');
+  };
+
   // Wallet States (UC19)
   const [walletBalance, setWalletBalance] = useState(user.walletBalance || 0);
   const [bankAccount, setBankAccount] = useState(user.bankAccount || null);
@@ -192,7 +309,7 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
 
         const data = await api.user.uploadKyc(cccdFront, license, null, cccdBack);
         onUpdateUser(data.user);
-        
+
         if (data.user.licenseStatus === 'rejected') {
           showToast(data.message, 'error');
         } else {
@@ -392,10 +509,10 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
             <div className="kyc-verifications-card-box mt-4">
               <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <ShieldCheck size={16} />
-                <span>Hồ Sơ Xác Minh KYC Bằng AI (UC04)</span>
+                <span>Hồ Sơ Xác Minh KYC Bằng AI</span>
               </h4>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 12 }}>
                 {/* 1. CCCD Mặt Trước */}
                 <div className="kyc-item-box">
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>CCCD MẶT TRƯỚC</span>
@@ -462,6 +579,33 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
                         <span>{licenseUploading ? 'Đang tải...' : 'Tải bằng lái'}</span>
                         <input type="file" onChange={(e) => handleKycUpload(e, 'license')} accept="image/*" style={{ display: 'none' }} disabled={licenseUploading} />
                       </label>
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. Xác thực khuôn mặt */}
+                <div className="kyc-item-box">
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>XÁC MINH KHUÔN MẶT</span>
+                  {user.faceStatus === 'verified' ? (
+                    <div style={{ marginTop: 4 }}>
+                      <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}>Đã duyệt ✓</span>
+                      {user.faceImage && <button type="button" onClick={() => setPreviewImage({ src: user.faceImage, title: 'Ảnh chân dung FaceID' })} style={{ display: 'block', background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh</button>}
+                    </div>
+                  ) : user.faceStatus === 'pending' ? (
+                    <div style={{ marginTop: 4 }}>
+                      <span className="badge-pending" style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Chờ duyệt</span>
+                    </div>
+                  ) : user.faceStatus === 'rejected' ? (
+                    <div style={{ marginTop: 4 }}>
+                      <span className="badge-rejected" style={{ fontSize: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Từ chối ✗</span>
+                      <button type="button" onClick={startFaceScan} style={{ display: 'block', background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Quét lại</button>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 6 }}>
+                      <button type="button" onClick={startFaceScan} className="upload-license-inline-btn" style={{ cursor: 'pointer', fontSize: '10.5px', color: 'var(--accent-primary)', fontWeight: 600, display: 'inline-flex', gap: 4, alignItems: 'center', background: 'transparent', border: 'none', padding: 0, boxShadow: 'none' }}>
+                        <Upload size={11} />
+                        <span>Quét khuôn mặt</span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -785,6 +929,64 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
                 borderRadius: '8px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
               }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- BIOMETRIC FACE SCANNER MODAL --- */}
+      {showFaceScanner && (
+        <div className="editor-modal-overlay">
+          <div className="editor-modal-card" style={{ maxWidth: '600px' }}>
+            <div className="editor-modal-header">
+              <h3>Xác thực sinh trắc học FaceID</h3>
+              <button className="editor-close-btn" onClick={handleCloseFaceScanner}><X size={20} /></button>
+            </div>
+
+            <div className="editor-modal-body" style={{ padding: '20px' }}>
+              {faceScanStep === 'streaming' || faceScanStep === 'countdown' ? (
+                <>
+                  <p className="editor-tip">💡 <strong>Hướng dẫn đăng ký:</strong> Giữ đầu thẳng, căn chỉnh khuôn mặt cân đối trong vòng tròn xanh lớn. Ảnh chân dung này sẽ được đăng ký làm FaceID gốc phục vụ đối chiếu khi đặt xe.</p>
+                  <div className={`face-scanner-circle-container ${faceScanStep === 'countdown' ? 'scanning' : ''}`}>
+                    <video ref={faceVideoRef} autoPlay playsInline className="face-scanner-video" />
+                    <div className="face-scanner-overlay" />
+                    <div className="face-scanner-glow" />
+                    <div className="face-scanner-line" />
+                    {faceScanStep === 'countdown' && (
+                      <div className="face-scanner-countdown">{faceCountdown}</div>
+                    )}
+                  </div>
+                  <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center' }}>
+                    {faceScanStep === 'streaming' ? (
+                      <button type="button" onClick={handleStartCountdown} className="btn btn-primary" style={{ width: 'auto', padding: '10px 24px', background: 'var(--accent-gradient)' }}>
+                        Bắt đầu quét khuôn mặt
+                      </button>
+                    ) : (
+                      <span style={{ color: '#f59e0b', fontSize: '13px', fontWeight: 700 }}>Đang nhận dạng sinh trắc học...</span>
+                    )}
+                  </div>
+                </>
+              ) : faceScanStep === 'captured' ? (
+                <>
+                  <p className="editor-tip">💡 <strong>Kiểm tra ảnh KYC:</strong> Đảm bảo ảnh chụp cận cảnh khuôn mặt sắc nét, rõ ràng, không bị mờ/lóa để tối ưu hóa khả năng so khớp tự động khi thuê xe.</p>
+                  <div className="face-scanner-circle-container">
+                    <img src={capturedFace} alt="Captured Face" className="face-scan-captured-image" />
+                  </div>
+                  <div style={{ marginTop: '16px', display: 'flex', gap: '12px', width: '100%' }}>
+                    <button type="button" onClick={startFaceScan} className="btn btn-secondary" style={{ flex: 1 }}>
+                      Chụp lại
+                    </button>
+                    <button type="button" onClick={handleUploadFace} className="btn btn-primary" style={{ flex: 1, background: 'var(--accent-gradient)' }}>
+                      Đồng ý &amp; Lưu
+                    </button>
+                  </div>
+                </>
+              ) : faceScanStep === 'uploading' ? (
+                <div style={{ padding: '40px 0', textAlign: 'center' }}>
+                  <div className="spin text-info" style={{ display: 'inline-block', width: '40px', height: '40px', border: '4px solid #cbd5e1', borderTopColor: '#009698', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                  <p style={{ marginTop: '16px', color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 600 }}>Đang xử lý sinh trắc học bằng AI...</p>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
