@@ -110,14 +110,14 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab }) => {
             className={`nav-item ${currentTab === 'list-car' ? 'active' : ''}`}
             onClick={() => {
               if (!user) {
-                showToast('Vui lòng đăng nhập để ký gửi xe!', 'warning');
+                showToast('Vui lòng đăng nhập để thêm xe cho thuê!', 'warning');
                 setCurrentTab('login');
               } else {
                 setCurrentTab('list-car');
               }
             }}
           >
-            <span>Ký gửi xe</span>
+            <span>Thêm xe cho thuê</span>
           </button>
 
           <button

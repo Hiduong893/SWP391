@@ -435,7 +435,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
       id: 'rev-p-2',
       name: 'Anh Hải',
       role: 'Cư dân Park 7, Vinhomes Central Park',
-      comment: 'Dịch vụ tốt. Hỗ trợ khách hàng tốt. Tôi rất yên tâm khi ký gửi phương tiện và thuê xe tại đây.',
+      comment: 'Dịch vụ tốt. Hỗ trợ khách hàng tốt. Tôi rất yên tâm khi đăng ký cho thuê xe và thuê xe tại đây.',
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
       rating: 5
     },
@@ -504,8 +504,8 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
         {/* Lớp phủ tối giúp chữ dễ đọc hơn */}
         <div className="hero-overlay"></div>
         <div className="hero-content">
-          {/* <span className="hero-badge">🚗 NỀN TẢNG THUÊ XE TỰ LÁI & KÝ GỬI THẾ HỆ MỚI</span> */}
-          <h1 className="hero-title">Thuê xe tự lái ngắn hạn & ký gửi xe</h1>
+          {/* <span className="hero-badge">🚗 NỀN TẢNG THUÊ XE TỰ LÁI & ĐĂNG KÝ CHO THUÊ THẾ HỆ MỚI</span> */}
+          <h1 className="hero-title">Thuê xe tự lái ngắn hạn & Đăng ký cho thuê</h1>
           <p className="hero-subtitle">
             Trải nghiệm dịch vụ chia sẻ ô tô công nghệ hàng đầu Việt Nam. Thủ tục đơn giản, xe đời mới sạch sẽ, bảo hiểm chuyến đi trọn gói.
           </p>

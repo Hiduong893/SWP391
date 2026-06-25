@@ -279,7 +279,7 @@ const seedDb = async (p) => {
       INSERT INTO SystemConfig (config_key, config_value, data_type, updated_at) VALUES
       ('PLATFORM_FEE_PERCENT', '5', 'Number', GETDATE()),
       ('INSURANCE_MULTIPLIER', '1.1', 'Number', GETDATE()),
-      ('SYSTEM_NOTICE', N'Chào mừng bạn đến với ViVuCar - Nền tảng Cho thuê và Ký gửi xe tự lái hàng đầu Việt Nam. Hãy hoàn tất KYC bằng lái xe trong mục Hồ sơ để bắt đầu trải nghiệm thuê xe ngay!', 'String', GETDATE());
+      ('SYSTEM_NOTICE', N'Chào mừng bạn đến với ViVuCar - Nền tảng Hỗ trợ cho thuê xe tự lái hàng đầu Việt Nam. Hãy hoàn tất KYC bằng lái xe trong mục Hồ sơ để bắt đầu trải nghiệm thuê xe ngay!', 'String', GETDATE());
     `);
   }
 

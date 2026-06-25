@@ -363,6 +363,12 @@ const getPool = async () => {
             ALTER TABLE Booking ADD issue_report NVARCHAR(MAX) NULL;
         END
 
+        -- Add contract_details if missing in Booking
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Booking') AND name = 'contract_details')
+        BEGIN
+            ALTER TABLE Booking ADD contract_details NVARCHAR(MAX) NULL;
+        END
+
         -- Add VNPAY columns to Payment table
         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Payment') AND name = 'vnp_txn_ref')
         BEGIN
@@ -447,7 +453,7 @@ const seedDb = async (p) => {
       INSERT INTO SystemConfig (config_key, config_value, data_type, updated_at) VALUES
       ('PLATFORM_FEE_PERCENT', '5', 'Number', GETDATE()),
       ('INSURANCE_MULTIPLIER', '1.1', 'Number', GETDATE()),
-      ('SYSTEM_NOTICE', N'Chào mừng bạn đến với ViVuCar - Nền tảng Cho thuê và Ký gửi xe tự lái hàng đầu Việt Nam. Hãy hoàn tất KYC bằng lái xe trong mục Hồ sơ để bắt đầu trải nghiệm thuê xe ngay!', 'String', GETDATE());
+      ('SYSTEM_NOTICE', N'Chào mừng bạn đến với ViVuCar - Nền tảng Hỗ trợ cho thuê xe tự lái hàng đầu Việt Nam. Hãy hoàn tất KYC bằng lái xe trong mục Hồ sơ để bắt đầu trải nghiệm thuê xe ngay!', 'String', GETDATE());
     `);
   }
 
@@ -2464,7 +2470,7 @@ export const db = {
       let serviceFeePercent = 5;
       let insuranceMultiplier = 1.1;
       let systemNotice =
-        "Chào mừng bạn đến với ViVuCar - Nền tảng Cho thuê và Ký gửi xe tự lái hàng đầu Việt Nam. Hãy hoàn tất KYC bằng lái xe trong mục Hồ sơ để bắt đầu trải nghiệm thuê xe ngay!";
+        "Chào mừng bạn đến với ViVuCar - Nền tảng Hỗ trợ cho thuê xe tự lái hàng đầu Việt Nam. Hãy hoàn tất KYC bằng lái xe trong mục Hồ sơ để bắt đầu trải nghiệm thuê xe ngay!";
 
       for (const config of res.recordset) {
         if (config.config_key === "PLATFORM_FEE_PERCENT") {
