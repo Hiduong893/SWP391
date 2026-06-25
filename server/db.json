@@ -124,7 +124,7 @@
       "password": "$2a$10$VsF1EacSxQz.x8OZfpwMGu6HPtvVpO9Nub/b7s.YemqgpIJ2Jo9uu",
       "name": "Chủ Xe Lê Mạnh",
       "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
-      "bio": "Chủ phương tiện xe ký gửi uy tín, chuyên nghiệp tại Hà Nội",
+      "bio": "Chủ phương tiện xe cho thuê uy tín, chuyên nghiệp tại Hà Nội",
       "isEmailVerified": true,
       "role": "owner",
       "licenseStatus": "verified",
@@ -415,7 +415,7 @@
   "system_config": {
     "serviceFeePercent": 5,
     "insuranceMultiplier": 1.1,
-    "systemNotice": "Chào mừng bạn đến với BonBonCar - Nền tảng Cho thuê và Ký gửi xe tự lái hàng đầu Việt Nam. Hãy hoàn tất KYC bằng bằng lái xe trong mục Hồ sơ để bắt đầu trải nghiệm thuê xe ngay!"
+    "systemNotice": "Chào mừng bạn đến với BonBonCar - Nền tảng Hỗ trợ cho thuê xe tự lái hàng đầu Việt Nam. Hãy hoàn tất KYC bằng bằng lái xe trong mục Hồ sơ để bắt đầu trải nghiệm thuê xe ngay!"
   },
   "emails": []
 }

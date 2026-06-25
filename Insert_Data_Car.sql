@@ -20,7 +20,7 @@ BEGIN
     INSERT INTO Brand (brand_name, is_active) VALUES (N'MG', 1);
 END;
 
--- 2. Tự động tìm user_id đại diện cho Chủ xe ký gửi (owner@bonboncar.vn) để gán xe
+-- 2. Tự động tìm user_id đại diện cho Chủ xe cho thuê (owner@bonboncar.vn) để gán xe
 DECLARE @owner_id INT;
 SELECT TOP 1 @owner_id = user_id FROM [User] WHERE email = 'owner@bonboncar.vn';
 IF @owner_id IS NULL
