@@ -1,7 +1,7 @@
 const API_BASE = '/api';
 
-// Helper to make fetch calls with authorization header
-const request = async (url, options = {}) => {
+// Helper to make fetch calls with authorization header (with automatic retries for slow backend startup)
+const request = async (url, options = {}, retries = 4, delay = 1000) => {
   const token = localStorage.getItem('token');
   
   const headers = {
@@ -13,18 +13,35 @@ const request = async (url, options = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE}${url}`, {
-    ...options,
-    headers
-  });
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const response = await fetch(`${API_BASE}${url}`, {
+        ...options,
+        headers
+      });
 
-  const data = await response.json();
+      const data = await response.json();
 
-  if (!response.ok) {
-    throw new Error(data.message || 'Đã xảy ra lỗi không xác định.');
+      if (!response.ok) {
+        throw new Error(data.message || 'Đã xảy ra lỗi không xác định.');
+      }
+
+      return data;
+    } catch (error) {
+      // Nếu là lỗi kết nối mạng (Failed to fetch - do server đang khởi động) và vẫn còn lượt thử lại
+      const isNetworkError = error instanceof TypeError || 
+                             error.message?.includes('Failed to fetch') || 
+                             error.message?.includes('network') ||
+                             error.message?.includes('Failed to execute');
+                             
+      if (isNetworkError && i < retries) {
+        console.warn(`[API] Kết nối thất bại, đang thử lại sau ${delay}ms... (${i + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
   }
-
-  return data;
 };
 
 export const api = {
@@ -113,11 +130,12 @@ export const api = {
         body: JSON.stringify({ licenseImage })
       }),
 
-    uploadKyc: (cccdImage, licenseImage, carPapersImage, cccdBackImage) =>
+    uploadKyc: (cccdImage, licenseImage, carPapersImage, cccdBackImage, faceImage) =>
       request('/user/kyc', {
         method: 'PUT',
-        body: JSON.stringify({ cccdImage, licenseImage, carPapersImage, cccdBackImage })
+        body: JSON.stringify({ cccdImage, licenseImage, carPapersImage, cccdBackImage, faceImage })
       }),
+
 
     getWallet: () =>
       request('/user/wallet', {
