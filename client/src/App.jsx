@@ -205,7 +205,7 @@ function App() {
 
             {/* List Car (Owner listing) Tab - Protected */}
             {currentTab === 'list-car' && user && (
-              <ListCar setCurrentTab={setCurrentTab} />
+              <ListCar setCurrentTab={setCurrentTab} user={user} onUpdateUser={setUser} />
             )}
 
             {/* My Trips (Rental history) Tab - Protected */}

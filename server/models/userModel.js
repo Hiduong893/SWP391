@@ -40,7 +40,9 @@ export const mapUserRow = async (p, userRow) => {
 
   let licenseStatus = 'not_uploaded';
   let licenseImage = null;
-  let kycDocuments = { cccd: null, cccdBack: null, license: null, carPapers: null };
+  let faceStatus = 'not_uploaded';
+  let faceImage = null;
+  let kycDocuments = { cccd: null, cccdBack: null, license: null, carPapers: null, faceImage: null };
 
   for (const doc of kycRes.recordset) {
     const statusMap = { 'Pending': 'pending', 'Approved': 'verified', 'Rejected': 'rejected' };
@@ -56,6 +58,10 @@ export const mapUserRow = async (p, userRow) => {
       licenseStatus = mappedStatus;
     } else if (doc.document_type === 'VehicleRegistration') {
       kycDocuments.carPapers = doc.front_image_url;
+    } else if (doc.document_type === 'FaceImage') {
+      kycDocuments.faceImage = doc.front_image_url;
+      faceImage = doc.front_image_url;
+      faceStatus = mappedStatus;
     }
   }
 
@@ -87,6 +93,8 @@ export const mapUserRow = async (p, userRow) => {
     role,
     licenseStatus,
     licenseImage,
+    faceStatus,
+    faceImage,
     walletBalance,
     bankAccount,
     kycDocuments,
@@ -302,6 +310,7 @@ export const userModel = {
       await upsertKyc('NationalIDBack', docs.cccdBack);
       await upsertKyc('DriverLicense', docs.license);
       await upsertKyc('VehicleRegistration', docs.carPapers);
+      await upsertKyc('FaceImage', docs.faceImage);
     }
 
     // 5. Update license status and reviewer changes
@@ -314,6 +323,18 @@ export const userModel = {
         .query(`
           UPDATE KYC SET status = @status, reviewed_at = GETDATE()
           WHERE user_id = @userId AND document_type = 'DriverLicense'
+        `);
+    }
+
+    if (updateData.faceStatus !== undefined) {
+      const dbStatusMap = { 'pending': 'Pending', 'verified': 'Approved', 'rejected': 'Rejected' };
+      const dbStatus = dbStatusMap[updateData.faceStatus] || 'Pending';
+      await p.request()
+        .input('userId', sql.Int, userId)
+        .input('status', sql.NVarChar, dbStatus)
+        .query(`
+          UPDATE KYC SET status = @status, reviewed_at = GETDATE()
+          WHERE user_id = @userId AND document_type = 'FaceImage'
         `);
     }
 
