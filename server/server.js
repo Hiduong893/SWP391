@@ -16,6 +16,7 @@ import emailRoutes from './routes/emailRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import renterActionRoutes from './routes/renterActionRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import contractRoutes from './routes/contractRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,6 +59,7 @@ app.use(emailRoutes);
 app.use(paymentRoutes);
 app.use(renterActionRoutes);
 app.use(notificationRoutes);
+app.use('/api', contractRoutes);
 
 // Start server
 app.listen(PORT, () => {
