@@ -234,48 +234,55 @@
 .profile-info-grid {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 10px;
   text-align: left;
 }
 
 .info-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 6px 0;
+  gap: 12px;
+  padding: 4px 0;
   transition: all 0.2s;
 }
 
 .info-icon {
   color: var(--accent-primary);
-  background: rgba(0, 150, 152, 0.08);
-  padding: 10px;
+  background: rgba(0, 150, 152, 0.05);
+  padding: 8px;
   border-radius: 50%;
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
   flex-shrink: 0;
   transition: all 0.2s;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .info-row:hover .info-icon {
-  transform: scale(1.08);
-  background: rgba(0, 150, 152, 0.15);
+  transform: scale(1.05);
+  background: rgba(0, 150, 152, 0.1);
 }
 
 .info-data {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   text-align: left;
 }
 
 .info-label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .info-value {
-  font-size: 15px;
+  font-size: 13.5px;
   color: var(--text-primary);
   font-weight: 600;
 }
@@ -872,5 +879,72 @@
   object-fit: cover;
   border-radius: 50%;
   transform: scaleX(-1); /* Keep mirror view for consistency */
+}
+
+/* KYC Verifications Card Box styles */
+.kyc-verifications-card-box {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(0, 150, 152, 0.18) !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  margin-top: 18px !important;
+  box-shadow: 0 8px 32px rgba(0, 150, 152, 0.05) !important;
+  transition: all 0.3s ease !important;
+}
+
+.kyc-verifications-card-box:hover {
+  border-color: rgba(0, 150, 152, 0.35) !important;
+  box-shadow: 0 12px 36px rgba(0, 150, 152, 0.1) !important;
+}
+
+.kyc-verifications-card-box h4 {
+  font-size: 14.5px !important;
+  font-weight: 800 !important;
+  color: var(--accent-primary) !important;
+  text-transform: uppercase !important;
+  margin-bottom: 16px !important;
+  letter-spacing: 0.5px !important;
+}
+
+.kyc-item-box {
+  background: rgba(0, 150, 152, 0.025) !important;
+  border: 1.5px dashed rgba(0, 150, 152, 0.25) !important;
+  border-radius: 10px !important;
+  padding: 16px 10px !important;
+  text-align: center !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  min-height: 120px !important;
+}
+
+.kyc-item-box:hover {
+  background: rgba(0, 150, 152, 0.065) !important;
+  border-color: var(--accent-primary) !important;
+  border-style: solid !important;
+  transform: translateY(-2.5px) !important;
+  box-shadow: 0 6px 16px rgba(0, 150, 152, 0.15) !important;
+}
+
+.kyc-label {
+  font-size: 11.5px !important;
+  color: var(--text-muted) !important;
+  display: block !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+}
+
+.kyc-item-box .badge-verified,
+.kyc-item-box .badge-pending,
+.kyc-item-box .badge-rejected {
+  font-size: 11px !important;
+  padding: 4px 10px !important;
+  border-radius: 20px !important;
+  font-weight: 800 !important;
+  display: inline-block !important;
 }
 
