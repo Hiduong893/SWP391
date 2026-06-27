@@ -153,8 +153,10 @@ function App() {
   const handleLoginSuccess = (loggedInUser) => {
     setUser(loggedInUser);
 
-    if (loggedInUser.role === 'admin' || loggedInUser.role === 'cskh') {
+    if (loggedInUser.role === 'admin') {
       setCurrentTab('admin-dashboard');
+    } else if (loggedInUser.role === 'cskh') {
+      setCurrentTab('cskh-dashboard');
     } else {
       // Switch to previously intended page if any, or default to rent-car
       const savedTab = sessionStorage.getItem('activeTab');
@@ -213,8 +215,12 @@ function App() {
               <MyTrips />
             )}
 
-            {currentTab === 'admin-dashboard' && user && (user.role === 'admin' || user.role === 'cskh') && (
+            {currentTab === 'admin-dashboard' && user && user.role === 'admin' && (
               <AdminDashboard setCurrentTab={setCurrentTab} />
+            )}
+
+            {currentTab === 'cskh-dashboard' && user && user.role === 'cskh' && (
+              <CSKHDashboard setCurrentTab={setCurrentTab} />
             )}
 
             {/* Auth pages */}
