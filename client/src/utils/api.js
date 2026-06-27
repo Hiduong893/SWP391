@@ -20,6 +20,17 @@ const request = async (url, options = {}, retries = 4, delay = 1000) => {
         headers
       });
 
+      // Nếu proxy của Vite trả về 502 hoặc 504 (dạng HTML thay vì JSON) do server chưa chạy xong
+      if (!response.ok && (response.status === 502 || response.status === 504 || response.status === 503)) {
+        throw new Error(`Server is starting (HTTP ${response.status})`);
+      }
+
+      // Xử lý lỗi JSON parse nếu backend trả về HTML không mong muốn
+      const contentType = response.headers.get("content-type");
+      if (contentType && !contentType.includes("application/json")) {
+          throw new Error('Unexpected content type: ' + contentType);
+      }
+
       const data = await response.json();
 
       if (!response.ok) {
@@ -28,14 +39,17 @@ const request = async (url, options = {}, retries = 4, delay = 1000) => {
 
       return data;
     } catch (error) {
-      // Nếu là lỗi kết nối mạng (Failed to fetch - do server đang khởi động) và vẫn còn lượt thử lại
+      // Nếu là lỗi kết nối mạng hoặc lỗi server chưa sẵn sàng (trả về 502/504/HTML)
       const isNetworkError = error instanceof TypeError || 
+                             error.name === 'SyntaxError' ||
                              error.message?.includes('Failed to fetch') || 
                              error.message?.includes('network') ||
-                             error.message?.includes('Failed to execute');
+                             error.message?.includes('Failed to execute') ||
+                             error.message?.includes('Server is starting') ||
+                             error.message?.includes('Unexpected content type');
                              
       if (isNetworkError && i < retries) {
-        console.warn(`[API] Kết nối thất bại, đang thử lại sau ${delay}ms... (${i + 1}/${retries})`);
+        console.warn(`[API] Kết nối thất bại hoặc server chưa sẵn sàng, đang thử lại sau ${delay}ms... (${i + 1}/${retries})`);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }

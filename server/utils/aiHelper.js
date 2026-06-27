@@ -11,6 +11,11 @@ const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 function base64ToGenerativePart(base64Data) {
   if (!base64Data) return null;
   
+  // Ignore HTTP URLs as they cannot be passed as inline base64 bytes
+  if (base64Data.startsWith('http://') || base64Data.startsWith('https://')) {
+    return null;
+  }
+  
   let mimeType = 'image/jpeg';
   let data = base64Data;
   

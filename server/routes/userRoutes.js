@@ -82,11 +82,11 @@ router.put('/kyc', auth, async (req, res) => {
     if (isNewCccd || isNewCccdBack || isNewLicense) {
       kycAttempted = true;
       console.log('Sending uploaded documents to Gemini Vision API for automatic KYC...');
-      
+
       const frontCccd = cccdImage || user.kycDocuments?.cccd || null;
       const backCccd = cccdBackImage || user.kycDocuments?.cccdBack || null;
       const license = licenseImage || user.kycDocuments?.license || null;
-      
+
       aiResult = await verifyKycWithAI(frontCccd, backCccd, license, user.name);
       console.log('AI KYC Result:', aiResult);
     }
@@ -118,7 +118,16 @@ router.put('/kyc', auth, async (req, res) => {
         licenseStatus = licenseImage ? 'rejected' : user.licenseStatus;
         cccdStatus = cccdImage ? 'rejected' : undefined;
         cccdBackStatus = cccdBackImage ? 'rejected' : undefined;
-        kycRejectionReason = aiResult.reason || 'Thông tin giấy tờ không hợp lệ.';
+
+        if (isNewLicense) {
+          kycRejectionReason = 'Sai định dạng bằng lái xe';
+        } else if (isNewCccdBack) {
+          kycRejectionReason = 'Sai định dạng cccd mặt sau';
+        } else if (isNewCccd) {
+          kycRejectionReason = 'Sai định dạng cccd mặt trước';
+        } else {
+          kycRejectionReason = aiResult.reason || 'Thông tin giấy tờ không hợp lệ.';
+        }
       }
     } else {
       // Compatibility fallback
@@ -142,8 +151,8 @@ router.put('/kyc', auth, async (req, res) => {
       });
     } else {
       res.json({
-        message: faceImage 
-          ? 'Xác thực khuôn mặt KYC của bạn thành công!' 
+        message: faceImage
+          ? 'Xác thực khuôn mặt KYC của bạn thành công!'
           : 'Hồ sơ KYC của bạn đã được xác minh thành công bằng AI!',
         user: sanitizeUser(updatedUser)
       });
@@ -206,7 +215,7 @@ router.put('/bank-account', auth, async (req, res) => {
 router.post('/register-owner', auth, async (req, res) => {
   try {
     const user = await db.users.findOne({ id: req.user.id });
-    
+
     // Check KYC (driver license verification status)
     if (user.licenseStatus !== 'verified') {
       return res.status(400).json({

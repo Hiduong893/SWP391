@@ -21,13 +21,13 @@ const config = {
   requestTimeout: 15000,
 };
 
-let pool;
+let poolPromise = null;
 export const getPool = async () => {
-  if (!pool) {
-    pool = await sql.connect(config);
-    // Run essential migrations to adapt the SQL schema for application features
-    try {
-      await pool.request().query(`
+  if (!poolPromise) {
+    poolPromise = sql.connect(config).then(async (pool) => {
+      // Run essential migrations to adapt the SQL schema for application features
+      try {
+        await pool.request().query(`
         -- Add bio column if missing in User
         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('[User]') AND name = 'bio')
         BEGIN
@@ -266,8 +266,13 @@ export const getPool = async () => {
     } catch (err) {
       console.error('Error running SQL migrations or seeding database:', err);
     }
+    return pool;
+  }).catch(err => {
+    poolPromise = null;
+    throw err;
+  });
   }
-  return pool;
+  return poolPromise;
 };
 
 // Seed default configs, users and cars

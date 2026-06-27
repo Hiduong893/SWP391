@@ -42,6 +42,8 @@ export const mapUserRow = async (p, userRow) => {
   let licenseImage = null;
   let faceStatus = 'not_uploaded';
   let faceImage = null;
+  let cccdStatus = 'not_uploaded';
+  let cccdBackStatus = 'not_uploaded';
   let kycDocuments = { cccd: null, cccdBack: null, license: null, carPapers: null, faceImage: null };
 
   for (const doc of kycRes.recordset) {
@@ -50,8 +52,10 @@ export const mapUserRow = async (p, userRow) => {
 
     if (doc.document_type === 'NationalID') {
       kycDocuments.cccd = doc.front_image_url;
+      cccdStatus = mappedStatus;
     } else if (doc.document_type === 'NationalIDBack') {
       kycDocuments.cccdBack = doc.front_image_url;
+      cccdBackStatus = mappedStatus;
     } else if (doc.document_type === 'DriverLicense') {
       kycDocuments.license = doc.front_image_url;
       licenseImage = doc.front_image_url;
@@ -95,6 +99,8 @@ export const mapUserRow = async (p, userRow) => {
     licenseImage,
     faceStatus,
     faceImage,
+    cccdStatus,
+    cccdBackStatus,
     walletBalance,
     bankAccount,
     kycDocuments,
