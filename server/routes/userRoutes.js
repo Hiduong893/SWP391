@@ -100,38 +100,45 @@ router.put('/kyc', auth, async (req, res) => {
     };
 
     let licenseStatus = user.licenseStatus;
-    let cccdStatus = user.kycDocuments?.cccd ? 'verified' : undefined;
-    let cccdBackStatus = user.kycDocuments?.cccdBack ? 'verified' : undefined;
-    let faceStatus = user.kycDocuments?.faceImage ? 'verified' : undefined;
+    let cccdStatus = user.cccdStatus || (user.kycDocuments?.cccd ? 'verified' : undefined);
+    let cccdBackStatus = user.cccdBackStatus || (user.kycDocuments?.cccdBack ? 'verified' : undefined);
+    let faceStatus = user.faceStatus || (user.kycDocuments?.faceImage ? 'verified' : undefined);
     if (faceImage) {
       faceStatus = 'verified';
     }
-    let kycRejectionReason = null;
+    let kycRejectionReason = user.kycRejectionReason;
 
     if (kycAttempted && aiResult) {
       if (aiResult.verified) {
-        licenseStatus = licenseImage ? 'verified' : user.licenseStatus;
-        cccdStatus = cccdImage ? 'verified' : undefined;
-        cccdBackStatus = cccdBackImage ? 'verified' : undefined;
+        if (isNewLicense) licenseStatus = 'verified';
+        if (isNewCccd) cccdStatus = 'verified';
+        if (isNewCccdBack) cccdBackStatus = 'verified';
         kycRejectionReason = null;
       } else {
-        licenseStatus = licenseImage ? 'rejected' : user.licenseStatus;
-        cccdStatus = cccdImage ? 'rejected' : undefined;
-        cccdBackStatus = cccdBackImage ? 'rejected' : undefined;
+        if (aiResult.isDocumentAuthentic === false) {
+          // Completely invalid/garbage image -> Hard Reject
+          if (isNewLicense) licenseStatus = 'rejected';
+          if (isNewCccd) cccdStatus = 'rejected';
+          if (isNewCccdBack) cccdBackStatus = 'rejected';
 
-        if (isNewLicense) {
-          kycRejectionReason = 'Sai định dạng bằng lái xe';
-        } else if (isNewCccdBack) {
-          kycRejectionReason = 'Sai định dạng cccd mặt sau';
-        } else if (isNewCccd) {
-          kycRejectionReason = 'Sai định dạng cccd mặt trước';
+          if (isNewLicense) {
+            kycRejectionReason = 'Sai định dạng Bằng lái xe. Xin hãy tải lại ảnh.';
+          } else if (isNewCccdBack) {
+            kycRejectionReason = 'Sai định dạng CCCD mặt sau. Xin hãy tải lại ảnh.';
+          } else if (isNewCccd) {
+            kycRejectionReason = 'Sai định dạng CCCD mặt trước. Xin hãy tải lại ảnh.';
+          } else {
+            kycRejectionReason = 'Sai định dạng giấy tờ. Xin hãy tải lại ảnh.';
+          }
         } else {
-          kycRejectionReason = aiResult.reason || 'Thông tin giấy tờ không hợp lệ.';
+          // Blurry or info mismatch -> Pending manual review
+          if (isNewLicense) licenseStatus = 'pending';
+          if (isNewCccd) cccdStatus = 'pending';
+          if (isNewCccdBack) cccdBackStatus = 'pending';
+
+          kycRejectionReason = 'Thông tin giấy tờ không hợp lệ hoặc bị mờ. Bạn nên tải lại ảnh rõ nét hơn hoặc Xin chờ CSKH duyệt nhé!';
         }
       }
-    } else {
-      // Compatibility fallback
-      licenseStatus = licenseImage ? 'verified' : user.licenseStatus;
     }
 
     const updatedUser = await db.users.update(req.user.id, {
@@ -146,7 +153,7 @@ router.put('/kyc', auth, async (req, res) => {
 
     if (kycAttempted && aiResult && !aiResult.verified) {
       res.json({
-        message: `Hồ sơ KYC tự động bị từ chối bởi AI: ${aiResult.reason}`,
+        message: kycRejectionReason,
         user: sanitizeUser(updatedUser)
       });
     } else {
