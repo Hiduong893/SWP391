@@ -181,14 +181,16 @@ function App() {
 
   return (
     <>
-      <Navbar
-        user={user}
-        onLogout={handleLogout}
-        currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
-        authModal={authModal}
-        setAuthModal={setAuthModal}
-      />
+      {currentTab !== 'cskh-dashboard' && currentTab !== 'admin-dashboard' && (
+        <Navbar
+          user={user}
+          onLogout={handleLogout}
+          currentTab={currentTab}
+          setCurrentTab={setCurrentTab}
+          authModal={authModal}
+          setAuthModal={setAuthModal}
+        />
+      )}
 
       {loading ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>

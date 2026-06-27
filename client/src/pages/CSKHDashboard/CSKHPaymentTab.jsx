@@ -10,7 +10,7 @@ const MethodChip = ({ method }) => {
     vnpay:   { label: 'VNPAY',      color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
     vietqr:  { label: 'VietQR',     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
   };
-  const c = cfg[method] || { label: method || 'Khác', color: '#94a3b8', bg: 'rgba(148,163,184,0.1)' };
+  const c = cfg[method] || { label: method || 'Khác', color: 'var(--cskh-text-muted)', bg: 'rgba(148,163,184,0.1)' };
   return (
     <span className="cskh-method-chip" style={{ background: c.bg, color: c.color }}>
       {c.label}
@@ -45,9 +45,9 @@ export const CSKHPaymentTab = ({
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
           <div style={{ width: 3, height: 16, borderRadius: 2, background: 'linear-gradient(180deg,#6366f1,#8b5cf6)' }} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0' }}>Quản lý Thanh toán & Cọc cược</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--cskh-text)' }}>Quản lý Thanh toán & Cọc cược</span>
         </div>
-        <p style={{ margin: 0, fontSize: 12.5, color: '#94a3b8' }}>
+        <p style={{ margin: 0, fontSize: 12.5, color: 'var(--cskh-text-muted)' }}>
           Xác nhận chuyển khoản VietQR và quyết định hoàn trả / giữ lại tiền cọc sau khi khách trả xe.
         </p>
       </div>
@@ -89,7 +89,7 @@ export const CSKHPaymentTab = ({
                     <td>
                       <div>
                         <div style={{ fontWeight: 600, fontSize: 13 }}>{b.userName}</div>
-                        <div style={{ fontSize: 11.5, color: '#94a3b8' }}>{b.userEmail}</div>
+                        <div style={{ fontSize: 11.5, color: 'var(--cskh-text-muted)' }}>{b.userEmail}</div>
                       </div>
                     </td>
                     <td style={{ fontWeight: 600 }}>{b.carName}</td>
@@ -152,7 +152,7 @@ export const CSKHPaymentTab = ({
                     <td>
                       <div>
                         <div style={{ fontWeight: 600, fontSize: 13 }}>{b.userName}</div>
-                        <div style={{ fontSize: 11.5, color: '#94a3b8' }}>{b.userEmail}</div>
+                        <div style={{ fontSize: 11.5, color: 'var(--cskh-text-muted)' }}>{b.userEmail}</div>
                       </div>
                     </td>
                     <td style={{ fontWeight: 600 }}>{b.carName}</td>
@@ -215,7 +215,7 @@ export const CSKHPaymentTab = ({
                 <tr key={b.id} style={{ opacity: b.status === 'cancelled' ? 0.6 : 1 }}>
                   <td>
                     <div style={{ fontWeight: 600, fontSize: 13 }}>{b.userName}</div>
-                    <div style={{ fontSize: 11.5, color: '#94a3b8' }}>{b.userEmail}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--cskh-text-muted)' }}>{b.userEmail}</div>
                   </td>
                   <td style={{ fontWeight: 500 }}>{b.carName}</td>
                   <td><MethodChip method={b.paymentMethod} /></td>
