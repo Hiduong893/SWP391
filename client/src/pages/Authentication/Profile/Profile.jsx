@@ -10,7 +10,125 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
   const [bio, setBio] = useState(user.bio || '');
   const [loading, setLoading] = useState(false);
   const [licenseUploading, setLicenseUploading] = useState(false);
-  const [cccdUploading, setCccdUploading] = useState(false);
+  const [cccdFrontUploading, setCccdFrontUploading] = useState(false);
+  const [cccdBackUploading, setCccdBackUploading] = useState(false);
+
+  // Face Verification States
+  const [showFaceScanner, setShowFaceScanner] = useState(false);
+  const [faceScanStep, setFaceScanStep] = useState('idle'); // 'idle' | 'streaming' | 'countdown' | 'captured' | 'uploading'
+  const [capturedFace, setCapturedFace] = useState(null);
+  const [faceCountdown, setFaceCountdown] = useState(3);
+  const faceVideoRef = useRef(null);
+  const faceStreamRef = useRef(null);
+  const faceCountdownIntervalRef = useRef(null);
+
+  // Stop camera stream when component unmounts
+  useEffect(() => {
+    return () => {
+      if (faceStreamRef.current) {
+        faceStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (faceCountdownIntervalRef.current) {
+        clearInterval(faceCountdownIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const startFaceScan = async () => {
+    setShowFaceScanner(true);
+    setFaceScanStep('streaming');
+    setCapturedFace(null);
+    setFaceCountdown(3);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 400, height: 400, facingMode: 'user' } });
+      faceStreamRef.current = stream;
+      if (faceVideoRef.current) {
+        faceVideoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      showToast('Không thể truy cập camera. Vui lòng cấp quyền truy cập camera cho ứng dụng.', 'error');
+      setShowFaceScanner(false);
+    }
+  };
+
+  const stopFaceScanStream = () => {
+    if (faceStreamRef.current) {
+      faceStreamRef.current.getTracks().forEach(track => track.stop());
+      faceStreamRef.current = null;
+    }
+    if (faceCountdownIntervalRef.current) {
+      clearInterval(faceCountdownIntervalRef.current);
+      faceCountdownIntervalRef.current = null;
+    }
+  };
+
+  const handleStartCountdown = () => {
+    setFaceScanStep('countdown');
+    setFaceCountdown(3);
+
+    faceCountdownIntervalRef.current = setInterval(() => {
+      setFaceCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(faceCountdownIntervalRef.current);
+          captureFacePhoto();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const captureFacePhoto = () => {
+    if (!faceVideoRef.current) return;
+
+    const video = faceVideoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = 400;
+    canvas.height = 400;
+
+    const ctx = canvas.getContext('2d');
+    // Mirror the image horizontally to match the preview mirror view
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+
+    // Draw only a centered square from the video source
+    const minDim = Math.min(video.videoWidth, video.videoHeight);
+    const sx = (video.videoWidth - minDim) / 2;
+    const sy = (video.videoHeight - minDim) / 2;
+    ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, canvas.width, canvas.height);
+
+    const base64 = canvas.toDataURL('image/jpeg', 0.9);
+    setCapturedFace(base64);
+    setFaceScanStep('captured');
+
+    stopFaceScanStream();
+  };
+
+  const handleUploadFace = async () => {
+    if (!capturedFace) return;
+
+    setFaceScanStep('uploading');
+    try {
+      showToast('Đang tải ảnh khuôn mặt lên hệ thống KYC...', 'info');
+      const data = await api.user.uploadKyc(null, null, null, null, capturedFace);
+      onUpdateUser(data.user);
+      showToast('Tải ảnh và xác minh khuôn mặt KYC thành công!', 'success');
+      setShowFaceScanner(false);
+      setCapturedFace(null);
+      setFaceScanStep('idle');
+    } catch (err) {
+      showToast(err.message || 'Lỗi tải ảnh khuôn mặt.', 'error');
+      setFaceScanStep('captured');
+    }
+  };
+
+  const handleCloseFaceScanner = () => {
+    stopFaceScanStream();
+    setShowFaceScanner(false);
+    setCapturedFace(null);
+    setFaceScanStep('idle');
+  };
 
   // Wallet States (UC19)
   const [walletBalance, setWalletBalance] = useState(user.walletBalance || 0);
@@ -177,7 +295,8 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
       return;
     }
 
-    if (type === 'cccd' || type === 'cccdBack') setCccdUploading(true);
+    if (type === 'cccd') setCccdFrontUploading(true);
+    else if (type === 'cccdBack') setCccdBackUploading(true);
     else setLicenseUploading(true);
 
     const reader = new FileReader();
@@ -192,17 +311,24 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
 
         const data = await api.user.uploadKyc(cccdFront, license, null, cccdBack);
         onUpdateUser(data.user);
-        
-        if (data.user.licenseStatus === 'rejected') {
+
+        if (
+          data.user.licenseStatus === 'rejected' ||
+          data.user.cccdStatus === 'rejected' ||
+          data.user.cccdBackStatus === 'rejected'
+        ) {
           showToast(data.message, 'error');
+        } else if (data.message && data.message.includes('CSKH duyệt')) {
+          showToast(data.message, 'warning');
         } else {
           showToast(data.message, 'success');
         }
       } catch (error) {
         showToast(error.message || 'Lỗi tải ảnh KYC.', 'error');
       } finally {
-        setCccdUploading(false);
-        setLicenseUploading(false);
+        if (type === 'cccd') setCccdFrontUploading(false);
+        else if (type === 'cccdBack') setCccdBackUploading(false);
+        else setLicenseUploading(false);
       }
     };
     reader.readAsDataURL(file);
@@ -388,30 +514,43 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
               </div>
             </div>
 
-            {/* 🛡️ KYC CCCD & BẰNG LÁI CARD (UC04) */}
+            {/* KYC CCCD & BẰNG LÁI CARD (UC04) */}
             <div className="kyc-verifications-card-box mt-4">
-              <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <ShieldCheck size={16} />
-                <span>Hồ Sơ Xác Minh KYC Bằng AI (UC04)</span>
+              <h4>
+                <ShieldCheck size={18} />
+                <span>Hồ Sơ Xác Minh KYC</span>
               </h4>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div className="kyc-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(115px, 1fr))', gap: '12px' }}>
                 {/* 1. CCCD Mặt Trước */}
                 <div className="kyc-item-box">
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>CCCD MẶT TRƯỚC</span>
+                  <span className="kyc-label">CCCD MẶT TRƯỚC</span>
                   {user.kycDocuments?.cccd ? (
                     <div style={{ marginTop: 4 }}>
-                      <span className={`badge-verified ${user.licenseStatus === 'rejected' ? 'badge-rejected-style' : ''}`} style={{ fontSize: '10px', background: user.licenseStatus === 'rejected' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: user.licenseStatus === 'rejected' ? '#ef4444' : '#059669' }}>
-                        {user.licenseStatus === 'rejected' ? 'Từ chối ✗' : 'Đã tải lên ✓'}
-                      </span>
-                      <button type="button" onClick={() => setPreviewImage({ src: user.kycDocuments.cccd, title: 'Mặt trước Căn cước công dân (CCCD)' })} style={{ display: 'block', background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh</button>
+                      {user.cccdStatus === 'verified' ? (
+                        <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}>Đã duyệt ✓</span>
+                      ) : user.cccdStatus === 'pending' ? (
+                        <span className="badge-pending" style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Chờ duyệt</span>
+                      ) : user.cccdStatus === 'rejected' ? (
+                        <span className="badge-rejected" style={{ fontSize: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Từ chối ✗</span>
+                      ) : (
+                        <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}>Đã tải lên ✓</span>
+                      )}
+                      <div style={{ display: 'flex', gap: '12px', marginTop: 4, alignItems: 'center' }}>
+                        <button type="button" onClick={() => setPreviewImage({ src: user.kycDocuments.cccd, title: 'Mặt trước Căn cước công dân (CCCD)' })} style={{ background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh</button>
+                        <label style={{ cursor: 'pointer', fontSize: '11px', color: 'var(--accent-primary)', textDecoration: 'underline', fontWeight: 500, display: 'inline-flex', gap: 2, alignItems: 'center' }}>
+                          <Upload size={10} />
+                          <span>{cccdFrontUploading ? 'Đang tải...' : 'Tải lại'}</span>
+                          <input type="file" onChange={(e) => handleKycUpload(e, 'cccd')} accept="image/*" style={{ display: 'none' }} disabled={cccdFrontUploading} />
+                        </label>
+                      </div>
                     </div>
                   ) : (
                     <div style={{ marginTop: 6 }}>
                       <label className="upload-license-inline-btn" style={{ cursor: 'pointer', fontSize: '10.5px', color: 'var(--accent-primary)', fontWeight: 600, display: 'inline-flex', gap: 4, alignItems: 'center' }}>
                         <Upload size={11} />
-                        <span>{cccdUploading ? 'Đang tải...' : 'Tải mặt trước'}</span>
-                        <input type="file" onChange={(e) => handleKycUpload(e, 'cccd')} accept="image/*" style={{ display: 'none' }} disabled={cccdUploading} />
+                        <span>{cccdFrontUploading ? 'Đang tải...' : 'Tải mặt trước'}</span>
+                        <input type="file" onChange={(e) => handleKycUpload(e, 'cccd')} accept="image/*" style={{ display: 'none' }} disabled={cccdFrontUploading} />
                       </label>
                     </div>
                   )}
@@ -419,20 +558,33 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
 
                 {/* 2. CCCD Mặt Sau */}
                 <div className="kyc-item-box">
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>CCCD MẶT SAU</span>
+                  <span className="kyc-label">CCCD MẶT SAU</span>
                   {user.kycDocuments?.cccdBack ? (
                     <div style={{ marginTop: 4 }}>
-                      <span className={`badge-verified ${user.licenseStatus === 'rejected' ? 'badge-rejected-style' : ''}`} style={{ fontSize: '10px', background: user.licenseStatus === 'rejected' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: user.licenseStatus === 'rejected' ? '#ef4444' : '#059669' }}>
-                        {user.licenseStatus === 'rejected' ? 'Từ chối ✗' : 'Đã tải lên ✓'}
-                      </span>
-                      <button type="button" onClick={() => setPreviewImage({ src: user.kycDocuments.cccdBack, title: 'Mặt sau Căn cước công dân (CCCD)' })} style={{ display: 'block', background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh</button>
+                      {user.cccdBackStatus === 'verified' ? (
+                        <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}>Đã duyệt ✓</span>
+                      ) : user.cccdBackStatus === 'pending' ? (
+                        <span className="badge-pending" style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Chờ duyệt</span>
+                      ) : user.cccdBackStatus === 'rejected' ? (
+                        <span className="badge-rejected" style={{ fontSize: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Từ chối ✗</span>
+                      ) : (
+                        <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}>Đã tải lên ✓</span>
+                      )}
+                      <div style={{ display: 'flex', gap: '12px', marginTop: 4, alignItems: 'center' }}>
+                        <button type="button" onClick={() => setPreviewImage({ src: user.kycDocuments.cccdBack, title: 'Mặt sau Căn cước công dân (CCCD)' })} style={{ background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh</button>
+                        <label style={{ cursor: 'pointer', fontSize: '11px', color: 'var(--accent-primary)', textDecoration: 'underline', fontWeight: 500, display: 'inline-flex', gap: 2, alignItems: 'center' }}>
+                          <Upload size={10} />
+                          <span>{cccdBackUploading ? 'Đang tải...' : 'Tải lại'}</span>
+                          <input type="file" onChange={(e) => handleKycUpload(e, 'cccdBack')} accept="image/*" style={{ display: 'none' }} disabled={cccdBackUploading} />
+                        </label>
+                      </div>
                     </div>
                   ) : (
                     <div style={{ marginTop: 6 }}>
                       <label className="upload-license-inline-btn" style={{ cursor: 'pointer', fontSize: '10.5px', color: 'var(--accent-primary)', fontWeight: 600, display: 'inline-flex', gap: 4, alignItems: 'center' }}>
                         <Upload size={11} />
-                        <span>{cccdUploading ? 'Đang tải...' : 'Tải mặt sau'}</span>
-                        <input type="file" onChange={(e) => handleKycUpload(e, 'cccdBack')} accept="image/*" style={{ display: 'none' }} disabled={cccdUploading} />
+                        <span>{cccdBackUploading ? 'Đang tải...' : 'Tải mặt sau'}</span>
+                        <input type="file" onChange={(e) => handleKycUpload(e, 'cccdBack')} accept="image/*" style={{ display: 'none' }} disabled={cccdBackUploading} />
                       </label>
                     </div>
                   )}
@@ -440,20 +592,26 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
 
                 {/* 3. Bằng lái */}
                 <div className="kyc-item-box">
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', fontWeight: 600 }}>BẰNG LÁI B1/B2/C</span>
-                  {user.licenseStatus === 'verified' ? (
+                  <span className="kyc-label">BẰNG LÁI B1/B2/C</span>
+                  {user.licenseImage ? (
                     <div style={{ marginTop: 4 }}>
-                      <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}>Đã duyệt ✓</span>
-                      {user.licenseImage && <button type="button" onClick={() => setPreviewImage({ src: user.licenseImage, title: 'Bằng lái xe B1/B2/C' })} style={{ display: 'block', background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh</button>}
-                    </div>
-                  ) : user.licenseStatus === 'pending' ? (
-                    <div style={{ marginTop: 4 }}>
-                      <span className="badge-pending" style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Chờ duyệt</span>
-                    </div>
-                  ) : user.licenseStatus === 'rejected' ? (
-                    <div style={{ marginTop: 4 }}>
-                      <span className="badge-rejected" style={{ fontSize: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Từ chối ✗</span>
-                      {user.licenseImage && <button type="button" onClick={() => setPreviewImage({ src: user.licenseImage, title: 'Bằng lái xe B1/B2/C' })} style={{ display: 'block', background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', marginTop: 4, textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh</button>}
+                      {user.licenseStatus === 'verified' ? (
+                        <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}>Đã duyệt ✓</span>
+                      ) : user.licenseStatus === 'pending' ? (
+                        <span className="badge-pending" style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Chờ duyệt</span>
+                      ) : user.licenseStatus === 'rejected' ? (
+                        <span className="badge-rejected" style={{ fontSize: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Từ chối ✗</span>
+                      ) : (
+                        <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}>Đã tải lên ✓</span>
+                      )}
+                      <div style={{ display: 'flex', gap: '12px', marginTop: 4, alignItems: 'center' }}>
+                        <button type="button" onClick={() => setPreviewImage({ src: user.licenseImage, title: 'Bằng lái xe B1/B2/C' })} style={{ background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh</button>
+                        <label style={{ cursor: 'pointer', fontSize: '11px', color: 'var(--accent-primary)', textDecoration: 'underline', fontWeight: 500, display: 'inline-flex', gap: 2, alignItems: 'center' }}>
+                          <Upload size={10} />
+                          <span>{licenseUploading ? 'Đang tải...' : 'Tải lại'}</span>
+                          <input type="file" onChange={(e) => handleKycUpload(e, 'license')} accept="image/*" style={{ display: 'none' }} disabled={licenseUploading} />
+                        </label>
+                      </div>
                     </div>
                   ) : (
                     <div style={{ marginTop: 6 }}>
@@ -465,16 +623,54 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
                     </div>
                   )}
                 </div>
+
+                {/* 4. Xác thực khuôn mặt */}
+                <div className="kyc-item-box">
+                  <span className="kyc-label">XÁC MINH KHUÔN MẶT</span>
+                  {user.faceImage ? (
+                    <div style={{ marginTop: 4 }}>
+                      {user.faceStatus === 'verified' ? (
+                        <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}>Đã duyệt ✓</span>
+                      ) : user.faceStatus === 'pending' ? (
+                        <span className="badge-pending" style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Chờ duyệt</span>
+                      ) : user.faceStatus === 'rejected' ? (
+                        <span className="badge-rejected" style={{ fontSize: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>Từ chối ✗</span>
+                      ) : (
+                        <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}>Đã tải lên ✓</span>
+                      )}
+                      <div style={{ display: 'flex', gap: '12px', marginTop: 4, alignItems: 'center' }}>
+                        <button type="button" onClick={() => setPreviewImage({ src: user.faceImage, title: 'Ảnh chân dung FaceID' })} style={{ background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>Xem ảnh</button>
+                        <button type="button" onClick={startFaceScan} style={{ background: 'none', border: 'none', padding: 0, fontSize: '11px', color: 'var(--accent-primary)', textDecoration: 'underline', fontWeight: 500, cursor: 'pointer', textAlign: 'left', display: 'inline-flex', gap: '2px', alignItems: 'center' }}><RotateCw size={10} /> Quét lại</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 6 }}>
+                      <button type="button" onClick={startFaceScan} className="upload-license-inline-btn" style={{ cursor: 'pointer', fontSize: '10.5px', color: 'var(--accent-primary)', fontWeight: 600, display: 'inline-flex', gap: 4, alignItems: 'center', background: 'transparent', border: 'none', padding: 0, boxShadow: 'none' }}>
+                        <Upload size={11} />
+                        <span>Quét khuôn mặt</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* ⚠️ AI REJECTION FEEDBACK ALERT */}
+              {/* ⚠️ AI REJECTION/WARNING FEEDBACK ALERT */}
               {user.kycRejectionReason && (
-                <div style={{ background: 'rgba(239, 68, 68, 0.08)', color: '#fda4af', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '12px 16px', borderRadius: '10px', fontSize: '12.5px', marginTop: 14, display: 'flex', flexDirection: 'column', gap: 4, lineHeight: 1.4 }}>
-                  <span style={{ fontWeight: 700, color: '#f87171', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ 
+                  background: user.kycRejectionReason.includes('CSKH duyệt') ? 'rgba(245, 158, 11, 0.08)' : 'rgba(239, 68, 68, 0.08)', 
+                  color: user.kycRejectionReason.includes('CSKH duyệt') ? '#fcd34d' : '#fda4af', 
+                  border: user.kycRejectionReason.includes('CSKH duyệt') ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)', 
+                  padding: '12px 16px', borderRadius: '10px', fontSize: '12.5px', marginTop: 14, display: 'flex', flexDirection: 'column', gap: 4, lineHeight: 1.4 
+                }}>
+                  <span style={{ 
+                    fontWeight: 700, 
+                    color: user.kycRejectionReason.includes('CSKH duyệt') ? '#fbbf24' : '#f87171', 
+                    display: 'flex', alignItems: 'center', gap: 6 
+                  }}>
                     <ShieldAlert size={14} />
-                    <span>AI Từ chối Xác minh KYC tự động:</span>
+                    <span>{user.kycRejectionReason.includes('CSKH duyệt') ? 'Cảnh báo từ AI Xác minh KYC:' : 'AI Từ chối Xác minh KYC tự động:'}</span>
                   </span>
-                  <span>{user.kycRejectionReason}</span>
+                  <span style={{ color: user.kycRejectionReason.includes('CSKH duyệt') ? '#f59e0b' : undefined }}>{user.kycRejectionReason}</span>
                 </div>
               )}
             </div>
@@ -785,6 +981,64 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
                 borderRadius: '8px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
               }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- BIOMETRIC FACE SCANNER MODAL --- */}
+      {showFaceScanner && (
+        <div className="editor-modal-overlay">
+          <div className="editor-modal-card" style={{ maxWidth: '600px' }}>
+            <div className="editor-modal-header">
+              <h3>Xác thực sinh trắc học FaceID</h3>
+              <button className="editor-close-btn" onClick={handleCloseFaceScanner}><X size={20} /></button>
+            </div>
+
+            <div className="editor-modal-body" style={{ padding: '20px' }}>
+              {faceScanStep === 'streaming' || faceScanStep === 'countdown' ? (
+                <>
+                  <p className="editor-tip">💡 <strong>Hướng dẫn đăng ký:</strong> Giữ đầu thẳng, căn chỉnh khuôn mặt cân đối trong vòng tròn xanh lớn. Ảnh chân dung này sẽ được đăng ký làm FaceID gốc phục vụ đối chiếu khi đặt xe.</p>
+                  <div className={`face-scanner-circle-container ${faceScanStep === 'countdown' ? 'scanning' : ''}`}>
+                    <video ref={faceVideoRef} autoPlay playsInline className="face-scanner-video" />
+                    <div className="face-scanner-overlay" />
+                    <div className="face-scanner-glow" />
+                    <div className="face-scanner-line" />
+                    {faceScanStep === 'countdown' && (
+                      <div className="face-scanner-countdown">{faceCountdown}</div>
+                    )}
+                  </div>
+                  <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center' }}>
+                    {faceScanStep === 'streaming' ? (
+                      <button type="button" onClick={handleStartCountdown} className="btn btn-primary" style={{ width: 'auto', padding: '10px 24px', background: 'var(--accent-gradient)' }}>
+                        Bắt đầu quét khuôn mặt
+                      </button>
+                    ) : (
+                      <span style={{ color: '#f59e0b', fontSize: '13px', fontWeight: 700 }}>Đang nhận dạng sinh trắc học...</span>
+                    )}
+                  </div>
+                </>
+              ) : faceScanStep === 'captured' ? (
+                <>
+                  <p className="editor-tip">💡 <strong>Kiểm tra ảnh KYC:</strong> Đảm bảo ảnh chụp cận cảnh khuôn mặt sắc nét, rõ ràng, không bị mờ/lóa để tối ưu hóa khả năng so khớp tự động khi thuê xe.</p>
+                  <div className="face-scanner-circle-container">
+                    <img src={capturedFace} alt="Captured Face" className="face-scan-captured-image" />
+                  </div>
+                  <div style={{ marginTop: '16px', display: 'flex', gap: '12px', width: '100%' }}>
+                    <button type="button" onClick={startFaceScan} className="btn btn-secondary" style={{ flex: 1 }}>
+                      Chụp lại
+                    </button>
+                    <button type="button" onClick={handleUploadFace} className="btn btn-primary" style={{ flex: 1, background: 'var(--accent-gradient)' }}>
+                      Đồng ý &amp; Lưu
+                    </button>
+                  </div>
+                </>
+              ) : faceScanStep === 'uploading' ? (
+                <div style={{ padding: '40px 0', textAlign: 'center' }}>
+                  <div className="spin text-info" style={{ display: 'inline-block', width: '40px', height: '40px', border: '4px solid #cbd5e1', borderTopColor: '#009698', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                  <p style={{ marginTop: '16px', color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 600 }}>Đang xử lý sinh trắc học bằng AI...</p>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

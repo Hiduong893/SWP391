@@ -53,7 +53,7 @@ export const configModel = {
 
     let serviceFeePercent = 5;
     let insuranceMultiplier = 1.1;
-    let systemNotice = 'Chào mừng bạn đến với ViVuCar - Nền tảng Cho thuê và Ký gửi xe tự lái hàng đầu Việt Nam. Hãy hoàn tất KYC bằng lái xe trong mục Hồ sơ để bắt đầu trải nghiệm thuê xe ngay!';
+    let systemNotice = 'Chào mừng bạn đến với ViVuCar - Nền tảng Hỗ trợ cho thuê xe tự lái hàng đầu Việt Nam. Hãy hoàn tất KYC bằng lái xe trong mục Hồ sơ để bắt đầu trải nghiệm thuê xe ngay!';
     let bankId = process.env.BANK_ID || 'mbbank';
     let bankName = process.env.BANK_NAME || 'ViVuCar Bank';
     let bankAccountNumber = process.env.BANK_ACCOUNT_NUMBER || '1900533588';

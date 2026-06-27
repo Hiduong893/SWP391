@@ -29,6 +29,7 @@ function App() {
   const [resetToken, setResetToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [authModal, setAuthModal] = useState(null); // 'login', 'register', 'forgot-password'
   const [activeBooking, setActiveBooking] = useState(null);
   const [searchParams, setSearchParams] = useState(null);
 
@@ -38,6 +39,15 @@ function App() {
   };
 
   const { showToast } = useToast();
+
+  const handleSetTabOrModal = (tab) => {
+    if (['login', 'register', 'forgot-password'].includes(tab)) {
+      setAuthModal(tab);
+    } else {
+      setAuthModal(null);
+      setCurrentTab(tab);
+    }
+  };
 
   const checkAutoLogin = async () => {
     const token = localStorage.getItem('token');
@@ -125,11 +135,11 @@ function App() {
       if (token) {
         if (pathname.includes('verify-email')) {
           setVerificationToken(token);
-          setCurrentTab('verify-email');
+          handleSetTabOrModal('verify-email');
           showToast('Đang chuyển hướng đến trang xác thực email...', 'info');
         } else if (pathname.includes('reset-password')) {
           setResetToken(token);
-          setCurrentTab('reset-password');
+          handleSetTabOrModal('reset-password');
           showToast('Đang chuyển hướng đến trang đặt lại mật khẩu...', 'info');
         }
       }
@@ -141,10 +151,10 @@ function App() {
         const token = match[2];
         if (path === 'verify-email') {
           setVerificationToken(token);
-          setCurrentTab('verify-email');
+          handleSetTabOrModal('verify-email');
         } else if (path === 'reset-password') {
           setResetToken(token);
-          setCurrentTab('reset-password');
+          handleSetTabOrModal('reset-password');
         }
       }
     }
@@ -159,9 +169,9 @@ function App() {
       // Switch to previously intended page if any, or default to rent-car
       const savedTab = sessionStorage.getItem('activeTab');
       if (savedTab && savedTab !== 'login' && savedTab !== 'register') {
-        setCurrentTab(savedTab);
+        handleSetTabOrModal(savedTab);
       } else {
-        setCurrentTab('rent-car');
+        handleSetTabOrModal('rent-car');
       }
     }
   };
@@ -173,6 +183,8 @@ function App() {
         onLogout={handleLogout}
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
+        authModal={authModal}
+        setAuthModal={setAuthModal}
       />
 
       {loading ? (
@@ -188,7 +200,7 @@ function App() {
               <RentCar
                 user={user}
                 onRentCarClick={setActiveBooking}
-                setCurrentTab={setCurrentTab}
+                setCurrentTab={handleSetTabOrModal}
                 onSearch={handleSearch}
               />
             )}
@@ -197,7 +209,7 @@ function App() {
             {currentTab === 'find-car' && (
               <FindCar
                 user={user}
-                setCurrentTab={setCurrentTab}
+                setCurrentTab={handleSetTabOrModal}
                 onRentCarClick={setActiveBooking}
                 initialSearchParams={searchParams}
               />
@@ -205,7 +217,7 @@ function App() {
 
             {/* List Car (Owner listing) Tab - Protected */}
             {currentTab === 'list-car' && user && (
-              <ListCar setCurrentTab={setCurrentTab} />
+              <ListCar setCurrentTab={handleSetTabOrModal} user={user} onUpdateUser={setUser} />
             )}
 
             {/* My Trips (Rental history) Tab - Protected */}
@@ -214,36 +226,20 @@ function App() {
             )}
 
             {currentTab === 'admin-dashboard' && user && (user.role === 'admin' || user.role === 'cskh') && (
-              <AdminDashboard setCurrentTab={setCurrentTab} />
-            )}
-
-            {/* Auth pages */}
-            {currentTab === 'login' && (
-              <Login
-                onLoginSuccess={handleLoginSuccess}
-                setCurrentTab={setCurrentTab}
-              />
-            )}
-
-            {currentTab === 'register' && (
-              <Register setCurrentTab={setCurrentTab} />
+              <AdminDashboard setCurrentTab={handleSetTabOrModal} />
             )}
 
             {currentTab === 'verify-email' && (
               <VerifyEmail
                 token={verificationToken}
-                setCurrentTab={setCurrentTab}
+                setCurrentTab={handleSetTabOrModal}
               />
-            )}
-
-            {currentTab === 'forgot-password' && (
-              <ForgotPassword setCurrentTab={setCurrentTab} />
             )}
 
             {currentTab === 'reset-password' && (
               <ResetPassword
                 token={resetToken}
-                setCurrentTab={setCurrentTab}
+                setCurrentTab={handleSetTabOrModal}
               />
             )}
 
@@ -251,7 +247,7 @@ function App() {
               <Profile
                 user={user}
                 onUpdateUser={setUser}
-                setCurrentTab={setCurrentTab}
+                setCurrentTab={handleSetTabOrModal}
               />
             )}
 
@@ -262,6 +258,75 @@ function App() {
         </div>
       )}
 
+      {/* --- AUTH MODALS --- */}
+      {authModal && (
+        <div
+          className="auth-modal-overlay"
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.6)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            // padding: '20px', backdropFilter: 'blur(8px)', //làm mờ nếu cần
+            padding: '20px',
+            animation: 'fadeIn 0.2s ease-out'
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setAuthModal(null);
+          }}
+        >
+          <div
+            style={{
+              position: 'relative', width: '100%', maxWidth: '480px',
+              maxHeight: '95vh', overflowY: 'auto',
+              animation: 'slideUp 0.3s ease-out',
+              borderRadius: '24px'
+            }}
+          >
+            <button
+              onClick={() => setAuthModal(null)}
+              style={{
+                position: 'absolute', top: 20, right: 20,
+                background: 'rgba(0,0,0,0.05)', border: 'none',
+                cursor: 'pointer', zIndex: 10, color: '#64748b',
+                width: '32px', height: '32px', borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.1)'; e.currentTarget.style.color = '#0f172a'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#64748b'; }}
+            >
+              ✕
+            </button>
+            {authModal === 'login' && (
+              <Login
+                onLoginSuccess={(loggedInUser) => {
+                  setAuthModal(null);
+                  handleLoginSuccess(loggedInUser);
+                }}
+                setCurrentTab={handleSetTabOrModal}
+              />
+            )}
+            {authModal === 'register' && (
+              <Register setCurrentTab={handleSetTabOrModal} />
+            )}
+            {authModal === 'forgot-password' && (
+              <ForgotPassword setCurrentTab={handleSetTabOrModal} />
+            )}
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
       {/* --- PRE-COMPUTED VietQR BOOKING CHECKOUT MODAL --- */}
       {activeBooking && user && (
         <BookingModal
@@ -269,12 +334,12 @@ function App() {
           user={user}
           onUpdateUser={setUser}
           onClose={() => setActiveBooking(null)}
-          setCurrentTab={setCurrentTab}
+          setCurrentTab={handleSetTabOrModal}
         />
       )}
 
       {/* --- AI SUPPORT CHATBOT WIDGET --- */}
-      <ChatbotWidget user={user} setCurrentTab={setCurrentTab} />
+      <ChatbotWidget user={user} setCurrentTab={handleSetTabOrModal} />
     </>
   );
 }
