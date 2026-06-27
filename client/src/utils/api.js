@@ -389,6 +389,17 @@ export const api = {
     deleteUser: (id) =>
       request(`/admin/users/${id}`, {
         method: 'DELETE'
+      }),
+
+    queryAIAssistant: (message, history) =>
+      request('/admin/ai-assistant', {
+        method: 'POST',
+        body: JSON.stringify({ message, history })
+      }),
+
+    suggestTicketReply: (id) =>
+      request(`/admin/support/tickets/${id}/ai-suggest`, {
+        method: 'GET'
       })
   },
 

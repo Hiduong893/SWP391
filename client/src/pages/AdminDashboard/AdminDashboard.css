@@ -1722,7 +1722,7 @@ input:checked + .toggle-slider:before {
    ===================================================== */
 .rt-ai-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: 1.65fr 1fr;
   gap: 20px;
 }
 
@@ -2580,4 +2580,207 @@ input:checked + .toggle-slider:before {
   max-height: 400px;
   object-fit: contain;
   border-radius: 8px;
+}
+
+/* =====================================================
+   ADMIN OPERATIONS AI ASSISTANT STYLES
+   ===================================================== */
+
+@keyframes rt-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.rt-animate-spin {
+  animation: rt-spin 1s linear infinite;
+}
+
+.rt-ai-suggest-btn {
+  background: none;
+  border: none;
+  color: #00bfa5;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.rt-ai-suggest-btn:hover {
+  background: rgba(0, 191, 165, 0.12);
+  transform: scale(1.1);
+}
+
+.rt-admin-ai-chat-panel {
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  height: 700px;
+  overflow: hidden;
+  border: 1px solid var(--admin-border-color);
+}
+
+.rt-admin-ai-chat-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--admin-border-color);
+  background: var(--admin-bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rt-admin-ai-chat-header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rt-admin-ai-chat-header-title h4 {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--admin-text-primary);
+}
+
+.rt-admin-ai-chat-header-title p {
+  margin: 2px 0 0 0;
+  font-size: 11px;
+  color: var(--admin-text-muted);
+}
+
+.rt-admin-ai-chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.15);
+}
+
+.rt-admin-ai-chat-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.rt-admin-ai-chat-body::-webkit-scrollbar-thumb {
+  background: var(--admin-border-color);
+  border-radius: 4px;
+}
+
+.rt-admin-ai-msg {
+  display: flex;
+  width: 100%;
+}
+
+.rt-admin-ai-msg.user {
+  justify-content: flex-end;
+}
+
+.rt-admin-ai-msg.model {
+  justify-content: flex-start;
+}
+
+.rt-admin-ai-msg-bubble {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  word-break: break-word;
+  white-space: pre-wrap;
+  text-align: left;
+}
+
+.rt-admin-ai-msg-bubble table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 12px;
+}
+
+.rt-admin-ai-msg-bubble th, 
+.rt-admin-ai-msg-bubble td {
+  border: 1px solid var(--admin-border-color);
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.rt-admin-ai-msg-bubble th {
+  background: rgba(0, 150, 152, 0.15);
+  font-weight: 700;
+}
+
+.rt-admin-ai-msg.user .rt-admin-ai-msg-bubble {
+  background: #009698;
+  color: white;
+  border-bottom-right-radius: 2px;
+}
+
+.rt-admin-ai-msg.model .rt-admin-ai-msg-bubble {
+  background: var(--admin-bg-tertiary);
+  color: var(--admin-text-primary);
+  border-bottom-left-radius: 2px;
+  border: 1px solid var(--admin-border-color);
+  max-width: 95%;
+}
+
+.rt-admin-ai-quick-prompts {
+  padding: 8px 16px;
+  background: var(--admin-bg-secondary);
+  border-top: 1px solid var(--admin-border-color);
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+
+.rt-admin-ai-quick-prompts::-webkit-scrollbar {
+  display: none;
+}
+
+.rt-admin-ai-quick-chip {
+  background: var(--admin-bg-tertiary);
+  border: 1px solid var(--admin-border-color);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 11px;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rt-admin-ai-quick-chip:hover {
+  background: rgba(0, 150, 152, 0.1);
+  border-color: #009698;
+  color: #009698;
+}
+
+.rt-admin-ai-chat-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--admin-border-color);
+  background: var(--admin-bg-secondary);
+}
+
+.rt-admin-ai-chat-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--admin-bg-tertiary);
+  border: 1px solid var(--admin-border-color);
+  border-radius: 20px;
+  padding: 4px 4px 4px 14px;
+}
+
+.rt-admin-ai-chat-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  color: var(--admin-text-primary);
 }
