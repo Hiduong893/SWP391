@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, MapPin, CreditCard, ShieldCheck, CheckCircle2, ChevronRight, Upload, Info, AlertTriangle } from 'lucide-react';
+import { X, Calendar, MapPin, CreditCard, ShieldCheck, CheckCircle2, ChevronRight, Upload, Info, AlertTriangle, FileText } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from './Toast';
+import { ContractModal } from './ContractModal';
 
 export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setCurrentTab }) => {
   const [step, setStep] = useState(1); // 1: Confirmation & License, 2: Payment, 3: Success, 'face_scan': Face Scanner, 'contract': Hợp đồng
@@ -247,6 +248,8 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
   };
 
   const [bookingId] = useState(() => crypto.randomUUID().slice(0, 8).toUpperCase());
+  const [createdBookingId, setCreatedBookingId] = useState(null); // Real booking ID from API
+  const [showContractModal, setShowContractModal] = useState(false);
   const [payMethod, setPayMethod] = useState('vietqr'); // 'vietqr', 'vnpay', or 'wallet'
   const [timeLeft, setTimeLeft] = useState(900); // 15 minutes = 900 seconds
   const [pickupMethod, setPickupMethod] = useState('self'); // 'self' or 'delivery'
@@ -507,9 +510,34 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
         agreementChecked: true
       };
 
-      const res = await api.bookings.create(bookingData);
+      const newBooking = await api.bookings.create(bookingData);
       
-      showToast(res.message || 'Đặt xe và ký hợp đồng thành công!', 'success');
+      // Lấy ID thật từ server để phục vụ cho các logic sau này
+      setCreatedBookingId(newBooking.id);
+
+      if (paymentChoice === 'vnpay') {
+        const vnpayRes = await api.bookings.createVnpayUrl(newBooking.id);
+        if (vnpayRes && vnpayRes.paymentUrl) {
+          window.location.href = vnpayRes.paymentUrl;
+          return; // Chuyển hướng trình duyệt sang VNPay
+        } else {
+          throw new Error('Không nhận được liên kết thanh toán từ VNPAY.');
+        }
+      }
+
+      showToast(newBooking.message || 'Xác nhận thanh toán và đặt xe thành công!', 'success');
+      
+      if (paymentChoice === 'wallet') {
+        const newBalance = walletBalance - totalPayment;
+        setWalletBalance(newBalance);
+        if (onUpdateUser) {
+          onUpdateUser({
+            ...user,
+            walletBalance: newBalance
+          });
+        }
+      }
+
       setStep(3);
     } catch (error) {
       showToast(error.message || 'Lỗi tạo đơn đặt xe hoặc xác thực khuôn mặt.', 'error');
@@ -1594,6 +1622,50 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
               <div className="receipt-stamp" style={{ bottom: '90px', right: '16px', fontSize: '9.5px', border: '2.5px double #10b981' }}>HỢP ĐỒNG ĐÃ KÝ SỐ ✓</div>
             </div>
 
+            {/* Contract CTA */}
+            <div style={{
+              margin: '20px auto 0',
+              maxWidth: '420px',
+              background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
+              border: '1.5px solid #c4b5fd',
+              borderRadius: '14px',
+              padding: '16px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '14px',
+            }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: '10px',
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <FileText size={18} color="#fff" />
+              </div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#3730a3', marginBottom: '2px' }}>Hợp đồng điện tử đã được tạo</div>
+                <div style={{ fontSize: '11.5px', color: '#6366f1' }}>Xem và ký hợp đồng để xác nhận chuyến đi chính thức</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowContractModal(true)}
+                style={{
+                  padding: '8px 16px',
+                  background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 4px 12px rgba(99,102,241,0.35)',
+                }}
+              >
+                Xem hợp đồng
+              </button>
+            </div>
+
             <button
               type="button"
               className="btn btn-primary mt-6"
@@ -1609,6 +1681,15 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
         )}
       </div>
     </div>
+
+    {/* Contract Modal overlay */}
+    {showContractModal && createdBookingId && (
+      <ContractModal
+        bookingId={createdBookingId}
+        user={user}
+        onClose={() => setShowContractModal(false)}
+      />
+    )}
   );
 };
 
