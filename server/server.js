@@ -31,7 +31,8 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true
 }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Health check / Root
 app.get('/', (req, res) => {
@@ -60,6 +61,14 @@ app.use(paymentRoutes);
 app.use(renterActionRoutes);
 app.use(notificationRoutes);
 app.use('/api', contractRoutes);
+
+// Global Error Handler Middleware
+app.use((err, req, res, next) => {
+  console.error('Server Global Error:', err);
+  res.status(err.status || 500).json({
+    message: err.message || 'Đã xảy ra lỗi hệ thống.'
+  });
+});
 
 // Start server
 app.listen(PORT, () => {

@@ -29,17 +29,18 @@ router.get('/api/cars', async (req, res) => {
 
     res.json(cars);
   } catch (error) {
+    console.error('Lỗi lấy danh sách xe:', error);
     res.status(500).json({ message: 'Lỗi lấy danh sách xe.' });
   }
 });
 
-// 14. POST Cars (Ký gửi xe mới)
+// 14. POST Cars (Thêm xe cho thuê mới)
 router.post('/api/cars', auth, async (req, res) => {
   try {
     const { brand, model, seats, transmission, fuel, pricePerDay, image, location, plateNumber, carPapers } = req.body;
 
     if (!brand || !model || !seats || !pricePerDay || !location || !plateNumber) {
-      return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin ký gửi xe.' });
+      return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin xe cho thuê.' });
     }
 
     const newCar = await db.cars.create({
@@ -61,12 +62,12 @@ router.post('/api/cars', auth, async (req, res) => {
     }
 
     res.status(201).json({
-      message: 'Ký gửi xe thành công! Xe của bạn đang chờ CSKH/Admin phê duyệt kiểm duyệt chất lượng.',
+      message: 'Đăng ký xe cho thuê thành công! Xe của bạn đang chờ CSKH/Admin phê duyệt kiểm duyệt chất lượng.',
       car: newCar
     });
   } catch (error) {
     console.error('List car error:', error);
-    res.status(500).json({ message: 'Lỗi ký gửi xe.' });
+    res.status(500).json({ message: 'Lỗi đăng ký xe cho thuê.' });
   }
 });
 
@@ -77,6 +78,42 @@ router.get('/api/owner/cars', auth, async (req, res) => {
     res.json(cars);
   } catch (error) {
     res.status(500).json({ message: 'Lỗi tải danh sách xe của bạn.' });
+  }
+});
+
+// Update Owner's Car (Chỉnh sửa thông tin xe ký gửi)
+router.put('/api/owner/cars/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { pricePerDay, location, image } = req.body;
+
+    if (!pricePerDay || !location || !image) {
+      return res.status(400).json({ message: 'Vui lòng điền đầy đủ các thông tin.' });
+    }
+
+    const car = await db.cars.findOne({ id });
+    if (!car) {
+      return res.status(404).json({ message: 'Phương tiện không tồn tại.' });
+    }
+
+    if (car.ownerId !== String(req.user.id)) {
+      return res.status(403).json({ message: 'Bạn không có quyền chỉnh sửa phương tiện này.' });
+    }
+
+    const updatedCar = await db.cars.update(id, {
+      pricePerDay: parseInt(pricePerDay),
+      location,
+      image,
+      status: 'pending_moderation' // reset to pending quality check on edit
+    });
+
+    res.json({
+      message: 'Cập nhật thông tin xe ký gửi thành công! Xe của bạn đang chờ kiểm duyệt lại.',
+      car: updatedCar
+    });
+  } catch (error) {
+    console.error('Update car error:', error);
+    res.status(500).json({ message: 'Lỗi cập nhật thông tin xe.' });
   }
 });
 
