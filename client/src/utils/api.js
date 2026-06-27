@@ -212,6 +212,12 @@ export const api = {
       request(`/owner/bookings/${id}/approve`, {
         method: 'PUT',
         body: JSON.stringify({ approved })
+      }),
+
+    updateCar: (id, carData) =>
+      request(`/owner/cars/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(carData)
       })
   },
 
