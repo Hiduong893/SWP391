@@ -12,9 +12,11 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
   const [location, setLocation] = useState('');
   const [pickupDate, setPickupDate] = useState('');
   const [returnDate, setReturnDate] = useState('');
-  const [pickupTime, setPickupTime] = useState('10:30');
+  const [pickupTime, setPickupTime] = useState('10:00');
   const [returnTime, setReturnTime] = useState('10:00');
   const [searchTab, setSearchTab] = useState('self-drive'); // self-drive, monthly
+
+  const TIME_OPTIONS = ["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
 
   // Filters state
   const [seats, setSeats] = useState('');
@@ -80,6 +82,28 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
     fetchSystemConfig();
   }, []);
 
+  useEffect(() => {
+    if (pickupDate && pickupTime && returnDate && returnTime) {
+      const start = new Date(`${pickupDate}T${pickupTime}:00`);
+      const end = new Date(`${returnDate}T${returnTime}:00`);
+      const minEnd = new Date(start.getTime() + 4 * 60 * 60 * 1000); // 4 hours min
+      if (end < minEnd) {
+        const localMinEnd = new Date(minEnd.getTime() - minEnd.getTimezoneOffset() * 60000);
+        setReturnDate(localMinEnd.toISOString().split('T')[0]);
+        const newTime = `${minEnd.getHours().toString().padStart(2, '0')}:00`;
+        setReturnTime(TIME_OPTIONS.includes(newTime) ? newTime : "22:00");
+      }
+    }
+  }, [pickupDate, pickupTime, returnDate, returnTime]);
+
+  const isReturnTimeDisabled = (time) => {
+    if (!pickupDate || !pickupTime || !returnDate) return false;
+    const start = new Date(`${pickupDate}T${pickupTime}:00`);
+    const endOption = new Date(`${returnDate}T${time}:00`);
+    const minEnd = new Date(start.getTime() + 4 * 60 * 60 * 1000);
+    return endOption < minEnd;
+  };
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (new Date(pickupDate) >= new Date(returnDate)) {
@@ -129,6 +153,8 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
       car,
       pickupDate,
       returnDate,
+      pickupTime,
+      returnTime,
       pickupLocation: location || car.location || 'Không xác định'
     });
     setSelectedCarDetails(null); // Close details modal if open
@@ -565,8 +591,17 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                 </label>
                 <input
                   type="date"
+                  min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}
                   value={pickupDate}
-                  onChange={(e) => setPickupDate(e.target.value)}
+                  onChange={(e) => {
+                    const newPickup = e.target.value;
+                    setPickupDate(newPickup);
+                    if (new Date(`${newPickup}T${pickupTime}:00`) >= new Date(`${returnDate}T${returnTime}:00`)) {
+                      const tomorrow = new Date(`${newPickup}T${pickupTime}:00`);
+                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      setReturnDate(tomorrow.toISOString().split('T')[0]);
+                    }
+                  }}
                   className="search-date-input-borderless"
                   required
                 />
@@ -584,12 +619,9 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                     onChange={(e) => setPickupTime(e.target.value)}
                     className="search-select-borderless"
                   >
-                    <option value="08:00">08:00</option>
-                    <option value="09:00">09:00</option>
-                    <option value="10:00">10:00</option>
-                    <option value="10:30">10:30</option>
-                    <option value="13:00">13:00</option>
-                    <option value="14:00">14:00</option>
+                    {TIME_OPTIONS.map(time => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
                   </select>
                   <ChevronDown size={13} className="borderless-select-arrow" />
                 </div>
@@ -603,6 +635,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                 </label>
                 <input
                   type="date"
+                  min={pickupDate || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}
                   value={returnDate}
                   onChange={(e) => setReturnDate(e.target.value)}
                   className="search-date-input-borderless"
@@ -622,12 +655,9 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                     onChange={(e) => setReturnTime(e.target.value)}
                     className="search-select-borderless"
                   >
-                    <option value="08:00">08:00</option>
-                    <option value="09:00">09:00</option>
-                    <option value="10:00">10:00</option>
-                    <option value="12:00">12:00</option>
-                    <option value="14:00">14:00</option>
-                    <option value="17:00">17:00</option>
+                    {TIME_OPTIONS.map(time => (
+                      <option key={time} value={time} disabled={isReturnTimeDisabled(time)}>{time}</option>
+                    ))}
                   </select>
                   <ChevronDown size={13} className="borderless-select-arrow" />
                 </div>

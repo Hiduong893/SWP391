@@ -228,8 +228,8 @@ Sau khi thảo luận, hai bên đồng ý ký kết hợp đồng thuê xe tự
 - Truyền động: ${car.transmission} | Nhiên liệu: ${car.fuel}
 
 ĐIỀU 2: THỜI GIAN VÀ PHÍ DỊCH VỤ
-- Thời gian thuê: Từ ${pickupDate} đến ${returnDate} (${diffDays} ngày)
-- Đơn giá thuê: ${formatCurrency(car.pricePerDay)}/ngày
+- Thời gian thuê: Từ ${pickupTime} ${pickupDate} đến ${returnTime} ${returnDate} (${diffDaysStr})
+- Phí thuê xe (Sau Capping): ${formatCurrency(basePrice)}
 - Phí dịch vụ công nghệ: ${formatCurrency(serviceFee)}
 - Phí bảo hiểm chuyến đi: ${formatCurrency(insurancePrice)}
 - Phí giữ chỗ thanh toán ngay: 500.000đ (Đã thanh toán trực tuyến)
@@ -263,10 +263,15 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
   const [walletBalance, setWalletBalance] = useState(user?.walletBalance || 0);
   const [walletAnimating, setWalletAnimating] = useState(false);
 
-  const { car, pickupLocation } = bookingDetails;
+  const { car, pickupLocation, pickupTime: initialPickupTime, returnTime: initialReturnTime } = bookingDetails;
   const [pickupDate, setPickupDate] = useState(bookingDetails.pickupDate);
   const [returnDate, setReturnDate] = useState(bookingDetails.returnDate);
+  const [pickupTime, setPickupTime] = useState(initialPickupTime || '10:00');
+  const [returnTime, setReturnTime] = useState(initialReturnTime || '10:00');
   const { showToast } = useToast();
+  
+  const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  const TIME_OPTIONS = ["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -315,20 +320,72 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
+  useEffect(() => {
+    if (pickupDate && pickupTime && returnDate && returnTime) {
+      const start = new Date(`${pickupDate}T${pickupTime}:00`);
+      const end = new Date(`${returnDate}T${returnTime}:00`);
+      const minEnd = new Date(start.getTime() + 4 * 60 * 60 * 1000); // 4 hours min
+      if (end < minEnd) {
+        const localMinEnd = new Date(minEnd.getTime() - minEnd.getTimezoneOffset() * 60000);
+        setReturnDate(localMinEnd.toISOString().split('T')[0]);
+        const newTime = `${minEnd.getHours().toString().padStart(2, '0')}:00`;
+        setReturnTime(TIME_OPTIONS.includes(newTime) ? newTime : "22:00");
+      }
+    }
+  }, [pickupDate, pickupTime, returnDate, returnTime]);
+
+  const isReturnTimeDisabled = (time) => {
+    if (!pickupDate || !pickupTime || !returnDate) return false;
+    const start = new Date(`${pickupDate}T${pickupTime}:00`);
+    const endOption = new Date(`${returnDate}T${time}:00`);
+    const minEnd = new Date(start.getTime() + 4 * 60 * 60 * 1000);
+    return endOption < minEnd;
+  };
+
   const handleCopyText = (text, label) => {
     navigator.clipboard.writeText(text);
     showToast(`Đã sao chép ${label} vào bộ nhớ tạm.`, 'success');
   };
 
-  // Calculate rental days
-  const start = new Date(pickupDate);
-  const end = new Date(returnDate);
-  const diffTime = Math.abs(end - start);
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+  // Calculate rental hours and days using combined datetime
+  const startDatetime = new Date(`${pickupDate}T${pickupTime}:00`);
+  const endDatetime = new Date(`${returnDate}T${returnTime}:00`);
+  const diffTimeMs = endDatetime > startDatetime ? (endDatetime - startDatetime) : 0;
+  let diffHours = Math.ceil(diffTimeMs / (1000 * 60 * 60));
+  if (diffHours === 0) diffHours = 1;
 
-  // Price breakdown
-  const basePrice = car.pricePerDay * diffDays;
-  const insurancePrice = 50000 * diffDays; // 50,000 VND / day for standard insurance
+  // --- SMART CAPPING PRICING LOGIC ---
+  const pricePerDay = car.pricePerDay;
+  const package4h = Math.round(pricePerDay * 0.56);
+  const package8h = Math.round(pricePerDay * 0.70);
+  const package12h = Math.round(pricePerDay * 0.80);
+  const package24h = pricePerDay;
+  const extraHourRate = Math.round(pricePerDay * 0.10);
+
+  const calculatePrice = (hours) => {
+    let days = Math.floor(hours / 24);
+    let remHours = hours % 24;
+    let base = days * package24h;
+
+    if (remHours === 0) return base;
+
+    let remPrice = 0;
+    if (remHours <= 4) {
+      remPrice = package4h;
+    } else if (remHours <= 8) {
+      remPrice = Math.min(package4h + (remHours - 4) * extraHourRate, package8h);
+    } else if (remHours <= 12) {
+      remPrice = Math.min(package8h + (remHours - 8) * extraHourRate, package12h);
+    } else {
+      remPrice = Math.min(package12h + (remHours - 12) * extraHourRate, package24h);
+    }
+    return base + remPrice;
+  };
+
+  const basePrice = calculatePrice(diffHours);
+  const diffDaysStr = Math.floor(diffHours / 24) > 0 ? `${Math.floor(diffHours / 24)} ngày ${diffHours % 24 > 0 ? `${diffHours % 24} giờ` : ''}` : `${diffHours} giờ`;
+  
+  const insurancePrice = 50000 * Math.ceil(diffHours / 24); // 50,000 VND / day for standard insurance
   const serviceFee = 80000;
   const deliveryFee = pickupMethod === 'delivery' ? 100000 : 0;
   const totalPrice = basePrice + insurancePrice + serviceFee + deliveryFee;
@@ -440,8 +497,8 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
 
       const bookingData = {
         carId: car.id,
-        pickupDate,
-        returnDate,
+        pickupDate: `${pickupDate} ${pickupTime}:00`,
+        returnDate: `${returnDate} ${returnTime}:00`,
         pickupLocation: finalPickupLocation,
         totalPrice,
         paymentMethod: paymentChoice,
@@ -588,64 +645,77 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                   <span className="detail-lbl">Thời gian thuê</span>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-                      <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 600 }}>Ngày nhận</span>
-                      <input
-                        type="date"
-                        value={pickupDate}
-                        onChange={(e) => {
-                          const newPickup = e.target.value;
-                          setPickupDate(newPickup);
-                          if (new Date(newPickup) >= new Date(returnDate)) {
-                            const tomorrow = new Date(newPickup);
-                            tomorrow.setDate(tomorrow.getDate() + 1);
-                            setReturnDate(tomorrow.toISOString().split('T')[0]);
-                          }
-                        }}
-                        style={{
-                          background: '#ffffff',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '8px',
-                          color: '#0f172a',
-                          padding: '8px 10px',
-                          fontSize: '13px',
-                          fontFamily: "'Inter', sans-serif",
-                          outline: 'none',
-                          width: '100%',
-                          colorScheme: 'light',
-                          cursor: 'pointer',
-                          fontWeight: '500',
-                          boxSizing: 'border-box'
-                        }}
-                      />
+                      <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 600 }}>Ngày & Giờ nhận</span>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <input
+                          type="date"
+                          min={todayStr}
+                          value={pickupDate}
+                          onChange={(e) => {
+                            const newPickup = e.target.value;
+                            setPickupDate(newPickup);
+                            const currentStart = new Date(`${newPickup}T${pickupTime}:00`);
+                            const currentEnd = new Date(`${returnDate}T${returnTime}:00`);
+                            if (currentStart >= currentEnd) {
+                              const tomorrow = new Date(currentStart);
+                              tomorrow.setDate(tomorrow.getDate() + 1);
+                              setReturnDate(tomorrow.toISOString().split('T')[0]);
+                            }
+                          }}
+                          style={{
+                            background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px',
+                            color: '#0f172a', padding: '8px 6px', fontSize: '13px', fontFamily: "'Inter', sans-serif",
+                            outline: 'none', width: '65%', boxSizing: 'border-box'
+                          }}
+                        />
+                        <select
+                          value={pickupTime}
+                          onChange={(e) => setPickupTime(e.target.value)}
+                          style={{
+                            background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px',
+                            color: '#0f172a', padding: '8px 4px', fontSize: '13px', fontFamily: "'Inter', sans-serif",
+                            outline: 'none', width: '35%', boxSizing: 'border-box', cursor: 'pointer'
+                          }}
+                        >
+                          {TIME_OPTIONS.map(time => (
+                            <option key={time} value={time}>{time}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                     <span style={{ color: '#64748b', marginTop: '14px', fontSize: '10px' }}>➔</span>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-                      <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 600 }}>Ngày trả</span>
-                      <input
-                        type="date"
-                        value={returnDate}
-                        min={pickupDate}
-                        onChange={(e) => setReturnDate(e.target.value)}
-                        style={{
-                          background: '#ffffff',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '8px',
-                          color: '#0f172a',
-                          padding: '8px 10px',
-                          fontSize: '13px',
-                          fontFamily: "'Inter', sans-serif",
-                          outline: 'none',
-                          width: '100%',
-                          colorScheme: 'light',
-                          cursor: 'pointer',
-                          fontWeight: '500',
-                          boxSizing: 'border-box'
-                        }}
-                      />
+                      <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 600 }}>Ngày & Giờ trả</span>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <input
+                          type="date"
+                          min={pickupDate || todayStr}
+                          value={returnDate}
+                          onChange={(e) => setReturnDate(e.target.value)}
+                          style={{
+                            background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px',
+                            color: '#0f172a', padding: '8px 6px', fontSize: '13px', fontFamily: "'Inter', sans-serif",
+                            outline: 'none', width: '65%', boxSizing: 'border-box'
+                          }}
+                        />
+                        <select
+                          value={returnTime}
+                          onChange={(e) => setReturnTime(e.target.value)}
+                          style={{
+                            background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px',
+                            color: '#0f172a', padding: '8px 4px', fontSize: '13px', fontFamily: "'Inter', sans-serif",
+                            outline: 'none', width: '35%', boxSizing: 'border-box', cursor: 'pointer'
+                          }}
+                        >
+                          {TIME_OPTIONS.map(time => (
+                            <option key={time} value={time} disabled={isReturnTimeDisabled(time)}>{time}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   </div>
                   <span style={{ display: 'block', fontSize: '11px', color: '#6366f1', marginTop: '8px', fontWeight: 700 }}>
-                    Tổng thời gian: {diffDays} ngày
+                    Tổng thời gian: {diffDaysStr}
                   </span>
                 </div>
               </div>
@@ -747,12 +817,12 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
             <div className="cost-breakdown-card mt-4">
               <h5>Chi tiết hóa đơn dự kiến</h5>
               <div className="cost-row">
-                <span>Đơn giá thuê ({diffDays} ngày)</span>
-                <span>{formatCurrency(car.pricePerDay)} x {diffDays}</span>
+                <span>Phí thuê xe ({diffDaysStr})</span>
+                <span>{formatCurrency(basePrice)}</span>
               </div>
               <div className="cost-row">
                 <span>Bảo hiểm chuyến đi (Bắt buộc)</span>
-                <span>{formatCurrency(50000)} x {diffDays}</span>
+                <span>{formatCurrency(50000)} x {Math.ceil(diffHours / 24)}</span>
               </div>
               <div className="cost-row">
                 <span>Phí dịch vụ công nghệ</span>
