@@ -557,8 +557,9 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
   const vietQrUrl = `https://img.vietqr.io/image/${sysConfig.bankId}-${sysConfig.bankAccountNumber}-compact.png?amount=${reservationFee}&addInfo=${encodeURIComponent(`THUEXE ${car.brand} ${bookingId}`)}&accountName=${encodeURIComponent(sysConfig.bankAccountHolder)}`;
 
   return (
-    <div className="booking-modal-overlay">
-      <div className={`booking-modal-card ${step === 2 || step === 'contract' ? 'wide-payment-modal' : ''}`} style={{ position: 'relative' }}>
+    <>
+      <div className="booking-modal-overlay">
+        <div className={`booking-modal-card ${step === 2 || step === 'contract' ? 'wide-payment-modal' : ''}`} style={{ position: 'relative' }}>
         
         {/* Spinner overlay for Step 2 payment processing */}
         {payingState === 'processing' && (
@@ -1690,6 +1691,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
         onClose={() => setShowContractModal(false)}
       />
     )}
+    </>
   );
 };
 

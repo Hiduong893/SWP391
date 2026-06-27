@@ -48,7 +48,11 @@
 .cskh-dashboard {
   display: flex;
   height: 100vh;
-  width: 100%;
+  width: 100vw;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
   background: var(--cskh-bg);
   color: var(--cskh-text);
   overflow: hidden;
@@ -601,3 +605,38 @@
   border-radius: 6px; font-size: 10.5px; font-weight: 700;
   text-transform: uppercase;
 }
+
+/* Light Theme Overrides */
+.cskh-dashboard.cskh-light {
+  --cskh-bg:            #f8fafc;
+  --cskh-surface:       #ffffff;
+  --cskh-surface-2:     #f1f5f9;
+  --cskh-surface-3:     #e2e8f0;
+  --cskh-border:        rgba(0, 0, 0, 0.08);
+  --cskh-border-light:  rgba(0, 0, 0, 0.04);
+
+  --cskh-text:          #0f172a;
+  --cskh-text-muted:    #64748b;
+  --cskh-text-dim:      #94a3b8;
+}
+
+/* Giữ nguyên Sidebar là Dark Mode ngay cả khi bật Light Mode */
+.cskh-dashboard.cskh-light .cskh-sidebar {
+  background: #16162a;
+  border-right: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.cskh-dashboard.cskh-light .cskh-sidebar .cskh-brand { border-bottom-color: rgba(255, 255, 255, 0.06); }
+.cskh-dashboard.cskh-light .cskh-sidebar .cskh-sidebar-footer { border-top-color: rgba(255, 255, 255, 0.06); }
+
+.cskh-dashboard.cskh-light .cskh-sidebar .cskh-brand-text h1 { color: #e2e8f0; }
+.cskh-dashboard.cskh-light .cskh-sidebar .cskh-brand-text span { color: #818cf8; }
+
+.cskh-dashboard.cskh-light .cskh-sidebar .cskh-nav-section { color: #64748b; }
+.cskh-dashboard.cskh-light .cskh-sidebar .cskh-nav-btn { color: #94a3b8; }
+.cskh-dashboard.cskh-light .cskh-sidebar .cskh-nav-btn:hover { color: #e2e8f0; background: #1e1e38; }
+.cskh-dashboard.cskh-light .cskh-sidebar .cskh-nav-btn.active { color: #818cf8; background: rgba(99, 102, 241, 0.12); }
+
+.cskh-dashboard.cskh-light .cskh-sidebar .cskh-user-name { color: #e2e8f0; }
+.cskh-dashboard.cskh-light .cskh-sidebar .cskh-user-role { color: #818cf8; }
+.cskh-dashboard.cskh-light .cskh-sidebar .cskh-user-card:hover { background: #1e1e38; }

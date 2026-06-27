@@ -145,8 +145,8 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, s
 
               {(user.role === 'admin' || user.role === 'cskh') && (
                 <button
-                  className={`nav-item admin-nav-btn ${currentTab === 'admin-dashboard' ? 'active' : ''}`}
-                  onClick={() => setCurrentTab('admin-dashboard')}
+                  className={`nav-item admin-nav-btn ${(currentTab === 'admin-dashboard' || currentTab === 'cskh-dashboard') ? 'active' : ''}`}
+                  onClick={() => setCurrentTab(user.role === 'admin' ? 'admin-dashboard' : 'cskh-dashboard')}
                 >
                   <ShieldCheck size={16} />
                   <span>{user.role === 'admin' ? 'Quản trị' : 'CSKH & Hỗ trợ'}</span>
