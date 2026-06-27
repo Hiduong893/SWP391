@@ -14,6 +14,7 @@ import { FindCar } from './pages/FindCar/FindCar';
 import { ListCar } from './pages/ListCar/ListCar';
 import { MyTrips } from './pages/MyTrips/MyTrips';
 import { AdminDashboard } from './pages/AdminDashboard/AdminDashboard';
+import { CSKHDashboard } from './pages/CSKHDashboard/CSKHDashboard'; 
 import { BookingModal } from './components/BookingModal';
 import { SimulatedInbox } from './components/SimulatedInbox';
 import { ChatbotWidget } from './components/ChatbotWidget';
@@ -163,8 +164,10 @@ function App() {
   const handleLoginSuccess = (loggedInUser) => {
     setUser(loggedInUser);
 
-    if (loggedInUser.role === 'admin' || loggedInUser.role === 'cskh') {
+    if (loggedInUser.role === 'admin') {
       setCurrentTab('admin-dashboard');
+    } else if (loggedInUser.role === 'cskh') {
+      setCurrentTab('cskh-dashboard');
     } else {
       // Switch to previously intended page if any, or default to rent-car
       const savedTab = sessionStorage.getItem('activeTab');
@@ -225,8 +228,12 @@ function App() {
               <MyTrips />
             )}
 
-            {currentTab === 'admin-dashboard' && user && (user.role === 'admin' || user.role === 'cskh') && (
+            {currentTab === 'admin-dashboard' && user && user.role === 'admin' && (
               <AdminDashboard setCurrentTab={handleSetTabOrModal} />
+            )}
+
+            {currentTab === 'cskh-dashboard' && user && user.role === 'cskh' && (
+              <CSKHDashboard setCurrentTab={handleSetTabOrModal} />
             )}
 
             {currentTab === 'verify-email' && (
@@ -266,7 +273,6 @@ function App() {
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             backgroundColor: 'rgba(15, 23, 42, 0.6)', zIndex: 9999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            // padding: '20px', backdropFilter: 'blur(8px)', //làm mờ nếu cần
             padding: '20px',
             animation: 'fadeIn 0.2s ease-out'
           }}
