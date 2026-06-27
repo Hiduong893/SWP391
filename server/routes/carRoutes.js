@@ -29,17 +29,18 @@ router.get('/api/cars', async (req, res) => {
 
     res.json(cars);
   } catch (error) {
+    console.error('Lỗi lấy danh sách xe:', error);
     res.status(500).json({ message: 'Lỗi lấy danh sách xe.' });
   }
 });
 
-// 14. POST Cars (Ký gửi xe mới)
+// 14. POST Cars (Thêm xe cho thuê mới)
 router.post('/api/cars', auth, async (req, res) => {
   try {
     const { brand, model, seats, transmission, fuel, pricePerDay, image, location, plateNumber, carPapers } = req.body;
 
     if (!brand || !model || !seats || !pricePerDay || !location || !plateNumber) {
-      return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin ký gửi xe.' });
+      return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin xe cho thuê.' });
     }
 
     const newCar = await db.cars.create({
@@ -61,12 +62,12 @@ router.post('/api/cars', auth, async (req, res) => {
     }
 
     res.status(201).json({
-      message: 'Ký gửi xe thành công! Xe của bạn đang chờ CSKH/Admin phê duyệt kiểm duyệt chất lượng.',
+      message: 'Đăng ký xe cho thuê thành công! Xe của bạn đang chờ CSKH/Admin phê duyệt kiểm duyệt chất lượng.',
       car: newCar
     });
   } catch (error) {
     console.error('List car error:', error);
-    res.status(500).json({ message: 'Lỗi ký gửi xe.' });
+    res.status(500).json({ message: 'Lỗi đăng ký xe cho thuê.' });
   }
 });
 
