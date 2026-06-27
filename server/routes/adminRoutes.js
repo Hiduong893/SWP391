@@ -3,6 +3,7 @@ import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
 import { notificationService } from '../services/notificationService.js';
 import { sql, getPool } from '../config/db.js';
+import { askAdminChatbotAI, suggestSupportTicketReply } from '../utils/aiHelper.js';
 
 const router = express.Router();
 
@@ -370,9 +371,9 @@ router.put('/api/admin/cars/:id/moderation', auth, cskhOrAdminAuth, async (req, 
     if (car.ownerId) {
       await notificationService.createNotification(
         car.ownerId,
-        status === 'available' ? 'Phương tiện ký gửi đã được duyệt' : 'Phương tiện ký gửi bị từ chối',
+        status === 'available' ? 'Phương tiện đăng ký cho thuê đã được duyệt' : 'Phương tiện đăng ký cho thuê bị từ chối',
         status === 'available'
-          ? `Xe ${car.brand} ${car.model} của bạn đã được kiểm duyệt và hiển thị trên sàn cho thuê xe.`
+          ? `Xe ${car.brand} ${car.model} của bạn đã được kiểm duyệt và hiển thị trên hệ thống cho thuê xe.`
           : `Xe ${car.brand} ${car.model} của bạn đã bị từ chối kiểm duyệt. Lý do: ${rejectionReason || 'Không rõ lý do'}.`,
         'SystemAlert',
         id,
@@ -382,7 +383,7 @@ router.put('/api/admin/cars/:id/moderation', auth, cskhOrAdminAuth, async (req, 
 
     res.json({
       message: status === 'available'
-        ? 'Duyệt phương tiện ký gửi lên sàn thành công!'
+        ? 'Duyệt phương tiện đăng ký cho thuê lên sàn thành công!'
         : 'Đã từ chối phương tiện đăng tải.'
     });
   } catch (error) {
@@ -594,6 +595,121 @@ router.delete('/api/admin/users/:id', auth, adminAuth, async (req, res) => {
     res.json({ message: `Đã xóa tài khoản thành viên "${userToDelete.name}" thành công!` });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi khi xóa tài khoản thành viên.' });
+  }
+});
+
+// AI Operations Assistant Chat Endpoint
+router.post('/api/admin/ai-assistant', auth, cskhOrAdminAuth, async (req, res) => {
+  try {
+    const { message, history } = req.body;
+    if (!message) {
+      return res.status(400).json({ message: 'Thiếu nội dung câu hỏi.' });
+    }
+
+    // 1. Gather all live system contexts
+    // Stats
+    const users = await db.users.findMany();
+    const cars = await db.cars.findMany();
+    const bookings = await db.bookings.findMany();
+
+    const confirmedBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'completed' || b.status === 'active');
+    const totalRevenue = confirmedBookings.reduce((sum, b) => sum + (b.totalPrice || b.totalAmount || 0), 0);
+
+    const stats = {
+      totalUsers: users.length,
+      totalCars: cars.length,
+      totalBookings: bookings.length,
+      totalRevenue
+    };
+
+    const pendingCars = cars.filter(c => c.status === 'pending_moderation');
+    const pendingKycUsers = users.filter(u => u.licenseStatus === 'pending');
+    const disputes = await db.disputes.findMany();
+    const activeDisputes = disputes.filter(d => d.status === 'open');
+
+    // Resolve details for summary
+    // Incidents
+    const reportedIncidents = bookings.filter(b => b.issueReport !== null);
+    const unresolvedIncidents = reportedIncidents.filter(i => {
+      try {
+        const rep = typeof i.issueReport === 'string' ? JSON.parse(i.issueReport) : i.issueReport;
+        return rep && rep.status !== 'resolved';
+      } catch (e) {
+        return i.issueReport && i.issueReport.status !== 'resolved';
+      }
+    });
+
+    const incidentsSummary = unresolvedIncidents.map(inc => {
+      let desc = '';
+      try {
+        const rep = typeof inc.issueReport === 'string' ? JSON.parse(inc.issueReport) : inc.issueReport;
+        desc = rep ? rep.description : '';
+      } catch (e) {
+        desc = inc.issueReport ? inc.issueReport.description : '';
+      }
+      return `- Chuyến đi #${inc.id}: Khách báo sự cố "${desc}"`;
+    }).join('\n');
+
+    // Disputes detail
+    const disputesSummary = await Promise.all(activeDisputes.map(async d => {
+      const renter = await db.users.findOne({ id: d.renterId }) || { name: 'Khách' };
+      const owner = await db.users.findOne({ id: d.ownerId }) || { name: 'Chủ' };
+      return `- Tranh chấp #${d.id} giữa Khách ${renter.name} & Chủ ${owner.name}: Lý do: "${d.description}"`;
+    }));
+
+    // Cars detail
+    const carsSummary = pendingCars.map(c => {
+      return `- Xe ${c.brand} ${c.model} (BKS: ${c.license_plate || c.plateNumber}) - Chờ duyệt`;
+    }).join('\n');
+
+    const openTickets = await db.support_tickets.findMany();
+    const activeTickets = openTickets.filter(t => t.status === 'open');
+
+    const systemContext = {
+      stats,
+      pendingCarsCount: pendingCars.length,
+      pendingKycCount: pendingKycUsers.length,
+      activeDisputesCount: activeDisputes.length,
+      unresolvedIncidentsCount: unresolvedIncidents.length,
+      openTicketsCount: activeTickets.length,
+      incidentsSummary,
+      disputesSummary: disputesSummary.join('\n'),
+      carsSummary
+    };
+
+    // 2. Query operational AI assistant
+    const reply = await askAdminChatbotAI(message, history, systemContext);
+    res.json({ reply });
+  } catch (error) {
+    console.error('Error in Admin AI operational assistant API:', error);
+    res.status(500).json({ message: 'Lỗi xử lý yêu cầu Trợ lý AI Admin.' });
+  }
+});
+
+// Suggest AI reply for a support ticket
+router.get('/api/admin/support/tickets/:id/ai-suggest', auth, cskhOrAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ticket = await db.support_tickets.findOne({ id });
+    if (!ticket) return res.status(404).json({ message: 'Ticket hỗ trợ không tồn tại.' });
+
+    // Gather information about the user who submitted the ticket
+    let userContext = {};
+    if (ticket.userId) {
+      const user = await db.users.findOne({ id: ticket.userId });
+      if (user) {
+        userContext = {
+          kycStatus: user.licenseStatus || 'not_uploaded',
+          walletBalance: user.walletBalance || 0
+        };
+      }
+    }
+
+    const suggestion = await suggestSupportTicketReply(ticket, userContext);
+    res.json({ suggestion });
+  } catch (error) {
+    console.error('Error generating support ticket reply suggestion:', error);
+    res.status(500).json({ message: 'Lỗi tạo phản hồi tự động gợi ý.' });
   }
 });
 
