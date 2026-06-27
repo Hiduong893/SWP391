@@ -260,3 +260,158 @@ function translateKycStatus(status) {
   };
   return map[status] || map['not_uploaded'];
 }
+
+/**
+ * Handle admin operations assistant requests using Gemini SDK with injected live database contexts
+ */
+export async function askAdminChatbotAI(message, history = [], systemContext = {}) {
+  if (!genAI) {
+    return runLocalAdminChatbotFallback(message, systemContext);
+  }
+
+  try {
+    const stats = systemContext.stats || {};
+    const pendingCarsCount = systemContext.pendingCarsCount || 0;
+    const pendingKycCount = systemContext.pendingKycCount || 0;
+    const activeDisputesCount = systemContext.activeDisputesCount || 0;
+    const unresolvedIncidentsCount = systemContext.unresolvedIncidentsCount || 0;
+    const openTicketsCount = systemContext.openTicketsCount || 0;
+
+    const systemInstruction = `Bạn là Trợ lý AI Giám sát và Vận hành cấp cao của ViVuCar (Admin/CSKH Operations Assistant).
+Nhiệm vụ của bạn là hỗ trợ đội ngũ quản trị viên (Admin) và chăm sóc khách hàng (CSKH) theo dõi, phân tích dữ liệu và ra quyết định vận hành.
+
+DƯỚI ĐÂY LÀ SỐ LIỆU HỆ THỐNG THỜI GIAN THỰC (LIVE DB CONTEXT):
+- Tổng số thành viên: ${stats.totalUsers || 0}
+- Tổng số xe trên sàn: ${stats.totalCars || 0}
+- Tổng số đơn đặt xe (bookings): ${stats.totalBookings || 0}
+- Tổng doanh thu hệ thống: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalRevenue || 0)}
+- Số xe chờ kiểm duyệt mới: ${pendingCarsCount}
+- Số người dùng chờ duyệt KYC bằng lái: ${pendingKycCount}
+- Số tranh chấp/khiếu nại đang chờ xử lý: ${activeDisputesCount}
+- Số sự cố va chạm khẩn cấp chưa giải quyết: ${unresolvedIncidentsCount}
+- Số ticket hỗ trợ khách hàng đang mở: ${openTicketsCount}
+
+THÔNG TIN CHI TIẾT TÓM TẮT THÊM (NẾU CÓ):
+- Sự cố va chạm chi tiết:
+${systemContext.incidentsSummary || 'Không có sự cố nào chưa xử lý.'}
+- Tranh chấp cọc chi tiết:
+${systemContext.disputesSummary || 'Không có khiếu nại cọc nào đang tranh chấp.'}
+- Xe chờ duyệt chi tiết:
+${systemContext.carsSummary || 'Không có xe nào đang chờ duyệt.'}
+
+HƯỚNG DẪN TRẢ LỜI CỦA BẠN:
+1. Bạn trả lời trực tiếp các câu hỏi của Admin/CSKH về số liệu báo cáo, đề xuất cải thiện doanh thu, phân tích rủi ro hoặc tóm tắt các sự cố/khiếu nại.
+2. Câu trả lời của bạn phải chuyên nghiệp, mang tính phân tích số liệu, đề xuất giải pháp cụ thể cho quản trị viên, tránh nói chung chung.
+3. Sử dụng tiếng Việt chuẩn, xưng hô lịch sự (Ví dụ: "Tôi là Trợ lý Vận hành AI...", "Chào Admin...").
+4. Hãy sử dụng định dạng Markdown (đậm nhạt, danh sách, bảng biểu) để báo cáo trông trực quan, sạch đẹp và chuyên nghiệp nhất.`;
+
+    const chatModel = genAI.getGenerativeModel({
+      model: 'gemini-flash-latest',
+      systemInstruction: systemInstruction
+    });
+
+    const contents = [];
+    if (history && Array.isArray(history)) {
+      history.forEach(msg => {
+        contents.push({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.content || msg.text || '' }]
+        });
+      });
+    }
+
+    contents.push({
+      role: 'user',
+      parts: [{ text: message }]
+    });
+
+    const response = await chatModel.generateContent({ contents });
+    return response.response.text();
+  } catch (error) {
+    console.error('Error in askAdminChatbotAI, falling back:', error.message);
+    return runLocalAdminChatbotFallback(message, systemContext);
+  }
+}
+
+/**
+ * Fallback local query engine for Admin AI Chatbot
+ */
+function runLocalAdminChatbotFallback(message, systemContext) {
+  const lower = message.toLowerCase();
+  const stats = systemContext.stats || {};
+  const revStr = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalRevenue || 0);
+
+  let reply = `[Chế độ dự phòng offline] Chào Admin! Do khóa kết nối Gemini API gặp sự cố hoặc chưa cấu hình, tôi sẽ phản hồi dựa trên dữ liệu hệ thống cục bộ:\n\n`;
+
+  if (lower.includes('báo cáo') || lower.includes('thống kê') || lower.includes('doanh thu') || lower.includes('số liệu')) {
+    reply += `**Báo Cáo Vận Hành Hệ Thống ViVuCar:**\n` +
+      `- **Doanh thu tích lũy**: ${revStr}\n` +
+      `- **Tổng số người dùng**: ${stats.totalUsers || 0} thành viên\n` +
+      `- **Tổng số xe**: ${stats.totalCars || 0} xe\n` +
+      `- **Tổng số đơn hàng**: ${stats.totalBookings || 0} lượt đặt xe\n\n` +
+      `*Hiện tại hệ thống có **${systemContext.pendingKycCount}** hồ sơ KYC bằng lái và **${systemContext.pendingCarsCount}** xe đang chờ bạn phê duyệt.*`;
+  } else if (lower.includes('sự cố') || lower.includes('va chạm') || lower.includes('hỏng')) {
+    reply += `**Báo Cáo Sự Cố Phát Sinh (${systemContext.unresolvedIncidentsCount} vụ việc cần xử lý):**\n` +
+      `${systemContext.incidentsSummary || 'Không ghi nhận sự cố mới.'}\n\n` +
+      `*Bạn vui lòng chuyển sang tab **"Sự cố"** để xem ảnh hiện trường và nhấn giải quyết.*`;
+  } else if (lower.includes('khiếu nại') || lower.includes('tranh chấp') || lower.includes('cọc')) {
+    reply += `**Báo Cáo Khiếu Nại Tranh Chấp Tiền Cọc (${systemContext.activeDisputesCount} vụ việc):**\n` +
+      `${systemContext.disputesSummary || 'Không có khiếu nại cọc.'}\n\n` +
+      `*Bạn có thể xem hồ sơ bằng chứng tranh chấp ở tab **"Khiếu nại"**.*`;
+  } else {
+    reply += `Tôi có thể hỗ trợ Admin các nhóm thông tin sau:\n` +
+      `1. **Thống kê tổng quan**: Số lượng thành viên, doanh thu hệ thống (${revStr}).\n` +
+      `2. **Quản lý phê duyệt**: KYC đang chờ (${systemContext.pendingKycCount}), xe chờ duyệt (${systemContext.pendingCarsCount}).\n` +
+      `3. **Giám sát khẩn cấp**: Báo cáo sự cố va chạm (${systemContext.unresolvedIncidentsCount}) và tranh chấp (${systemContext.activeDisputesCount}).\n\n` +
+      `*Vui lòng cập nhật GEMINI_API_KEY trong file .env để mở khóa đầy đủ sức mạnh phân tích ngôn ngữ tự nhiên.*`;
+  }
+
+  return reply;
+}
+
+/**
+ * Generate AI-suggested auto-reply for support tickets using Gemini 1.5 Flash
+ */
+export async function suggestSupportTicketReply(ticket, userContext = {}) {
+  if (!genAI) {
+    return `Chào bạn, ViVuCar đã tiếp nhận yêu cầu hỗ trợ của bạn về chủ đề "${ticket.subject}". Chúng tôi đang kiểm tra chi tiết thông tin tài khoản của bạn và sẽ phản hồi sớm nhất trong vòng 10-15 phút tới. Cảm ơn bạn đã đồng hành cùng ViVuCar!`;
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+    
+    // Compile ticket conversation history
+    let chatHistoryStr = `- Tin nhắn gốc của khách: "${ticket.message}"\n`;
+    if (ticket.replies && ticket.replies.length > 0) {
+      ticket.replies.forEach(rep => {
+        chatHistoryStr += `- [${rep.senderRole === 'cskh' || rep.senderRole === 'admin' ? 'CSKH' : 'Khách hàng'}]: "${rep.message || rep.text}"\n`;
+      });
+    }
+
+    const prompt = `Bạn là nhân viên Chăm sóc khách hàng (CSKH) chuyên nghiệp của ViVuCar.
+Nhiệm vụ của bạn là soạn thảo một câu trả lời mẫu lịch sự, thân thiện và hữu ích bằng tiếng Việt để phản hồi ticket hỗ trợ của khách hàng dưới đây.
+
+THÔNG TIN TICKET:
+- Chủ đề: "${ticket.subject}"
+- Khách hàng gửi: "${ticket.userName || 'Khách thuê'}"
+- Vai trò người dùng: "${ticket.userRole || 'renter'}"
+- Lịch sử hội thoại:
+${chatHistoryStr}
+
+THÔNG TIN NGƯỜI DÙNG LIÊN QUAN TRONG HỆ THỐNG:
+- Trạng thái xác minh bằng lái (KYC): ${userContext.kycStatus || 'Chưa tải lên'}
+- Số dư ví: ${userContext.walletBalance ? Number(userContext.walletBalance).toLocaleString('vi-VN') + 'đ' : '0đ'}
+
+YÊU CẦU PHẢN HỒI:
+1. Trả lời trực tiếp vào câu hỏi/vấn đề cuối cùng của khách hàng.
+2. Xưng hô lịch sự, thân thiện (Gọi khách hàng là "bạn" hoặc xưng tên nếu có thể, xưng là "ViVuCar" hoặc "mình").
+3. Câu trả lời ngắn gọn, rõ ràng, tập trung giải quyết vấn đề. Nếu liên quan đến việc chờ hệ thống duyệt KYC, hãy nhắc nhở họ rằng bộ phận duyệt đang xử lý nhanh chóng.
+4. CHỈ TRẢ VỀ nội dung văn bản câu trả lời nháp, không kèm theo bất kỳ chú thích hay định dạng thừa nào khác ngoài câu trả lời hỗ trợ.`;
+
+    const response = await model.generateContent(prompt);
+    return response.response.text().trim();
+  } catch (error) {
+    console.error('Error generating ticket auto-reply suggestion:', error.message);
+    return `Chào bạn, ViVuCar đã nhận được phản hồi hỗ trợ từ bạn. Nhân viên CSKH đang xử lý thông tin yêu cầu của bạn về "${ticket.subject}" và sẽ gửi câu trả lời chính thức ngay lập tức. Mong bạn thông cảm vì sự chờ đợi này!`;
+  }
+}
