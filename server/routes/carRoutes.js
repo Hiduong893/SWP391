@@ -80,6 +80,42 @@ router.get('/api/owner/cars', auth, async (req, res) => {
   }
 });
 
+// Update Owner's Car (Chỉnh sửa thông tin xe ký gửi)
+router.put('/api/owner/cars/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { pricePerDay, location, image } = req.body;
+
+    if (!pricePerDay || !location || !image) {
+      return res.status(400).json({ message: 'Vui lòng điền đầy đủ các thông tin.' });
+    }
+
+    const car = await db.cars.findOne({ id });
+    if (!car) {
+      return res.status(404).json({ message: 'Phương tiện không tồn tại.' });
+    }
+
+    if (car.ownerId !== String(req.user.id)) {
+      return res.status(403).json({ message: 'Bạn không có quyền chỉnh sửa phương tiện này.' });
+    }
+
+    const updatedCar = await db.cars.update(id, {
+      pricePerDay: parseInt(pricePerDay),
+      location,
+      image,
+      status: 'pending_moderation' // reset to pending quality check on edit
+    });
+
+    res.json({
+      message: 'Cập nhật thông tin xe ký gửi thành công! Xe của bạn đang chờ kiểm duyệt lại.',
+      car: updatedCar
+    });
+  } catch (error) {
+    console.error('Update car error:', error);
+    res.status(500).json({ message: 'Lỗi cập nhật thông tin xe.' });
+  }
+});
+
 // View Owner's Rental Requests and Earnings
 router.get('/api/owner/stats', auth, async (req, res) => {
   try {
