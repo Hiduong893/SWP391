@@ -29,6 +29,7 @@ router.get('/api/cars', async (req, res) => {
 
     res.json(cars);
   } catch (error) {
+    console.error('Lỗi lấy danh sách xe:', error);
     res.status(500).json({ message: 'Lỗi lấy danh sách xe.' });
   }
 });

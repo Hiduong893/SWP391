@@ -3,7 +3,7 @@ import { ShieldCheck, LogOut, User, Key, Car, PlusCircle, Compass, BookOpen, Bri
 import { useToast } from './Toast';
 import { api } from '../utils/api';
 
-export const Navbar = ({ user, onLogout, currentTab, setCurrentTab }) => {
+export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, setAuthModal }) => {
   const { showToast } = useToast();
 
   const [notifications, setNotifications] = useState([]);
@@ -111,7 +111,7 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab }) => {
             onClick={() => {
               if (!user) {
                 showToast('Vui lòng đăng nhập để thêm xe cho thuê!', 'warning');
-                setCurrentTab('login');
+                setAuthModal('login');
               } else {
                 setCurrentTab('list-car');
               }
@@ -221,14 +221,14 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab }) => {
           ) : (
             <div className="nav-auth-buttons">
               <button
-                className={`nav-btn-login ${currentTab === 'login' ? 'active' : ''}`}
-                onClick={() => setCurrentTab('login')}
+                className={`nav-btn-login ${authModal === 'login' ? 'active' : ''}`}
+                onClick={() => setAuthModal('login')}
               >
                 Đăng nhập
               </button>
               <button
-                className={`nav-btn-signup ${currentTab === 'register' ? 'active' : ''}`}
-                onClick={() => setCurrentTab('register')}
+                className={`nav-btn-signup ${authModal === 'register' ? 'active' : ''}`}
+                onClick={() => setAuthModal('register')}
               >
                 Đăng ký
               </button>
