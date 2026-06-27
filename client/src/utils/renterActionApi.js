@@ -25,7 +25,7 @@ const API_BASE = '/api/renter';
  * Internal helper: gọi fetch với Authorization header tự động.
  * Pattern giống hệt api.js gốc để nhất quán.
  */
-const renterRequest = async (url, options = {}) => {
+const renterRequest = async (url, options = {}, retries = 4, delay = 1000) => {
   const token = localStorage.getItem('token');
 
   const headers = {
@@ -37,18 +37,34 @@ const renterRequest = async (url, options = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE}${url}`, {
-    ...options,
-    headers,
-  });
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const response = await fetch(`${API_BASE}${url}`, {
+        ...options,
+        headers,
+      });
 
-  const data = await response.json();
+      const data = await response.json();
 
-  if (!response.ok) {
-    throw new Error(data.message || 'Đã xảy ra lỗi không xác định.');
+      if (!response.ok) {
+        throw new Error(data.message || 'Đã xảy ra lỗi không xác định.');
+      }
+
+      return data;
+    } catch (error) {
+      const isNetworkError = error instanceof TypeError || 
+                             error.message?.includes('Failed to fetch') || 
+                             error.message?.includes('network') ||
+                             error.message?.includes('Failed to execute');
+                             
+      if (isNetworkError && i < retries) {
+        console.warn(`[RenterAPI] Kết nối thất bại, đang thử lại sau ${delay}ms... (${i + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
   }
-
-  return data;
 };
 
 // =============================================================================

@@ -68,7 +68,7 @@ router.put('/change-password', auth, async (req, res) => {
 // 11. Upload KYC Documents (Enhanced with Automated AI Vision Verification using Gemini)
 router.put('/kyc', auth, async (req, res) => {
   try {
-    const { cccdImage, cccdBackImage, licenseImage, carPapersImage } = req.body;
+    const { cccdImage, cccdBackImage, licenseImage, carPapersImage, faceImage } = req.body;
     const user = await db.users.findOne({ id: req.user.id });
 
     // Identify if any new images are being uploaded
@@ -82,11 +82,11 @@ router.put('/kyc', auth, async (req, res) => {
     if (isNewCccd || isNewCccdBack || isNewLicense) {
       kycAttempted = true;
       console.log('Sending uploaded documents to Gemini Vision API for automatic KYC...');
-      
+
       const frontCccd = cccdImage || user.kycDocuments?.cccd || null;
       const backCccd = cccdBackImage || user.kycDocuments?.cccdBack || null;
       const license = licenseImage || user.kycDocuments?.license || null;
-      
+
       aiResult = await verifyKycWithAI(frontCccd, backCccd, license, user.name);
       console.log('AI KYC Result:', aiResult);
     }
@@ -95,29 +95,50 @@ router.put('/kyc', auth, async (req, res) => {
       cccd: cccdImage || user.kycDocuments?.cccd || null,
       cccdBack: cccdBackImage || user.kycDocuments?.cccdBack || null,
       license: licenseImage || user.kycDocuments?.license || null,
-      carPapers: carPapersImage || user.kycDocuments?.carPapers || null
+      carPapers: carPapersImage || user.kycDocuments?.carPapers || null,
+      faceImage: faceImage || user.kycDocuments?.faceImage || null
     };
 
     let licenseStatus = user.licenseStatus;
-    let cccdStatus = user.kycDocuments?.cccd ? 'verified' : undefined;
-    let cccdBackStatus = user.kycDocuments?.cccdBack ? 'verified' : undefined;
-    let kycRejectionReason = null;
+    let cccdStatus = user.cccdStatus || (user.kycDocuments?.cccd ? 'verified' : undefined);
+    let cccdBackStatus = user.cccdBackStatus || (user.kycDocuments?.cccdBack ? 'verified' : undefined);
+    let faceStatus = user.faceStatus || (user.kycDocuments?.faceImage ? 'verified' : undefined);
+    if (faceImage) {
+      faceStatus = 'verified';
+    }
+    let kycRejectionReason = user.kycRejectionReason;
 
     if (kycAttempted && aiResult) {
       if (aiResult.verified) {
-        licenseStatus = licenseImage ? 'verified' : user.licenseStatus;
-        cccdStatus = cccdImage ? 'verified' : undefined;
-        cccdBackStatus = cccdBackImage ? 'verified' : undefined;
+        if (isNewLicense) licenseStatus = 'verified';
+        if (isNewCccd) cccdStatus = 'verified';
+        if (isNewCccdBack) cccdBackStatus = 'verified';
         kycRejectionReason = null;
       } else {
-        licenseStatus = licenseImage ? 'rejected' : user.licenseStatus;
-        cccdStatus = cccdImage ? 'rejected' : undefined;
-        cccdBackStatus = cccdBackImage ? 'rejected' : undefined;
-        kycRejectionReason = aiResult.reason || 'Thông tin giấy tờ không hợp lệ.';
+        if (aiResult.isDocumentAuthentic === false) {
+          // Completely invalid/garbage image -> Hard Reject
+          if (isNewLicense) licenseStatus = 'rejected';
+          if (isNewCccd) cccdStatus = 'rejected';
+          if (isNewCccdBack) cccdBackStatus = 'rejected';
+
+          if (isNewLicense) {
+            kycRejectionReason = 'Sai định dạng Bằng lái xe. Xin hãy tải lại ảnh.';
+          } else if (isNewCccdBack) {
+            kycRejectionReason = 'Sai định dạng CCCD mặt sau. Xin hãy tải lại ảnh.';
+          } else if (isNewCccd) {
+            kycRejectionReason = 'Sai định dạng CCCD mặt trước. Xin hãy tải lại ảnh.';
+          } else {
+            kycRejectionReason = 'Sai định dạng giấy tờ. Xin hãy tải lại ảnh.';
+          }
+        } else {
+          // Blurry or info mismatch -> Pending manual review
+          if (isNewLicense) licenseStatus = 'pending';
+          if (isNewCccd) cccdStatus = 'pending';
+          if (isNewCccdBack) cccdBackStatus = 'pending';
+
+          kycRejectionReason = 'Thông tin giấy tờ không hợp lệ hoặc bị mờ. Bạn nên tải lại ảnh rõ nét hơn hoặc Xin chờ CSKH duyệt nhé!';
+        }
       }
-    } else {
-      // Compatibility fallback
-      licenseStatus = licenseImage ? 'verified' : user.licenseStatus;
     }
 
     const updatedUser = await db.users.update(req.user.id, {
@@ -126,17 +147,20 @@ router.put('/kyc', auth, async (req, res) => {
       licenseImage: licenseImage || user.licenseImage,
       cccdStatus,
       cccdBackStatus,
+      faceStatus,
       kycRejectionReason
     });
 
     if (kycAttempted && aiResult && !aiResult.verified) {
       res.json({
-        message: `Hồ sơ KYC tự động bị từ chối bởi AI: ${aiResult.reason}`,
+        message: kycRejectionReason,
         user: sanitizeUser(updatedUser)
       });
     } else {
       res.json({
-        message: 'Hồ sơ KYC của bạn đã được xác minh thành công bằng AI!',
+        message: faceImage
+          ? 'Xác thực khuôn mặt KYC của bạn thành công!'
+          : 'Hồ sơ KYC của bạn đã được xác minh thành công bằng AI!',
         user: sanitizeUser(updatedUser)
       });
     }
@@ -197,9 +221,25 @@ router.put('/bank-account', auth, async (req, res) => {
 // Register as a Car Owner
 router.post('/register-owner', auth, async (req, res) => {
   try {
+    const user = await db.users.findOne({ id: req.user.id });
+
+    // Check KYC (driver license verification status)
+    if (user.licenseStatus !== 'verified') {
+      return res.status(400).json({
+        message: 'Bạn chưa hoàn tất xác thực bằng lái xe (KYC). Vui lòng cập nhật hình ảnh CCCD và bằng lái xe trong mục Hồ sơ cá nhân trước khi đăng ký làm Chủ xe.'
+      });
+    }
+
+    // Check bank account association
+    if (!user.bankAccount || !user.bankAccount.bankName || !user.bankAccount.accountNumber) {
+      return res.status(400).json({
+        message: 'Bạn chưa liên kết tài khoản ngân hàng. Vui lòng thêm tài khoản ngân hàng trong mục Ví cá nhân để nhận tiền thuê xe trước khi đăng ký làm Chủ xe.'
+      });
+    }
+
     const updatedUser = await db.users.update(req.user.id, { role: 'owner' });
     res.json({
-      message: 'Nâng cấp tài khoản thành Chủ xe (Car Owner) thành công! Bây giờ bạn có thể ký gửi xe lên hệ thống.',
+      message: 'Nâng cấp tài khoản thành Chủ xe (Car Owner) thành công! Bây giờ bạn có thể đăng ký xe cho thuê lên hệ thống.',
       user: sanitizeUser(updatedUser)
     });
   } catch (error) {

@@ -45,7 +45,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -118,7 +118,7 @@
   margin: 16px 0;
   animation: fadeIn 0.2s ease-out;
   text-align: left;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .selector-header {
@@ -146,7 +146,7 @@
 
 .btn-close-selector:hover {
   color: var(--text-primary);
-  background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .preset-title {
@@ -169,7 +169,7 @@
   cursor: pointer;
   border: 2px solid transparent;
   transition: all 0.25s ease;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .preset-item:hover {
@@ -191,14 +191,20 @@
   margin: 12px 0;
 }
 
-.selector-divider::before, .selector-divider::after {
+.selector-divider::before,
+.selector-divider::after {
   content: '';
   flex: 1;
   border-bottom: 1px solid var(--border-color);
 }
 
-.selector-divider::before { margin-right: 8px; }
-.selector-divider::after { margin-left: 8px; }
+.selector-divider::before {
+  margin-right: 8px;
+}
+
+.selector-divider::after {
+  margin-left: 8px;
+}
 
 .upload-container {
   display: flex;
@@ -234,48 +240,59 @@
 .profile-info-grid {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 10px;
   text-align: left;
 }
 
 .info-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 6px 0;
+  justify-content: flex-start !important;
+  gap: 12px;
+  padding: 4px 0;
   transition: all 0.2s;
 }
 
 .info-icon {
   color: var(--accent-primary);
-  background: rgba(0, 150, 152, 0.08);
-  padding: 10px;
+  background: rgba(0, 150, 152, 0.05);
+  padding: 8px;
   border-radius: 50%;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
   flex-shrink: 0;
   transition: all 0.2s;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .info-row:hover .info-icon {
-  transform: scale(1.08);
-  background: rgba(0, 150, 152, 0.15);
+  transform: scale(1.05);
+  background: rgba(0, 150, 152, 0.1);
 }
 
 .info-data {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  text-align: left;
+  align-items: flex-start !important;
+  gap: 1px;
+  text-align: left !important;
+  margin-left: 0 !important;
+  flex: 1;
 }
 
 .info-label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .info-value {
-  font-size: 15px;
+  font-size: 13.5px;
   color: var(--text-primary);
   font-weight: 600;
 }
@@ -317,7 +334,7 @@
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
   pointer-events: none;
   transform: rotate(25deg);
 }
@@ -352,23 +369,23 @@
 .btn-wallet-deposit {
   background: white !important;
   color: #009698 !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
 }
 
 .btn-wallet-deposit:hover {
   background: #f8fafc !important;
   transform: translateY(-1.5px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.12) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12) !important;
 }
 
 .btn-wallet-withdraw {
-  background: rgba(255,255,255,0.15) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
   color: white !important;
-  border: 1px solid rgba(255,255,255,0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
 .btn-wallet-withdraw:hover {
-  background: rgba(255,255,255,0.25) !important;
+  background: rgba(255, 255, 255, 0.25) !important;
   transform: translateY(-1.5px);
 }
 
@@ -411,7 +428,7 @@
   right: -20px;
   width: 120px;
   height: 120px;
-  background: radial-gradient(circle, rgba(255,255,255,0.45) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.45) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -729,7 +746,7 @@
   background: var(--accent-primary);
   border: 2px solid white;
   transition: transform 0.1s;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .editor-slider::-webkit-slider-thumb:hover {
@@ -755,17 +772,226 @@
 }
 
 @keyframes editorFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes editorScaleIn {
-  from { transform: scale(0.9) translateY(10px); opacity: 0; }
-  to { transform: scale(1) translateY(0); opacity: 1; }
+  from {
+    transform: scale(0.9) translateY(10px);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
 }
 
 @media (max-width: 900px) {
   .profile-container-glass-row {
     grid-template-columns: 1fr !important;
   }
+}
+
+/* Biometric Face Scanner Styles */
+.face-scanner-circle-container {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 5px solid #009698;
+  box-shadow: 0 0 35px rgba(0, 150, 152, 0.5);
+  background: #090a0f;
+  margin: 20px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.face-scanner-circle-container.scanning {
+  border-color: #f59e0b;
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.5);
+}
+
+.face-scanner-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  /* Mirror effect */
+}
+
+.face-scanner-canvas {
+  display: none;
+}
+
+.face-scanner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.face-scanner-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 20px rgba(0, 150, 152, 0.3);
+  animation: faceScanPulse 1.5s infinite alternate;
+  pointer-events: none;
+}
+
+.face-scanner-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(to right, transparent, #00bfa5, transparent);
+  box-shadow: 0 0 8px #00bfa5;
+  opacity: 0.8;
+  animation: faceScanLineMove 2s infinite linear;
+  pointer-events: none;
+}
+
+.face-scanner-countdown {
+  position: absolute;
+  font-size: 64px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  z-index: 10;
+  animation: faceScanCountdownPulse 1s infinite;
+}
+
+@keyframes faceScanPulse {
+  from {
+    box-shadow: inset 0 0 10px rgba(0, 150, 152, 0.2);
+  }
+
+  to {
+    box-shadow: inset 0 0 35px rgba(0, 150, 152, 0.6);
+  }
+}
+
+@keyframes faceScanLineMove {
+  0% {
+    top: 0%;
+  }
+
+  50% {
+    top: 100%;
+  }
+
+  100% {
+    top: 0%;
+  }
+}
+
+@keyframes faceScanCountdownPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+}
+
+.face-scan-captured-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  transform: scaleX(-1);
+  /* Keep mirror view for consistency */
+}
+
+/* KYC Verifications Card Box styles */
+.kyc-verifications-card-box {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(0, 150, 152, 0.18) !important;
+  border-radius: 12px !important;
+  padding: 20px 40px !important;
+  margin-top: 18px !important;
+  box-shadow: 0 8px 32px rgba(0, 150, 152, 0.05) !important;
+  transition: all 0.3s ease !important;
+}
+
+.kyc-verifications-card-box:hover {
+  border-color: rgba(0, 150, 152, 0.35) !important;
+  box-shadow: 0 12px 36px rgba(0, 150, 152, 0.1) !important;
+}
+
+.kyc-verifications-card-box h4 {
+  font-size: 14.5px !important;
+  font-weight: 800 !important;
+  color: var(--accent-primary) !important;
+  text-transform: uppercase !important;
+  margin-bottom: 16px !important;
+  letter-spacing: 0.5px !important;
+}
+
+.kyc-item-box {
+  background: rgba(0, 150, 152, 0.025) !important;
+  border: 1.5px dashed rgba(0, 150, 152, 0.25) !important;
+  border-radius: 10px !important;
+  padding: 16px 10px !important;
+  text-align: center !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  min-height: 120px !important;
+}
+
+.kyc-item-box:hover {
+  background: rgba(0, 150, 152, 0.065) !important;
+  border-color: var(--accent-primary) !important;
+  border-style: solid !important;
+  transform: translateY(-2.5px) !important;
+  box-shadow: 0 6px 16px rgba(0, 150, 152, 0.15) !important;
+}
+
+.kyc-label {
+  font-size: 11.5px !important;
+  color: var(--text-muted) !important;
+  display: block !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+}
+
+.kyc-item-box .badge-verified,
+.kyc-item-box .badge-pending,
+.kyc-item-box .badge-rejected {
+  font-size: 11px !important;
+  padding: 4px 10px !important;
+  border-radius: 20px !important;
+  font-weight: 800 !important;
+  display: inline-block !important;
 }
