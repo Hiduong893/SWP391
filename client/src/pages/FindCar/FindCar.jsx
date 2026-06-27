@@ -550,7 +550,7 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
                 [
                   { value: 'all', label: 'Tất cả hình thức' },
                   { value: 'self', label: '📱 Tự nhận xe (Vận hành bởi platform)' },
-                  { value: 'owner', label: '🔑 Gặp chủ xe (Đối tác ký gửi)' }
+                  { value: 'owner', label: '🔑 Gặp chủ xe (Đối tác cho thuê)' }
                 ].map((r) => (
                   <label key={r.value} className="checkbox-label-pills">
                     <input
