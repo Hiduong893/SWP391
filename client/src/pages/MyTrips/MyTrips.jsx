@@ -23,7 +23,8 @@ export const MyTrips = () => {
   const [activeIncidentTrip, setActiveIncidentTrip] = useState(null); // trip
   const [activeReviewTrip, setActiveReviewTrip] = useState(null); // trip
   const [activeDisputeTrip, setActiveDisputeTrip] = useState(null); // trip
-
+  const [viewingContractTrip, setViewingContractTrip] = useState(null); // trip
+  
   // Form states
   const [handoverChecks, setHandoverChecks] = useState({
     noScratches: false,
@@ -285,6 +286,53 @@ export const MyTrips = () => {
     }
   };
 
+  const getContractText = (trip) => {
+    if (!trip) return '';
+    const today = new Date(trip.createdAt || new Date()).toLocaleDateString('vi-VN');
+    const car = trip.car || {};
+    const bookingId = trip.id.slice(0, 8).toUpperCase();
+    const signedDate = trip.contractDetails?.signedAt 
+      ? new Date(trip.contractDetails.signedAt).toLocaleDateString('vi-VN')
+      : today;
+      
+    return `CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+Độc lập - Tự do - Hạnh phúc
+---
+HỢP ĐỒNG CHO THUÊ XE TỰ LÁI ĐIỆN TỬ
+(Mã hợp đồng: ${bookingId})
+
+Hôm nay, tại nền tảng ViVuCar, các bên gồm:
+
+BÊN CHO THUÊ (BÊN A):
+- Tên đơn vị: Công ty Cổ phần Dịch vụ Xe tự lái ViVuCar
+- Địa chỉ bãi bàn giao: ${trip.pickupLocation || 'Bãi xe Hệ thống'}
+
+BÊN THUÊ XE (BÊN B):
+- Họ và tên người thuê: Quý khách hàng (Bên B)
+- Trạng thái bằng lái: Đã xác thực KYC
+
+Sau khi thảo luận, hai bên đồng ý ký kết hợp đồng thuê xe tự lái với các điều khoản cụ thể dưới đây:
+
+ĐIỀU 1: THÔNG TIN PHƯƠNG TIỆN
+- Hãng xe: ${car.brand || 'Hãng xe'} | Mẫu xe: ${car.model || 'Mẫu xe'}
+
+ĐIỀU 2: THỜI GIAN VÀ PHÍ DỊCH VỤ
+- Thời gian thuê: Từ ${trip.pickupDate} đến ${trip.returnDate}
+- Phí thuê xe: ${formatCurrency(trip.totalPrice)}
+- Tiền cọc đảm bảo trách nhiệm xe: 5.000.000đ
+- Phí giữ chỗ đã thanh toán online: 500.000đ
+- Số tiền còn lại Bên B phải trả khi nhận xe: ${formatCurrency(trip.totalPrice + 5000000 - 500000)} (đã khấu trừ 500.000đ phí giữ chỗ)
+
+ĐIỀU 3: NGHĨA VỤ CỦA BÊN B
+1. Vận hành xe đúng Luật Giao thông đường bộ Việt Nam. Tự chịu mọi trách nhiệm về dân sự và hình sự khi xảy ra tai nạn hoặc vi phạm pháp luật.
+2. Không sử dụng xe để chở hàng cấm, kinh doanh dịch vụ trái phép, đua xe hay cho người khác mượn xe khi chưa có sự đồng ý của Bên A.
+3. Bảo quản xe cẩn thận, chịu trách nhiệm bồi thường 100% chi phí sửa chữa chính hãng nếu xảy ra hư hỏng, va chạm móp méo trong suốt chuyến đi.
+4. Tự chi trả mọi chi phí phát sinh bao gồm: xăng/điện, phí cầu đường, phí gửi xe và các chi phí phạt nguội do vi phạm giao thông trong thời gian thuê xe.
+
+ĐIỀU 4: XÁC THỰC SINH TRẮC HỌC & CHỮ KÝ SỐ
+Hợp đồng điện tử này được xác thực và đóng dấu ký số bằng ảnh quét khuôn mặt sinh trắc học (FaceID Verified) của Bên B và chữ ký tay vẽ trên nền tảng vào ngày ${signedDate}. Hai hình thức này có giá trị pháp lý tương đương với ký tay trực tiếp bản giấy.`;
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
@@ -472,6 +520,16 @@ export const MyTrips = () => {
                         >
                           <XCircle size={14} />
                           {cancelPreviewLoading ? 'Đang tải...' : 'Hủy đặt xe'}
+                        </button>
+                      )}
+                      {trip.contractDetails && (
+                        <button
+                          className="btn btn-secondary btn-action-trip"
+                          style={{ borderColor: '#6366f1', color: '#6366f1', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          onClick={() => setViewingContractTrip(trip)}
+                        >
+                          <FileText size={13} />
+                          Xem Hợp Đồng
                         </button>
                       )}
                     </div>
@@ -1225,6 +1283,74 @@ export const MyTrips = () => {
           </div>
         );
       })()}
+
+      {/* --- POPUP 5: XEM HỢP ĐỒNG ĐIỆN TỬ ĐÃ KÝ (NEW) --- */}
+      {viewingContractTrip && (
+        <div className="lightbox-overlay" onClick={() => setViewingContractTrip(null)}>
+          <div className="lightbox-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', background: '#ffffff', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <div className="lightbox-header" style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a', fontWeight: 'bold' }}>Hợp Đồng Thuê Xe Điện Tử Đã Ký</h3>
+              <button className="btn-close-lightbox" onClick={() => setViewingContractTrip(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex' }}><XCircle size={20} /></button>
+            </div>
+
+            <div className="lightbox-body" style={{ padding: '24px', textAlign: 'left' }}>
+              {/* Contract content scroll block */}
+              <div style={{
+                background: '#fafafa',
+                border: '1px solid #cbd5e1',
+                borderRadius: '10px',
+                padding: '16px',
+                height: '240px',
+                overflowY: 'auto',
+                fontFamily: 'monospace',
+                fontSize: '11.5px',
+                lineHeight: 1.5,
+                whiteSpace: 'pre-wrap',
+                color: '#334155',
+                marginBottom: '20px'
+              }}>
+                {getContractText(viewingContractTrip)}
+              </div>
+
+              {/* Biometric verification and signature showcase */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderTop: '1px dashed #cbd5e1', paddingTop: '16px' }}>
+                {/* Face validation */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '8px' }}>ẢNH FACEID XÁC THỰC</span>
+                  {viewingContractTrip.contractDetails?.scannedFace ? (
+                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '2.5px solid #10b981' }}>
+                      <img src={viewingContractTrip.contractDetails.scannedFace} alt="Face check" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '11px', color: '#94a3b8', height: '80px', display: 'flex', alignItems: 'center' }}>Không có ảnh FaceID</div>
+                  )}
+                  <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 700, marginTop: '6px' }}>✓ Đã so khớp khuôn mặt</span>
+                </div>
+
+                {/* Signature drawing */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '8px' }}>CHỮ KÝ BÊN THUÊ (BÊN B)</span>
+                  {viewingContractTrip.contractDetails?.signature ? (
+                    <div style={{ width: '150px', height: '60px', border: '1px dashed #cbd5e1', borderRadius: '6px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                      <img src={viewingContractTrip.contractDetails.signature} alt="Signature check" style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '11px', color: '#94a3b8', height: '60px', display: 'flex', alignItems: 'center' }}>Chưa ký tên</div>
+                  )}
+                  <span style={{ fontSize: '10px', color: '#64748b', marginTop: '6px' }}>Ký lúc: {new Date(viewingContractTrip.contractDetails?.signedAt || viewingContractTrip.createdAt).toLocaleString('vi-VN')}</span>
+                </div>
+              </div>
+
+              {/* Status stamp info */}
+              <div style={{ marginTop: '20px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#065f46' }}>
+                  ✓ Hợp đồng có hiệu lực pháp lý (Đã xác minh FaceID &amp; Chữ ký điện tử)
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

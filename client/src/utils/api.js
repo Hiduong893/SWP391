@@ -1,7 +1,7 @@
 const API_BASE = '/api';
 
-// Helper to make fetch calls with authorization header
-const request = async (url, options = {}) => {
+// Helper to make fetch calls with authorization header (with automatic retries for slow backend startup)
+const request = async (url, options = {}, retries = 4, delay = 1000) => {
   const token = localStorage.getItem('token');
   
   const headers = {
@@ -13,18 +13,49 @@ const request = async (url, options = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE}${url}`, {
-    ...options,
-    headers
-  });
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const response = await fetch(`${API_BASE}${url}`, {
+        ...options,
+        headers
+      });
 
-  const data = await response.json();
+      // Nếu proxy của Vite trả về 502 hoặc 504 (dạng HTML thay vì JSON) do server chưa chạy xong
+      if (!response.ok && (response.status === 502 || response.status === 504 || response.status === 503)) {
+        throw new Error(`Server is starting (HTTP ${response.status})`);
+      }
 
-  if (!response.ok) {
-    throw new Error(data.message || 'Đã xảy ra lỗi không xác định.');
+      // Xử lý lỗi JSON parse nếu backend trả về HTML không mong muốn
+      const contentType = response.headers.get("content-type");
+      if (contentType && !contentType.includes("application/json")) {
+          throw new Error('Unexpected content type: ' + contentType);
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Đã xảy ra lỗi không xác định.');
+      }
+
+      return data;
+    } catch (error) {
+      // Nếu là lỗi kết nối mạng hoặc lỗi server chưa sẵn sàng (trả về 502/504/HTML)
+      const isNetworkError = error instanceof TypeError || 
+                             error.name === 'SyntaxError' ||
+                             error.message?.includes('Failed to fetch') || 
+                             error.message?.includes('network') ||
+                             error.message?.includes('Failed to execute') ||
+                             error.message?.includes('Server is starting') ||
+                             error.message?.includes('Unexpected content type');
+                             
+      if (isNetworkError && i < retries) {
+        console.warn(`[API] Kết nối thất bại hoặc server chưa sẵn sàng, đang thử lại sau ${delay}ms... (${i + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
   }
-
-  return data;
 };
 
 export const api = {
@@ -113,11 +144,12 @@ export const api = {
         body: JSON.stringify({ licenseImage })
       }),
 
-    uploadKyc: (cccdImage, licenseImage, carPapersImage, cccdBackImage) =>
+    uploadKyc: (cccdImage, licenseImage, carPapersImage, cccdBackImage, faceImage) =>
       request('/user/kyc', {
         method: 'PUT',
-        body: JSON.stringify({ cccdImage, licenseImage, carPapersImage, cccdBackImage })
+        body: JSON.stringify({ cccdImage, licenseImage, carPapersImage, cccdBackImage, faceImage })
       }),
+
 
     getWallet: () =>
       request('/user/wallet', {

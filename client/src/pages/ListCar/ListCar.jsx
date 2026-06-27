@@ -4,8 +4,8 @@ import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
 import './ListCar.css';
 
-export const ListCar = ({ setCurrentTab }) => {
-  const [activeSubTab, setActiveSubTab] = useState('stats'); // stats, register, my-cars
+export const ListCar = ({ setCurrentTab, user, onUpdateUser }) => {
+  const [activeSubTab, setActiveSubTab] = useState(user?.role === 'renter' ? 'register' : 'stats'); // stats, register, my-cars
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -37,6 +37,7 @@ export const ListCar = ({ setCurrentTab }) => {
   const { showToast } = useToast();
 
   const fetchOwnerDashboard = async (silent = false) => {
+    if (user?.role === 'renter') return;
     if (!silent) setLoading(true);
     try {
       // 1. Fetch owner stats & bookings
@@ -127,7 +128,7 @@ export const ListCar = ({ setCurrentTab }) => {
       setSuccess(true);
       fetchOwnerDashboard(true);
     } catch (error) {
-      showToast(error.message || 'Lỗi khi ký gửi xe.', 'error');
+      showToast(error.message || 'Lỗi khi đăng ký xe cho thuê.', 'error');
     } finally {
       setLoading(false);
     }
@@ -220,7 +221,7 @@ export const ListCar = ({ setCurrentTab }) => {
             <span>KHÔNG GIAN HỢP TÁC CHỦ XE</span>
           </h2>
           <p style={{ color: '#94a3b8', fontSize: '14.5px', marginTop: 4 }}>
-            Quản lý đội xe ký gửi, phê duyệt yêu cầu đặt lịch từ khách thuê và theo dõi số dư thu nhập của bạn.
+            Quản lý đội xe cho thuê, phê duyệt yêu cầu đặt lịch từ khách thuê và theo dõi số dư thu nhập của bạn.
           </p>
         </div>
         <button onClick={() => fetchOwnerDashboard()} className="btn-refresh" title="Làm mới">
@@ -229,56 +230,62 @@ export const ListCar = ({ setCurrentTab }) => {
       </div>
 
       {/* 📊 STATS CARDS FOR OWNER (UC23) */}
-      <div className="owner-stats-grid mb-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-        <div className="owner-stat-card-glass">
-          <div>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tổng Thu Nhập</span>
-            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--accent-primary)', marginTop: 4 }}>{formatCurrency(totalEarnings)}</h3>
+      {user?.role !== 'renter' && (
+        <div className="owner-stats-grid mb-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+          <div className="owner-stat-card-glass">
+            <div>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tổng Thu Nhập</span>
+              <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--accent-primary)', marginTop: 4 }}>{formatCurrency(totalEarnings)}</h3>
+            </div>
+            <div className="owner-stat-icon bg-purple"><DollarSign size={20} /></div>
           </div>
-          <div className="owner-stat-icon bg-purple"><DollarSign size={20} /></div>
-        </div>
 
-        <div className="owner-stat-card-glass">
-          <div>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Đội Xe Sở Hữu</span>
-            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>{myCarsList.length} xe</h3>
+          <div className="owner-stat-card-glass">
+            <div>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Đội Xe Sở Hữu</span>
+              <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>{myCarsList.length} xe</h3>
+            </div>
+            <div className="owner-stat-icon bg-blue"><Car size={20} /></div>
           </div>
-          <div className="owner-stat-icon bg-blue"><Car size={20} /></div>
-        </div>
 
-        <div className="owner-stat-card-glass">
-          <div>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Số Đơn Đặt Lịch</span>
-            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>{ownerBookings.length} lượt</h3>
+          <div className="owner-stat-card-glass">
+            <div>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Số Đơn Đặt Lịch</span>
+              <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>{ownerBookings.length} lượt</h3>
+            </div>
+            <div className="owner-stat-icon bg-green"><BarChart3 size={20} /></div>
           </div>
-          <div className="owner-stat-icon bg-green"><BarChart3 size={20} /></div>
         </div>
-      </div>
+      )}
 
       {/* SUB-TABS NAVIGATION */}
       <div className="owner-sub-nav mb-6" style={{ display: 'flex', gap: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 8 }}>
-        <button 
-          className={`owner-nav-btn ${activeSubTab === 'stats' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('stats')}
-        >
-          <CreditCard size={15} />
-          <span>Yêu Cầu Cho Thuê ({pendingBookings.length})</span>
-        </button>
+        {user?.role !== 'renter' && (
+          <>
+            <button 
+              className={`owner-nav-btn ${activeSubTab === 'stats' ? 'active' : ''}`}
+              onClick={() => setActiveSubTab('stats')}
+            >
+              <CreditCard size={15} />
+              <span>Yêu Cầu Cho Thuê ({pendingBookings.length})</span>
+            </button>
 
-        <button 
-          className={`owner-nav-btn ${activeSubTab === 'my-cars' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('my-cars')}
-        >
-          <Car size={15} />
-          <span>Đội Xe Của Tôi ({myCarsList.length})</span>
-        </button>
+            <button 
+              className={`owner-nav-btn ${activeSubTab === 'my-cars' ? 'active' : ''}`}
+              onClick={() => setActiveSubTab('my-cars')}
+            >
+              <Car size={15} />
+              <span>Đội Xe Của Tôi ({myCarsList.length})</span>
+            </button>
+          </>
+        )}
 
         <button 
           className={`owner-nav-btn ${activeSubTab === 'register' ? 'active' : ''}`}
           onClick={() => { setSuccess(false); setActiveSubTab('register'); }}
         >
           <PlusCircle size={15} />
-          <span>Ký Gửi Xe Mới</span>
+          <span>Đăng kí xe cho thuê</span>
         </button>
       </div>
 
@@ -404,12 +411,12 @@ export const ListCar = ({ setCurrentTab }) => {
             {activeSubTab === 'my-cars' && (
               <div className="owner-glass-table-container" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-shadow)', borderRadius: 16, padding: 20 }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left' }}>
-                  Danh sách đội phương tiện ký gửi đã đăng ký (UC25)
+                  Danh sách đội phương tiện đã đăng ký (UC25)
                 </h4>
 
                 {myCarsList.length === 0 ? (
                   <div style={{ padding: 32, background: 'var(--bg-primary)', border: '1px dashed var(--border-color)', borderRadius: 12, color: 'var(--text-muted)', textAlign: 'center', fontSize: '13px' }}>
-                    Bạn chưa ký gửi chiếc xe nào trên sàn. Hãy nhấn 'Ký Gửi Xe Mới' để đăng ký chiếc xe đầu tiên của bạn!
+                    Bạn chưa đăng ký chiếc xe nào trên sàn. Hãy nhấn 'Đăng ký xe cho thuê' để đăng ký chiếc xe đầu tiên của bạn!
                   </div>
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
@@ -450,12 +457,130 @@ export const ListCar = ({ setCurrentTab }) => {
 
             {/* SUB-TAB 3: REGISTER NEW VEHICLE (UC21) */}
             {activeSubTab === 'register' && (
-              <div className="glass-card" style={{ maxWidth: '640px', margin: '0 auto', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-shadow)' }}>
-                {!success ? (
+              <div className="glass-card" style={{ maxWidth: '640px', margin: '0 auto', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-shadow)', padding: user?.role === 'renter' ? '40px 24px' : '' }}>
+                {user?.role === 'renter' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', textAlign: 'center', width: '100%' }}>
+                    <div style={{ background: 'rgba(0, 150, 152, 0.1)', padding: '16px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                      <Car className="text-primary" size={48} />
+                    </div>
+                    <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-primary)' }}>Đăng ký xe cho thuê mới</h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '14.5px', maxWidth: '480px', lineHeight: '1.6', margin: '0 auto' }}>
+                      Để đăng ký xe cho thuê mới trên hệ thống, bạn cần nâng cấp tài khoản của mình thành **Chủ xe**. Trước tiên, bạn phải hoàn tất các điều kiện xác thực dưới đây:
+                    </p>
+
+                    {/* Checklist */}
+                    <div style={{
+                      width: '100%',
+                      maxWidth: '480px',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '12px',
+                      padding: '20px',
+                      textAlign: 'left',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '16px',
+                      margin: '10px 0'
+                    }}>
+                      {/* Item 1: KYC status */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                        {user?.licenseStatus === 'verified' ? (
+                          <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <Check size={16} />
+                          </div>
+                        ) : (
+                          <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '4px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <X size={16} />
+                          </div>
+                        )}
+                        <div>
+                          <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '14px' }}>Xác thực bằng lái xe (KYC)</div>
+                          <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                            {user?.licenseStatus === 'verified' ? (
+                              <span style={{ color: '#10b981', fontWeight: '500' }}>Đã xác thực thành công.</span>
+                            ) : user?.licenseStatus === 'pending' ? (
+                              <span style={{ color: '#f59e0b', fontWeight: '500' }}>Bằng lái xe đang chờ duyệt bởi hệ thống.</span>
+                            ) : user?.licenseStatus === 'rejected' ? (
+                              <span style={{ color: '#ef4444', fontWeight: '500' }}>Bằng lái xe bị từ chối. Vui lòng tải lại ảnh.</span>
+                            ) : (
+                              <span>Chưa xác thực bằng lái.</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Item 2: Bank account linking */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                        {user?.bankAccount && user?.bankAccount.bankName && user?.bankAccount.accountNumber ? (
+                          <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <Check size={16} />
+                          </div>
+                        ) : (
+                          <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '4px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <X size={16} />
+                          </div>
+                        )}
+                        <div>
+                          <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '14px' }}>Liên kết tài khoản ngân hàng</div>
+                          <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                            {user?.bankAccount && user?.bankAccount.bankName && user?.bankAccount.accountNumber ? (
+                              <span style={{ color: '#10b981', fontWeight: '500' }}>Đã liên kết tài khoản ngân hàng.</span>
+                            ) : (
+                              <span>Chưa liên kết tài khoản để nhận tiền thuê xe.</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '480px' }}>
+                      {!(user?.licenseStatus === 'verified' && user?.bankAccount && user?.bankAccount.bankName && user?.bankAccount.accountNumber) ? (
+                        <>
+                          <div style={{ fontSize: '13px', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.08)', padding: '10px 16px', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.2)', textAlign: 'left' }}>
+                            ⚠️ Bạn cần vào trang cá nhân để hoàn thành KYC bằng lái và liên kết tài khoản ngân hàng trước khi nâng cấp.
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            style={{ width: '100%', padding: '12px 32px', fontSize: '15px', fontWeight: '600' }}
+                            onClick={() => setCurrentTab('profile')}
+                          >
+                            Đến trang Hồ sơ & Ví ngay
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          style={{ width: '100%', padding: '12px 32px', fontSize: '15px', fontWeight: '600' }}
+                          onClick={async () => {
+                            setLoading(true);
+                            try {
+                              const data = await api.user.registerOwner();
+                              showToast(data.message || 'Đăng ký làm Chủ xe thành công!', 'success');
+                              if (onUpdateUser) {
+                                onUpdateUser({ ...user, role: 'owner' });
+                              }
+                              setActiveSubTab('register');
+                            } catch (err) {
+                              showToast(err.message || 'Lỗi khi đăng ký làm chủ xe.', 'error');
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
+                          disabled={loading}
+                        >
+                          {loading ? 'Đang xử lý...' : 'Nâng cấp lên Chủ xe'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : !success ? (
                   <>
-                    <h2 className="title" style={{ fontSize: '18px', textAlign: 'left' }}>Đăng Ký Ký Gửi Xe Mới</h2>
+                    <h2 className="title" style={{ fontSize: '18px', textAlign: 'left' }}>Đăng Ký Xe Cho Thuê Mới</h2>
                     <p className="subtitle" style={{ fontSize: '13px', textAlign: 'left', marginBottom: 20 }}>
-                      Nhập thông tin biển số xe, tải ảnh thực tế cùng giấy tờ tờ xe để bộ phận CSKH phê duyệt lên chợ thuê.
+                      Nhập thông tin biển số xe, tải ảnh thực tế cùng giấy tờ xe để bộ phận CSKH phê duyệt lên hệ thống.
                     </p>
 
                     <form onSubmit={handleSubmitNewCar} className="list-car-form">
@@ -592,21 +717,21 @@ export const ListCar = ({ setCurrentTab }) => {
 
                       <button type="submit" className="btn btn-primary mt-6" disabled={loading || imageLoading}>
                         <PlusCircle size={18} />
-                        {loading ? 'Đang nộp hồ sơ...' : 'Đăng Ký Ký Gửi Xe'}
+                        {loading ? 'Đang nộp hồ sơ...' : 'Đăng Ký Xe Cho Thuê'}
                       </button>
                     </form>
                   </>
                 ) : (
                   <div className="text-center" style={{ padding: '30px 10px' }}>
                     <Sparkles className="success-lottie-icon animate-bounce text-success mb-4" size={56} style={{ display: 'inline' }} />
-                    <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#10b981' }}>Đăng Ký Ký Gửi Xe Thành Công!</h2>
+                    <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#10b981' }}>Đăng Ký Xe Cho Thuê Thành Công!</h2>
                     <p className="subtitle mt-2" style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-                      Cảm ơn bạn! Xe **{brand} {model}** đã được nộp hồ sơ phê duyệt lên hệ thống. CSKH sẽ kiểm duyệt hồ sơ xe và đăng tải lên sàn trong chốc lát!
+                      Cảm ơn bạn! Xe **{brand} {model}** đã được nộp hồ sơ phê duyệt lên hệ thống. CSKH sẽ kiểm duyệt hồ sơ xe và đăng tải lên hệ thống trong chốc lát!
                     </p>
 
                     <div className="success-actions mt-6">
                       <button type="button" className="btn btn-secondary" onClick={handleResetForm}>
-                        Đăng ký ký gửi tiếp xe khác
+                        Đăng ký tiếp xe khác
                       </button>
                       <button 
                         type="button" 
@@ -629,7 +754,7 @@ export const ListCar = ({ setCurrentTab }) => {
           <div className="owner-modal-overlay">
             <div className="owner-modal-card glassmorphism">
               <div className="owner-modal-header">
-                <h4>Chỉnh sửa phương tiện ký gửi</h4>
+                <h4>Chỉnh sửa phương tiện cho thuê</h4>
                 <button className="owner-modal-close" onClick={() => setEditingCar(null)}>✕</button>
               </div>
               <form onSubmit={handleSubmitEditCar} className="list-car-form">

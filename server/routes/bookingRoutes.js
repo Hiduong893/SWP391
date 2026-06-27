@@ -2,13 +2,14 @@ import express from 'express';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
 import { notificationService } from '../services/notificationService.js';
+import { compareFacesWithAI } from '../utils/aiHelper.js';
 
 const router = express.Router();
 
 // 15. POST Booking (Đặt xe & Đặt cọc)
 router.post('/api/bookings', auth, async (req, res) => {
   try {
-    const { carId, pickupDate, returnDate, pickupLocation, totalPrice, paymentMethod } = req.body;
+    const { carId, pickupDate, returnDate, pickupLocation, totalPrice, paymentMethod, scannedFace, contractSignature, agreementChecked } = req.body;
 
     if (!carId || !pickupDate || !returnDate || !pickupLocation || !totalPrice) {
       return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ thông tin đặt xe.' });
@@ -23,6 +24,20 @@ router.post('/api/bookings', auth, async (req, res) => {
       return res.status(400).json({ message: 'Tài khoản chưa xác thực Bằng lái xe. Vui lòng xác thực trước khi đặt xe.' });
     }
 
+    // Biometric face verification check if user has registered face in KYC
+    if (user.kycDocuments?.faceImage) {
+      if (!scannedFace) {
+        return res.status(400).json({ message: 'Vui lòng thực hiện quét khuôn mặt sinh trắc học để xác thực đặt xe.' });
+      }
+
+      console.log('Running AI face verification for checkout...');
+      const faceResult = await compareFacesWithAI(user.kycDocuments.faceImage, scannedFace);
+      if (!faceResult.verified) {
+        return res.status(400).json({ message: `Xác thực khuôn mặt thất bại: ${faceResult.reason || 'Khuôn mặt không khớp'}` });
+      }
+      console.log('AI Face Verification passed. Score:', faceResult.score);
+    }
+
     const booking = await db.bookings.create({
       userId: req.user.id,
       carId,
@@ -30,8 +45,15 @@ router.post('/api/bookings', auth, async (req, res) => {
       returnDate,
       pickupLocation,
       totalPrice,
-      paymentMethod
+      paymentMethod,
+      contractDetails: {
+        signature: contractSignature || null,
+        signedAt: new Date().toISOString(),
+        scannedFace: scannedFace || null,
+        agreementChecked: agreementChecked === true
+      }
     });
+
 
     if (paymentMethod !== 'vnpay') {
       if (car.ownerId) {

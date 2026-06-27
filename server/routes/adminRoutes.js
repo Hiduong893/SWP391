@@ -371,9 +371,9 @@ router.put('/api/admin/cars/:id/moderation', auth, cskhOrAdminAuth, async (req, 
     if (car.ownerId) {
       await notificationService.createNotification(
         car.ownerId,
-        status === 'available' ? 'Phương tiện ký gửi đã được duyệt' : 'Phương tiện ký gửi bị từ chối',
+        status === 'available' ? 'Phương tiện đăng ký cho thuê đã được duyệt' : 'Phương tiện đăng ký cho thuê bị từ chối',
         status === 'available'
-          ? `Xe ${car.brand} ${car.model} của bạn đã được kiểm duyệt và hiển thị trên sàn cho thuê xe.`
+          ? `Xe ${car.brand} ${car.model} của bạn đã được kiểm duyệt và hiển thị trên hệ thống cho thuê xe.`
           : `Xe ${car.brand} ${car.model} của bạn đã bị từ chối kiểm duyệt. Lý do: ${rejectionReason || 'Không rõ lý do'}.`,
         'SystemAlert',
         id,
@@ -383,7 +383,7 @@ router.put('/api/admin/cars/:id/moderation', auth, cskhOrAdminAuth, async (req, 
 
     res.json({
       message: status === 'available'
-        ? 'Duyệt phương tiện ký gửi lên sàn thành công!'
+        ? 'Duyệt phương tiện đăng ký cho thuê lên sàn thành công!'
         : 'Đã từ chối phương tiện đăng tải.'
     });
   } catch (error) {
