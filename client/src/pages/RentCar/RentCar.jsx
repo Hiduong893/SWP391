@@ -1322,41 +1322,29 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                   {/* Cancellation Policy Table - MOVED HERE */}
                   <div className="cancellation-policy-table-container mt-6">
                     <h5 className="block-title">Chính Sách Hủy Chuyến & Hoàn Cọc</h5>
-                    <table className="cancellation-policy-table-popup">
+                    <table className="policy-table-popup">
                       <thead>
                         <tr>
                           <th>Thời điểm hủy chuyến</th>
                           <th>Ngày thường</th>
-                          <th>Ngày Lễ / Tết</th>
+                          <th>Ngày Lễ, Tết</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
-                          <td className="policy-time-col">Trước &gt; 10 ngày</td>
-                          <td className="policy-refund-good">
-                            Hoàn <strong>100%</strong> tiền cọc
-                          </td>
-                          <td className="policy-refund-bad">
-                            Không áp dụng
-                          </td>
+                          <td>Trước &gt; 10 ngày</td>
+                          <td>Hoàn <strong>100%</strong> tiền cọc</td>
+                          <td>Không áp dụng</td>
                         </tr>
                         <tr>
-                          <td className="policy-time-col">Trước 5 - 10 ngày</td>
-                          <td className="policy-refund-medium">
-                            Hoàn <strong>30%</strong> tiền cọc
-                          </td>
-                          <td className="policy-refund-bad">
-                            Không hoàn cọc
-                          </td>
+                          <td>Trước 5 - 10 ngày</td>
+                          <td>Hoàn <strong>30%</strong> tiền cọc</td>
+                          <td>Không hoàn cọc</td>
                         </tr>
                         <tr>
-                          <td className="policy-time-col">Trong vòng 5 ngày</td>
-                          <td className="policy-refund-bad">
-                            Không hoàn cọc
-                          </td>
-                          <td className="policy-refund-bad">
-                            Không hoàn cọc
-                          </td>
+                          <td>Trong vòng 5 ngày</td>
+                          <td>Không hoàn cọc</td>
+                          <td>Không hoàn cọc</td>
                         </tr>
                       </tbody>
                     </table>
