@@ -2118,3 +2118,41 @@
     transform: scale(1);
   }
 }
+
+/* --- Cancellation Policy Table in Popup (REFINED) --- */
+.policy-table-popup {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden; /* Ensures border-radius is applied to corners */
+}
+
+.policy-table-popup th,
+.policy-table-popup td {
+  padding: 10px 12px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.policy-table-popup th {
+  background-color: #f8fafc;
+  font-weight: 700;
+  color: #475569;
+}
+
+/* First column (Time) */
+.policy-table-popup tbody td:first-child {
+  font-weight: 700;
+  color: #1e293b;
+  text-align: left;
+  width: 35%; /* Give it more space to prevent text wrapping */
+}
+
+/* Bold percentage numbers */
+.policy-table-popup td strong {
+  color: #0f172a;
+  font-weight: 800;
+}
