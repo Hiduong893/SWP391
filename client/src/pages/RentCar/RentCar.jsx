@@ -1209,7 +1209,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
           <div className="lightbox-overlay" onClick={() => setSelectedCarDetails(null)}>
             <div className="lightbox-card car-details-lightbox" onClick={(e) => e.stopPropagation()}>
               <div className="lightbox-header">
-                <h4>Chi Tiết Phương Tiện & Đánh Giá Khách Hàng</h4>
+                <h3 className="section-title">Chi tiết xe</h3>
                 <button className="btn-close-lightbox" onClick={() => setSelectedCarDetails(null)}>
                   <X size={20} />
                 </button>
@@ -1258,6 +1258,76 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                     <p className="block-desc">
                       Mẫu xe {selectedCarDetails.brand} {selectedCarDetails.model} đời mới sạch sẽ, động cơ êm ái, trang bị camera hành trình, cảm biến lùi, màn hình giải trí và bản đồ GPS đầy đủ. Xe được vệ sinh và khử khuẩn trước mỗi hành trình giao khách. Khách hàng vui lòng xuất trình Bằng lái xe và hoàn tất đặt cọc bảo đảm 5.000.000 VND trước khi khởi hành chuyến đi.
                     </p>
+                  </div>
+
+                  {/* Terms & Additional Costs Block - UPDATED */}
+                  <div className="popup-terms-block mt-4">
+                    <h5 className="block-title">Quy định thuê xe</h5>
+                    <ul className="terms-list" style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
+                      <li>
+                        Sử dụng xe đúng mục đích.
+                      </li>
+                      <li>
+                        Không sử dụng xe vào mục đích phi pháp, trái pháp luật.
+                      </li>
+                      <li>
+                        Không sử dụng xe để cầm cố, thế chấp.
+                      </li>
+                      <li>
+                        Không hút thuốc, nhả kẹo cao su, xả rác trong xe.
+                      </li>
+                      <li>
+                        Không chở hàng cấm, hàng dễ cháy nổ, hoặc trái cây, thực phẩm nặng mùi trong xe.
+                      </li>
+                      <li>Khi trả xe, nếu có vết bẩn hoặc mùi khó chịu, khách hàng sẽ chịu chi phí vệ sinh xe.</li>
+                      <li>Giới hạn quãng đường: 400km/24h (tương ứng 250km/4h, 300km/8h, 350km/12h).</li>
+                    </ul>
+                    <p style={{ marginTop: '16px', fontStyle: 'italic', fontSize: '13px', color: '#475569', textAlign: 'center' }}>
+                      Trân trọng cảm ơn và chúc quý khách có những trải nghiệm tuyệt vời!
+                    </p>
+                  </div>
+
+                  {/* Cancellation Policy Table - MOVED HERE */}
+                  <div className="cancellation-policy-table-container mt-6">
+                    <h5 className="block-title">Chính Sách Hủy Chuyến & Hoàn Cọc</h5>
+                    <table className="cancellation-policy-table-popup">
+                      <thead>
+                        <tr>
+                          <th>Thời điểm hủy chuyến</th>
+                          <th>Ngày thường</th>
+                          <th>Ngày Lễ / Tết</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="policy-time-col">Trước &gt; 10 ngày</td>
+                          <td className="policy-refund-good">
+                            Hoàn <strong>100%</strong> tiền cọc
+                          </td>
+                          <td className="policy-refund-bad">
+                            Không áp dụng
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="policy-time-col">Trước 5 - 10 ngày</td>
+                          <td className="policy-refund-medium">
+                            Hoàn <strong>30%</strong> tiền cọc
+                          </td>
+                          <td className="policy-refund-bad">
+                            Không hoàn cọc
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="policy-time-col">Trong vòng 5 ngày</td>
+                          <td className="policy-refund-bad">
+                            Không hoàn cọc
+                          </td>
+                          <td className="policy-refund-bad">
+                            Không hoàn cọc
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
 
                   {/* 🌟 CUSTOMER REVIEWS TAB */}
