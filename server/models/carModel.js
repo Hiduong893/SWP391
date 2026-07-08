@@ -20,6 +20,8 @@ export const mapCarRow = (row) => {
     ownerId: (row.owner_id && !isSystemCar) ? String(row.owner_id) : null,
     status: mappedStatus,
     plateNumber: row.license_plate,
+    yearOfManufacture: Number(row.year_of_manufacture || 2023),
+    odo: row.odo ? Number(row.odo) : null,
     carPapers: null,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString()
   };
@@ -135,6 +137,8 @@ export const carModel = {
     const price = parseInt(carData.pricePerDay) || 800000;
     const deposit = 5000000; // Fixed deposit
     const status = ownerId ? 'Pending' : 'Available';
+    const yearOfManufacture = parseInt(carData.yearOfManufacture) || 2023;
+    const odo = carData.odo ? parseInt(carData.odo) : null;
 
     const request = p.request()
       .input('ownerId', sql.Int, ownerId)
@@ -147,11 +151,14 @@ export const carModel = {
       .input('location', sql.NVarChar, carData.location)
       .input('transmission', sql.NVarChar, carData.transmission || 'Tự động')
       .input('fuel', sql.NVarChar, carData.fuel || 'Xăng')
+      .input('yearOfManufacture', sql.Int, yearOfManufacture)
+      .input('odo', sql.Int, odo)
+      .input('seats', sql.Int, seats)
       .input('status', sql.NVarChar, status);
 
     const insertVehicleQuery = `
-      INSERT INTO Vehicle (owner_id, brand_id, category_id, model_name, license_plate, year_of_manufacture, daily_price, deposit_amount, location_address, transmission, fuel, status, is_active, created_at, updated_at)
-      VALUES (@ownerId, @brandId, @categoryId, @model, @plateNumber, 2023, @price, @deposit, @location, @transmission, @fuel, @status, 1, GETDATE(), GETDATE());
+      INSERT INTO Vehicle (owner_id, brand_id, category_id, model_name, license_plate, year_of_manufacture, daily_price, deposit_amount, location_address, transmission, fuel, odo, seat_count, status, is_active, created_at, updated_at)
+      VALUES (@ownerId, @brandId, @categoryId, @model, @plateNumber, @yearOfManufacture, @price, @deposit, @location, @transmission, @fuel, @odo, @seats, @status, 1, GETDATE(), GETDATE());
       SELECT SCOPE_IDENTITY() as vehicle_id;
     `;
     const res = await request.query(insertVehicleQuery);
@@ -229,6 +236,14 @@ export const carModel = {
     if (updateData.rejectionReason !== undefined) {
       updates.push('rejection_reason = @rejectionReason');
       request.input('rejectionReason', sql.NVarChar, updateData.rejectionReason);
+    }
+    if (updateData.yearOfManufacture !== undefined) {
+      updates.push('year_of_manufacture = @yearOfManufacture');
+      request.input('yearOfManufacture', sql.Int, parseInt(updateData.yearOfManufacture));
+    }
+    if (updateData.odo !== undefined) {
+      updates.push('odo = @odo');
+      request.input('odo', sql.Int, updateData.odo ? parseInt(updateData.odo) : null);
     }
 
     if (updates.length > 0) {
