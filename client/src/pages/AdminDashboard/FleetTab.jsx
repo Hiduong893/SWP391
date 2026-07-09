@@ -17,7 +17,7 @@ export const FleetTab = ({
       {activeSubTab === 'cars_moderation' && (
         <div className="data-table-panel glassmorphism">
           <div className="panel-header">
-            <h4 className="panel-title">Danh sách xe đang chờ kiểm duyệt đăng tải lên chợ xe</h4>
+            <h4 className="panel-title">Danh sách xe đang chờ kiểm duyệt</h4>
           </div>
 
           {pendingCars.length === 0 ? (
