@@ -57,9 +57,9 @@ export const CashFlowTab = ({
                             <button className="btn-approve btn-danger" onClick={() => handleRefundDeposit(b.id, false)} disabled={actionLoading}>✕ Giữ cọc</button>
                           </>
                         ) : b.depositStatus === 'refunded' ? (
-                          <span className="text-green font-bold small">Đã hoàn trả khách ✓</span>
+                          <span className="text-green font-bold small">Đã hoàn cọc ✓</span>
                         ) : b.depositStatus === 'withheld' ? (
-                          <span className="text-red font-bold small">Tịch thu sung công ✕</span>
+                          <span className="text-red font-bold small">Đã giữ cọc ✕</span>
                         ) : (
                           <span className="text-muted small">Chưa hoàn cọc (Chuyến đi chưa xong)</span>
                         )}
