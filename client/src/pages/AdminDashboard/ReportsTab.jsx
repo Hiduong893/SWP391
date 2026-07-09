@@ -722,7 +722,7 @@ export const ReportsTab = ({
 
                     <th>Nội dung nhận xét</th>
 
-                    <th>Sao</th>
+                    <th>Đánh giá</th>
 
                     <th>Ngày viết</th>
 
