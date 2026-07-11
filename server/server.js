@@ -16,6 +16,7 @@ import emailRoutes from './routes/emailRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import renterActionRoutes from './routes/renterActionRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import contractRoutes from './routes/contractRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,6 +32,12 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
+
+// Custom request logger
+app.use((req, res, next) => {
+  console.log(`[Backend] ${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
 
 // Health check / Root
 app.get('/', (req, res) => {
@@ -58,6 +65,7 @@ app.use(emailRoutes);
 app.use(paymentRoutes);
 app.use(renterActionRoutes);
 app.use(notificationRoutes);
+app.use('/api', contractRoutes);
 
 // Start server
 app.listen(PORT, () => {

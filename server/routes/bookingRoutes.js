@@ -2,6 +2,7 @@ import express from 'express';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
 import { notificationService } from '../services/notificationService.js';
+import { contractModel } from '../models/contractModel.js';
 
 const router = express.Router();
 
@@ -32,6 +33,9 @@ router.post('/api/bookings', auth, async (req, res) => {
       totalPrice,
       paymentMethod
     });
+
+    // Create the e-contract for this booking immediately
+    await contractModel.create(booking.id, paymentMethod === 'wallet');
 
     if (paymentMethod !== 'vnpay') {
       if (car.ownerId) {
