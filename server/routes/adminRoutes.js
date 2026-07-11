@@ -315,6 +315,37 @@ router.put('/api/admin/bookings/:id/refund-deposit', auth, cskhOrAdminAuth, asyn
   }
 });
 
+// 6b. Xác nhận đã nhận tiền VietQR (chuyển khoản cọc giữ chỗ 500k)
+router.put('/api/admin/bookings/:id/confirm-vietqr', auth, cskhOrAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const booking = await db.bookings.findOne({ id });
+    if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
+
+    if (booking.paymentMethod !== 'vietqr') {
+      return res.status(400).json({ message: 'Đơn đặt xe này không sử dụng phương thức VietQR.' });
+    }
+    if (booking.depositStatus === 'paid') {
+      return res.status(400).json({ message: 'Đơn đặt xe này đã được xác nhận thanh toán rồi.' });
+    }
+
+    // Cập nhật trạng thái thanh toán cọc và booking
+    await db.bookings.update(id, {
+      depositStatus: 'paid',
+      payment_status: 'paid',
+      status: 'Approved',
+    });
+
+    res.json({
+      message: `Đã xác nhận nhận được 500.000đ VietQR cho đơn đặt xe #${id}. Booking đã được duyệt!`,
+    });
+  } catch (error) {
+    console.error('Lỗi xác nhận VietQR:', error);
+    res.status(500).json({ message: 'Lỗi xác nhận VietQR.' });
+  }
+});
+
 // ADMIN ONLY OPERATIONS
 
 // 1. User role delegation
