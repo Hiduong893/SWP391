@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, MapPin, CreditCard, ShieldCheck, CheckCircle2, ChevronRight, Upload, Info, AlertTriangle } from 'lucide-react';
+import { X, Calendar, MapPin, CreditCard, ShieldCheck, CheckCircle2, ChevronRight, Upload, Info, AlertTriangle, FileText } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from './Toast';
+import { ContractModal } from './ContractModal';
 
 export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setCurrentTab }) => {
-  const [step, setStep] = useState(1); // 1: Confirmation & License, 2: Payment, 3: Success
+  const [step, setStep] = useState(1); // 1: Confirmation & License, 2: Contract, 3: Payment, 4: Success
+  const [localRenterSigned, setLocalRenterSigned] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToEsign, setAgreedToEsign] = useState(false);
+  const [showTermsDetail, setShowTermsDetail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [licenseUploading, setLicenseUploading] = useState(false);
   const [bookingId] = useState(() => crypto.randomUUID().slice(0, 8).toUpperCase());
+  const [createdBookingId, setCreatedBookingId] = useState(null); // Real booking ID from API
+  const [showContractModal, setShowContractModal] = useState(false);
   const [payMethod, setPayMethod] = useState('vietqr'); // 'vietqr', 'vnpay', or 'wallet'
   const [timeLeft, setTimeLeft] = useState(900); // 15 minutes = 900 seconds
   const [pickupMethod, setPickupMethod] = useState('self'); // 'self' or 'delivery'
@@ -167,6 +174,8 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
       };
 
       const newBooking = await api.bookings.create(bookingData);
+      // Save the real booking ID from the server to open contract later
+      setCreatedBookingId(newBooking.id);
 
       if (paymentChoice === 'vnpay') {
         const vnpayRes = await api.bookings.createVnpayUrl(newBooking.id);
@@ -178,7 +187,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
         }
       }
 
-      showToast('Xác nhận thanh toán thành công!', 'success');
+      showToast('Xác nhận thanh toán đặt xe thành công!', 'success');
       if (paymentChoice === 'wallet') {
         const newBalance = walletBalance - totalPayment;
         setWalletBalance(newBalance);
@@ -208,8 +217,9 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   const vietQrUrl = `https://img.vietqr.io/image/${sysConfig.bankId}-${sysConfig.bankAccountNumber}-compact.png?amount=${reservationFee}&addInfo=${encodeURIComponent(`THUEXE ${car.brand} ${bookingId}`)}&accountName=${encodeURIComponent(sysConfig.bankAccountHolder)}`;
 
   return (
-    <div className="booking-modal-overlay">
-      <div className={`booking-modal-card ${step === 2 ? 'wide-payment-modal' : ''}`}>
+    <>
+      <div className="booking-modal-overlay">
+        <div className={`booking-modal-card ${step === 2 ? 'wide-payment-modal' : ''}`}>
         {/* Header */}
         <div className="booking-modal-header">
           <div className="header-title-box">
@@ -946,6 +956,32 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
               <div className="receipt-stamp">PAID / ĐÃ THANH TOÁN</div>
             </div>
 
+            {/* Info notice about handover signing */}
+            <div style={{
+              margin: '20px auto 0',
+              maxWidth: '420px',
+              background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+              border: '1.5px solid #86efac',
+              borderRadius: '14px',
+              padding: '16px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '14px',
+            }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: '10px',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <ShieldCheck size={18} color="#fff" />
+              </div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#14532d', marginBottom: '2px' }}>Đã xác nhận đặt cọc giữ xe</div>
+                <div style={{ fontSize: '11.5px', color: '#166534' }}>Vui lòng kiểm tra mục <strong>Chuyến đi của tôi</strong>. Hợp đồng chính thức sẽ được ký số bằng hình vẽ tay khi bạn nhận bàn giao xe thực tế.</div>
+              </div>
+            </div>
+
             <button
               type="button"
               className="btn btn-primary mt-6"
@@ -960,6 +996,16 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
         )}
       </div>
     </div>
+
+    {/* Contract Modal overlay */}
+    {showContractModal && createdBookingId && (
+      <ContractModal
+        bookingId={createdBookingId}
+        user={user}
+        onClose={() => setShowContractModal(false)}
+      />
+    )}
+    </>
   );
 };
 
