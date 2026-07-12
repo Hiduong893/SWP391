@@ -65,6 +65,10 @@ export const getPool = async () => {
         BEGIN
             ALTER TABLE Vehicle ADD fuel NVARCHAR(50) NULL;
         END
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Vehicle') AND name = 'odo')
+        BEGIN
+            ALTER TABLE Vehicle ADD odo INT NULL;
+        END
 
         -- Add handover_docs and issue_report if missing in Booking
         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Booking') AND name = 'handover_docs')
