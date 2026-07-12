@@ -15,6 +15,7 @@ import { ListCar } from './pages/ListCar/ListCar';
 import { MyTrips } from './pages/MyTrips/MyTrips';
 import { AdminDashboard } from './pages/AdminDashboard/AdminDashboard';
 import { CSKHDashboard } from './pages/CSKHDashboard/CSKHDashboard'; 
+import { OwnerDashboard } from './pages/OwnerDashboard/OwnerDashboard';
 import { BookingModal } from './components/BookingModal';
 import { SimulatedInbox } from './components/SimulatedInbox';
 import { ChatbotWidget } from './components/ChatbotWidget';
@@ -60,12 +61,17 @@ function App() {
     try {
       const data = await api.user.getProfile();
       setUser(data.user);
-      // Stay on the same tab if it's already a valid page, otherwise default to rent-car
-      const savedTab = sessionStorage.getItem('activeTab');
-      if (savedTab) {
-        setCurrentTab(savedTab);
+      
+      if (data.user && data.user.role === 'owner') {
+        setCurrentTab('owner-dashboard');
       } else {
-        setCurrentTab('rent-car');
+        // Stay on the same tab if it's already a valid page, otherwise default to rent-car
+        const savedTab = sessionStorage.getItem('activeTab');
+        if (savedTab) {
+          setCurrentTab(savedTab);
+        } else {
+          setCurrentTab('rent-car');
+        }
       }
     } catch (error) {
       console.warn('Auto-login session expired.');
@@ -168,6 +174,8 @@ function App() {
       setCurrentTab('admin-dashboard');
     } else if (loggedInUser.role === 'cskh') {
       setCurrentTab('cskh-dashboard');
+    } else if (loggedInUser.role === 'owner') {
+      setCurrentTab('owner-dashboard');
     } else {
       // Switch to previously intended page if any, or default to rent-car
       const savedTab = sessionStorage.getItem('activeTab');
@@ -222,7 +230,12 @@ function App() {
 
             {/* List Car (Owner listing) Tab - Protected */}
             {currentTab === 'list-car' && user && (
-              <ListCar setCurrentTab={handleSetTabOrModal} user={user} onUpdateUser={setUser} />
+              <ListCar setCurrentTab={handleSetTabOrModal} user={user} setUser={setUser} onUpdateUser={setUser} />
+            )}
+
+            {/* Owner Dashboard Tab - Protected */}
+            {currentTab === 'owner-dashboard' && user && user.role === 'owner' && (
+              <OwnerDashboard setCurrentTab={setCurrentTab} />
             )}
 
             {/* My Trips (Rental history) Tab - Protected */}
