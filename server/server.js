@@ -34,6 +34,12 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Custom request logger
+app.use((req, res, next) => {
+  console.log(`[Backend] ${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
+
 // Health check / Root
 app.get('/', (req, res) => {
   res.send('ViVuCar Server is running...');
@@ -61,7 +67,6 @@ app.use(paymentRoutes);
 app.use(renterActionRoutes);
 app.use(notificationRoutes);
 app.use('/api', contractRoutes);
-
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {
   console.error('Server Global Error:', err);
@@ -69,6 +74,7 @@ app.use((err, req, res, next) => {
     message: err.message || 'Đã xảy ra lỗi hệ thống.'
   });
 });
+
 
 // Start server
 app.listen(PORT, () => {

@@ -401,6 +401,11 @@ export const api = {
         body: JSON.stringify({ status })
       }),
 
+    confirmVietqr: (bookingId) =>
+      request(`/admin/bookings/${bookingId}/confirm-vietqr`, {
+        method: 'PUT'
+      }),
+
     getPendingCars: () =>
       request('/admin/cars/pending', {
         method: 'GET'
