@@ -39,6 +39,62 @@ const mapContractRow = (row) => ({
   updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString(),
 });
 
+/**
+ * Danh sách chủ đề điều khoản bổ sung hợp pháp mà chủ xe được phép thêm.
+ * Mỗi topic có id, nhãn hiển thị và placeholder gợi ý nội dung.
+ * ViVuCar kiểm soát danh sách này — chủ xe KHÔNG được tự tạo topic ngoài danh sách.
+ */
+export const ALLOWED_CUSTOM_TERM_TOPICS = [
+  {
+    id: 'no_smoking',
+    label: 'Không hút thuốc trong xe',
+    placeholder: 'Ví dụ: Nghiêm cấm hút thuốc lá, thuốc lào và các sản phẩm có khói trong xe. Vi phạm phạt vệ sinh 500.000đ.',
+    maxLength: 300,
+  },
+  {
+    id: 'no_pets',
+    label: 'Không chở thú cưng',
+    placeholder: 'Ví dụ: Không chở thú cưng (chó, mèo, ...) lên xe. Vi phạm phạt vệ sinh 500.000đ.',
+    maxLength: 300,
+  },
+  {
+    id: 'fuel_policy',
+    label: 'Quy định nhiên liệu',
+    placeholder: 'Ví dụ: Bên B phải trả xe với mức nhiên liệu không thấp hơn khi nhận xe. Thiếu hụt tính theo giá thực tế + 50.000đ phí đổ xăng.',
+    maxLength: 400,
+  },
+  {
+    id: 'travel_area',
+    label: 'Giới hạn địa bàn di chuyển',
+    placeholder: 'Ví dụ: Chỉ được di chuyển trong phạm vi tỉnh/thành phố. Ra ngoài tỉnh cần thông báo và được chấp thuận trước.',
+    maxLength: 400,
+  },
+  {
+    id: 'mileage_limit',
+    label: 'Giới hạn km/ngày',
+    placeholder: 'Ví dụ: Giới hạn 200km/ngày. Vượt quá tính thêm 3.000đ/km.',
+    maxLength: 300,
+  },
+  {
+    id: 'parking_rules',
+    label: 'Quy định đỗ xe & bảo quản',
+    placeholder: 'Ví dụ: Không đậu xe dưới trời mưa lớn hoặc nơi ngập lụt. Ưu tiên đỗ trong bãi có mái che.',
+    maxLength: 300,
+  },
+  {
+    id: 'return_condition',
+    label: 'Điều kiện trả xe',
+    placeholder: 'Ví dụ: Xe phải được vệ sinh sạch sẽ (nội thất + ngoại thất) trước khi trả. Không sạch phạt 300.000đ.',
+    maxLength: 400,
+  },
+  {
+    id: 'additional_driver',
+    label: 'Quy định người lái phụ',
+    placeholder: 'Ví dụ: Chỉ người thuê xe trong hợp đồng mới được lái xe. Người lái phụ phải đăng ký và được chấp thuận trước.',
+    maxLength: 300,
+  },
+];
+
 // Tạo mã hợp đồng tự động: HD-YYYY-XXXXX
 const generateContractCode = (contractId) => {
   const year = new Date().getFullYear();
@@ -84,11 +140,11 @@ export const contractModel = {
       platformName: 'ViVuCar',
       version: '1.0',
       generatedAt: new Date().toISOString(),
-      cancellationPolicy: 'Hủy trước 24h: Hoàn 70% cọc giữ chỗ. Hủy trong 24h: Không hoàn.',
-      damagePolicy: 'Thiệt hại vật chất sẽ được khấu trừ từ tiền cọc bảo đảm.',
-      lateReturnPolicy: 'Trả xe muộn dưới 2h: phụ phí 200.000đ. Từ 2h trở lên: tính thêm 1 ngày thuê.',
-      trafficViolationPolicy: 'Phạt nguội phát sinh trong thời gian thuê do người thuê chịu hoàn toàn.',
-      refundPolicy: 'Tiền cọc bảo đảm hoàn trả trong vòng 3 ngày làm việc sau khi trả xe không phát sinh.',
+      cancellationPolicy: 'Hủy chuyến miễn phí trong vòng 1 giờ sau khi đặt cọc giữ xe thành công (trừ trường hợp sát giờ nhận xe dưới 6 tiếng). Hủy trước giờ khởi hành > 24 giờ: Khách hàng chịu phí hủy chuyến tương đương 30% giá trị cọc giữ xe (hoàn trả 70%). Hủy chuyến trong vòng 24 giờ trước giờ nhận xe: Khách hàng chịu phí hủy chuyến tương đương 100% giá trị cọc giữ xe (không hoàn trả).',
+      damagePolicy: 'Bên B phải chịu trách nhiệm bồi thường hoàn toàn đối với mọi thiệt hại vật chất, trầy xước, móp méo thân vỏ xe xảy ra trong suốt thời gian thuê xe. Trong trường hợp xảy ra tai nạn nghiêm trọng: (1) Bên B có trách nhiệm giữ nguyên hiện trường và liên hệ ngay với CSKH ViVuCar cùng bên bảo hiểm trong vòng 15 phút. (2) Bên B chịu chi phí khấu trừ bảo hiểm tối thiểu 2.000.000đ/vụ việc và tiền thuê xe trong những ngày xe nằm xưởng sửa chữa (tối đa 15 ngày). (3) Nếu xe bị hư hỏng do lỗi cố ý hoặc lái xe khi có nồng độ cồn vượt quá quy định pháp luật, Bên B bồi thường 100% chi phí sửa chữa thực tế.',
+      lateReturnPolicy: 'Bên B có nghĩa vụ hoàn trả phương tiện đúng thời gian quy định. Phí trả xe muộn giờ (Late Return Fee): Dưới 1 giờ: Miễn phí nếu thông báo trước 30 phút. Từ 1 đến 5 giờ: Phụ phí 100.000đ/giờ. Từ 5 giờ trở lên hoặc qua đêm: Tính thêm 1 ngày thuê xe theo bảng giá hiện tại. Trong trường hợp Bên B tự ý giữ xe quá 12 giờ mà không thông báo và không liên lạc được, Bên A có quyền báo cơ quan chức năng cứu hộ xe và áp dụng hình phạt chiếm đoạt tài sản.',
+      trafficViolationPolicy: 'Bên B chịu trách nhiệm chi trả 100% tiền phạt đối với các lỗi vi phạm luật giao thông đường bộ phát sinh trong thời gian thuê xe (bao gồm cả phạt nguội được ghi nhận bởi camera giao thông). Khi nhận được thông báo phạt nguội từ cơ quan chức năng hoặc từ ViVuCar, Bên B có nghĩa vụ thanh toán trực tiếp hoặc ủy quyền khấu trừ từ tiền cọc bảo đảm. ViVuCar có quyền cung cấp thông tin định danh của Bên B cho cơ quan công an để phối hợp xử lý.',
+      refundPolicy: 'Tiền cọc bảo đảm tài sản 5.000.000đ (hoặc tài sản thế chấp tương đương) sẽ được ViVuCar phong tỏa tạm thời. Khoản cọc này sẽ được hoàn trả 100% sau 3 ngày làm việc kể từ thời điểm trả xe thành công nếu không phát sinh: (1) Trả xe muộn giờ, (2) Xe bị bẩn hoặc có mùi hôi (phạt vệ sinh 200.000đ - 500.000đ), (3) Thiếu hụt nhiên liệu so với ban đầu (tính theo giá xăng thực tế + 100.000đ phí dịch vụ đổ xăng), (4) Va quẹt trầy xước hoặc các lỗi phạt nguội đang chờ xử lý.',
     };
 
     const reservationPaidAt = isPaid ? new Date() : null;
@@ -292,6 +348,88 @@ export const contractModel = {
       `);
     return contractModel.findByBookingId(String(bookingId));
   },
+
+  /**
+   * Chủ xe bổ sung điều khoản riêng vào hợp đồng
+   * Chỉ được phép khi status = 'Draft' (trước khi người thuê ký)
+   * @param {string} bookingId
+   * @param {string} ownerId - id của chủ xe (để verify quyền)
+   * @param {Array} customTerms - Mảng tối đa 3 phần tử: [{topicId, content}]
+   */
+  updateOwnerTerms: async (bookingId, ownerId, customTerms) => {
+    const p = await getPool();
+    const bookingIdInt = parseInt(bookingId);
+
+    // 1. Lấy hợp đồng hiện tại
+    const contractRes = await p.request()
+      .input('bookingId', sql.Int, bookingIdInt)
+      .query('SELECT * FROM RentalContract WHERE booking_id = @bookingId');
+
+    if (contractRes.recordset.length === 0) throw new Error('Hợp đồng không tồn tại.');
+    const contract = contractRes.recordset[0];
+
+    // 2. Chỉ được chỉnh sửa khi còn Draft
+    if (contract.status !== 'Draft') {
+      throw new Error('Không thể chỉnh sửa điều khoản sau khi hợp đồng đã được ký. Vui lòng liên hệ CSKH ViVuCar.');
+    }
+
+    // 3. Validate danh sách điều khoản
+    if (!Array.isArray(customTerms)) throw new Error('Dữ liệu điều khoản không hợp lệ.');
+    if (customTerms.length > 3) throw new Error('Chỉ được phép thêm tối đa 3 điều khoản bổ sung.');
+
+    const allowedTopicIds = ALLOWED_CUSTOM_TERM_TOPICS.map(t => t.id);
+    const seenTopics = new Set();
+
+    for (const term of customTerms) {
+      if (!term.topicId || !term.content) {
+        throw new Error('Mỗi điều khoản phải có chủ đề và nội dung.');
+      }
+      if (!allowedTopicIds.includes(term.topicId)) {
+        throw new Error(`Chủ đề điều khoản "${term.topicId}" không nằm trong danh sách được phép của ViVuCar.`);
+      }
+      if (seenTopics.has(term.topicId)) {
+        throw new Error(`Không được thêm 2 điều khoản trùng chủ đề "${term.topicId}".`);
+      }
+      const topicConfig = ALLOWED_CUSTOM_TERM_TOPICS.find(t => t.id === term.topicId);
+      const content = String(term.content).trim();
+      if (content.length < 10) {
+        throw new Error(`Nội dung điều khoản "${topicConfig.label}" quá ngắn (tối thiểu 10 ký tự).`);
+      }
+      if (content.length > topicConfig.maxLength) {
+        throw new Error(`Nội dung điều khoản "${topicConfig.label}" vượt quá ${topicConfig.maxLength} ký tự.`);
+      }
+      seenTopics.add(term.topicId);
+    }
+
+    // 4. Gộp điều khoản bổ sung vào termsSnapshot hiện tại
+    const existingSnapshot = contract.terms_snapshot ? JSON.parse(contract.terms_snapshot) : {};
+    const updatedSnapshot = {
+      ...existingSnapshot,
+      ownerCustomTerms: customTerms.map(t => ({
+        topicId: t.topicId,
+        topicLabel: ALLOWED_CUSTOM_TERM_TOPICS.find(cfg => cfg.id === t.topicId)?.label || t.topicId,
+        content: String(t.content).trim(),
+        addedAt: new Date().toISOString(),
+      })),
+      ownerTermsUpdatedAt: new Date().toISOString(),
+    };
+
+    await p.request()
+      .input('bookingId', sql.Int, bookingIdInt)
+      .input('termsSnapshot', sql.NVarChar, JSON.stringify(updatedSnapshot))
+      .query(`
+        UPDATE RentalContract 
+        SET terms_snapshot = @termsSnapshot, updated_at = GETDATE()
+        WHERE booking_id = @bookingId
+      `);
+
+    return contractModel.findByBookingId(String(bookingId));
+  },
+
+  /**
+   * Lấy danh sách chủ đề điều khoản được phép (dùng cho frontend dropdown)
+   */
+  getCustomTermTopics: () => ALLOWED_CUSTOM_TERM_TOPICS,
 
   /**
    * Hủy hợp đồng (khi booking bị cancel)

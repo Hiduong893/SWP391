@@ -234,14 +234,14 @@ export const CSKHDashboard = ({ setCurrentTab }) => {
             margin: '0 auto 16px',
           }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          <p style={{ color: 'var(--cskh-text-muted)', fontSize: 14, margin: 0 }}>Đang tải dữ liệu CSKH...</p>
+          <p style={{ color: '#94a3b8', fontSize: 14, margin: 0 }}>Đang tải dữ liệu CSKH...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`cskh-dashboard ${!isDarkMode ? 'cskh-light' : ''}`}>
+    <div className="cskh-dashboard">
 
       {/* ========== SIDEBAR ========== */}
       <aside className="cskh-sidebar">
@@ -280,6 +280,15 @@ export const CSKHDashboard = ({ setCurrentTab }) => {
             );
           })}
 
+          <div className="cskh-nav-section" style={{ marginTop: 12 }}>Điều hướng</div>
+          <button className="cskh-nav-btn" onClick={() => setCurrentTab && setCurrentTab('rent-car')}>
+            <Car size={17} />
+            <span>Trang chủ</span>
+          </button>
+          <button className="cskh-nav-btn" onClick={() => setCurrentTab && setCurrentTab('profile')}>
+            <Bell size={17} />
+            <span>Hồ sơ cá nhân</span>
+          </button>
         </nav>
 
         {/* Footer */}
