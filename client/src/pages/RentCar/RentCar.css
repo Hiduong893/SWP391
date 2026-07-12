@@ -7,17 +7,19 @@
 /* Hero section */
 .vivu-hero {
   text-align: center;
-  padding: 40px 24px 60px 24px;
+  padding: 120px 24px 80px 24px;
   position: relative;
   background-image: linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.65)), url('/anh_banner.webp');
   background-size: cover;
   background-position: center;
-  min-height: 620px;
+  min-height: 90vh;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   border-radius: 0;
   overflow: hidden;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
 }
 
 .hero-video-bg {
@@ -55,6 +57,10 @@
   flex: 1.2;
   text-align: left;
   z-index: 2;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
 }
 
 .hero-title {
@@ -171,7 +177,7 @@
 
 /* Search Widget Premium Layout (Borderless Airbnb style) */
 .search-widget-wrapper {
-  max-width: 1440px;
+  max-width: 1200px;
   width: 100%;
   margin: 0 auto -80px auto;
   z-index: 5;

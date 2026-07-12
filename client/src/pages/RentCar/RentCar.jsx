@@ -27,6 +27,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
 
   // System config & policies notice
   const [systemConfig, setSystemConfig] = useState(null);
+  const [showSystemNotice, setShowSystemNotice] = useState(true);
 
   // Car Details & Reviews Popup state
   const [selectedCarDetails, setSelectedCarDetails] = useState(null);
@@ -80,6 +81,11 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
 
     fetchCars();
     fetchSystemConfig();
+
+    const timer = setTimeout(() => {
+      setShowSystemNotice(false);
+    }, 7000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -505,7 +511,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
   return (
     <div className="rent-car-page">
       {/* 📢 SYSTEM NOTICE BANNER */}
-      {systemConfig && systemConfig.systemNotice && (!user || (user.role !== 'renter' && user.role !== 'owner')) && (
+      {showSystemNotice && systemConfig && systemConfig.systemNotice && (!user || (user.role !== 'renter' && user.role !== 'owner')) && (
         <div className="homepage-notice-container">
           <div className="system-notice-alert-wrapper">
             <div className="system-notice-alert">
