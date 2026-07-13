@@ -48,7 +48,7 @@ router.get('/contracts/booking/:bookingId', auth, async (req, res) => {
       contract,
       booking,
       renter: renter ? { id: renter.id, name: renter.name, email: renter.email, phone: renter.phone } : null,
-      car: car ? { id: car.id, brand: car.brand, model: car.model, image: car.image, licensePlate: car.licensePlate } : null,
+      car: car ? { id: car.id, brand: car.brand, model: car.model, image: car.image, licensePlate: car.plateNumber } : null,
       owner: owner ? { id: owner.id, name: owner.name, email: owner.email, phone: owner.phone } : null
     });
   } catch (err) {
