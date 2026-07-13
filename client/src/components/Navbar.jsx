@@ -54,7 +54,7 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, s
       if (user.role === 'renter') {
         setCurrentTab('my-trips');
       } else if (user.role === 'owner') {
-        setCurrentTab('list-car');
+        setCurrentTab('owner-dashboard');
       } else if (user.role === 'cskh' || user.role === 'admin') {
         setCurrentTab('admin-dashboard');
       }
@@ -82,7 +82,7 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, s
   return (
     <nav className="main-nav">
       <div className="nav-container">
-        <div className="nav-brand" onClick={() => setCurrentTab('rent-car')}>
+        <div className="nav-brand" onClick={() => setCurrentTab(user?.role === 'owner' ? 'owner-dashboard' : 'rent-car')}>
           <div className="brand-logo-container">
             <svg viewBox="0 0 100 100" className="brand-logo-svg" width="36" height="36">
               <rect width="100" height="100" rx="24" fill="#009698" />
@@ -99,12 +99,14 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, s
 
         <div className="nav-links">
           {/* Main active links */}
-          <button
-            className={`nav-item ${currentTab === 'rent-car' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('rent-car')}
-          >
-            <span>Thuê xe</span>
-          </button>
+          {user?.role !== 'owner' && (
+            <button
+              className={`nav-item ${currentTab === 'rent-car' ? 'active' : ''}`}
+              onClick={() => setCurrentTab('rent-car')}
+            >
+              <span>Thuê xe</span>
+            </button>
+          )}
 
           <button
             className={`nav-item ${currentTab === 'list-car' ? 'active' : ''}`}
@@ -136,12 +138,23 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, s
 
           {user && (
             <>
-              <button
-                className={`nav-item ${currentTab === 'my-trips' ? 'active' : ''}`}
-                onClick={() => setCurrentTab('my-trips')}
-              >
-                <span>Chuyến đi</span>
-              </button>
+              {user.role === 'owner' && (
+                <button
+                  className={`nav-item ${currentTab === 'owner-dashboard' ? 'active' : ''}`}
+                  onClick={() => setCurrentTab('owner-dashboard')}
+                >
+                  <span>Quản lý xe</span>
+                </button>
+              )}
+
+              {user.role !== 'owner' && (
+                <button
+                  className={`nav-item ${currentTab === 'my-trips' ? 'active' : ''}`}
+                  onClick={() => setCurrentTab('my-trips')}
+                >
+                  <span>Chuyến đi</span>
+                </button>
+              )}
 
               {(user.role === 'admin' || user.role === 'cskh') && (
                 <button
