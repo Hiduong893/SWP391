@@ -238,6 +238,18 @@ function App() {
               <CSKHDashboard setCurrentTab={handleSetTabOrModal} />
             )}
 
+            {/* Auth pages */}
+            {currentTab === 'login' && (
+              <Login
+                onLoginSuccess={handleLoginSuccess}
+                setCurrentTab={setCurrentTab}
+              />
+            )}
+
+            {currentTab === 'register' && (
+              <Register setCurrentTab={setCurrentTab} />
+            )}
+
             {currentTab === 'verify-email' && (
               <VerifyEmail
                 token={verificationToken}
