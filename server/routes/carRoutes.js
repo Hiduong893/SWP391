@@ -159,7 +159,7 @@ router.put('/api/owner/bookings/:id/approve', auth, async (req, res) => {
 router.put('/api/owner/cars/:id', auth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { pricePerDay, location, image } = req.body;
+    const { pricePerDay, location, image, status } = req.body;
 
     const car = await db.cars.findOne({ id });
     if (!car) {
@@ -170,10 +170,15 @@ router.put('/api/owner/cars/:id', auth, async (req, res) => {
       return res.status(403).json({ message: 'Bạn không có quyền chỉnh sửa phương tiện này.' });
     }
 
+    if (status !== undefined && status === 'inactive' && car.status === 'rented') {
+      return res.status(400).json({ message: 'Không thể tạm dừng phương tiện đang cho thuê.' });
+    }
+
     const updatedCar = await db.cars.update(id, {
       pricePerDay,
       location,
-      image
+      image,
+      status
     });
 
     res.json({
@@ -183,6 +188,31 @@ router.put('/api/owner/cars/:id', auth, async (req, res) => {
   } catch (error) {
     console.error('Update car error:', error);
     res.status(500).json({ message: 'Lỗi khi cập nhật thông tin xe.' });
+  }
+});
+
+// Delete Car (Car Owner)
+router.delete('/api/owner/cars/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const car = await db.cars.findOne({ id });
+    if (!car) {
+      return res.status(404).json({ message: 'Phương tiện không tồn tại.' });
+    }
+
+    if (car.ownerId !== req.user.id) {
+      return res.status(403).json({ message: 'Bạn không có quyền xóa phương tiện này.' });
+    }
+
+    if (car.status === 'rented') {
+      return res.status(400).json({ message: 'Không thể xóa phương tiện đang trong quá trình cho thuê.' });
+    }
+
+    await db.cars.delete(id);
+    res.json({ message: 'Xóa phương tiện ký gửi thành công!' });
+  } catch (error) {
+    console.error('Delete car error:', error);
+    res.status(500).json({ message: 'Lỗi khi xóa phương tiện.' });
   }
 });
 
