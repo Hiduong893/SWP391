@@ -218,6 +218,11 @@ export const api = {
       request(`/owner/cars/${id}`, {
         method: 'PUT',
         body: JSON.stringify(carData)
+      }),
+
+    deleteCar: (id) =>
+      request(`/owner/cars/${id}`, {
+        method: 'DELETE'
       })
   },
 
