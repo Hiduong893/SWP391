@@ -986,6 +986,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                 Tiếp tục thanh toán giữ chỗ
               </button>
             </div>
+          </div>
         )}
 
         {/* Step 2: Payment Selector & Details */}
