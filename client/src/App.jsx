@@ -227,7 +227,7 @@ function App() {
 
             {/* My Trips (Rental history) Tab - Protected */}
             {currentTab === 'my-trips' && user && (
-              <MyTrips />
+              <MyTrips user={user} />
             )}
 
             {currentTab === 'admin-dashboard' && user && user.role === 'admin' && (

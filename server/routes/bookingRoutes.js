@@ -3,6 +3,7 @@ import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
 import { notificationService } from '../services/notificationService.js';
 import { compareFacesWithAI } from '../utils/aiHelper.js';
+import { contractModel } from '../models/contractModel.js';
 
 const router = express.Router();
 
@@ -54,6 +55,8 @@ router.post('/api/bookings', auth, async (req, res) => {
       }
     });
 
+    // Tạo hợp đồng mẫu/nháp (Draft) trong bảng RentalContract
+    await contractModel.create(booking.id, paymentMethod === 'wallet');
 
     if (paymentMethod !== 'vnpay') {
       if (car.ownerId) {

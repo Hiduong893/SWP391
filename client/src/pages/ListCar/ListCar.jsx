@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, DollarSign, MapPin, PlusCircle, Sparkles, Check, Car, Compass, ShieldCheck, Eye, Trash2, X, RefreshCw, BarChart3, CreditCard } from 'lucide-react';
+import { Upload, DollarSign, MapPin, PlusCircle, Sparkles, Check, Car, Compass, ShieldCheck, Eye, Trash2, X, RefreshCw, BarChart3, CreditCard, FileText } from 'lucide-react';
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
+import { ContractModal } from '../../components/ContractModal';
 import './ListCar.css';
 
 export const ListCar = ({ setCurrentTab, user, onUpdateUser }) => {
@@ -9,6 +10,7 @@ export const ListCar = ({ setCurrentTab, user, onUpdateUser }) => {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [selectedBookingForContract, setSelectedBookingForContract] = useState(null);
 
   // Stats & Bookings list (UC22, UC23)
   const [ownerBookings, setOwnerBookings] = useState([]);
@@ -355,6 +357,14 @@ export const ListCar = ({ setCurrentTab, user, onUpdateUser }) => {
                               >
                                 Từ chối
                               </button>
+                              <button 
+                                className="btn btn-secondary"
+                                style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                onClick={() => setSelectedBookingForContract(b.id)}
+                                disabled={actionLoading}
+                              >
+                                <FileText size={12} /> Hợp đồng
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -377,6 +387,7 @@ export const ListCar = ({ setCurrentTab, user, onUpdateUser }) => {
                           <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Thời Gian</th>
                           <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Doanh Thu</th>
                           <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Trạng Thái</th>
+                          <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Hợp đồng</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -397,6 +408,15 @@ export const ListCar = ({ setCurrentTab, user, onUpdateUser }) => {
                               <span className={`owner-booking-status-badge badge-${b.status}`}>
                                 {b.status === 'confirmed' ? 'Đã duyệt' : b.status === 'active' ? 'Đang thuê' : b.status === 'completed' ? 'Hoàn thành ✓' : b.status === 'disputed' ? 'Khiếu nại' : 'Đã hủy'}
                               </span>
+                            </td>
+                            <td style={{ padding: 14, textAlign: 'center' }}>
+                              <button 
+                                className="btn btn-secondary"
+                                style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                onClick={() => setSelectedBookingForContract(b.id)}
+                              >
+                                <FileText size={12} /> Chi tiết HĐ
+                              </button>
                             </td>
                           </tr>
                         ))}
@@ -821,8 +841,16 @@ export const ListCar = ({ setCurrentTab, user, onUpdateUser }) => {
             </div>
           </div>
         )}
-      </div>
+      {/* Contract Modal Render for Owner */}
+      {selectedBookingForContract && (
+        <ContractModal
+          bookingId={selectedBookingForContract}
+          user={user}
+          onClose={() => setSelectedBookingForContract(null)}
+        />
+      )}
     </div>
+  </div>
   );
 };
 
