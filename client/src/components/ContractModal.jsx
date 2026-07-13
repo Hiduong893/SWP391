@@ -255,9 +255,13 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
     if (!agreed) return;
     setSigning(true);
     try {
-      const res = await api.contracts.renterSign(bookingId);
+      if (isRenter) {
+        await api.contracts.renterSign(bookingId);
+      } else if (isCarOwner) {
+        await api.contracts.ownerSign(bookingId);
+      }
       showToast('Ký hợp đồng điện tử thành công!', 'success');
-      if (onContractSigned) onContractSigned(res.contract);
+      if (onContractSigned) onContractSigned();
       load();
     } catch (e) {
       showToast(e.message || 'Lỗi khi ký hợp đồng.', 'error');
@@ -300,6 +304,7 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
   
   // Checking roles for signature CTA display
   const isRenter = user.id === booking.userId;
+  const isCarOwner = car && String(car.ownerId || car.owner_id) === String(user?.id);
   const isRenterSigned = !!contract.renterSignedAt;
   const isOwnerSigned = !!contract.ownerSignedAt;
 
@@ -625,10 +630,10 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
             })()}
 
             {/* Section 5: Signature CTA area */}
-            {isRenter && !isRenterSigned && contract.status !== 'Cancelled' && (
+            {((isRenter && !isRenterSigned) || (isCarOwner && !isOwnerSigned)) && contract.status !== 'Cancelled' && (
               <div className="cm2-sign-wrap">
                 <h4 className="cm2-sign-title">
-                  <Pen size={14} /> Ký hợp đồng điện tử pháp lý
+                  <Pen size={14} /> Ký hợp đồng điện tử pháp lý ({isRenter ? 'Bên B - Người thuê' : 'Bên A - Chủ xe'})
                 </h4>
                 <label className="cm2-sign-check">
                   <input 
@@ -648,7 +653,7 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
               </div>
             )}
 
-            {isRenter && isRenterSigned && (
+            {((isRenter && isRenterSigned) || (isCarOwner && isOwnerSigned)) && (
               <div className="cm2-signed-ok">
                 <CheckCircle2 size={18} />
                 <span>Bạn đã thực hiện ký kết hợp đồng điện tử này thành công.</span>
