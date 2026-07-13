@@ -8,6 +8,8 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   const [step, setStep] = useState(1); // 1: Confirmation & License, 2: Payment, 3: Success, 'face_scan': Face Scanner, 'contract': Hợp đồng
   const [loading, setLoading] = useState(false);
   const [licenseUploading, setLicenseUploading] = useState(false);
+  const [agreedToSampleContract, setAgreedToSampleContract] = useState(false);
+  const [showSampleContractPreview, setShowSampleContractPreview] = useState(false);
   
   // Biometric Face Scanner states
   const faceVideoRef = React.useRef(null);
@@ -356,6 +358,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
   const diffTimeMs = endDatetime > startDatetime ? (endDatetime - startDatetime) : 0;
   let diffHours = Math.ceil(diffTimeMs / (1000 * 60 * 60));
   if (diffHours === 0) diffHours = 1;
+  const diffDays = Math.max(1, Math.ceil(diffHours / 24)); // số ngày thuê (tối thiểu 1)
 
   // --- SMART CAPPING PRICING LOGIC ---
   const pricePerDay = car.pricePerDay;
@@ -498,8 +501,25 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
       const signatureDataUrl = canvas.toDataURL('image/png');
       const finalPickupLocation = displayLocation.trim() || pickupLocation || car.location || 'Không xác định';
 
+      let mappedCarId = car.id;
+      if (typeof mappedCarId === 'string') {
+        if (mappedCarId.startsWith('lux-car-')) {
+          if (mappedCarId === 'lux-car-1' || mappedCarId === 'lux-car-4') {
+            mappedCarId = '31'; // Mercedes GLC 300 4MATIC in DB
+          } else {
+            mappedCarId = '30'; // Mercedes C200 Avantgarde in DB
+          }
+        } else if (mappedCarId.startsWith('likes-car-')) {
+          if (mappedCarId === 'likes-car-1' || mappedCarId === 'likes-car-2') {
+            mappedCarId = '25'; // Suzuki XL7 GLX in DB
+          } else {
+            mappedCarId = '22'; // Mitsubishi Xpander Premium in DB
+          }
+        }
+      }
+
       const bookingData = {
-        carId: car.id,
+        carId: mappedCarId,
         pickupDate: `${pickupDate} ${pickupTime}:00`,
         returnDate: `${returnDate} ${returnTime}:00`,
         pickupLocation: finalPickupLocation,
@@ -901,14 +921,63 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
               )}
             </div>
 
+            {/* Hợp đồng mẫu & Đồng ý điều khoản (Yêu cầu 1.1) */}
+            <div style={{
+              background: '#f8fafc',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: '12px',
+              padding: '16px',
+              marginTop: '16px',
+              textAlign: 'left'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <FileText size={16} color="#6366f1" />
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>Điều khoản dịch vụ & Hợp đồng mẫu</span>
+              </div>
+              <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: 1.5, marginBottom: '10px' }}>
+                Trước khi tiến hành thanh toán giữ chỗ, bạn vui lòng đọc kỹ hợp đồng mẫu chứa quy định về giá cả, bảo hiểm chuyến đi, phụ phí và trách nhiệm xử lý va chạm.
+              </p>
+              <button 
+                type="button" 
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#6366f1',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  padding: 0,
+                  textDecoration: 'underline',
+                  display: 'block',
+                  marginBottom: '12px',
+                  textAlign: 'left'
+                }}
+                onClick={() => setShowSampleContractPreview(true)}
+              >
+                👉 Xem chi tiết Hợp đồng mẫu
+              </button>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                <input 
+                  type="checkbox" 
+                  checked={agreedToSampleContract} 
+                  onChange={(e) => setAgreedToSampleContract(e.target.checked)}
+                  style={{ width: '17px', height: '17px', accentColor: '#6366f1', cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#0f172a' }}>
+                  Tôi đã đọc và đồng ý với điều khoản hợp đồng mẫu
+                </span>
+              </label>
+            </div>
+
             {/* Step 1 Footer Action */}
-            <div className="booking-modal-footer mt-6">
+            <div className="booking-modal-footer mt-6" style={{ marginTop: '20px' }}>
               <button type="button" className="btn btn-secondary" onClick={onClose}>Hủy bỏ</button>
               <button
                 type="button"
                 className="btn btn-primary"
                 disabled={
                   user.licenseStatus !== 'verified' ||
+                  !agreedToSampleContract ||
                   (pickupMethod === 'delivery' && !deliveryAddress.trim()) ||
                   (pickupMethod === 'self' && !selfLocation && !manualPickupAddress.trim())
                 }
@@ -1690,6 +1759,52 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
         user={user}
         onClose={() => setShowContractModal(false)}
       />
+    )}
+
+    {/* Sample Contract Preview Modal */}
+    {showSampleContractPreview && (
+      <div className="cm2-overlay" onClick={() => setShowSampleContractPreview(false)}>
+        <div className="cm2-wrap" onClick={e => e.stopPropagation()} style={{ maxWidth: '640px' }}>
+          <div className="cm2-toolbar">
+            <div className="cm2-toolbar-left">
+              <FileText size={16} color="#fff" />
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>Hợp đồng cho thuê xe tự lái (Bản mẫu)</span>
+            </div>
+            <button className="cm2-close-btn" onClick={() => setShowSampleContractPreview(false)}>
+              <X size={16} />
+            </button>
+          </div>
+          <div className="cm2-paper" style={{ borderTop: 'none', borderBottomRightRadius: '16px', borderBottomLeftRadius: '16px' }}>
+            <div className="cm2-body" style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', padding: '24px 32px' }}>
+              <div style={{
+                background: '#fff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '20px',
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                lineHeight: 1.6,
+                whiteSpace: 'pre-wrap',
+                color: '#334155',
+                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02)'
+              }}>
+                {getContractText()}
+              </div>
+              <button 
+                type="button" 
+                className="cm2-sign-btn" 
+                style={{ background: '#1e3a8a', marginTop: '16px' }}
+                onClick={() => {
+                  setAgreedToSampleContract(true);
+                  setShowSampleContractPreview(false);
+                }}
+              >
+                Tôi đã hiểu & Đồng ý điều khoản
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     )}
     </>
   );

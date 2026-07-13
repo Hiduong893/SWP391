@@ -36,52 +36,53 @@ const inject = () => {
     .cm2-close-btn:hover{background:rgba(239,68,68,.3)}
 
     /* ── Document paper ── */
-    .cm2-paper{background:#fafaf8;border:1px solid #d4c9b0;box-shadow:0 4px 40px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.6);font-family:'Inter',sans-serif}
+    .cm2-paper{background:#fafaf8;border:1px solid #d4c9b0;box-shadow:0 10px 40px rgba(0,0,0,.15),inset 0 1px 0 rgba(255,255,255,.6);font-family:'Inter',sans-serif}
 
     /* ── Letterhead ── */
-    .cm2-letterhead{background:linear-gradient(135deg,#1e3a5f 0%,#2d5a8e 60%,#1e3a5f 100%);padding:28px 32px 22px;position:relative;overflow:hidden}
+    .cm2-letterhead{background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 60%,#0f172a 100%);padding:36px 44px 26px;position:relative;overflow:hidden}
     .cm2-letterhead::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.04)}
     .cm2-letterhead::after{content:'';position:absolute;bottom:-30px;left:60px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.03)}
     .cm2-lh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
     .cm2-lh-brand{display:flex;align-items:center;gap:12px}
-    .cm2-lh-logo{width:44px;height:44px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;font-family:'Inter',sans-serif;box-shadow:0 4px 12px rgba(245,158,11,.4)}
-    .cm2-lh-company h1{color:#fff;font-size:16px;font-weight:800;margin:0 0 2px;letter-spacing:.5px}
-    .cm2-lh-company p{color:rgba(255,255,255,.65);font-size:10px;margin:0;letter-spacing:.3px}
+    .cm2-lh-logo{width:48px;height:48px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:#fff;font-family:'Inter',sans-serif;box-shadow:0 4px 12px rgba(245,158,11,.4)}
+    .cm2-lh-company h1{color:#fff;font-size:18px;font-weight:800;margin:0 0 2px;letter-spacing:.5px}
+    .cm2-lh-company p{color:rgba(255,255,255,.65);font-size:11px;margin:0;letter-spacing:.3px}
     .cm2-lh-meta{text-align:right}
-    .cm2-lh-meta .cm2-doc-type{color:rgba(255,255,255,.5);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;display:block;margin-bottom:4px}
-    .cm2-lh-meta .cm2-doc-code{color:#fbbf24;font-family:'EB Garamond',serif;font-size:20px;font-weight:700;display:block;letter-spacing:1px}
-    .cm2-lh-meta .cm2-doc-date{color:rgba(255,255,255,.5);font-size:10px;margin-top:2px;display:block}
-    .cm2-lh-divider{border:none;border-top:1px solid rgba(255,255,255,.15);margin:16px 0 10px}
+    .cm2-lh-meta .cm2-doc-type{color:rgba(255,255,255,.5);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;display:block;margin-bottom:4px}
+    .cm2-lh-meta .cm2-doc-code{color:#fbbf24;font-family:'EB Garamond',serif;font-size:22px;font-weight:700;display:block;letter-spacing:1px}
+    .cm2-lh-meta .cm2-doc-date{color:rgba(255,255,255,.5);font-size:11px;margin-top:2px;display:block}
+    .cm2-lh-divider{border:none;border-top:1px solid rgba(255,255,255,.15);margin:18px 0 12px}
     .cm2-lh-bottom{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-    .cm2-lh-bottom span{color:rgba(255,255,255,.5);font-size:9.5px}
-    .cm2-lh-bottom strong{color:#fbbf24;font-size:9.5px}
+    .cm2-lh-bottom span{color:rgba(255,255,255,.5);font-size:10.5px}
+    .cm2-lh-bottom strong{color:#fbbf24;font-size:10.5px}
 
     /* ── Body ── */
-    .cm2-body{padding:28px 32px;display:flex;flex-direction:column;gap:22px;background:#fafaf8}
-    .cm2-section{display:flex;flex-direction:column;gap:12px}
-    .cm2-sec-title{font-size:12.5px;font-weight:800;color:#1e3a5f;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin:0}
-    .cm2-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .cm2-body{padding:36px 44px;display:flex;flex-direction:column;gap:26px;background:#fafaf8}
+    .cm2-section{display:flex;flex-direction:column;gap:14px}
+    .cm2-sec-title{font-size:13.5px;font-weight:800;color:#1e3a8a;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin:0}
+    .cm2-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
     @media(max-width:580px){.cm2-grid-2{grid-template-columns:1fr}}
-    .cm2-meta-item{font-size:12.5px;line-height:1.6;color:#334155}
-    .cm2-meta-lbl{color:#64748b;font-weight:500;display:inline-block;width:120px}
+    .cm2-meta-item{font-size:13px;line-height:1.65;color:#334155}
+    .cm2-meta-lbl{color:#64748b;font-weight:500;display:inline-block;width:130px}
     .cm2-meta-val{color:#0f172a;font-weight:600}
 
     /* ── Phase Card ── */
-    .cm2-phase-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.02)}
-    .cm2-phase-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-bottom:1px solid #f1f5f9;padding-bottom:6px}
+    .cm2-phase-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.02)}
+    .cm2-phase-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:1px solid #f1f5f9;padding-bottom:8px}
     .cm2-phase-title{font-size:12px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.5px}
-    .cm2-phase-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px}
+    .cm2-phase-status{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:12px}
     .status-paid{background:#dcfce7;color:#166534}
     .status-unpaid{background:#fee2e2;color:#991b1b}
     .status-pending{background:#fef9c3;color:#92400e}
-    .cm2-phase-body{display:flex;flex-direction:column;gap:6px}
-    .cm2-phase-row{display:flex;justify-content:space-between;font-size:11.5px;color:#64748b}
+    .cm2-phase-body{display:flex;flex-direction:column;gap:8px}
+    .cm2-phase-row{display:flex;justify-content:space-between;font-size:12px;color:#64748b}
     .cm2-phase-row strong{color:#0f172a}
 
     /* ── Terms Snap ── */
-    .cm2-terms-wrap{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;max-height:180px;overflow-y:auto}
-    .cm2-term-item{margin-bottom:10px;font-size:11.5px;line-height:1.5;color:#475569}
-    .cm2-term-item strong{color:#1e3a5f;display:block;margin-bottom:2px}
+    .cm2-terms-wrap{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:16px 20px;max-height:260px;overflow-y:auto;box-shadow:inset 0 2px 4px rgba(0,0,0,0.02)}
+    .cm2-term-item{margin-bottom:14px;font-size:12.5px;line-height:1.65;color:#475569}
+    .cm2-term-item:last-child{margin-bottom:0}
+    .cm2-term-item strong{color:#1e3a8a;display:block;margin-bottom:4px;font-size:13px;font-weight:700}
 
     /* ── Sign Area ── */
     .cm2-sign-wrap{background:linear-gradient(135deg,#f5f3ff,#ede9fe);border:2px solid #c4b5fd;border-radius:12px;padding:20px}
@@ -99,23 +100,23 @@ const inject = () => {
     /* ── Seal area ── */
     .cm2-seal-area{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;padding:18px 0 0;border-top:1px solid #e8e0d0;flex-wrap:wrap}
     .cm2-seal-party{flex:1;min-width:160px;text-align:center}
-    .cm2-seal-label{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
-    .cm2-seal-circle{width:80px;height:80px;border-radius:50%;border:3px dashed;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 6px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;text-align:center;line-height:1.3;padding:6px}
+    .cm2-seal-label{font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+    .cm2-seal-circle{width:90px;height:90px;border-radius:50%;border:3px dashed;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 8px;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;text-align:center;line-height:1.3;padding:8px}
     .seal-signed{border-color:#22c55e;background:#f0fdf4;color:#166534}
     .seal-unsigned{border-color:#d1d5db;background:#f9fafb;color:#9ca3af}
-    .cm2-seal-name{font-size:11px;font-weight:700;color:#0f172a;font-family:'EB Garamond',serif}
-    .cm2-seal-date{font-size:9.5px;color:#64748b;font-style:italic}
+    .cm2-seal-name{font-size:12px;font-weight:700;color:#0f172a;font-family:'EB Garamond',serif}
+    .cm2-seal-date{font-size:10px;color:#64748b;font-style:italic}
 
     /* ── Footer ── */
-    .cm2-footer{background:#f5f1e8;border-top:1px solid #d4c9b0;padding:10px 32px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
-    .cm2-footer span{font-size:9.5px;color:#92785a}
+    .cm2-footer{background:#f5f1e8;border-top:1px solid #d4c9b0;padding:14px 44px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+    .cm2-footer span{font-size:10px;color:#92785a}
 
     /* ── Owner Custom Terms Display ── */
-    .cm2-owner-terms-wrap{background:#fffbeb;border:1.5px solid #f59e0b;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-    .cm2-owner-terms-header{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:.5px}
-    .cm2-owner-term-item{background:#fff;border:1px solid #fde68a;border-radius:8px;padding:10px 12px}
-    .cm2-owner-term-label{font-size:11px;font-weight:700;color:#d97706;margin-bottom:4px;display:flex;align-items:center;gap:4px}
-    .cm2-owner-term-content{font-size:12px;color:#374151;line-height:1.6}
+    .cm2-owner-terms-wrap{background:#fffbeb;border:1.5px solid #f59e0b;border-radius:10px;padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+    .cm2-owner-terms-header{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:.5px}
+    .cm2-owner-term-item{background:#fff;border:1px solid #fde68a;border-radius:8px;padding:12px 14px}
+    .cm2-owner-term-label{font-size:11.5px;font-weight:700;color:#d97706;margin-bottom:6px;display:flex;align-items:center;gap:4px}
+    .cm2-owner-term-content{font-size:12.5px;color:#374151;line-height:1.65}
 
     /* ── Owner Terms Editor ── */
     .cm2-editor-wrap{background:linear-gradient(135deg,#fff7ed,#fef3c7);border:2px solid #f59e0b;border-radius:12px;padding:18px}
@@ -254,9 +255,13 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
     if (!agreed) return;
     setSigning(true);
     try {
-      const res = await api.contracts.renterSign(bookingId);
+      if (isRenter) {
+        await api.contracts.renterSign(bookingId);
+      } else if (isCarOwner) {
+        await api.contracts.ownerSign(bookingId);
+      }
       showToast('Ký hợp đồng điện tử thành công!', 'success');
-      if (onContractSigned) onContractSigned(res.contract);
+      if (onContractSigned) onContractSigned();
       load();
     } catch (e) {
       showToast(e.message || 'Lỗi khi ký hợp đồng.', 'error');
@@ -299,6 +304,7 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
   
   // Checking roles for signature CTA display
   const isRenter = user.id === booking.userId;
+  const isCarOwner = car && String(car.ownerId || car.owner_id) === String(user?.id);
   const isRenterSigned = !!contract.renterSignedAt;
   const isOwnerSigned = !!contract.ownerSignedAt;
 
@@ -624,10 +630,10 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
             })()}
 
             {/* Section 5: Signature CTA area */}
-            {isRenter && !isRenterSigned && contract.status !== 'Cancelled' && (
+            {((isRenter && !isRenterSigned) || (isCarOwner && !isOwnerSigned)) && contract.status !== 'Cancelled' && (
               <div className="cm2-sign-wrap">
                 <h4 className="cm2-sign-title">
-                  <Pen size={14} /> Ký hợp đồng điện tử pháp lý
+                  <Pen size={14} /> Ký hợp đồng điện tử pháp lý ({isRenter ? 'Bên B - Người thuê' : 'Bên A - Chủ xe'})
                 </h4>
                 <label className="cm2-sign-check">
                   <input 
@@ -647,7 +653,7 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
               </div>
             )}
 
-            {isRenter && isRenterSigned && (
+            {((isRenter && isRenterSigned) || (isCarOwner && isOwnerSigned)) && (
               <div className="cm2-signed-ok">
                 <CheckCircle2 size={18} />
                 <span>Bạn đã thực hiện ký kết hợp đồng điện tử này thành công.</span>

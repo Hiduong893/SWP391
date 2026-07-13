@@ -229,6 +229,29 @@ export const api = {
       })
   },
 
+  contracts: {
+    getByBookingId: (bookingId) =>
+      request(`/contracts/booking/${bookingId}`, {
+        method: 'GET'
+      }),
+      
+    renterSign: (bookingId) =>
+      request(`/contracts/booking/${bookingId}/renter-sign`, {
+        method: 'POST'
+      }),
+
+    ownerSign: (bookingId) =>
+      request(`/contracts/booking/${bookingId}/owner-sign`, {
+        method: 'POST'
+      }),
+
+    saveOwnerTerms: (bookingId, customTerms) =>
+      request(`/contracts/booking/${bookingId}/owner-terms`, {
+        method: 'PUT',
+        body: JSON.stringify({ customTerms })
+      })
+  },
+
   owner: {
     getCars: () =>
       request('/owner/cars', {

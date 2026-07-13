@@ -18,14 +18,27 @@ const cskhOrAdminAuth = (req, res, next) => {
 router.get('/contracts/booking/:bookingId', auth, async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const contract = await contractModel.findByBookingId(bookingId);
-    if (!contract) {
-      return res.status(404).json({ message: 'Hợp đồng chưa được tạo cho đơn đặt xe này.' });
-    }
+    let contract = await contractModel.findByBookingId(bookingId);
     
     // Fetch related details
     const booking = await db.bookings.findOne({ id: bookingId });
     if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
+
+    if (!contract) {
+      // Tự động tạo nháp hợp đồng nếu đơn hàng tồn tại nhưng chưa có hợp đồng (dữ liệu cũ/lịch sử)
+      await contractModel.create(bookingId, booking.paymentMethod === 'wallet');
+      contract = await contractModel.findByBookingId(bookingId);
+    }
+
+    if (!contract) {
+      return res.status(404).json({ message: 'Hợp đồng chưa được tạo cho đơn đặt xe này.' });
+    }
+
+    // Đồng bộ hóa trạng thái cọc từ Booking sang RentalContract
+    if (booking.depositStatus === 'paid' && !contract.reservationPaidAt) {
+      await contractModel.syncReservationPaid(bookingId);
+      contract = await contractModel.findByBookingId(bookingId);
+    }
 
     const renter = await db.users.findOne({ id: booking.userId });
     const car = await db.cars.findOne({ id: booking.carId });
@@ -35,7 +48,7 @@ router.get('/contracts/booking/:bookingId', auth, async (req, res) => {
       contract,
       booking,
       renter: renter ? { id: renter.id, name: renter.name, email: renter.email, phone: renter.phone } : null,
-      car: car ? { id: car.id, brand: car.brand, model: car.model, image: car.image, licensePlate: car.licensePlate } : null,
+      car: car ? { id: car.id, brand: car.brand, model: car.model, image: car.image, licensePlate: car.plateNumber } : null,
       owner: owner ? { id: owner.id, name: owner.name, email: owner.email, phone: owner.phone } : null
     });
   } catch (err) {
