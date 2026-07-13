@@ -2644,6 +2644,95 @@ const injectBookingStyles = () => {
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    /* ── Sample Contract Overlay ── */
+    .cm2-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      padding: 16px;
+      animation: cm2In .2s ease;
+    }
+    @keyframes cm2In { from { opacity: 0; } to { opacity: 1; } }
+
+    .cm2-wrap {
+      width: 100%;
+      max-width: 780px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      animation: cm2Up .3s cubic-bezier(.34, 1.56, .64, 1);
+    }
+    @keyframes cm2Up { from { transform: translateY(28px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    .cm2-toolbar {
+      background: rgba(30, 41, 59, .92);
+      border-radius: 16px 16px 0 0;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .cm2-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cm2-close-btn {
+      background: rgba(239, 68, 68, .15);
+      border: 1px solid rgba(239, 68, 68, .25);
+      color: #fca5a5;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .2s;
+    }
+    .cm2-close-btn:hover {
+      background: rgba(239, 68, 68, .3);
+    }
+
+    .cm2-paper {
+      background: #fafaf8;
+      border: 1px solid #d4c9b0;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, .15), inset 0 1px 0 rgba(255, 255, 255, .6);
+      font-family: 'Inter', sans-serif;
+    }
+    .cm2-body {
+      padding: 36px 44px;
+      display: flex;
+      flex-direction: column;
+      gap: 26px;
+      background: #fafaf8;
+    }
+    .cm2-sign-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all .2s;
+      letter-spacing: .3px;
+    }
   `;
   document.head.appendChild(style);
 };
