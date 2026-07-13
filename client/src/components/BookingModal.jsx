@@ -356,6 +356,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
   const diffTimeMs = endDatetime > startDatetime ? (endDatetime - startDatetime) : 0;
   let diffHours = Math.ceil(diffTimeMs / (1000 * 60 * 60));
   if (diffHours === 0) diffHours = 1;
+  const diffDays = Math.max(1, Math.ceil(diffHours / 24)); // số ngày thuê (tối thiểu 1)
 
   // --- SMART CAPPING PRICING LOGIC ---
   const pricePerDay = car.pricePerDay;
