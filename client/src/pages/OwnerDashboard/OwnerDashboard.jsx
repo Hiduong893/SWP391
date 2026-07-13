@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X } from 'lucide-react';
+import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText } from 'lucide-react';
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
+import { ContractModal } from '../../components/ContractModal';
 import './OwnerDashboard.css';
 
-export const OwnerDashboard = ({ setCurrentTab }) => {
+export const OwnerDashboard = ({ setCurrentTab, user }) => {
   const [activeSubTab, setActiveSubTab] = useState('stats'); // stats, my-cars
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -13,6 +14,7 @@ export const OwnerDashboard = ({ setCurrentTab }) => {
   const [ownerBookings, setOwnerBookings] = useState([]);
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [myCarsList, setMyCarsList] = useState([]);
+  const [selectedBookingForContract, setSelectedBookingForContract] = useState(null);
 
   // Edit Car Form State
   const [editingCar, setEditingCar] = useState(null);
@@ -281,6 +283,14 @@ export const OwnerDashboard = ({ setCurrentTab }) => {
                             >
                               Từ chối
                             </button>
+                            <button 
+                              className="btn btn-secondary"
+                              style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              onClick={() => setSelectedBookingForContract(b.id)}
+                              disabled={actionLoading}
+                            >
+                              <FileText size={12} /> Hợp đồng
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -329,6 +339,7 @@ export const OwnerDashboard = ({ setCurrentTab }) => {
                         <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Thời Gian</th>
                         <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Doanh Thu</th>
                         <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Trạng Thái</th>
+                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Hợp đồng</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -349,6 +360,18 @@ export const OwnerDashboard = ({ setCurrentTab }) => {
                             <span className={`owner-booking-status-badge badge-${b.status}`}>
                               {b.status === 'confirmed' ? 'Đã duyệt' : b.status === 'active' ? 'Đang thuê' : b.status === 'completed' ? 'Hoàn thành ✓' : b.status === 'disputed' ? 'Khiếu nại' : 'Đã hủy'}
                             </span>
+                          </td>
+                          <td style={{ padding: 14 }}>
+                            {b.status !== 'rejected' && b.status !== 'cancelled' && (
+                              <button 
+                                type="button"
+                                className="btn btn-secondary"
+                                style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                                onClick={() => setSelectedBookingForContract(b.id)}
+                              >
+                                <FileText size={12} /> Chi tiết HĐ
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -519,6 +542,15 @@ export const OwnerDashboard = ({ setCurrentTab }) => {
               </form>
             </div>
           </div>
+        )}
+
+        {/* Contract Modal Render for Owner */}
+        {selectedBookingForContract && (
+          <ContractModal
+            bookingId={selectedBookingForContract}
+            user={user}
+            onClose={() => setSelectedBookingForContract(null)}
+          />
         )}
       </div>
     </div>

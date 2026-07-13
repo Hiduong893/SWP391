@@ -235,7 +235,7 @@ function App() {
 
             {/* Owner Dashboard Tab - Protected */}
             {currentTab === 'owner-dashboard' && user && user.role === 'owner' && (
-              <OwnerDashboard setCurrentTab={setCurrentTab} />
+              <OwnerDashboard setCurrentTab={setCurrentTab} user={user} />
             )}
 
 
