@@ -1,7 +1,14 @@
 import { sql, getPool } from '../config/db.js';
 
 export const mapCarRow = (row) => {
-  const statusMap = { 'Available': 'available', 'Rented': 'rented', 'Pending': 'pending_moderation', 'Rejected': 'rejected' };
+  const statusMap = { 
+    'Available': 'available', 
+    'Rented': 'rented', 
+    'Pending': 'pending_moderation', 
+    'Rejected': 'rejected',
+    'Inactive': 'inactive',
+    'Maintenance': 'maintenance'
+  };
   const mappedStatus = statusMap[row.status] || 'available';
 
   // If the owner role is Admin, treat as system-owned (ownerId = null) for the frontend
@@ -228,7 +235,14 @@ export const carModel = {
       request.input('fuel', sql.NVarChar, updateData.fuel);
     }
     if (updateData.status !== undefined) {
-      const dbStatusMap = { 'available': 'Available', 'rented': 'Rented', 'pending_moderation': 'Pending', 'rejected': 'Rejected' };
+      const dbStatusMap = { 
+        'available': 'Available', 
+        'rented': 'Rented', 
+        'pending_moderation': 'Pending', 
+        'rejected': 'Rejected',
+        'inactive': 'Inactive',
+        'maintenance': 'Maintenance'
+      };
       const dbStatus = dbStatusMap[updateData.status] || updateData.status;
       updates.push('status = @status');
       request.input('status', sql.NVarChar, dbStatus);
@@ -268,12 +282,25 @@ export const carModel = {
   delete: async (id) => {
     const p = await getPool();
     const vehicleId = parseInt(id);
-    await p.request().input('vehicleId', sql.Int, vehicleId).query(`
-      DELETE FROM VehicleFeature WHERE vehicle_id = @vehicleId;
-      DELETE FROM VehicleImage WHERE vehicle_id = @vehicleId;
-      DELETE FROM VehicleDocument WHERE vehicle_id = @vehicleId;
-      DELETE FROM Vehicle WHERE vehicle_id = @vehicleId;
-    `);
+    
+    // Check if bookings exist
+    const bookingRes = await p.request().input('vehicleId', sql.Int, vehicleId)
+      .query('SELECT COUNT(*) as cnt FROM Booking WHERE vehicle_id = @vehicleId');
+    const hasBookings = bookingRes.recordset[0].cnt > 0;
+    
+    if (hasBookings) {
+      // Soft delete by setting is_active = 0
+      await p.request().input('vehicleId', sql.Int, vehicleId)
+        .query('UPDATE Vehicle SET is_active = 0, updated_at = GETDATE() WHERE vehicle_id = @vehicleId');
+    } else {
+      // Hard delete
+      await p.request().input('vehicleId', sql.Int, vehicleId).query(`
+        DELETE FROM VehicleFeature WHERE vehicle_id = @vehicleId;
+        DELETE FROM VehicleImage WHERE vehicle_id = @vehicleId;
+        DELETE FROM VehicleDocument WHERE vehicle_id = @vehicleId;
+        DELETE FROM Vehicle WHERE vehicle_id = @vehicleId;
+      `);
+    }
     return true;
   }
 };
