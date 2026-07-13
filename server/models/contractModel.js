@@ -444,4 +444,18 @@ export const contractModel = {
         WHERE booking_id = @bookingId AND status NOT IN ('Completed', 'Cancelled')
       `);
   },
+
+  /**
+   * Đồng bộ hóa trạng thái cọc đã thanh toán từ Booking sang RentalContract
+   */
+  syncReservationPaid: async (bookingId) => {
+    const p = await getPool();
+    await p.request()
+      .input('bookingId', sql.Int, parseInt(bookingId))
+      .query(`
+        UPDATE RentalContract 
+        SET reservation_paid_at = GETDATE(), updated_at = GETDATE()
+        WHERE booking_id = @bookingId AND reservation_paid_at IS NULL
+      `);
+  },
 };
