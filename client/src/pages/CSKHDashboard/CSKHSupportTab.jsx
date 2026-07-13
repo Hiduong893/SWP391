@@ -51,7 +51,7 @@ export const CSKHSupportTab = ({
       <div style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
           <div style={{ width: 3, height: 16, borderRadius: 2, background: 'linear-gradient(180deg,#6366f1,#8b5cf6)' }} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--cskh-text)' }}>Hỗ trợ khách hàng & Xử lý sự cố</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0' }}>Hỗ trợ khách hàng & Xử lý sự cố</span>
         </div>
       </div>
 
@@ -68,7 +68,7 @@ export const CSKHSupportTab = ({
                 padding: '8px 16px', borderRadius: 8,
                 border: subTab === t.key ? '1px solid #6366f1' : '1px solid rgba(255,255,255,0.08)',
                 background: subTab === t.key ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.03)',
-                color: subTab === t.key ? '#818cf8' : 'var(--cskh-text-muted)',
+                color: subTab === t.key ? '#818cf8' : '#94a3b8',
                 fontSize: 13, fontWeight: subTab === t.key ? 600 : 500,
                 cursor: 'pointer', transition: 'all 0.2s',
               }}
@@ -146,8 +146,8 @@ export const CSKHSupportTab = ({
               <>
                 <div className="cskh-chat-header">
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--cskh-text)' }}>{selectedTicket.userName}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--cskh-text-muted)' }}>{selectedTicket.subject || selectedTicket.message?.slice(0, 60)}</div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: '#e2e8f0' }}>{selectedTicket.userName}</div>
+                    <div style={{ fontSize: 11.5, color: '#94a3b8' }}>{selectedTicket.subject || selectedTicket.message?.slice(0, 60)}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     {selectedTicket.status !== 'resolved' && (
@@ -239,7 +239,7 @@ export const CSKHSupportTab = ({
                       <tr key={item.id}>
                         <td>
                           <div style={{ fontWeight: 600, fontSize: 13 }}>{item.userName}</div>
-                          <div style={{ fontSize: 11.5, color: 'var(--cskh-text-muted)' }}>{item.userEmail}</div>
+                          <div style={{ fontSize: 11.5, color: '#94a3b8' }}>{item.userEmail}</div>
                         </td>
                         <td style={{ fontWeight: 500 }}>{item.carName}</td>
                         <td style={{ maxWidth: 260, fontSize: 12.5, color: '#cbd5e1' }}>
@@ -304,8 +304,8 @@ export const CSKHSupportTab = ({
                     }}
                   >
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--cskh-text)' }}>{d.userName}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--cskh-text-muted)', marginTop: 2 }}>{(d.description || d.message || '').slice(0, 60)}...</div>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: '#e2e8f0' }}>{d.userName}</div>
+                      <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 2 }}>{(d.description || d.message || '').slice(0, 60)}...</div>
                     </div>
                     <ChevronRight size={14} color="#64748b" />
                   </div>
@@ -328,7 +328,7 @@ export const CSKHSupportTab = ({
               <div style={{ padding: 20 }}>
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Người khiếu nại</div>
-                  <div style={{ fontWeight: 600, color: 'var(--cskh-text)' }}>{selectedDispute.userName}</div>
+                  <div style={{ fontWeight: 600, color: '#e2e8f0' }}>{selectedDispute.userName}</div>
                 </div>
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Nội dung</div>
@@ -350,7 +350,7 @@ export const CSKHSupportTab = ({
                       style={{
                         width: '100%', background: 'rgba(255,255,255,0.04)',
                         border: '1px solid rgba(99,102,241,0.2)', borderRadius: 8,
-                        color: 'var(--cskh-text)', padding: '10px 14px', fontSize: 13,
+                        color: '#e2e8f0', padding: '10px 14px', fontSize: 13,
                         fontFamily: 'inherit', resize: 'vertical', minHeight: 80,
                         outline: 'none', boxSizing: 'border-box',
                       }}

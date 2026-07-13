@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, CheckCircle2, Clock, AlertCircle, ChevronDown, ChevronUp, Pen, Download, Printer, Shield, Building2, User, Car, Calendar, MapPin } from 'lucide-react';
+import { X, CheckCircle2, Clock, AlertCircle, ChevronDown, ChevronUp, Pen, Download, Printer, Shield, Building2, User, Car, Calendar, MapPin, Plus, Trash2, FileText, Info } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from './Toast';
 
@@ -109,6 +109,33 @@ const inject = () => {
     /* ── Footer ── */
     .cm2-footer{background:#f5f1e8;border-top:1px solid #d4c9b0;padding:10px 32px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
     .cm2-footer span{font-size:9.5px;color:#92785a}
+
+    /* ── Owner Custom Terms Display ── */
+    .cm2-owner-terms-wrap{background:#fffbeb;border:1.5px solid #f59e0b;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+    .cm2-owner-terms-header{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:.5px}
+    .cm2-owner-term-item{background:#fff;border:1px solid #fde68a;border-radius:8px;padding:10px 12px}
+    .cm2-owner-term-label{font-size:11px;font-weight:700;color:#d97706;margin-bottom:4px;display:flex;align-items:center;gap:4px}
+    .cm2-owner-term-content{font-size:12px;color:#374151;line-height:1.6}
+
+    /* ── Owner Terms Editor ── */
+    .cm2-editor-wrap{background:linear-gradient(135deg,#fff7ed,#fef3c7);border:2px solid #f59e0b;border-radius:12px;padding:18px}
+    .cm2-editor-title{font-size:12px;font-weight:800;color:#b45309;margin:0 0 4px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.5px}
+    .cm2-editor-subtitle{font-size:11px;color:#78716c;margin:0 0 14px;line-height:1.5}
+    .cm2-editor-notice{background:#fef9c3;border:1px solid #fde047;border-radius:7px;padding:8px 10px;font-size:11px;color:#713f12;margin-bottom:14px;display:flex;gap:6px;align-items:flex-start;line-height:1.5}
+    .cm2-term-row{background:#fff;border:1px solid #e5e7eb;border-radius:9px;padding:12px;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;position:relative}
+    .cm2-term-select{width:100%;padding:7px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:12px;color:#374151;background:#fff;cursor:pointer;outline:none}
+    .cm2-term-select:focus{border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.15)}
+    .cm2-term-textarea{width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:12px;color:#374151;resize:vertical;min-height:70px;font-family:inherit;outline:none;box-sizing:border-box}
+    .cm2-term-textarea:focus{border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.15)}
+    .cm2-term-charcount{font-size:10.5px;color:#9ca3af;text-align:right}
+    .cm2-term-del-btn{position:absolute;top:10px;right:10px;background:#fee2e2;border:1px solid #fecaca;color:#ef4444;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .cm2-term-del-btn:hover{background:#fecaca}
+    .cm2-add-term-btn{width:100%;padding:9px;background:#fff;border:1.5px dashed #f59e0b;border-radius:8px;color:#b45309;font-size:12.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .2s;margin-bottom:12px}
+    .cm2-add-term-btn:hover{background:#fffbeb;border-style:solid}
+    .cm2-add-term-btn:disabled{opacity:.4;cursor:not-allowed}
+    .cm2-save-terms-btn{width:100%;padding:11px;background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:9px;font-size:13.5px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;letter-spacing:.3px}
+    .cm2-save-terms-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 18px rgba(245,158,11,.35)}
+    .cm2-save-terms-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
   `;
   document.head.appendChild(s);
 };
@@ -127,6 +154,18 @@ const STATUS_MAP = {
   Cancelled: { label: 'Đã hủy', cls: 'cancelled' },
 };
 
+// Danh sách chủ đề được phép (sẽ fetch từ API, fallback hardcode)
+const FALLBACK_TOPICS = [
+  { id: 'no_smoking', label: 'Không hút thuốc trong xe', maxLength: 300, placeholder: 'Ví dụ: Nghiêm cấm hút thuốc lá trong xe. Vi phạm phạt 500.000đ.' },
+  { id: 'no_pets', label: 'Không chở thú cưng', maxLength: 300, placeholder: 'Ví dụ: Không chở thú cưng lên xe. Vi phạm phạt 500.000đ.' },
+  { id: 'fuel_policy', label: 'Quy định nhiên liệu', maxLength: 400, placeholder: 'Ví dụ: Trả xe với mức nhiên liệu không thấp hơn khi nhận.' },
+  { id: 'travel_area', label: 'Giới hạn địa bàn di chuyển', maxLength: 400, placeholder: 'Ví dụ: Chỉ di chuyển trong tỉnh/thành phố.' },
+  { id: 'mileage_limit', label: 'Giới hạn km/ngày', maxLength: 300, placeholder: 'Ví dụ: Giới hạn 200km/ngày. Vượt tính thêm 3.000đ/km.' },
+  { id: 'parking_rules', label: 'Quy định đỗ xe & bảo quản', maxLength: 300, placeholder: 'Ví dụ: Ưu tiên đỗ trong bãi có mái che.' },
+  { id: 'return_condition', label: 'Điều kiện trả xe', maxLength: 400, placeholder: 'Ví dụ: Xe phải vệ sinh sạch sẽ trước khi trả.' },
+  { id: 'additional_driver', label: 'Quy định người lái phụ', maxLength: 300, placeholder: 'Ví dụ: Chỉ người thuê trong HĐ mới được lái.' },
+];
+
 /* ─── Component ─── */
 export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) => {
   const [data, setData] = useState(null);
@@ -134,19 +173,80 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
   const [signing, setSigning] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [showTerms, setShowTerms] = useState(true);
+  // Owner custom terms editor state
+  const [availableTopics, setAvailableTopics] = useState(FALLBACK_TOPICS);
+  const [editingTerms, setEditingTerms] = useState([]); // [{topicId, content}]
+  const [savingTerms, setSavingTerms] = useState(false);
+  const [showOwnerEditor, setShowOwnerEditor] = useState(false);
   const { showToast } = useToast();
 
-  useEffect(() => { inject(); load(); }, [bookingId]);
+  useEffect(() => { inject(); load(); loadTopics(); }, [bookingId]);
 
   const load = async () => {
     setLoading(true);
     try {
       const res = await api.contracts.getByBookingId(bookingId);
       setData(res);
+      // Pre-populate editor with existing owner custom terms
+      if (res?.contract?.termsSnapshot?.ownerCustomTerms?.length > 0) {
+        setEditingTerms(res.contract.termsSnapshot.ownerCustomTerms.map(t => ({
+          topicId: t.topicId,
+          content: t.content,
+        })));
+      }
     } catch (e) {
       showToast(e.message || 'Không tải được hợp đồng.', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTopics = async () => {
+    try {
+      const topics = await fetch('/api/contracts/custom-term-topics', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      }).then(r => r.json());
+      if (Array.isArray(topics) && topics.length > 0) setAvailableTopics(topics);
+    } catch { /* use fallback */ }
+  };
+
+  const addTermRow = () => {
+    if (editingTerms.length >= 3) return;
+    // Chọn topic đầu tiên chưa được dùng
+    const usedIds = editingTerms.map(t => t.topicId);
+    const nextTopic = availableTopics.find(t => !usedIds.includes(t.id));
+    if (!nextTopic) return;
+    setEditingTerms(prev => [...prev, { topicId: nextTopic.id, content: '' }]);
+  };
+
+  const updateTermRow = (idx, field, value) => {
+    setEditingTerms(prev => prev.map((t, i) => i === idx ? { ...t, [field]: value } : t));
+  };
+
+  const removeTermRow = (idx) => {
+    setEditingTerms(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSaveOwnerTerms = async () => {
+    setSavingTerms(true);
+    try {
+      const res = await fetch(`/api/contracts/booking/${bookingId}/owner-terms`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ customTerms: editingTerms }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message);
+      showToast(json.message, 'success');
+      setShowOwnerEditor(false);
+      load(); // Reload contract
+    } catch (e) {
+      showToast(e.message || 'Lỗi khi lưu điều khoản.', 'error');
+    } finally {
+      setSavingTerms(false);
     }
   };
 
@@ -205,11 +305,11 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
   // Set default snapshot terms if missing
   const terms = contract.termsSnapshot || {
     platformName: 'ViVuCar',
-    cancellationPolicy: 'Hủy trước 24h: Hoàn 70% cọc giữ chỗ. Hủy trong 24h: Không hoàn.',
-    damagePolicy: 'Thiệt hại vật chất sẽ được khấu trừ từ tiền cọc bảo đảm.',
-    lateReturnPolicy: 'Trả xe muộn dưới 2h: phụ phí 200.000đ. Từ 2h trở lên: tính thêm 1 ngày thuê.',
-    trafficViolationPolicy: 'Phạt nguội phát sinh trong thời gian thuê do người thuê chịu hoàn toàn.',
-    refundPolicy: 'Tiền cọc bảo đảm hoàn trả trong vòng 3 ngày làm việc sau khi trả xe không phát sinh.'
+    cancellationPolicy: 'Hủy chuyến miễn phí trong vòng 1 giờ sau khi đặt cọc giữ xe thành công (trừ trường hợp sát giờ nhận xe dưới 6 tiếng). Hủy trước giờ khởi hành > 24 giờ: Khách hàng chịu phí hủy chuyến tương đương 30% giá trị cọc giữ xe (hoàn trả 70%). Hủy chuyến trong vòng 24 giờ trước giờ nhận xe: Khách hàng chịu phí hủy chuyến tương đương 100% giá trị cọc giữ xe (không hoàn trả).',
+    damagePolicy: 'Bên B phải chịu trách nhiệm bồi thường hoàn toàn đối với mọi thiệt hại vật chất, trầy xước, móp méo thân vỏ xe xảy ra trong suốt thời gian thuê xe. Trong trường hợp xảy ra tai nạn nghiêm trọng: (1) Bên B có trách nhiệm giữ nguyên hiện trường và liên hệ ngay với CSKH ViVuCar cùng bên bảo hiểm trong vòng 15 phút. (2) Bên B chịu chi phí khấu trừ bảo hiểm tối thiểu 2.000.000đ/vụ việc và tiền thuê xe trong những ngày xe nằm xưởng sửa chữa (tối đa 15 ngày). (3) Nếu xe bị hư hỏng do lỗi cố ý hoặc lái xe khi có nồng độ cồn vượt quá quy định pháp luật, Bên B bồi thường 100% chi phí sửa chữa thực tế.',
+    lateReturnPolicy: 'Bên B có nghĩa vụ hoàn trả phương tiện đúng thời gian quy định. Phí trả xe muộn giờ (Late Return Fee): Dưới 1 giờ: Miễn phí nếu thông báo trước 30 phút. Từ 1 đến 5 giờ: Phụ phí 100.000đ/giờ. Từ 5 giờ trở lên hoặc qua đêm: Tính thêm 1 ngày thuê xe theo bảng giá hiện tại. Trong trường hợp Bên B tự ý giữ xe quá 12 giờ mà không thông báo và không liên lạc được, Bên A có quyền báo cơ quan chức năng cứu hộ xe và áp dụng hình phạt chiếm đoạt tài sản.',
+    trafficViolationPolicy: 'Bên B chịu trách nhiệm chi trả 100% tiền phạt đối với các lỗi vi phạm luật giao thông đường bộ phát sinh trong thời gian thuê xe (bao gồm cả phạt nguội được ghi nhận bởi camera giao thông). Khi nhận được thông báo phạt nguội từ cơ quan chức năng hoặc từ ViVuCar, Bên B có nghĩa vụ thanh toán trực tiếp hoặc ủy quyền khấu trừ từ tiền cọc bảo đảm. ViVuCar có quyền cung cấp thông tin định danh của Bên B cho cơ quan công an để phối hợp xử lý.',
+    refundPolicy: 'Tiền cọc bảo đảm tài sản 5.000.000đ (hoặc tài sản thế chấp tương đương) sẽ được ViVuCar phong tỏa tạm thời. Khoản cọc này sẽ được hoàn trả 100% sau 3 ngày làm việc kể từ thời điểm trả xe thành công nếu không phát sinh: (1) Trả xe muộn giờ, (2) Xe bị bẩn hoặc có mùi hôi (phạt vệ sinh 200.000đ - 500.000đ), (3) Thiếu hụt nhiên liệu so với ban đầu (tính theo giá xăng thực tế + 100.000đ phí dịch vụ đổ xăng), (4) Va quẹt trầy xước hoặc các lỗi phạt nguội đang chờ xử lý.'
   };
 
   return (
@@ -406,6 +506,122 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
                 </div>
               )}
             </div>
+
+            {/* Section 4b: Owner Custom Terms Display (visible to all if exists) */}
+            {terms.ownerCustomTerms && terms.ownerCustomTerms.length > 0 && (
+              <div className="cm2-section">
+                <div className="cm2-owner-terms-wrap">
+                  <div className="cm2-owner-terms-header">
+                    <FileText size={14} />
+                    Điều khoản bổ sung của Chủ xe
+                    <span style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 600, color: '#d97706', background: '#fef3c7', padding: '2px 8px', borderRadius: '10px', border: '1px solid #fde68a' }}>
+                      {terms.ownerCustomTerms.length} điều khoản
+                    </span>
+                  </div>
+                  {terms.ownerCustomTerms.map((term, idx) => (
+                    <div key={term.topicId} className="cm2-owner-term-item">
+                      <div className="cm2-owner-term-label">
+                        <span style={{ background: '#f59e0b', color: '#fff', width: 16, height: 16, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 900, flexShrink: 0 }}>Đ{idx + 7}</span>
+                        {term.topicLabel}
+                      </div>
+                      <div className="cm2-owner-term-content">{term.content}</div>
+                    </div>
+                  ))}
+                  <div style={{ fontSize: '10.5px', color: '#92400e', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
+                    <Info size={11} />
+                    Điều khoản bổ sung này được Chủ xe đề xuất và Nền tảng ViVuCar xác nhận hợp lệ.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Section 4c: Owner Terms Editor (only visible to car owner when status=Draft) */}
+            {(() => {
+              const isCarOwner = car && String(car.ownerId || car.owner_id) === String(user?.id);
+              const isDraft = contract.status === 'Draft';
+              if (!isCarOwner || !isDraft) return null;
+              return (
+                <div className="cm2-section">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <h3 className="cm2-sec-title" style={{ color: '#b45309' }}>
+                      <FileText size={14} style={{ display: 'inline', marginRight: '5px' }} />
+                      Điều khoản bổ sung của bạn
+                    </h3>
+                    <button
+                      onClick={() => setShowOwnerEditor(!showOwnerEditor)}
+                      style={{ background: 'none', border: 'none', color: '#d97706', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      {showOwnerEditor ? 'Thu gọn' : 'Chỉnh sửa'}
+                      {showOwnerEditor ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </button>
+                  </div>
+
+                  {showOwnerEditor && (
+                    <div className="cm2-editor-wrap">
+                      <h4 className="cm2-editor-title"><FileText size={14} /> Thêm điều khoản riêng của bạn</h4>
+                      <p className="cm2-editor-subtitle">Bạn có thể thêm tối đa <strong>3 điều khoản</strong> bổ sung trong khuôn khổ chính sách ViVuCar cho phép. Người thuê xe sẽ thấy và phải đồng ý với những điều khoản này trước khi ký hợp đồng.</p>
+                      <div className="cm2-editor-notice">
+                        <Info size={14} style={{ flexShrink: 0, marginTop: '1px' }} />
+                        <span>Chỉ được chọn chủ đề trong danh sách. Điều khoản không được vi phạm pháp luật, không được yêu cầu tiền ngoài hợp đồng, không phân biệt đối xử. ViVuCar có quyền từ chối nội dung không phù hợp.</span>
+                      </div>
+
+                      {editingTerms.map((term, idx) => {
+                        const usedIds = editingTerms.map((t, i) => i !== idx ? t.topicId : null).filter(Boolean);
+                        const topicCfg = availableTopics.find(t => t.id === term.topicId);
+                        const charCount = (term.content || '').length;
+                        const maxLen = topicCfg?.maxLength || 300;
+                        return (
+                          <div key={idx} className="cm2-term-row">
+                            <button className="cm2-term-del-btn" onClick={() => removeTermRow(idx)} title="Xóa điều khoản này">
+                              <Trash2 size={12} />
+                            </button>
+                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', marginBottom: '2px' }}>Điều khoản #{idx + 1}</div>
+                            <select
+                              className="cm2-term-select"
+                              value={term.topicId}
+                              onChange={e => updateTermRow(idx, 'topicId', e.target.value)}
+                            >
+                              {availableTopics.map(t => (
+                                <option key={t.id} value={t.id} disabled={usedIds.includes(t.id)}>
+                                  {t.label}{usedIds.includes(t.id) ? ' (đã chọn)' : ''}
+                                </option>
+                              ))}
+                            </select>
+                            <textarea
+                              className="cm2-term-textarea"
+                              placeholder={topicCfg?.placeholder || 'Nhập nội dung điều khoản...'}
+                              value={term.content}
+                              maxLength={maxLen}
+                              onChange={e => updateTermRow(idx, 'content', e.target.value)}
+                            />
+                            <div className="cm2-term-charcount" style={{ color: charCount > maxLen * 0.9 ? '#ef4444' : '#9ca3af' }}>
+                              {charCount}/{maxLen} ký tự
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      <button
+                        className="cm2-add-term-btn"
+                        onClick={addTermRow}
+                        disabled={editingTerms.length >= 3 || editingTerms.length >= availableTopics.length}
+                      >
+                        <Plus size={14} />
+                        {editingTerms.length < 3 ? `Thêm điều khoản (${editingTerms.length}/3)` : 'Đã đạt giới hạn 3 điều khoản'}
+                      </button>
+
+                      <button
+                        className="cm2-save-terms-btn"
+                        onClick={handleSaveOwnerTerms}
+                        disabled={savingTerms}
+                      >
+                        {savingTerms ? 'Đang lưu...' : `💾 Lưu điều khoản bổ sung (${editingTerms.length} điều khoản)`}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Section 5: Signature CTA area */}
             {isRenter && !isRenterSigned && contract.status !== 'Cancelled' && (

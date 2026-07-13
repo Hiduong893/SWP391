@@ -1,5 +1,5 @@
 import express from 'express';
-import { contractModel } from '../models/contractModel.js';
+import { contractModel, ALLOWED_CUSTOM_TERM_TOPICS } from '../models/contractModel.js';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
 
@@ -115,6 +115,45 @@ router.put('/admin/contracts/:contractId/surcharge', auth, cskhOrAdminAuth, asyn
     res.json({ message: 'Thêm phụ phí thành công.', contract: updated });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// 8. GET /api/contracts/custom-term-topics
+// Lấy danh sách chủ đề điều khoản bổ sung được phép (cho chủ xe dùng khi thêm điều khoản)
+router.get('/contracts/custom-term-topics', auth, (req, res) => {
+  res.json(ALLOWED_CUSTOM_TERM_TOPICS);
+});
+
+// 9. PUT /api/contracts/booking/:bookingId/owner-terms
+// Chủ xe cập nhật/thêm điều khoản bổ sung vào hợp đồng (chỉ khi contract còn Draft)
+router.put('/contracts/booking/:bookingId/owner-terms', auth, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { customTerms } = req.body; // Array of { topicId, content }
+
+    // Verify người gọi là chủ xe của booking này
+    const booking = await db.bookings.findOne({ id: bookingId });
+    if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
+
+    const car = await db.cars.findOne({ id: booking.carId });
+    if (!car) return res.status(404).json({ message: 'Thông tin xe không tồn tại.' });
+
+    const isOwner = String(car.ownerId) === String(req.user.id);
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'cskh';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: 'Chỉ chủ xe hoặc Admin/CSKH mới được chỉnh sửa điều khoản bổ sung.' });
+    }
+
+    const updatedContract = await contractModel.updateOwnerTerms(bookingId, req.user.id, customTerms || []);
+    res.json({
+      message: customTerms && customTerms.length > 0
+        ? `Đã lưu ${customTerms.length} điều khoản bổ sung vào hợp đồng thành công.`
+        : 'Đã xóa toàn bộ điều khoản bổ sung.',
+      contract: updatedContract,
+    });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 });
 

@@ -19,11 +19,11 @@ export const CSKHKycTab = ({
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
           <div style={{ width: 3, height: 16, borderRadius: 2, background: 'linear-gradient(180deg,#6366f1,#8b5cf6)' }} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--cskh-text)' }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0' }}>
             Xác minh danh tính KYC ({allPendingUsers.length} hồ sơ đang chờ)
           </span>
         </div>
-        <p style={{ margin: 0, fontSize: 12.5, color: 'var(--cskh-text-muted)' }}>
+        <p style={{ margin: 0, fontSize: 12.5, color: '#94a3b8' }}>
           Xem và duyệt CCCD, Giấy phép lái xe của người dùng đã tải lên. Chỉ duyệt khi thông tin rõ ràng, hợp lệ.
         </p>
       </div>
@@ -76,7 +76,7 @@ export const CSKHKycTab = ({
                         </div>
                       </div>
                     </td>
-                    <td style={{ color: 'var(--cskh-text-muted)', fontSize: 12.5 }}>{u.email}</td>
+                    <td style={{ color: '#94a3b8', fontSize: 12.5 }}>{u.email}</td>
 
                     {/* CCCD Front */}
                     <td>
@@ -170,7 +170,7 @@ export const CSKHKycTab = ({
                       <div className="cskh-user-cell-name">{u.name}</div>
                     </div>
                   </td>
-                  <td style={{ color: 'var(--cskh-text-muted)', fontSize: 12.5 }}>{u.email}</td>
+                  <td style={{ color: '#94a3b8', fontSize: 12.5 }}>{u.email}</td>
                   <td>
                     <span className={`cskh-badge ${u.role === 'owner' ? 'cskh-badge-blue' : u.role === 'cskh' ? 'cskh-badge-indigo' : 'cskh-badge-gray'}`}>
                       {u.role === 'owner' ? 'Chủ xe' : u.role === 'cskh' ? 'CSKH' : u.role === 'admin' ? 'Admin' : 'Khách'}
