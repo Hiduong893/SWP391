@@ -116,6 +116,43 @@ export const OwnerDashboard = ({ setCurrentTab }) => {
     }
   };
 
+  const handleToggleCarStatus = async (carId, currentStatus) => {
+    const nextStatus = currentStatus === 'available' ? 'inactive' : 'available';
+    const actionText = nextStatus === 'inactive' ? 'Tạm dừng cho thuê' : 'Kích hoạt cho thuê lại';
+    
+    if (!window.confirm(`Bạn có chắc chắn muốn ${actionText.toLowerCase()} phương tiện này?`)) {
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const data = await api.owner.updateCar(carId, { status: nextStatus });
+      showToast(data.message || `${actionText} thành công!`, 'success');
+      fetchOwnerDashboard(true);
+    } catch (error) {
+      showToast(error.message || `Lỗi khi ${actionText.toLowerCase()} phương tiện.`, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteCar = async (carId, modelName) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa phương tiện "${modelName}"? Hành động này không thể hoàn tác.`)) {
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const data = await api.owner.deleteCar(carId);
+      showToast(data.message || 'Xóa phương tiện thành công!', 'success');
+      fetchOwnerDashboard(true);
+    } catch (error) {
+      showToast(error.message || 'Lỗi khi xóa phương tiện.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
@@ -339,7 +376,12 @@ export const OwnerDashboard = ({ setCurrentTab }) => {
                         <img src={car.image} alt={car.model} style={{ width: 100, height: 60, objectFit: 'cover', borderRadius: 6, background: '#050508' }} />
                         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1 }}>
                           <div>
-                            <strong style={{ fontSize: '10px', color: 'var(--accent-primary)', display: 'block', textTransform: 'uppercase' }}>{car.brand}</strong>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <strong style={{ fontSize: '10px', color: 'var(--accent-primary)', textTransform: 'uppercase' }}>{car.brand}</strong>
+                              <span className={`car-moderation-badge badge-${car.status}`} style={{ transform: 'scale(0.85)', transformOrigin: 'top right', marginTop: -2 }}>
+                                {car.status === 'pending_moderation' ? 'Chờ kiểm duyệt' : car.status === 'available' ? 'Sẵn sàng' : car.status === 'rented' ? 'Đang cho thuê' : car.status === 'inactive' ? 'Tạm dừng' : 'Từ chối'}
+                              </span>
+                            </div>
                             <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{car.model}</strong>
                             <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: 2 }}>Biển số: {car.plateNumber}</span>
                           </div>
@@ -348,17 +390,52 @@ export const OwnerDashboard = ({ setCurrentTab }) => {
                             <strong style={{ fontSize: '12px', color: 'var(--accent-primary)' }}>{formatCurrency(car.pricePerDay)}/ngày</strong>
                             
                             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                              <button 
-                                type="button"
-                                className="owner-booking-status-badge badge-confirmed" 
-                                style={{ background: 'rgba(0, 150, 152, 0.15)', border: '1px solid rgba(0, 150, 152, 0.3)', color: 'var(--accent-primary)', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
-                                onClick={() => handleStartEditCar(car)}
-                              >
-                                Sửa xe
-                              </button>
-                              <span className={`car-moderation-badge badge-${car.status}`}>
-                                {car.status === 'pending_moderation' ? 'Chờ kiểm duyệt' : car.status === 'available' ? 'Sẵn sàng' : car.status === 'rented' ? 'Đang cho thuê' : 'Từ chối'}
-                              </span>
+                              {car.status !== 'rented' && (
+                                <button 
+                                  type="button"
+                                  className="owner-booking-status-badge badge-confirmed" 
+                                  style={{ background: 'rgba(0, 150, 152, 0.15)', border: '1px solid rgba(0, 150, 152, 0.3)', color: 'var(--accent-primary)', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
+                                  onClick={() => handleStartEditCar(car)}
+                                >
+                                  Sửa xe
+                                </button>
+                              )}
+                              
+                              {car.status === 'available' && (
+                                <button 
+                                  type="button"
+                                  className="owner-booking-status-badge" 
+                                  style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#fbbf24', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
+                                  onClick={() => handleToggleCarStatus(car.id, car.status)}
+                                  disabled={actionLoading}
+                                >
+                                  Tạm dừng
+                                </button>
+                              )}
+
+                              {car.status === 'inactive' && (
+                                <button 
+                                  type="button"
+                                  className="owner-booking-status-badge" 
+                                  style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
+                                  onClick={() => handleToggleCarStatus(car.id, car.status)}
+                                  disabled={actionLoading}
+                                >
+                                  Cho thuê lại
+                                </button>
+                              )}
+
+                              {car.status !== 'rented' && (
+                                <button 
+                                  type="button"
+                                  className="owner-booking-status-badge" 
+                                  style={{ background: 'rgba(244, 63, 94, 0.15)', border: '1px solid rgba(244, 63, 94, 0.3)', color: '#fda4af', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
+                                  onClick={() => handleDeleteCar(car.id, `${car.brand} ${car.model}`)}
+                                  disabled={actionLoading}
+                                >
+                                  Xóa xe
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
