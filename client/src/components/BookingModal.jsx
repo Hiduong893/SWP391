@@ -499,8 +499,25 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
       const signatureDataUrl = canvas.toDataURL('image/png');
       const finalPickupLocation = displayLocation.trim() || pickupLocation || car.location || 'Không xác định';
 
+      let mappedCarId = car.id;
+      if (typeof mappedCarId === 'string') {
+        if (mappedCarId.startsWith('lux-car-')) {
+          if (mappedCarId === 'lux-car-1' || mappedCarId === 'lux-car-4') {
+            mappedCarId = '31'; // Mercedes GLC 300 4MATIC in DB
+          } else {
+            mappedCarId = '30'; // Mercedes C200 Avantgarde in DB
+          }
+        } else if (mappedCarId.startsWith('likes-car-')) {
+          if (mappedCarId === 'likes-car-1' || mappedCarId === 'likes-car-2') {
+            mappedCarId = '25'; // Suzuki XL7 GLX in DB
+          } else {
+            mappedCarId = '22'; // Mitsubishi Xpander Premium in DB
+          }
+        }
+      }
+
       const bookingData = {
-        carId: car.id,
+        carId: mappedCarId,
         pickupDate: `${pickupDate} ${pickupTime}:00`,
         returnDate: `${returnDate} ${returnTime}:00`,
         pickupLocation: finalPickupLocation,
