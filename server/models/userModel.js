@@ -87,6 +87,7 @@ export const mapUserRow = async (p, userRow) => {
     email: userRow.email,
     password: userRow.password_hash,
     name: userRow.full_name,
+    phone: userRow.phone,
     avatar: userRow.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
     bio: userRow.bio || '',
     isEmailVerified: userRow.is_email_verified === true || userRow.is_email_verified === 1,
