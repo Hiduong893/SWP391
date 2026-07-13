@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, MapPin, DollarSign, RefreshCw, XCircle, ShieldCheck, Compass, Info, FileText, AlertTriangle, Star, ShieldAlert, Award, Upload, MessageSquare, PhoneCall, Send, HelpCircle } from 'lucide-react';
 import { api } from '../../utils/api';
+import { ContractModal } from '../../components/ContractModal';
 import { renterActionApi } from '../../utils/renterActionApi';
 import { useToast } from '../../components/Toast';
 import './MyTrips.css';
 
-export const MyTrips = () => {
+export const MyTrips = ({ user }) => {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
@@ -522,7 +523,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                           {cancelPreviewLoading ? 'Đang tải...' : 'Hủy đặt xe'}
                         </button>
                       )}
-                      {trip.contractDetails && (
+                      {trip.status !== 'cancelled' && trip.status !== 'rejected' && (
                         <button
                           className="btn btn-secondary btn-action-trip"
                           style={{ borderColor: '#6366f1', color: '#6366f1', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
@@ -1286,70 +1287,11 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
 
       {/* --- POPUP 5: XEM HỢP ĐỒNG ĐIỆN TỬ ĐÃ KÝ (NEW) --- */}
       {viewingContractTrip && (
-        <div className="lightbox-overlay" onClick={() => setViewingContractTrip(null)}>
-          <div className="lightbox-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', background: '#ffffff', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
-            <div className="lightbox-header" style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a', fontWeight: 'bold' }}>Hợp Đồng Thuê Xe Điện Tử Đã Ký</h3>
-              <button className="btn-close-lightbox" onClick={() => setViewingContractTrip(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex' }}><XCircle size={20} /></button>
-            </div>
-
-            <div className="lightbox-body" style={{ padding: '24px', textAlign: 'left' }}>
-              {/* Contract content scroll block */}
-              <div style={{
-                background: '#fafafa',
-                border: '1px solid #cbd5e1',
-                borderRadius: '10px',
-                padding: '16px',
-                height: '240px',
-                overflowY: 'auto',
-                fontFamily: 'monospace',
-                fontSize: '11.5px',
-                lineHeight: 1.5,
-                whiteSpace: 'pre-wrap',
-                color: '#334155',
-                marginBottom: '20px'
-              }}>
-                {getContractText(viewingContractTrip)}
-              </div>
-
-              {/* Biometric verification and signature showcase */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderTop: '1px dashed #cbd5e1', paddingTop: '16px' }}>
-                {/* Face validation */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '8px' }}>ẢNH FACEID XÁC THỰC</span>
-                  {viewingContractTrip.contractDetails?.scannedFace ? (
-                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '2.5px solid #10b981' }}>
-                      <img src={viewingContractTrip.contractDetails.scannedFace} alt="Face check" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: '11px', color: '#94a3b8', height: '80px', display: 'flex', alignItems: 'center' }}>Không có ảnh FaceID</div>
-                  )}
-                  <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 700, marginTop: '6px' }}>✓ Đã so khớp khuôn mặt</span>
-                </div>
-
-                {/* Signature drawing */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '8px' }}>CHỮ KÝ BÊN THUÊ (BÊN B)</span>
-                  {viewingContractTrip.contractDetails?.signature ? (
-                    <div style={{ width: '150px', height: '60px', border: '1px dashed #cbd5e1', borderRadius: '6px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                      <img src={viewingContractTrip.contractDetails.signature} alt="Signature check" style={{ maxWidth: '100%', maxHeight: '100%' }} />
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: '11px', color: '#94a3b8', height: '60px', display: 'flex', alignItems: 'center' }}>Chưa ký tên</div>
-                  )}
-                  <span style={{ fontSize: '10px', color: '#64748b', marginTop: '6px' }}>Ký lúc: {new Date(viewingContractTrip.contractDetails?.signedAt || viewingContractTrip.createdAt).toLocaleString('vi-VN')}</span>
-                </div>
-              </div>
-
-              {/* Status stamp info */}
-              <div style={{ marginTop: '20px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#065f46' }}>
-                  ✓ Hợp đồng có hiệu lực pháp lý (Đã xác minh FaceID &amp; Chữ ký điện tử)
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ContractModal
+          bookingId={viewingContractTrip.id}
+          user={user}
+          onClose={() => setViewingContractTrip(null)}
+        />
       )}
     </div>
   );
