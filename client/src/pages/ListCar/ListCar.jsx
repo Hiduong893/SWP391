@@ -366,6 +366,7 @@ export const ListCar = ({ setCurrentTab, user, onUpdateUser }) => {
                                 <FileText size={12} /> Hợp đồng
                               </button>
                             </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -849,6 +850,7 @@ export const ListCar = ({ setCurrentTab, user, onUpdateUser }) => {
         />
       )}
     </div>
+  </div>
   );
 };
 
