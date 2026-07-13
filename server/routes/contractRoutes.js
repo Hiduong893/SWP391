@@ -34,6 +34,12 @@ router.get('/contracts/booking/:bookingId', auth, async (req, res) => {
       return res.status(404).json({ message: 'Hợp đồng chưa được tạo cho đơn đặt xe này.' });
     }
 
+    // Đồng bộ hóa trạng thái cọc từ Booking sang RentalContract
+    if (booking.depositStatus === 'paid' && !contract.reservationPaidAt) {
+      await contractModel.syncReservationPaid(bookingId);
+      contract = await contractModel.findByBookingId(bookingId);
+    }
+
     const renter = await db.users.findOne({ id: booking.userId });
     const car = await db.cars.findOne({ id: booking.carId });
     const owner = car && car.ownerId ? await db.users.findOne({ id: car.ownerId }) : null;
