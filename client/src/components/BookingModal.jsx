@@ -9,12 +9,16 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   const [loading, setLoading] = useState(false);
   const [licenseUploading, setLicenseUploading] = useState(false);
 <<<<<<< HEAD
+<<<<<<< HEAD
   const [agreedToSampleContract, setAgreedToSampleContract] = useState(false);
   const [showSampleContractPreview, setShowSampleContractPreview] = useState(false);
   
 =======
 
 >>>>>>> 3db0f021 (Fix merge conflicts in package.json after stash pop)
+=======
+
+>>>>>>> 57388984 (Update final version of Car Rental Platform)
   // Biometric Face Scanner states
   const faceVideoRef = React.useRef(null);
   const faceStreamRef = React.useRef(null);
@@ -362,7 +366,10 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
   const diffTimeMs = endDatetime > startDatetime ? (endDatetime - startDatetime) : 0;
   let diffHours = Math.ceil(diffTimeMs / (1000 * 60 * 60));
   if (diffHours === 0) diffHours = 1;
+<<<<<<< HEAD
   const diffDays = Math.max(1, Math.ceil(diffHours / 24)); // số ngày thuê (tối thiểu 1)
+=======
+>>>>>>> 57388984 (Update final version of Car Rental Platform)
 
   // --- SMART CAPPING PRICING LOGIC ---
   const pricePerDay = car.pricePerDay;
@@ -506,6 +513,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
       const signatureDataUrl = canvas.toDataURL('image/png');
       const finalPickupLocation = displayLocation.trim() || pickupLocation || car.location || 'Không xác định';
 
+<<<<<<< HEAD
       let mappedCarId = car.id;
       if (typeof mappedCarId === 'string') {
         if (mappedCarId.startsWith('lux-car-')) {
@@ -525,6 +533,10 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
 
       const bookingData = {
         carId: mappedCarId,
+=======
+      const bookingData = {
+        carId: car.id,
+>>>>>>> 57388984 (Update final version of Car Rental Platform)
         pickupDate: `${pickupDate} ${pickupTime}:00`,
         returnDate: `${returnDate} ${returnTime}:00`,
         pickupLocation: finalPickupLocation,
@@ -866,6 +878,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                   </p>
                 </div>
               )}
+<<<<<<< HEAD
 
 <<<<<<< HEAD
             {/* Hợp đồng mẫu & Đồng ý điều khoản (Yêu cầu 1.1) */}
@@ -956,13 +969,19 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                 <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.8, marginBottom: '4px' }}>
                   Phí giữ chỗ thanh toán ngay
 =======
+=======
+
+>>>>>>> 57388984 (Update final version of Car Rental Platform)
               {/* Cost Breakdown */}
               <div className="cost-breakdown-card mt-4">
                 <h5>Chi tiết hóa đơn dự kiến</h5>
                 <div className="cost-row">
                   <span>Phí thuê xe ({diffDaysStr})</span>
                   <span>{formatCurrency(basePrice)}</span>
+<<<<<<< HEAD
 >>>>>>> 3db0f021 (Fix merge conflicts in package.json after stash pop)
+=======
+>>>>>>> 57388984 (Update final version of Car Rental Platform)
                 </div>
                 <div className="cost-row">
                   <span>Bảo hiểm chuyến đi (Bắt buộc)</span>
@@ -1798,6 +1817,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
         </div>
       </div>
 
+<<<<<<< HEAD
     {/* Contract Modal overlay */}
     {showContractModal && createdBookingId && (
       <ContractModal
@@ -1852,6 +1872,16 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
         </div>
       </div>
     )}
+=======
+      {/* Contract Modal overlay */}
+      {showContractModal && createdBookingId && (
+        <ContractModal
+          bookingId={createdBookingId}
+          user={user}
+          onClose={() => setShowContractModal(false)}
+        />
+      )}
+>>>>>>> 57388984 (Update final version of Car Rental Platform)
     </>
   );
 };
@@ -2690,7 +2720,6 @@ const injectBookingStyles = () => {
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-
     /* ── Sample Contract Overlay ── */
     .cm2-overlay {
       position: fixed;
