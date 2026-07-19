@@ -629,35 +629,35 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
               );
             })()}
 
-            {/* Section 5: Signature CTA area */}
-            {((isRenter && !isRenterSigned) || (isCarOwner && !isOwnerSigned)) && contract.status !== 'Cancelled' && (
-              <div className="cm2-sign-wrap">
-                <h4 className="cm2-sign-title">
-                  <Pen size={14} /> Ký hợp đồng điện tử pháp lý ({isRenter ? 'Bên B - Người thuê' : 'Bên A - Chủ xe'})
-                </h4>
-                <label className="cm2-sign-check">
-                  <input 
-                    type="checkbox" 
-                    checked={agreed} 
-                    onChange={(e) => setAgreed(e.target.checked)} 
-                  />
-                  <span>Tôi đã đọc kỹ, hiểu rõ và cam kết tuân thủ đầy đủ tất cả các điều khoản, chính sách thanh toán, bồi hoàn thiệt hại và phụ phí nêu trong hợp đồng thuê xe điện tử này.</span>
-                </label>
-                <button 
-                  className="cm2-sign-btn" 
-                  disabled={!agreed || signing} 
-                  onClick={handleSign}
-                >
-                  {signing ? 'Đang thực hiện ký kết...' : '✍ Xác nhận ký hợp đồng điện tử'}
-                </button>
-              </div>
+            {/* Section 5: Signature status area */}
+            {/* Người thuê: hiển thị trạng thái đã ký (tự động khi đặt xe) */}
+            {isRenter && (
+              isRenterSigned ? (
+                <div className="cm2-signed-ok">
+                  <CheckCircle2 size={18} />
+                  <span>Bạn đã ký hợp đồng điện tử khi hoàn tất đặt xe. Chữ ký có hiệu lực pháp lý.</span>
+                </div>
+              ) : contract.status !== 'Cancelled' && (
+                <div style={{ display:'flex', alignItems:'center', gap:'8px', color:'#92400e', fontSize:'13px', fontWeight:600, padding:'14px 16px', background:'#fef9c3', border:'1.5px solid #fde68a', borderRadius:'10px' }}>
+                  <Clock size={16} />
+                  <span>Hợp đồng đang được xử lý. Chữ ký sẽ được ghi nhận sau khi thanh toán hoàn tất.</span>
+                </div>
+              )
             )}
 
-            {((isRenter && isRenterSigned) || (isCarOwner && isOwnerSigned)) && (
-              <div className="cm2-signed-ok">
-                <CheckCircle2 size={18} />
-                <span>Bạn đã thực hiện ký kết hợp đồng điện tử này thành công.</span>
-              </div>
+            {/* Chủ xe: không ký thủ công — ký tự động khi phê duyệt booking */}
+            {isCarOwner && (
+              isOwnerSigned ? (
+                <div className="cm2-signed-ok">
+                  <CheckCircle2 size={18} />
+                  <span>Bạn đã xác nhận hợp đồng khi phê duyệt yêu cầu thuê xe. Chữ ký có hiệu lực pháp lý.</span>
+                </div>
+              ) : contract.status !== 'Cancelled' && (
+                <div style={{ display:'flex', alignItems:'center', gap:'8px', color:'#1e40af', fontSize:'13px', fontWeight:600, padding:'14px 16px', background:'#dbeafe', border:'1.5px solid #93c5fd', borderRadius:'10px' }}>
+                  <Clock size={16} />
+                  <span>Hợp đồng sẽ được ký tự động khi bạn <strong>Phê duyệt</strong> yêu cầu thuê xe trong trang Quản lý.</span>
+                </div>
+              )
             )}
 
             {/* Section 6: Double Seals Stamp visual */}

@@ -271,7 +271,7 @@ export const contractModel = {
     if (contract.owner_signed_at) throw new Error('Chủ xe đã ký hợp đồng này rồi.');
     if (contract.status === 'Cancelled') throw new Error('Hợp đồng đã bị hủy.');
 
-    const newStatus = contract.renter_signed_at ? 'BothSigned' : 'RenterSigned';
+    const newStatus = contract.renter_signed_at ? 'BothSigned' : 'OwnerSigned';
 
     await p.request()
       .input('bookingId', sql.Int, bookingIdInt)
