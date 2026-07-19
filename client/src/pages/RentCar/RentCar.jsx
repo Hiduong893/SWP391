@@ -6,6 +6,7 @@ import './RentCar.css';
 
 export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
   const [cars, setCars] = useState([]);
+  const [allCars, setAllCars] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Search state
@@ -51,12 +52,47 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
     try {
       const data = await api.cars.getCars(filters);
       setCars(data);
+      if (Object.keys(filters).length === 0) {
+        setAllCars(data);
+      }
     } catch (error) {
       console.error('Lỗi chi tiết khi lấy danh sách xe:', error);
       showToast('Không thể lấy danh sách xe.', 'error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const getCarCount = (locName) => {
+    if (!allCars || allCars.length === 0) return 0;
+    const nameLower = locName.toLowerCase();
+    
+    return allCars.filter(car => {
+      const carLoc = (car.location || '').toLowerCase();
+      
+      if (nameLower === 'hồ chí minh') {
+        const notHCMC = ['hà nội', 'ha noi', 'bình dương', 'binh duong', 'đà lạt', 'da lat', 'đồng nai', 'dong nai', 'đà nẵng', 'da nang'];
+        return (carLoc.includes('hồ chí minh') || carLoc.includes('hcm') || carLoc.includes('quận') || carLoc.includes('thủ đức') || carLoc.includes('sala')) && !notHCMC.some(city => carLoc.includes(city));
+      }
+      
+      if (nameLower === 'hà nội') {
+        return carLoc.includes('hà nội') || carLoc.includes('ha noi');
+      }
+      
+      if (nameLower === 'đà nẵng') {
+        return carLoc.includes('đà nẵng') || carLoc.includes('da nang');
+      }
+      
+      if (nameLower === 'đà lạt') {
+        return carLoc.includes('đà lạt') || carLoc.includes('da lat');
+      }
+      
+      if (nameLower === 'đồng nai') {
+        return carLoc.includes('đồng nai') || carLoc.includes('dong nai');
+      }
+      
+      return carLoc.includes(nameLower);
+    }).length;
   };
 
   const fetchSystemConfig = async () => {
@@ -441,11 +477,9 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
   ];
 
   const featuredLocations = [
-    { name: 'Hồ Chí Minh', count: '500+ xe', image: 'https://images.unsplash.com/photo-1508189860359-777d945909ef?auto=format&fit=crop&w=600&q=80' },
-    { name: 'Bình Dương', count: '150+ xe', image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80' },
-    { name: 'Hà Nội', count: '150+ xe', image: 'https://images.unsplash.com/photo-1509060464153-4466739be82c?auto=format&fit=crop&w=600&q=80' },
-    { name: 'Đà Lạt', count: '100+ xe', image: 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=600&q=80' },
-    { name: 'Đồng Nai', count: '100+ xe', image: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80' }
+    { name: 'Hồ Chí Minh', count: '500+ xe', image: 'https://media.vietnamarchi.vn/upload/userfiles/images/255/to-van-truong/tphcm-du-co-vi-tri-gan-bien-thanh-pho-van-chua-khai-thac-triet-de-loi-the-nay.jpg' },
+    { name: 'Đà Nẵng', count: '150+ xe', image: 'https://danangfantasticity.com/wp-content/uploads/2018/10/cau-rong-top-20-cay-cau-ky-quai-nhat-the-gioi-theo-boredom-therapy-02.jpg' },
+    { name: 'Hà Nội', count: '150+ xe', image: 'https://images.unsplash.com/photo-1555921015-5532091f6026?auto=format&fit=crop&w=600&q=80' }
   ];
 
   const customerReviews = [
@@ -479,6 +513,86 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
       role: 'Cư dân Sala, Q2, Tp.HCM',
       comment: 'Giá cả vô cùng hợp lý, thủ tục trực tuyến cực nhanh và thời gian nhận trả xe linh hoạt.',
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80',
+      rating: 5
+    },
+    {
+      id: 'rev-p-5',
+      name: 'Chị Lan',
+      role: 'Quận 7, Tp. HCM',
+      comment: 'Xe chạy rất êm, dịch vụ chuyên nghiệp. Giao xe đúng giờ hẹn và hỗ trợ nhiệt tình.',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
+      rating: 5
+    },
+    {
+      id: 'rev-p-6',
+      name: 'Anh Dũng',
+      role: 'Hoàn Kiếm, Hà Nội',
+      comment: 'Thủ tục nhanh gọn lẹ, xe sạch sẽ thơm tho. Rất thích phong cách phục vụ của các bạn.',
+      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80',
+      rating: 5
+    },
+    {
+      id: 'rev-p-7',
+      name: 'Chị Mai',
+      role: 'Hải Châu, Đà Nẵng',
+      comment: 'Trải nghiệm tuyệt vời! Giá thuê xe hợp lý, không phát sinh chi phí ẩn. Sẽ tiếp tục ủng hộ.',
+      avatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=150&q=80',
+      rating: 5
+    },
+    {
+      id: 'rev-p-8',
+      name: 'Anh Tuấn',
+      role: 'Thanh Xuân, Hà Nội',
+      comment: 'Lần đầu tiên thuê xe ở đây nhưng cực kỳ hài lòng. Ứng dụng mượt mà, dễ thao tác.',
+      avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=150&q=80',
+      rating: 5
+    },
+    {
+      id: 'rev-p-9',
+      name: 'Chị Thảo',
+      role: 'Bình Thạnh, Tp. HCM',
+      comment: 'Hệ thống hỗ trợ 24/7 nhiệt tình, giải đáp nhanh mọi thắc mắc. Xe đời mới lái cực đã.',
+      avatar: 'https://images.unsplash.com/photo-1554151228-14d9def656e4?auto=format&fit=crop&w=150&q=80',
+      rating: 5
+    },
+    {
+      id: 'rev-p-10',
+      name: 'Anh Minh',
+      role: 'Ninh Kiều, Cần Thơ',
+      comment: 'Dịch vụ giao xe tận nhà rất tiện lợi. Nhân viên thân thiện, hướng dẫn kỹ càng cách sử dụng.',
+      avatar: 'https://images.unsplash.com/photo-1500048993953-d23a436266cf?auto=format&fit=crop&w=150&q=80',
+      rating: 5
+    },
+    {
+      id: 'rev-p-11',
+      name: 'Chị Vy',
+      role: 'Liên Chiểu, Đà Nẵng',
+      comment: 'Quy trình nhận xe rất nhanh chóng, xe được bảo dưỡng định kỳ nên đi rất an tâm.',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
+      rating: 5
+    },
+    {
+      id: 'rev-p-12',
+      name: 'Anh Nam',
+      role: 'Đồng Nai',
+      comment: 'Hỗ trợ đổi xe nhanh chóng khi tôi có thay đổi kế hoạch. Chăm sóc khách hàng điểm 10.',
+      avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80',
+      rating: 5
+    },
+    {
+      id: 'rev-p-13',
+      name: 'Chị Hạnh',
+      role: 'Thủ Dầu Một, Bình Dương',
+      comment: 'Giá cả cạnh tranh so với các dịch vụ truyền thống khác. Đặt xe qua app siêu tiện lợi.',
+      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80',
+      rating: 5
+    },
+    {
+      id: 'rev-p-14',
+      name: 'Anh Phong',
+      role: 'Đống Đa, Hà Nội',
+      comment: 'Rất ưng ý với chất lượng xe và dịch vụ chăm sóc khách hàng ở đây. Sẽ giới thiệu cho bạn bè.',
+      avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=150&q=80',
       rating: 5
     }
   ];
@@ -1038,9 +1152,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
           <h2 className="rich-section-title-center">Địa điểm nổi bật</h2>
 
           <div className="carousel-outer-wrapper">
-            <button className="carousel-nav-arrow left" onClick={() => scrollContainer(locationsScrollRef, 'left')}>
-              <ChevronLeft size={20} />
-            </button>
+
 
             <div className="locations-scroll-row" ref={locationsScrollRef}>
               {featuredLocations.map((loc, idx) => (
@@ -1051,7 +1163,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                   </div>
                   <div className="location-card-content-overlay">
                     <h3 className="location-card-name">{loc.name}</h3>
-                    <p className="location-card-car-count">{loc.count}</p>
+                    <p className="location-card-car-count">{getCarCount(loc.name)} xe</p>
                     <button
                       type="button"
                       className="btn-location-search-active"
@@ -1064,9 +1176,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
               ))}
             </div>
 
-            <button className="carousel-nav-arrow right" onClick={() => scrollContainer(locationsScrollRef, 'right')}>
-              <ChevronRight size={20} />
-            </button>
+
           </div>
 
           {/* Miniature Cars decorative CTA row matching the screenshot */}
@@ -1422,66 +1532,131 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
       <footer className="vivu-footer">
         <div className="footer-container">
           <div className="footer-grid">
-            {/* Column 1: Contact */}
-            <div className="footer-col">
-              <h4 className="footer-col-title">Contact</h4>
-              <ul className="footer-contact-list">
-                <li>
-                  <span className="contact-icon-wrapper">📍</span>
-                  <span className="contact-text">Tổng S5 quận nón vọt Benton</span>
-                </li>
-                <li>
-                  <span className="contact-icon-wrapper">📞</span>
-                  <span className="contact-text">08127 121 796</span>
-                </li>
-                <li>
-                  <span className="contact-icon-wrapper">✉️</span>
-                  <span className="contact-text">vivucar@com.vn</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Column 2: Policies */}
-            <div className="footer-col">
-              <h4 className="footer-col-title">Policy or link</h4>
-              <ul className="footer-links-list">
-                <li><a href="#privacy" onClick={(e) => { e.preventDefault(); showToast('Đang tải trang chính sách...', 'info'); }}>Privacy policy</a></li>
-                <li><a href="#terms" onClick={(e) => { e.preventDefault(); showToast('Đang tải trang điều khoản...', 'info'); }}>Termos use policy</a></li>
-                <li><a href="#general" onClick={(e) => { e.preventDefault(); showToast('Đang tải điều khoản chung...', 'info'); }}>Cenerate closhing</a></li>
-                <li><a href="#release" onClick={(e) => { e.preventDefault(); showToast('Đang tải trang phát hành...', 'info'); }}>Terms on awt relensen policy</a></li>
-              </ul>
-            </div>
-
-            {/* Column 3: Social & Verified Badge */}
-            <div className="footer-col footer-col-right">
-              <div className="social-icons-wrapper">
-                <a href="#fb" className="social-btn" onClick={(e) => e.preventDefault()}><Facebook size={18} /></a>
-                <a href="#ig" className="social-btn" onClick={(e) => e.preventDefault()}><Instagram size={18} /></a>
-                <a href="#tw" className="social-btn" onClick={(e) => e.preventDefault()}><Twitter size={18} /></a>
-                <a href="#yt" className="social-btn" onClick={(e) => e.preventDefault()}><Youtube size={18} /></a>
+            {/* Column 1: ViVuCar Info */}
+            <div className="footer-col footer-col-info">
+              <div className="footer-brand-logo-row">
+                <svg viewBox="0 0 100 100" width="32" height="32" className="footer-brand-svg">
+                  <rect width="100" height="100" rx="24" fill="#009698" />
+                  <path d="M50 18 C62 18, 76 28, 76 50 C76 72, 62 82, 50 82 C38 82, 24 72, 24 50 C24 28, 38 18, 50 18 Z" fill="none" stroke="white" strokeWidth="6" />
+                  <circle cx="50" cy="50" r="12" fill="white" />
+                  <path d="M50 18 L50 82" stroke="white" strokeWidth="4" />
+                </svg>
+                <span className="footer-brand-text">
+                  <span className="brand-dark">ViVu</span>
+                  <span className="brand-teal">Car</span>
+                </span>
               </div>
+              <p className="footer-company-name">CÔNG TY TNHH VIVUCAR VIỆT NAM</p>
+              <p className="footer-tax-info">Mã số thuế: 0318208708. Cấp ngày: 11/12/2023</p>
+              
+              <div className="footer-addresses-container">
+                <div className="footer-address-item">
+                  <span className="address-label">Văn phòng Hồ Chí Minh</span>
+                  <span className="address-detail">- 69 Đường B4, Phường An Khánh, Thành phố Hồ Chí Minh, Việt Nam</span>
+                </div>
+                <div className="footer-address-item">
+                  <span className="address-label">Văn phòng Đà Nẵng</span>
+                  <span className="address-detail">- Tầng 6, Toà nhà dầu khí, Số 2 đường 30-4, Phường Hòa Cường, Thành phố Đà Nẵng, Việt Nam</span>
+                </div>
+                <div className="footer-address-item">
+                  <span className="address-label">Văn phòng Hà Nội</span>
+                  <span className="address-detail">- Tầng 10, Tòa nhà CEO, Lô HH2-1, Khu đô thị Mễ Trì Hạ, Đường Phạm Hùng, Phường Từ Liêm, Thành phố Hà Nội, Việt Nam</span>
+                </div>
+              </div>
+              
+              <p className="footer-email-info">Email: <a href="mailto:cskh@vivucar.vn">cskh@vivucar.vn</a></p>
 
               {/* Styled Ministry of Industry & Trade Badge */}
               <div className="verified-badge-container">
-                <div className="bocongthuong-badge">
-                  <svg viewBox="0 0 120 45" className="bct-logo-svg" width="120" height="45">
-                    <rect width="120" height="45" rx="6" fill="#005bac" />
-                    <circle cx="24" cy="22" r="16" fill="white" />
-                    <path d="M24 10 L28 19 L38 19 L30 25 L33 34 L24 28 L15 34 L18 25 L10 19 L20 19 Z" fill="#ef4444" />
-                    <text x="46" y="20" fill="white" fontSize="10" fontWeight="800" fontFamily="sans-serif">ĐÃ ĐĂNG KÝ</text>
-                    <text x="46" y="32" fill="#ef4444" fontSize="8" fontWeight="800" fontFamily="sans-serif">BỘ CÔNG THƯƠNG</text>
-                    <circle cx="24" cy="22" r="14" fill="none" stroke="#ef4444" strokeWidth="2" />
+                <a href="#bct" onClick={(e) => e.preventDefault()} className="bocongthuong-badge">
+                  <svg viewBox="0 0 150 56" width="130" height="48" className="bct-logo-svg">
+                    <rect width="150" height="56" rx="8" fill="#0066b3" />
+                    <circle cx="30" cy="28" r="18" fill="white" />
+                    <path d="M22 28 L27 33 L38 21" fill="none" stroke="#0066b3" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+                    <text x="56" y="24" fill="white" fontSize="11" fontWeight="bold" fontFamily="sans-serif">ĐÃ THÔNG BÁO</text>
+                    <text x="56" y="38" fill="white" fontSize="9" fontWeight="bold" fontFamily="sans-serif">BỘ CÔNG THƯƠNG</text>
                   </svg>
-                </div>
+                </a>
+              </div>
+            </div>
+
+            {/* Column 2: Chính sách */}
+            <div className="footer-col">
+              <h4 className="footer-col-title">Chính sách</h4>
+              <ul className="footer-links-list">
+                <li><a href="#privacy" onClick={(e) => { e.preventDefault(); showToast('Đang tải trang điều kiện giao dịch...', 'info'); }}>Điều kiện giao dịch chung</a></li>
+                <li><a href="#terms" onClick={(e) => { e.preventDefault(); showToast('Đang tải trang chính sách bảo mật...', 'info'); }}>Chính sách bảo vệ dữ liệu cá nhân</a></li>
+                <li><a href="#general" onClick={(e) => { e.preventDefault(); showToast('Đang tải trang điều khoản sử dụng...', 'info'); }}>Điều khoản sử dụng nền tảng</a></li>
+                <li><a href="#delivery" onClick={(e) => { e.preventDefault(); showToast('Đang tải trang chính sách giao nhận...', 'info'); }}>Chính sách giao nhận xe</a></li>
+                <li><a href="#payment-method" onClick={(e) => { e.preventDefault(); showToast('Đang tải trang phương thức thanh toán...', 'info'); }}>Phương thức thanh toán</a></li>
+                <li><a href="#careers" onClick={(e) => { e.preventDefault(); showToast('Đang tải trang tuyển dụng...', 'info'); }}>Tuyển dụng</a></li>
+              </ul>
+            </div>
+
+            {/* Column 3: Địa điểm dịch vụ & Mạng xã hội */}
+            <div className="footer-col">
+              <h4 className="footer-col-title">Địa điểm dịch vụ</h4>
+              <ul className="footer-links-list">
+                <li><a href="#hcm" onClick={(e) => e.preventDefault()}>Hồ Chí Minh</a></li>
+                <li><a href="#dang" onClick={(e) => e.preventDefault()}>Đà Nẵng</a></li>
+                <li><a href="#hn" onClick={(e) => e.preventDefault()}>Hà Nội</a></li>
+              </ul>
+
+              <h4 className="footer-col-title" style={{ marginTop: '24px', marginBottom: '12px' }}>Mạng xã hội</h4>
+              <div className="footer-social-row">
+                <a href="#fb" className="social-icon-btn" onClick={(e) => e.preventDefault()}>
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="#1877f2">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                  </svg>
+                </a>
+                <a href="#ln" className="social-icon-btn" onClick={(e) => e.preventDefault()}>
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="#0a66c2">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452z" />
+                  </svg>
+                </a>
+                <a href="#yt" className="social-icon-btn" onClick={(e) => e.preventDefault()}>
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="#ff0000">
+                    <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.516 0-9.387.507a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.507 9.387.507 9.387.507s7.517 0 9.387-.507a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                  </svg>
+                </a>
+                <a href="#tk" className="social-icon-btn" onClick={(e) => e.preventDefault()}>
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="#000000">
+                    <path d="M12.525.02c1.31-.032 2.61-.005 3.91-.005.08 1.527.7 2.958 1.8 3.972 1.1 1.005 2.6 1.486 4.09 1.547v3.896c-1.39-.082-2.74-.633-3.8-1.554-.3-.258-.57-.54-.81-.84v6.868c.09 2.64-1.2 5.207-3.41 6.643-2.26 1.484-5.26 1.636-7.67.391-2.48-1.258-4.09-3.918-3.99-6.702.1-2.9 1.99-5.613 4.75-6.53 1.62-.55 3.41-.476 4.97.228V7.525c-1.63-.585-3.42-.644-5.08-.168-2.61.761-4.71 3.033-5.23 5.717-.67 3.32.74 6.837 3.54 8.583 2.76 1.745 6.42 1.688 9.1-.144" />
+                  </svg>
+                </a>
+                <a href="#ig" className="social-icon-btn" onClick={(e) => e.preventDefault()}>
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="#e1306c">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98zM12 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z" />
+                  </svg>
+                </a>
+                <a href="#map" className="social-icon-btn" onClick={(e) => e.preventDefault()}>
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="#34a853">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+
+
+            {/* Column 5: Hỗ trợ */}
+            <div className="footer-col">
+              <h4 className="footer-col-title">Hỗ trợ</h4>
+              <ul className="footer-links-list">
+                <li><a href="#support" onClick={(e) => { e.preventDefault(); showToast('Đang tải trang quy định dịch vụ...', 'info'); }}>Quy định dịch vụ</a></li>
+              </ul>
+              <div className="footer-support-phone-row">
+                <span className="support-phone-icon">📞</span>
+                <span className="support-phone-number">1900 5335</span>
               </div>
             </div>
           </div>
 
-          <div className="footer-bottom">
-            <p className="copyright-text">Copyright © 2022 Bon Bo Cong Thuong</p>
-          </div>
+
         </div>
       </footer>
+
+
     </div >
   );
 };
