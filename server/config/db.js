@@ -156,6 +156,36 @@ export const getPool = async () => {
             CREATE INDEX IX_Notification_UserId ON Notification(user_id, is_read, created_at DESC);
         END
 
+        -- Create RentalContract table if missing
+        IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'RentalContract')
+        BEGIN
+            CREATE TABLE RentalContract (
+                contract_id INT IDENTITY(1,1) PRIMARY KEY,
+                booking_id INT NOT NULL,
+                contract_code NVARCHAR(50) NOT NULL,
+                reservation_fee DECIMAL(18,2) NOT NULL,
+                reservation_paid_at DATETIME2 NULL,
+                prepayment_amount DECIMAL(18,2) NOT NULL,
+                prepayment_due_date DATETIME2 NULL,
+                prepayment_paid_at DATETIME2 NULL,
+                prepayment_method NVARCHAR(50) NULL,
+                deposit_amount DECIMAL(18,2) NOT NULL,
+                deposit_refund_at DATETIME2 NULL,
+                surcharge_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+                surcharge_reason NVARCHAR(MAX) NULL,
+                surcharge_added_at DATETIME2 NULL,
+                renter_signed_at DATETIME2 NULL,
+                renter_ip NVARCHAR(50) NULL,
+                owner_signed_at DATETIME2 NULL,
+                owner_ip NVARCHAR(50) NULL,
+                terms_snapshot NVARCHAR(MAX) NULL,
+                status NVARCHAR(50) NOT NULL DEFAULT 'Draft',
+                created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+                updated_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+                CONSTRAINT FK_RentalContract_Booking FOREIGN KEY (booking_id) REFERENCES Booking(booking_id)
+            );
+        END
+
         -- Alter columns to NVARCHAR(MAX) to support base64 image uploads without truncation error
         IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('[User]') AND name = 'avatar_url' AND max_length <> -1)
         BEGIN
