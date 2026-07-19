@@ -63,7 +63,7 @@ export const ResetPassword = ({ token, setCurrentTab }) => {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   className="form-input"
-                  style={{ paddingRight: '42px' }}
+                  style={{ paddingLeft: '42px', paddingRight: '42px' }}
                   placeholder="Mật khẩu tối thiểu 6 ký tự"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
@@ -100,7 +100,7 @@ export const ResetPassword = ({ token, setCurrentTab }) => {
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   className="form-input"
-                  style={{ paddingRight: '42px' }}
+                  style={{ paddingLeft: '42px', paddingRight: '42px' }}
                   placeholder="Nhập lại mật khẩu mới"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}

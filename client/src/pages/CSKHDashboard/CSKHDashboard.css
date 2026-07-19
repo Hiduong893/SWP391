@@ -601,3 +601,17 @@
   border-radius: 6px; font-size: 10.5px; font-weight: 700;
   text-transform: uppercase;
 }
+
+/* Light Theme Variables */
+.cskh-dashboard.cskh-theme-light {
+  --cskh-bg: #f8fafc !important;
+  --cskh-surface: #ffffff !important;
+  --cskh-surface-2: #f1f5f9 !important;
+  --cskh-surface-3: #e2e8f0 !important;
+  --cskh-border: #e2e8f0 !important;
+  --cskh-border-light: #f1f5f9 !important;
+  --cskh-text: #0f172a !important;
+  --cskh-text-muted: #475569 !important;
+  --cskh-text-dim: #64748b !important;
+  --cskh-accent-dim: rgba(99, 102, 241, 0.1) !important;
+}

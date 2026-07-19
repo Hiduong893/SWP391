@@ -82,7 +82,7 @@ export const CSKHDashboard = ({ setCurrentTab }) => {
   useEffect(() => { setDisputeVerdict(''); }, [selectedDispute]);
 
   /* ---- Computed counts for badges ---- */
-  const pendingKycUsers = usersList.filter(u => u.licenseStatus === 'pending');
+  const pendingKycUsers = usersList.filter(u => u.licenseStatus === 'pending' || u.cccdStatus === 'pending' || u.cccdBackStatus === 'pending' || u.faceStatus === 'pending');
   const pendingKyc      = pendingKycUsers.length;
   const pendingPayment  = bookingsList.filter(b =>
     (b.paymentMethod === 'vietqr' && b.depositStatus === 'pending') ||
@@ -234,14 +234,14 @@ export const CSKHDashboard = ({ setCurrentTab }) => {
             margin: '0 auto 16px',
           }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          <p style={{ color: '#94a3b8', fontSize: 14, margin: 0 }}>Đang tải dữ liệu CSKH...</p>
+          <p style={{ color: `var(--cskh-text-muted)`, fontSize: 14, margin: 0 }}>Đang tải dữ liệu CSKH...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="cskh-dashboard">
+    <div className={`cskh-dashboard ${!isDarkMode ? 'cskh-theme-light' : ''}`}>
 
       {/* ========== SIDEBAR ========== */}
       <aside className="cskh-sidebar">
@@ -334,7 +334,7 @@ export const CSKHDashboard = ({ setCurrentTab }) => {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+                  style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: `var(--cskh-text-dim)` }}
                 >
                   <X size={13} />
                 </button>

@@ -82,28 +82,62 @@ export const OverviewTab = ({
       {/* KPI STATS GRID */}
       <div className="kpi-grid">
 
-        {/* CARD 1: REVENUE */}
+        {/* CARD 1: TOTAL CASH FLOW */}
         <div className="kpi-card glassmorphism" onClick={() => setActiveTab('cashflow')} style={{ cursor: 'pointer' }}>
           <div className="kpi-body">
             <div>
-              <span className="kpi-label">TỔNG DOANH THU</span>
-              <h3 className="kpi-value">{formatCurrency(stats.totalRevenue || 0)}</h3>
+              <span className="kpi-label" style={{ fontSize: '11px', fontWeight: '800' }}>TỔNG DÒNG TIỀN (100%)</span>
+              <h3 className="kpi-value">{formatCurrency(stats.totalCashFlow || stats.totalRevenue || 0)}</h3>
+            </div>
+            <div className="kpi-icon-box bg-blue-tint">
+              <DollarSign size={20} className="text-blue" />
+            </div>
+          </div>
+          <div className="kpi-footer">
+            <span className="trend-percentage text-blue">↑ 100%</span>
+            <span className="trend-label">Tổng thu từ khách hàng</span>
+          </div>
+        </div>
+
+        {/* CARD 2: OWNER PAYOUTS */}
+        <div className="kpi-card glassmorphism" onClick={() => setActiveTab('cashflow')} style={{ cursor: 'pointer' }}>
+          <div className="kpi-body">
+            <div>
+              <span className="kpi-label" style={{ fontSize: '11px', fontWeight: '800' }}>ĐỐI SOÁT CHỦ XE</span>
+              <h3 className="kpi-value">{formatCurrency(stats.ownerPayouts || 0)}</h3>
+            </div>
+            <div className="kpi-icon-box bg-orange-tint">
+              <CreditCard size={20} className="text-orange" />
+            </div>
+          </div>
+          <div className="kpi-footer">
+            <span className="trend-percentage text-orange">Thanh toán</span>
+            <span className="trend-label">Tiền cho thuê xe gộp</span>
+          </div>
+        </div>
+
+        {/* CARD 3: PLATFORM PROFIT */}
+        <div className="kpi-card glassmorphism" onClick={() => setActiveTab('cashflow')} style={{ cursor: 'pointer' }}>
+          <div className="kpi-body">
+            <div>
+              <span className="kpi-label" style={{ fontSize: '11px', fontWeight: '800' }}>LỢI NHUẬN SÀN</span>
+              <h3 className="kpi-value" style={{ color: '#00bfa5' }}>{formatCurrency(stats.platformProfit || 0)}</h3>
             </div>
             <div className="kpi-icon-box bg-green-tint">
               <DollarSign size={20} className="text-green" />
             </div>
           </div>
           <div className="kpi-footer">
-            <span className="trend-percentage text-green">↑ 12.5%</span>
-            <span className="trend-label">so với tháng trước</span>
+            <span className="trend-percentage text-green">Doanh thu ròng</span>
+            <span className="trend-label">Phí dịch vụ + Hoa hồng</span>
           </div>
         </div>
 
-        {/* CARD 2: ACTIVE CARS */}
+        {/* CARD 4: ACTIVE CARS */}
         <div className="kpi-card glassmorphism" onClick={() => { setActiveTab('fleet'); setActiveSubTab('all_cars'); }} style={{ cursor: 'pointer' }}>
           <div className="kpi-body">
             <div>
-              <span className="kpi-label">XE ĐANG HOẠT ĐỘNG</span>
+              <span className="kpi-label" style={{ fontSize: '11px', fontWeight: '800' }}>TỔNG XE TRÊN SÀN</span>
               <h3 className="kpi-value">{(stats.totalCars || 0)} xe</h3>
             </div>
             <div className="kpi-icon-box bg-teal-tint">
@@ -111,41 +145,8 @@ export const OverviewTab = ({
             </div>
           </div>
           <div className="kpi-footer">
-            <span className="trend-percentage text-green">↑ 5%</span>
+            <span className="trend-percentage text-teal">↑ 5%</span>
             <span className="trend-label">so với tuần trước</span>
-          </div>
-        </div>
-
-        {/* CARD 3: USERS */}
-        <div className="kpi-card glassmorphism" onClick={() => { setActiveTab('accounts'); setActiveSubTab('roles'); }} style={{ cursor: 'pointer' }}>
-          <div className="kpi-body">
-            <div>
-              <span className="kpi-label">TỔNG NGƯỜI DÙNG</span>
-              <h3 className="kpi-value">{(stats.totalUsers || 0)} hội viên</h3>
-            </div>
-            <div className="kpi-icon-box bg-blue-tint">
-              <Users size={20} className="text-blue" />
-            </div>
-          </div>
-          <div className="kpi-footer">
-            <span className="trend-percentage text-green">↑ 18%</span>
-            <span className="trend-label">trong 30 ngày qua</span>
-          </div>
-        </div>
-
-        {/* CARD 4: PENDING BOOKINGS */}
-        <div className="kpi-card glassmorphism" onClick={() => { setActiveTab('cashflow'); }} style={{ cursor: 'pointer' }}>
-          <div className="kpi-body">
-            <div>
-              <span className="kpi-label">ĐẶT XE CHỜ DUYỆT</span>
-              <h3 className="kpi-value">{(stats.totalBookings || 0)} đơn</h3>
-            </div>
-            <div className="kpi-icon-box bg-orange-tint">
-              <CreditCard size={20} className="text-orange" />
-            </div>
-          </div>
-          <div className="kpi-footer">
-            <span className="kpi-badge badge-warning-solid">Cần xử lý hôm nay</span>
           </div>
         </div>
       </div>

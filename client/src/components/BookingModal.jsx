@@ -243,9 +243,8 @@ Sau khi thảo luận, hai bên đồng ý ký kết hợp đồng thuê xe tự
 - Phí thuê xe (Sau Capping): ${formatCurrency(basePrice)}
 - Phí dịch vụ công nghệ: ${formatCurrency(serviceFee)}
 - Phí bảo hiểm chuyến đi: ${formatCurrency(insurancePrice)}
-- Phí giữ chỗ thanh toán ngay: 500.000đ (Đã thanh toán trực tuyến)
-- Tiền cọc đảm bảo trách nhiệm xe: 5.000.000đ
-- Số tiền còn lại Bên B phải trả khi nhận xe: ${formatCurrency(totalPayment - 500000)} (bao gồm tiền thuê xe và cọc đảm bảo, đã khấu trừ 500.000đ phí giữ chỗ)
+- Phí giữ chỗ thanh toán ngay: ${formatCurrency(reservationFee)} (Đã thanh toán trực tuyến)
+- Số tiền còn lại Bên B phải trả khi nhận xe: ${formatCurrency(totalPayment - reservationFee)} (đã khấu trừ ${formatCurrency(reservationFee)} phí giữ chỗ)
 
 ĐIỀU 3: NGHĨA VỤ CỦA BÊN B
 1. Vận hành xe đúng Luật Giao thông đường bộ Việt Nam. Tự chịu mọi trách nhiệm về dân sự và hình sự khi xảy ra tai nạn hoặc vi phạm pháp luật.
@@ -406,8 +405,8 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
   const serviceFee = 80000;
   const deliveryFee = pickupMethod === 'delivery' ? 100000 : 0;
   const totalPrice = basePrice + insurancePrice + serviceFee + deliveryFee;
-  const securityDeposit = 5000000;
-  const totalPayment = totalPrice + securityDeposit;
+  const reservationFee = Math.round(totalPrice * 0.3);
+  const totalPayment = totalPrice; // No deposit fee
   // Determine display and submission location with robust fallbacks
   const isCityOnly = (addr) => {
     if (!addr) return true;
@@ -429,9 +428,27 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
     return 'Bãi xe Chủ xe - ' + (location || 'Khu vực trung tâm');
   };
 
+<<<<<<< HEAD
   const selfLocation = car.ownerId
+=======
+  const getSystemAddress = (location) => {
+    const loc = (location || '').toLowerCase();
+    if (loc.includes('hà nội') || loc.includes('ha noi')) {
+      return 'Bãi xe ViVuCar - Số 10 Tôn Thất Thuyết, Cầu Giấy, Hà Nội';
+    }
+    if (loc.includes('hồ chí minh') || loc.includes('ho chi minh') || loc.includes('hcm')) {
+      return 'Bãi xe ViVuCar - Tòa nhà Bitexco, Quận 1, TP. Hồ Chí Minh';
+    }
+    if (loc.includes('đà nẵng') || loc.includes('da nang')) {
+      return 'Bãi xe ViVuCar - 123 Nguyễn Văn Linh, Đà Nẵng';
+    }
+    return 'Bãi xe ViVuCar - Trung tâm ' + (location || 'Thành phố');
+  };
+
+  const selfLocation = car.ownerId 
+>>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
     ? getFakeOwnerAddress(car.location)
-    : (manualPickupAddress.trim() || (!isCityOnly(pickupLocation) ? pickupLocation : ''));
+    : (!isCityOnly(pickupLocation) ? pickupLocation : getSystemAddress(pickupLocation));
 
   const displayLocation = pickupMethod === 'delivery' && !car.ownerId ? deliveryAddress : selfLocation;
 
@@ -462,8 +479,8 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
   };
 
   const handleProcessReservationPayment = async () => {
-    if (paymentChoice === 'wallet' && walletBalance < 500000) {
-      showToast(`Số dư ví không đủ. Cần tối thiểu ${formatCurrency(500000)} để thanh toán phí giữ chỗ.`, 'warning');
+    if (paymentChoice === 'wallet' && walletBalance < reservationFee) {
+      showToast(`Số dư ví không đủ. Cần tối thiểu ${formatCurrency(reservationFee)} để thanh toán phí giữ chỗ.`, 'warning');
       return;
     }
 
@@ -473,11 +490,20 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
     try {
       // Giả lập xử lý thanh toán qua cổng trong 1.5 giây
       await new Promise(resolve => setTimeout(resolve, 1500));
+<<<<<<< HEAD
 
       if (paymentChoice === 'wallet') {
         showToast('Xác thực số dư ví thành công!', 'success');
       } else {
         showToast('Xác thực thanh toán giữ chỗ thành công!', 'success');
+=======
+      
+      showToast(`Thanh toán phí giữ chỗ ${formatCurrency(reservationFee)} thành công!`, 'success');
+      
+      if (paymentChoice === 'wallet') {
+        const newBalance = walletBalance - reservationFee;
+        setWalletBalance(newBalance);
+>>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
       }
 
       // Sửa lỗi UX: Không trừ tiền ví ở bước này. Trừ tiền thực tế ở bước ký hợp đồng cuối cùng.
@@ -587,9 +613,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
-  const reservationFee = 500000;
-  const remainingDeposit = securityDeposit - reservationFee;
-  const remainingPayment = totalPrice + remainingDeposit;
+  const remainingPayment = totalPrice - reservationFee;
 
   const vietQrUrl = `https://img.vietqr.io/image/${sysConfig.bankId}-${sysConfig.bankAccountNumber}-compact.png?amount=${reservationFee}&addInfo=${encodeURIComponent(`THUEXE ${car.brand} ${bookingId}`)}&accountName=${encodeURIComponent(sysConfig.bankAccountHolder)}`;
 
@@ -656,6 +680,48 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                   <h4>{car.model}</h4>
                   <p className="car-desc-sub">{car.seats} chỗ • {car.transmission} • {car.fuel}</p>
                 </div>
+<<<<<<< HEAD
+=======
+                {car.ownerId ? (
+                  <span className="detail-val" style={{ paddingLeft: '24px', color: '#1e293b', fontWeight: 'bold' }}>
+                    {selfLocation}
+                  </span>
+                ) : (
+                  <>
+                    {pickupMethod !== 'delivery' && (
+                      <span className="detail-val" style={{ paddingLeft: '24px', color: '#1e293b', fontWeight: 'bold' }}>
+                        {selfLocation}
+                      </span>
+                    )}
+                    {pickupMethod === 'delivery' && (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Nhập địa chỉ giao xe của bạn..."
+                          value={deliveryAddress}
+                          onChange={(e) => setDeliveryAddress(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            border: '2px solid #6366f1',
+                            background: '#ffffff',
+                            color: '#0f172a',
+                            fontSize: '13px',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                            fontFamily: "'Outfit', sans-serif",
+                            marginTop: '4px'
+                          }}
+                        />
+                        {!deliveryAddress && (
+                          <span style={{ fontSize: '11px', color: '#d97706', fontWeight: 600, paddingLeft: '4px' }}>⚠️ Vui lòng nhập địa chỉ nhận xe để tiến hành đặt.</span>
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+>>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
               </div>
 
               {/* Trip Details Grid */}
@@ -787,6 +853,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                 </div>
               </div>
 
+<<<<<<< HEAD
               {/* Delivery Method Selection */}
               {!car.ownerId ? (
                 <div className="delivery-method-card mt-4" style={{ marginTop: '20px' }}>
@@ -841,6 +908,112 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                         ViVuCar giao xe tận nơi (+100.000đ)
                       </div>
                     </button>
+=======
+            {/* Delivery Method Selection */}
+            {!car.ownerId ? (
+              <div className="delivery-method-card mt-4" style={{ marginTop: '20px' }}>
+                <h5 style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  Hình thức nhận xe
+                </h5>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    type="button"
+                    style={{
+                      flex: 1,
+                      padding: '14px',
+                      borderRadius: '12px',
+                      border: pickupMethod === 'self' ? '2px solid #6366f1' : '1px solid #e2e8f0',
+                      background: pickupMethod === 'self' ? '#f5f3ff' : '#ffffff',
+                      color: pickupMethod === 'self' ? '#4f46e5' : '#64748b',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      textAlign: 'left'
+                    }}
+                    onClick={() => setPickupMethod('self')}
+                  >
+                    <div style={{ fontSize: '13px', color: pickupMethod === 'self' ? '#4f46e5' : '#1e293b', marginBottom: '4px', fontWeight: '700' }}>
+                      🙋 Tự nhận xe
+                    </div>
+                    <div style={{ fontSize: '11px', fontWeight: 500, color: '#64748b', lineHeight: 1.4 }}>
+                      Khách nhận tại vị trí xe đậu (Miễn phí)
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    style={{
+                      flex: 1,
+                      padding: '14px',
+                      borderRadius: '12px',
+                      border: pickupMethod === 'delivery' ? '2px solid #6366f1' : '1px solid #e2e8f0',
+                      background: pickupMethod === 'delivery' ? '#f5f3ff' : '#ffffff',
+                      color: pickupMethod === 'delivery' ? '#4f46e5' : '#64748b',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      textAlign: 'left'
+                    }}
+                    onClick={() => setPickupMethod('delivery')}
+                  >
+                    <div style={{ fontSize: '13px', color: pickupMethod === 'delivery' ? '#4f46e5' : '#1e293b', marginBottom: '4px', fontWeight: '700' }}>
+                      🚚 Giao nhận tận nơi
+                    </div>
+                    <div style={{ fontSize: '11px', fontWeight: 500, color: '#64748b', lineHeight: 1.4 }}>
+                      ViVuCar giao xe tận nơi (+100.000đ)
+                    </div>
+                  </button>
+                </div>
+
+              </div>
+            ) : (
+              <div className="delivery-method-card mt-4" style={{ marginTop: '20px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px', padding: '16px' }}>
+                <h5 style={{ fontSize: '13px', fontWeight: 800, color: '#0369a1', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  🔑 Hình thức nhận xe: Gặp chủ xe
+                </h5>
+                <p style={{ fontSize: '12.5px', color: '#0284c7', margin: 0, lineHeight: 1.5 }}>
+                  Đây là phương tiện được đăng ký cho thuê bởi Chủ xe cá nhân. Quý khách vui lòng di chuyển đến địa chỉ bãi đỗ của Chủ xe để nhận và kiểm tra xe trực tiếp.
+                </p>
+              </div>
+            )}
+
+            {/* Cost Breakdown */}
+            <div className="cost-breakdown-card mt-4">
+              <h5>Chi tiết hóa đơn dự kiến</h5>
+              <div className="cost-row">
+                <span>Phí thuê xe ({diffDaysStr})</span>
+                <span>{formatCurrency(basePrice)}</span>
+              </div>
+              <div className="cost-row">
+                <span>Bảo hiểm chuyến đi (Bắt buộc)</span>
+                <span>{formatCurrency(50000)} x {Math.ceil(diffHours / 24)}</span>
+              </div>
+              <div className="cost-row">
+                <span>Phí dịch vụ công nghệ</span>
+                <span>{formatCurrency(serviceFee)}</span>
+              </div>
+              {pickupMethod === 'delivery' && (
+                <div className="cost-row">
+                  <span>Phí giao nhận xe tận nơi</span>
+                  <span>{formatCurrency(deliveryFee)}</span>
+                </div>
+              )}
+              <hr className="cost-divider" />
+              <div className="cost-row total-row">
+                <span>Tổng giá trị đơn thuê</span>
+                <span className="text-primary">{formatCurrency(totalPrice)}</span>
+              </div>
+            </div>
+
+            {/* Driver License Verification status */}
+            <div className="license-verification-card mt-4">
+              {user.licenseStatus === 'verified' ? (
+                <div className="license-status-success">
+                  <ShieldCheck size={20} className="text-success" />
+                  <div>
+                    <strong>Bằng lái xe đã xác thực!</strong>
+                    <p>Bạn đã đủ điều kiện lái xe ô tô tự lái.</p>
+>>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                   </div>
 
                   {pickupMethod === 'delivery' && (
@@ -968,8 +1141,25 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
               <div>
                 <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.8, marginBottom: '4px' }}>
                   Phí giữ chỗ thanh toán ngay
+<<<<<<< HEAD
 =======
 =======
+=======
+                </div>
+                <div style={{ fontSize: '32px', fontWeight: 900, letterSpacing: '-0.5px' }}>
+                  {formatCurrency(reservationFee)}
+                </div>
+                <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.8 }}>
+                  Khấu trừ khi thanh toán nhận xe. Phần còn lại {formatCurrency(totalPayment - reservationFee)} và cọc sẽ thanh toán lúc nhận xe.
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '11px', opacity: 0.8, marginBottom: '4px' }}>Mã đặt xe</div>
+                <div style={{ fontSize: '15px', fontWeight: 800, fontFamily: 'monospace', background: 'rgba(255,255,255,0.15)', padding: '6px 12px', borderRadius: '8px' }}>{bookingId}</div>
+                <div style={{ fontSize: '10px', opacity: 0.7, marginTop: '4px' }}>⏱ Hạn thanh toán: {formatTime(timeLeft)}</div>
+              </div>
+            </div>
+>>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
 
 >>>>>>> 57388984 (Update final version of Car Rental Platform)
               {/* Cost Breakdown */}
@@ -996,6 +1186,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                     <span>Phí giao nhận xe tận nơi</span>
                     <span>{formatCurrency(deliveryFee)}</span>
                   </div>
+<<<<<<< HEAD
                 )}
                 <div className="cost-row" style={{ color: '#059669', fontWeight: 600 }}>
                   <span>Đặt cọc bảo đảm (Thanh toán khi nhận xe)</span>
@@ -1016,6 +1207,14 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                     <div>
                       <strong>Bằng lái xe đã xác thực!</strong>
                       <p>Bạn đã đủ điều kiện lái xe ô tô tự lái.</p>
+=======
+                  <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>
+                    Số dư: <span style={{ color: walletBalance >= reservationFee ? '#10b981' : '#ef4444', fontWeight: 700, fontSize: '12px' }}>{formatCurrency(walletBalance)}</span>
+                  </div>
+                  {walletBalance < reservationFee && (
+                    <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '4px', fontWeight: 600 }}>
+                      ⚠ Thiếu {formatCurrency(reservationFee - walletBalance)}
+>>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                     </div>
                   </div>
                 ) : (
@@ -1025,11 +1224,77 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                       <strong>Cần xác thực bằng lái xe!</strong>
                       <p>Luật cho thuê xe tự lái yêu cầu tải ảnh bằng lái để xác minh tư cách người lái.</p>
 
+<<<<<<< HEAD
                       <label className="upload-license-inline-btn mt-2">
                         <Upload size={14} />
                         <span>{licenseUploading ? 'Đang tải lên...' : 'Tải lên Bằng lái (Duyệt tự động ngay)'}</span>
                         <input type="file" onChange={handleLicenseUpload} accept="image/*" style={{ display: 'none' }} disabled={licenseUploading} />
                       </label>
+=======
+                {/* VNPAY Option */}
+                <button
+                  type="button"
+                  id="pay-method-vnpay"
+                  style={{
+                    flex: 1, padding: '14px', borderRadius: '14px',
+                    border: paymentChoice === 'vnpay' ? '2.5px solid #6366f1' : '1.5px solid #e2e8f0',
+                    background: paymentChoice === 'vnpay' ? 'linear-gradient(135deg, #f5f3ff, #ede9fe)' : '#fff',
+                    cursor: 'pointer', transition: 'all 0.25s', textAlign: 'left',
+                    boxShadow: paymentChoice === 'vnpay' ? '0 4px 16px rgba(99,102,241,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                    position: 'relative'
+                  }}
+                  onClick={() => setPaymentChoice('vnpay')}
+                >
+                  {paymentChoice === 'vnpay' && (
+                    <span style={{ position: 'absolute', top: '8px', right: '10px', background: '#6366f1', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#fff', fontWeight: 700 }}>✓</span>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '22px' }}>💳</span>
+                    <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: 750 }}>Cổng VNPAY</div>
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>Ví điện tử / Thẻ ATM Việt Nam</div>
+                </button>
+              </div>
+            </div>
+
+            <div className="payment-grid-columns">
+              {/* Left Column - Payment Details */}
+              <div className="payment-column-left">
+
+                {/* VietQR Pay Flow */}
+                {paymentChoice === 'vietqr' && (
+                  <div className="payment-card-sub white-card text-center" style={{ padding: '16px' }}>
+                    <h4 className="card-sub-title">Quét mã QR để chuyển phí giữ chỗ</h4>
+                    <p className="card-sub-description" style={{ color: '#6366f1', fontWeight: 700, fontSize: '12.5px', marginBottom: '10px' }}>
+                      Vui lòng chuyển khoản đúng số tiền phí giữ xe: <strong>{formatCurrency(reservationFee)}</strong>
+                    </p>
+
+                    <div className="vietqr-frame-box" style={{ padding: '8px', marginBottom: '10px' }}>
+                      <img src={vietQrUrl} alt="VietQR Payment Code" className="vietqr-image-render" style={{ width: '150px', height: '150px' }} />
+                      <div className="vietqr-napas-brand">napas 247 | 🏧 {sysConfig.bankName}</div>
+                    </div>
+
+                    <div className="bank-copyable-fields" style={{ gap: '6px' }}>
+                      <div className="copyable-field-row" style={{ padding: '6px 10px' }}>
+                        <div className="field-value-col">
+                          <span className="lbl">Nội dung CK:</span>
+                          <strong className="val text-orange" style={{ fontFamily: 'monospace', fontSize: '12px' }}>THUEXE {car.brand} {bookingId}</strong>
+                        </div>
+                        <button type="button" className="btn-copy-action" onClick={() => handleCopyText(`THUEXE ${car.brand} ${bookingId}`, 'Nội dung chuyển khoản')}>
+                          Sao chép
+                        </button>
+                      </div>
+
+                      <div className="copyable-field-row" style={{ padding: '6px 10px' }}>
+                        <div className="field-value-col">
+                          <span className="lbl">Số tài khoản:</span>
+                          <strong className="val" style={{ fontSize: '12px' }}>{sysConfig.bankAccountNumber}</strong>
+                        </div>
+                        <button type="button" className="btn-copy-action" onClick={() => handleCopyText(sysConfig.bankAccountNumber, 'Số tài khoản')}>
+                          Sao chép
+                        </button>
+                      </div>
+>>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                     </div>
                   </div>
                 )}
@@ -1058,6 +1323,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
           {step === 2 && (
             <div className="booking-modal-body new-payment-layout">
 
+<<<<<<< HEAD
               {/* ===== RESERVATION PRICE HEADER ===== */}
               <div style={{
                 background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
@@ -1247,11 +1513,27 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                       ) : (
                         <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', textAlign: 'center' }}>
                           ✅ Số dư đủ thanh toán phí giữ chỗ. Bấm nút dưới để tiến hành.
+=======
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', margin: '10px 0', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <span style={{ color: '#64748b' }}>Phí giữ xe online (thanh toán ngay):</span>
+                        <strong style={{ color: '#6366f1' }}>{formatCurrency(reservationFee)}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', borderTop: '1px solid #e2e8f0', paddingTop: '8px' }}>
+                        <span style={{ color: '#64748b' }}>Số dư ví hiện tại:</span>
+                        <strong style={{ color: walletBalance >= reservationFee ? '#10b981' : '#ef4444' }}>{formatCurrency(walletBalance)}</strong>
+                      </div>
+                      {walletBalance >= reservationFee && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                          <span style={{ color: '#64748b' }}>Số dư sau khi trừ:</span>
+                          <strong style={{ color: '#0f172a' }}>{formatCurrency(walletBalance - reservationFee)}</strong>
+>>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                         </div>
                       )}
                     </div>
                   )}
 
+<<<<<<< HEAD
                   {/* VNPAY Pay Flow */}
                   {paymentChoice === 'vnpay' && (
                     <div className="payment-card-sub white-card text-center">
@@ -1268,6 +1550,11 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                           <span style={{ color: '#64748b' }}>Trạng thái:</span>
                           <strong style={{ color: '#6366f1' }}>VNPAY Giả lập nhanh (Sandbox)</strong>
                         </div>
+=======
+                    {walletBalance < reservationFee ? (
+                      <div className="alert-memo-warn text-red" style={{ background: '#fef2f2', borderColor: '#fca5a5', color: '#dc2626', margin: 0 }}>
+                        ⚠️ Số dư Ví không đủ. Cần thêm {formatCurrency(reservationFee - walletBalance)}. Vui lòng nạp thêm hoặc chọn VietQR.
+>>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                       </div>
 
                       <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e3a8a', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: '500', textAlign: 'left', lineHeight: 1.4 }}>
@@ -1286,10 +1573,17 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                       <img src={car.image} alt={car.model} className="car-preview-image" style={{ height: '90px' }} />
                     </div>
 
+<<<<<<< HEAD
                     <div className="rental-info-rows" style={{ gap: '8px' }}>
                       <div className="info-row" style={{ fontSize: '12.5px', paddingBottom: '6px' }}>
                         <span className="lbl">Khách thuê:</span>
                         <strong className="val">{user.name}</strong>
+=======
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', margin: '10px 0', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <span style={{ color: '#64748b' }}>Phí giữ chỗ online:</span>
+                        <strong style={{ color: '#0f172a' }}>{formatCurrency(reservationFee)}</strong>
+>>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                       </div>
                       <div className="info-row" style={{ fontSize: '12.5px', paddingBottom: '6px' }}>
                         <span className="lbl">Xe:</span>
@@ -1305,6 +1599,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                       </div>
                     </div>
 
+<<<<<<< HEAD
                     {/* Chi tiết hóa đơn nhận xe */}
                     <div style={{ marginTop: '10px', borderTop: '1px dashed #e2e8f0', paddingTop: '10px' }}>
                       <div style={{ fontSize: '12px', display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
@@ -1319,6 +1614,56 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                         <span style={{ color: '#0f172a' }}>Còn lại trả khi nhận xe:</span>
                         <span style={{ color: '#e11d48' }}>{formatCurrency(totalPayment - 500000)}</span>
                       </div>
+=======
+                    <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e3a8a', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: '500', textAlign: 'left', lineHeight: 1.4 }}>
+                      💡 Hệ thống sẽ giả lập giao dịch cổng thanh toán VNPAY siêu tốc để bạn kiểm thử luồng KYC khuôn mặt & Hợp đồng mà không cần thẻ thật.
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column - Order Summary */}
+              <div className="payment-column-right">
+                <div className="payment-card-sub white-card text-left" style={{ padding: '16px' }}>
+                  <h4 className="card-sub-title text-center" style={{ fontSize: '14px', marginBottom: '10px', paddingBottom: '8px' }}>Tóm tắt hành trình</h4>
+                  
+                  <div className="car-preview-img-container" style={{ marginBottom: '10px' }}>
+                    <img src={car.image} alt={car.model} className="car-preview-image" style={{ height: '90px' }} />
+                  </div>
+
+                  <div className="rental-info-rows" style={{ gap: '8px' }}>
+                    <div className="info-row" style={{ fontSize: '12.5px', paddingBottom: '6px' }}>
+                      <span className="lbl">Khách thuê:</span>
+                      <strong className="val">{user.name}</strong>
+                    </div>
+                    <div className="info-row" style={{ fontSize: '12.5px', paddingBottom: '6px' }}>
+                      <span className="lbl">Xe:</span>
+                      <strong className="val">{car.brand} {car.model}</strong>
+                    </div>
+                    <div className="info-row" style={{ fontSize: '12.5px', paddingBottom: '6px' }}>
+                      <span className="lbl">Thời gian:</span>
+                      <strong className="val" style={{ fontSize: '11px' }}>{pickupDate} ➔ {returnDate}</strong>
+                    </div>
+                    <div className="info-row" style={{ fontSize: '12.5px', paddingBottom: '6px' }}>
+                      <span className="lbl">Số ngày:</span>
+                      <strong className="val">{diffDays} ngày</strong>
+                    </div>
+                  </div>
+
+                  {/* Chi tiết hóa đơn nhận xe */}
+                  <div style={{ marginTop: '10px', borderTop: '1px dashed #e2e8f0', paddingTop: '10px' }}>
+                    <div style={{ fontSize: '12px', display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ color: '#64748b' }}>Tổng giá trị đơn thuê:</span>
+                      <strong>{formatCurrency(totalPrice)}</strong>
+                    </div>
+                    <div style={{ fontSize: '12px', display: 'flex', justifyContent: 'space-between', marginBottom: '4px', color: '#10b981', fontWeight: 600 }}>
+                      <span style={{ color: '#047857' }}>Đã thanh toán giữ chỗ:</span>
+                      <span>-{formatCurrency(reservationFee)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 800, borderTop: '1px solid #e2e8f0', paddingTop: '8px', marginTop: '6px' }}>
+                      <span style={{ color: '#0f172a' }}>Còn lại trả khi nhận xe:</span>
+                      <span style={{ color: '#e11d48' }}>{formatCurrency(remainingPayment)}</span>
+>>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                     </div>
                   </div>
                 </div>
@@ -1352,6 +1697,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
             </div>
           )}
 
+<<<<<<< HEAD
           {/* Step 2a: Biometric Face Scan */}
           {step === 'face_scan' && (
             <div className="booking-modal-body text-center">
@@ -1361,6 +1707,35 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
               <p style={{ fontSize: '13.5px', color: '#475569', marginBottom: '20px', lineHeight: 1.6 }}>
                 Vui lòng giữ đầu thẳng và đặt khuôn mặt ở giữa vòng tròn xanh lớn để chụp ảnh đối khớp sinh trắc học với ảnh FaceID gốc của bạn.
               </p>
+=======
+            {/* Step 2 Footer Action */}
+            <div className="booking-modal-footer mt-6" style={{ marginTop: '24px' }}>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={() => setStep(1)}
+                disabled={loading}
+              >
+                Quay lại
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleProcessReservationPayment}
+                disabled={loading || (paymentChoice === 'wallet' && walletBalance < reservationFee)}
+              >
+                {paymentChoice === 'wallet' ? (
+                  `Xác nhận trừ ${formatCurrency(reservationFee)} từ Ví`
+                ) : paymentChoice === 'vnpay' ? (
+                  'Thanh toán qua VNPAY (Giả lập)'
+                ) : (
+                  'Xác nhận đã chuyển khoản 500k'
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+>>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
 
               <div style={{ position: 'relative', width: '300px', height: '300px', margin: '0 auto 24px auto' }}>
                 {/* Circular Camera Frame */}
@@ -1468,6 +1843,132 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
               {/* Action buttons */}
               <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '20px' }}>
                 {(faceScanStep === 'idle' || faceScanStep === 'captured') && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={startFaceScan}
+                  style={{ background: '#009698', borderColor: '#009698' }}
+                >
+                  📸 Kích hoạt Camera Quét mặt
+                </button>
+              )}
+
+              {faceScanStep === 'streaming' && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleStartCountdown}
+                  style={{ background: '#10b981', borderColor: '#10b981' }}
+                >
+                  ⚡ Chụp ảnh xác thực (Hẹn giờ 3s)
+                </button>
+              )}
+
+              {faceScanStep === 'captured' && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleVerifyFace}
+                  disabled={loading}
+                  style={{ background: '#10b981', borderColor: '#10b981' }}
+                >
+                  {loading ? 'Đang so khớp...' : '✓ Xác thực & Tiếp tục ký hợp đồng'}
+                </button>
+              )}
+            </div>
+
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontSize: '12.5px', color: '#64748b', textAlign: 'left', lineHeight: 1.5 }}>
+              💡 <strong>Lưu ý đối chiếu:</strong> Ảnh sẽ được so khớp với ảnh FaceID mà bạn đăng ký lúc KYC. Nếu bạn chưa KYC khuôn mặt, hệ thống sẽ tự động sử dụng ảnh chụp này làm FaceID ký kết hợp đồng.
+            </div>
+
+            {/* Step Footer Action */}
+            <div className="booking-modal-footer mt-6" style={{ marginTop: '24px' }}>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={() => {
+                  stopFaceScanStream();
+                  setStep(2);
+                }}
+                disabled={loading}
+              >
+                Quay lại
+              </button>
+              <div></div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2b: Read & Sign Electronic Contract */}
+        {step === 'contract' && (
+          <div className="booking-modal-body">
+            <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>
+              Hợp Đồng Thuê Xe Tự Lái Điện Tử
+            </h4>
+            <p style={{ fontSize: '12.5px', color: '#64748b', marginBottom: '14px' }}>
+              Vui lòng kiểm tra kỹ hợp đồng, tích chọn các ô cam kết và ký tên trên bảng vẽ chữ ký số.
+            </p>
+
+            {/* Contract content paper box */}
+            <div style={{
+              background: '#fafafa',
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              padding: '16px',
+              height: '220px',
+              overflowY: 'auto',
+              fontFamily: 'monospace',
+              fontSize: '11.5px',
+              lineHeight: 1.5,
+              whiteSpace: 'pre-wrap',
+              color: '#334155',
+              boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.05)',
+              marginBottom: '16px'
+            }}>
+              {getContractText()}
+            </div>
+
+            {/* Verification & Agreements */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+              <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: 'pointer', fontSize: '12.5px', color: '#334155', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={agreement1}
+                  onChange={(e) => setAgreement1(e.target.checked)}
+                  style={{ marginTop: '3px', cursor: 'pointer' }}
+                />
+                <span>Tôi xác nhận thông tin thuê xe và thông tin cá nhân trên là hoàn toàn chính xác.</span>
+              </label>
+
+              <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: 'pointer', fontSize: '12.5px', color: '#334155', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={agreement2}
+                  onChange={(e) => setAgreement2(e.target.checked)}
+                  style={{ marginTop: '3px', cursor: 'pointer' }}
+                />
+                <span>Tôi đã đọc toàn bộ các điều khoản và quy chế cho thuê xe tự lái của ViVuCar.</span>
+              </label>
+
+              <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: 'pointer', fontSize: '12.5px', color: '#334155', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={agreement3}
+                  onChange={(e) => setAgreement3(e.target.checked)}
+                  style={{ marginTop: '3px', cursor: 'pointer' }}
+                />
+                <span>Tôi cam kết chịu trách nhiệm bảo quản xe và thanh toán số tiền còn lại {formatCurrency(remainingPayment)} khi nhận xe.</span>
+              </label>
+            </div>
+
+            {/* Signature Pad */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifycontent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1e293b' }}>
+                  ✍ Vẽ chữ ký tay của bạn vào khung bên dưới:
+                </span>
+                {hasSigned && (
+>>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                   <button
                     type="button"
                     className="btn btn-primary"
@@ -1534,7 +2035,108 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                 Vui lòng kiểm tra kỹ hợp đồng, tích chọn các ô cam kết và ký tên trên bảng vẽ chữ ký số.
               </p>
 
+<<<<<<< HEAD
               {/* Contract content paper box */}
+=======
+        {/* Step 3: Success Screen */}
+        {step === 3 && (
+          <div className="booking-modal-body text-center">
+            <CheckCircle2 className="success-lottie-icon text-success mb-2" size={60} style={{ display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
+            <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#10b981', marginBottom: '8px' }}>Thuê Xe Thành Công!</h2>
+            <p className="subtitle mt-1" style={{ color: '#64748b', fontSize: '13.5px' }}>Hợp đồng thuê xe điện tử của bạn đã được xác thực ký số thành công.</p>
+
+            {/* Premium Printable Bill Receipt */}
+            <div className="printable-receipt-card mt-4" style={{ padding: '24px 20px', marginTop: '16px' }}>
+              <div className="receipt-header">
+                <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', textAlign: 'center', marginBottom: '12px' }}>BIÊN LAI ĐẶT XE & HỢP ĐỒNG ĐIỆN TỬ</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b' }}>
+                  <span>Mã đặt xe: <strong>{bookingId}</strong></span>
+                  <span>Ngày: {new Date().toLocaleDateString('vi-VN')}</span>
+                </div>
+              </div>
+              <hr className="receipt-line" style={{ margin: '10px 0' }} />
+
+              <div className="receipt-grid" style={{ gap: '6px' }}>
+                <div className="receipt-row">
+                  <span>Khách hàng:</span>
+                  <strong>{user.name}</strong>
+                </div>
+                <div className="receipt-row">
+                  <span>Mẫu xe:</span>
+                  <strong>{car.brand} {car.model}</strong>
+                </div>
+                <div className="receipt-row">
+                  <span>Thời gian thuê:</span>
+                  <strong style={{ fontSize: '11px' }}>{pickupDate} ➔ {returnDate} ({diffDays} ngày)</strong>
+                </div>
+                <div className="receipt-row">
+                  <span>Vị trí nhận xe:</span>
+                  <strong style={{ textAlign: 'right' }}>{displayLocation}</strong>
+                </div>
+                <div className="receipt-row">
+                  <span>Thanh toán online (Giữ chỗ 30%):</span>
+                  <strong style={{ color: '#10b981' }}>{formatCurrency(reservationFee)}</strong>
+                </div>
+                <div className="receipt-row">
+                  <span>Phần còn lại (Trả khi nhận 70%):</span>
+                  <strong style={{ color: '#e11d48' }}>{formatCurrency(remainingPayment)}</strong>
+                </div>
+                
+                {/* Visualizing Face Scan and Signature in Receipt */}
+                <div style={{ display: 'flex', gap: '12px', marginTop: '12px', borderTop: '1px dashed #cbd5e1', paddingTop: '12px', justifyContent: 'center' }}>
+                  {capturedFace && (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <span style={{ fontSize: '9px', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>ẢNH FACEID XÁC THỰC</span>
+                      <div style={{
+                        width: '64px',
+                        height: '64px',
+                        borderRadius: '50%',
+                        overflow: 'hidden',
+                        border: '2px solid #10b981',
+                      }}>
+                        <img src={capturedFace} alt="Face validation" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {signatureCanvasRef.current && (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: '9px', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>CHỮ KÝ BÊN THUÊ XE (BÊN B)</span>
+                      <div style={{
+                        width: '120px',
+                        height: '48px',
+                        border: '1px dashed #cbd5e1',
+                        borderRadius: '6px',
+                        background: '#f8fafc',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden'
+                      }}>
+                        <img src={signatureCanvasRef.current.toDataURL('image/png')} alt="Handwritten Signature" style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+              <div className="receipt-stamp" style={{ bottom: '90px', right: '16px', fontSize: '9.5px', border: '2.5px double #10b981' }}>HỢP ĐỒNG ĐÃ KÝ SỐ ✓</div>
+            </div>
+
+            {/* Contract CTA */}
+            <div style={{
+              margin: '20px auto 0',
+              maxWidth: '420px',
+              background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
+              border: '1.5px solid #c4b5fd',
+              borderRadius: '14px',
+              padding: '16px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '14px',
+            }}>
+>>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
               <div style={{
                 background: '#fafafa',
                 border: '1px solid #e2e8f0',

@@ -33,72 +33,7 @@ export const MyTrips = ({ user }) => {
     cleanCar: false,
     tiresOk: false
   });
-  const [renterSignature, setRenterSignature] = useState('');
-  const canvasRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [hasSigned, setHasSigned] = useState(false);
 
-  useEffect(() => {
-    if (activeHandoverTrip && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const rect = canvas.parentNode.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height || 160;
-      setHasSigned(false);
-      setIsDrawing(false);
-    }
-  }, [activeHandoverTrip]);
-
-  const startDrawing = (e) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
-    if (e.cancelable) e.preventDefault();
-    
-    ctx.beginPath();
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    ctx.moveTo(x, y);
-    setIsDrawing(true);
-  };
-
-  const draw = (e) => {
-    if (!isDrawing) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
-    if (e.cancelable) e.preventDefault();
-    
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    ctx.lineTo(x, y);
-    ctx.strokeStyle = '#0f172a';
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-    setHasSigned(true);
-  };
-
-  const stopDrawing = () => {
-    setIsDrawing(false);
-  };
-
-  const clearSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setHasSigned(false);
-  };
 
   const [incidentDesc, setIncidentDesc] = useState('');
   const [incidentImage, setIncidentImage] = useState(null);
@@ -171,23 +106,16 @@ export const MyTrips = ({ user }) => {
 
   const handleHandoverSubmit = async (e) => {
     e.preventDefault();
-    if (!hasSigned) {
-      showToast('Vui lòng vẽ chữ ký xác nhận biên bản bàn giao xe.', 'warning');
-      return;
-    }
 
     const { trip, type } = activeHandoverTrip;
     const checklist = Object.keys(handoverChecks).filter(k => handoverChecks[k]);
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const signatureBase64 = canvas.toDataURL('image/png');
+    const signatureBase64 = "no_signature_required";
 
     try {
       const data = await api.bookings.signHandover(trip.id, type, checklist, signatureBase64);
       showToast(data.message, 'success');
       setActiveHandoverTrip(null);
       setHandoverChecks({ noScratches: false, fuelOk: false, cleanCar: false, tiresOk: false });
-      setHasSigned(false);
       fetchTrips(true);
     } catch (error) {
       showToast(error.message || 'Lỗi ký biên bản bàn giao.', 'error');
@@ -320,9 +248,8 @@ Sau khi thảo luận, hai bên đồng ý ký kết hợp đồng thuê xe tự
 ĐIỀU 2: THỜI GIAN VÀ PHÍ DỊCH VỤ
 - Thời gian thuê: Từ ${trip.pickupDate} đến ${trip.returnDate}
 - Phí thuê xe: ${formatCurrency(trip.totalPrice)}
-- Tiền cọc đảm bảo trách nhiệm xe: 5.000.000đ
-- Phí giữ chỗ đã thanh toán online: 500.000đ
-- Số tiền còn lại Bên B phải trả khi nhận xe: ${formatCurrency(trip.totalPrice + 5000000 - 500000)} (đã khấu trừ 500.000đ phí giữ chỗ)
+- Phí giữ chỗ đã thanh toán online (30%): ${formatCurrency(Math.round(trip.totalPrice * 0.3))}
+- Số tiền còn lại Bên B phải trả khi nhận xe: ${formatCurrency(trip.totalPrice - Math.round(trip.totalPrice * 0.3))} (đã khấu trừ 30% phí giữ chỗ)
 
 ĐIỀU 3: NGHĨA VỤ CỦA BÊN B
 1. Vận hành xe đúng Luật Giao thông đường bộ Việt Nam. Tự chịu mọi trách nhiệm về dân sự và hình sự khi xảy ra tai nạn hoặc vi phạm pháp luật.
@@ -420,7 +347,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
 
                     <div className="trip-meta-item">
                       <DollarSign size={14} className="text-muted" />
-                      <span>Tổng phí + Cọc: <strong className="text-primary">{formatCurrency(trip.totalPrice + 5000000)}</strong> (Đã cọc bảo đảm: 5.000.000đ)</span>
+                      <span>Tổng phí: <strong className="text-primary">{formatCurrency(trip.totalPrice)}</strong></span>
                     </div>
 
                     {trip.depositStatus && (
@@ -659,17 +586,28 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
 
             {/* Refund Policy Info */}
             <div style={{ padding: '18px 22px' }}>
-              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
-                <div style={{ fontSize: '11px', color: '#166534', fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chính sách hoàn cọc giữ chỗ</div>
-                <div style={{ fontSize: '13px', color: '#15803d', fontWeight: 600 }}>{cancelPreview.preview.policyLabel}</div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginTop: 4 }}>
-                  Còn <strong style={{ color: '#0f172a' }}>{cancelPreview.preview.daysUntilPickup} ngày</strong> đến ngày nhận xe
+              {/* Special case: owner not yet approved */}
+              {cancelPreview.preview.isPendingOwner ? (
+                <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
+                  <div style={{ fontSize: '11px', color: '#166534', fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Hủy miễn phí</div>
+                  <div style={{ fontSize: '13px', color: '#15803d', fontWeight: 600 }}>Chủ xe chưa duyệt — Hoàn 100% phí giữ chỗ</div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: 4 }}>
+                    Bạn có thể hủy miễn phí trong giai đoạn chủ xe chưa duyệt.
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
+                  <div style={{ fontSize: '11px', color: '#166534', fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chính sách hoàn cọc giữ chỗ</div>
+                  <div style={{ fontSize: '13px', color: '#15803d', fontWeight: 600 }}>{cancelPreview.preview.policyLabel}</div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: 4 }}>
+                    Còn <strong style={{ color: '#0f172a' }}>{cancelPreview.preview.daysUntilPickup} ngày</strong> đến ngày nhận xe
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, marginBottom: 14 }}>
                 <div>
-                  <div style={{ fontSize: '11px', color: '#92400e', fontWeight: 600 }}>Phí giữ chỗ (500.000đ)</div>
+                  <div style={{ fontSize: '11px', color: '#92400e', fontWeight: 600 }}>Phí giữ chỗ đã nộp ({(cancelPreview.preview.depositAmount || 0).toLocaleString('vi-VN')}đ)</div>
                   <div style={{ fontSize: '12px', color: '#78716c', marginTop: 2 }}>Hoàn trả {cancelPreview.preview.refundPercent}% = </div>
                 </div>
                 <div style={{ fontSize: '20px', fontWeight: 900, color: cancelPreview.preview.refundAmount > 0 ? '#059669' : '#dc2626' }}>
@@ -680,10 +618,17 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
               </div>
 
               <div style={{ background: '#f1f5f9', borderRadius: 10, padding: '10px 14px', fontSize: '11.5px', color: '#475569', lineHeight: 1.6, marginBottom: 18 }}>
-                ⚠️ <strong>Lưu ý:</strong> Tiền cọc bảo đảm <strong>5.000.000đ</strong> sẽ được giữ nguyên và hoàn trả sau khi Admin xác nhận.
-                {cancelPreview.preview.refundAmount === 0 && (
-                  <span style={{ color: '#dc2626', display: 'block', marginTop: 4 }}>
-                    ❌ Hủy trễ — Phí giữ chỗ <strong>500.000đ không được hoàn trả</strong> theo chính sách.
+                {cancelPreview.preview.isPendingOwner ? (
+                  <span style={{ color: '#059669' }}>
+                    ✅ Hủy ngay sẽ được hoàn toàn bộ phí giữ chỗ vì chủ xe chưa xác nhận đơn.
+                  </span>
+                ) : cancelPreview.preview.refundAmount === 0 ? (
+                  <span style={{ color: '#dc2626', display: 'block' }}>
+                    ❌ Hủy trễ — Phí giữ chỗ <strong>{(cancelPreview.preview.depositAmount || 0).toLocaleString('vi-VN')}đ không được hoàn trả</strong> theo chính sách.
+                  </span>
+                ) : (
+                  <span>
+                    ⚠️ <strong>Lưu ý:</strong> Chính sách hoàn áp dụng vì chủ xe đã duyệt đơn. Phần được hoàn sẽ vào ví ViVuCar trong vòng 1-3 ngày làm việc.
                   </span>
                 )}
               </div>
@@ -854,71 +799,10 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                 </label>
               </div>
 
-              <div className="form-group mt-4">
-                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Vẽ chữ ký xác nhận (Dùng chuột hoặc chạm màn hình):</span>
-                  <button
-                    type="button"
-                    onClick={clearSignature}
-                    style={{
-                      fontSize: '11px',
-                      background: 'none',
-                      border: 'none',
-                      color: '#4f46e5',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      textDecoration: 'underline'
-                    }}
-                  >
-                    Xóa chữ ký
-                  </button>
-                </label>
-                <div style={{
-                  border: '2px dashed #cbd5e1',
-                  borderRadius: '12px',
-                  background: '#f8fafc',
-                  overflow: 'hidden',
-                  position: 'relative',
-                  height: '160px',
-                  marginTop: '6px',
-                  cursor: 'crosshair'
-                }}>
-                  <canvas
-                    ref={canvasRef}
-                    onMouseDown={startDrawing}
-                    onMouseMove={draw}
-                    onMouseUp={stopDrawing}
-                    onMouseLeave={stopDrawing}
-                    onTouchStart={startDrawing}
-                    onTouchMove={draw}
-                    onTouchEnd={stopDrawing}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      height: '100%'
-                    }}
-                  />
-                  {!hasSigned && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      pointerEvents: 'none',
-                      color: '#94a3b8',
-                      fontSize: '12.5px',
-                      fontWeight: 500
-                    }}>
-                      Ký tên vào đây
-                    </div>
-                  )}
-                </div>
-              </div>
-
               <div className="popup-actions mt-6" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setActiveHandoverTrip(null)}>Bỏ qua</button>
                 <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '10px 24px' }}>
-                  Xác Nhận &amp; Ký Tên
+                  {activeHandoverTrip.type === 'pickup' ? 'Xác nhận Nhận Xe' : 'Xác nhận Trả Xe'}
                 </button>
               </div>
             </form>

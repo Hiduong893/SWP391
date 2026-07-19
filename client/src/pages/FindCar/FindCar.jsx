@@ -681,6 +681,54 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
                   </p>
                 </div>
 
+                {/* Terms & Additional Costs Block - UPDATED */}
+                <div className="popup-terms-block mt-4">
+                  <h5 className="block-title" style={{ textAlign: 'left' }}>Quy định thuê xe</h5>
+                  <ul className="terms-list" style={{ listStyleType: 'disc', paddingLeft: '20px', textAlign: 'left', fontSize: '14px', color: '#334155' }}>
+                    <li>Sử dụng xe đúng mục đích.</li>
+                    <li>Không sử dụng xe vào mục đích phi pháp, trái pháp luật.</li>
+                    <li>Không sử dụng xe để cầm cố, thế chấp.</li>
+                    <li>Không hút thuốc, nhả kẹo cao su, xả rác trong xe.</li>
+                    <li>Không chở hàng cấm, hàng dễ cháy nổ, hoặc trái cây, thực phẩm nặng mùi trong xe.</li>
+                    <li>Khi trả xe, nếu có vết bẩn hoặc mùi khó chịu, khách hàng sẽ chịu chi phí vệ sinh xe.</li>
+                    <li>Giới hạn quãng đường: 400km/24h (tương ứng 250km/4h, 300km/8h, 350km/12h).</li>
+                  </ul>
+                  <p style={{ marginTop: '16px', fontStyle: 'italic', fontSize: '13px', color: '#475569', textAlign: 'center' }}>
+                    Trân trọng cảm ơn và chúc quý khách có những trải nghiệm tuyệt vời!
+                  </p>
+                </div>
+
+                {/* Cancellation Policy Table - MOVED HERE */}
+                <div className="cancellation-policy-table-container mt-6">
+                  <h5 className="block-title" style={{ textAlign: 'left' }}>Chính Sách Hủy Chuyến & Hoàn Cọc</h5>
+                  <table className="policy-table-popup" style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px', fontSize: '13px' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                        <th style={{ padding: '10px', textAlign: 'left', color: '#475569', fontWeight: '600' }}>Thời điểm hủy chuyến</th>
+                        <th style={{ padding: '10px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>Ngày thường</th>
+                        <th style={{ padding: '10px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>Ngày Lễ, Tết</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '10px', textAlign: 'left', color: '#334155', fontWeight: '500' }}>Trước &gt; 48 giờ</td>
+                        <td style={{ padding: '10px', textAlign: 'center', color: '#334155' }}>Hoàn <strong>100%</strong> phí giữ chỗ</td>
+                        <td style={{ padding: '10px', textAlign: 'center', color: '#334155' }}>Không áp dụng</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '10px', textAlign: 'left', color: '#334155', fontWeight: '500' }}>Trước 24 - 48 giờ</td>
+                        <td style={{ padding: '10px', textAlign: 'center', color: '#334155' }}>Hoàn <strong>50%</strong> phí giữ chỗ</td>
+                        <td style={{ padding: '10px', textAlign: 'center', color: '#334155' }}>Không hoàn phí</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '10px', textAlign: 'left', color: '#334155', fontWeight: '500' }}>Trong vòng 24 giờ</td>
+                        <td style={{ padding: '10px', textAlign: 'center', color: '#334155' }}>Không hoàn phí</td>
+                        <td style={{ padding: '10px', textAlign: 'center', color: '#334155' }}>Không hoàn phí</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
                 <div className="popup-reviews-block mt-6">
                   <h5 className="block-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <MessageSquare size={16} style={{ color: '#0ea5e9' }} />
