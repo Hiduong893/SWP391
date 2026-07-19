@@ -8,17 +8,9 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   const [step, setStep] = useState(1); // 1: Confirmation & License, 2: Payment, 3: Success, 'face_scan': Face Scanner, 'contract': Hợp đồng
   const [loading, setLoading] = useState(false);
   const [licenseUploading, setLicenseUploading] = useState(false);
-<<<<<<< HEAD
-<<<<<<< HEAD
   const [agreedToSampleContract, setAgreedToSampleContract] = useState(false);
   const [showSampleContractPreview, setShowSampleContractPreview] = useState(false);
   
-=======
-
->>>>>>> 3db0f021 (Fix merge conflicts in package.json after stash pop)
-=======
-
->>>>>>> 57388984 (Update final version of Car Rental Platform)
   // Biometric Face Scanner states
   const faceVideoRef = React.useRef(null);
   const faceStreamRef = React.useRef(null);
@@ -93,7 +85,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   const handleStartCountdown = () => {
     setFaceScanStep('countdown');
     setFaceCountdown(3);
-
+    
     faceCountdownIntervalRef.current = setInterval(() => {
       setFaceCountdown(prev => {
         if (prev <= 1) {
@@ -108,25 +100,25 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
 
   const captureFacePhoto = () => {
     if (!faceVideoRef.current) return;
-
+    
     const video = faceVideoRef.current;
     const canvas = document.createElement('canvas');
     canvas.width = 400;
     canvas.height = 400;
-
+    
     const ctx = canvas.getContext('2d');
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
-
+    
     const minDim = Math.min(video.videoWidth, video.videoHeight);
     const sx = (video.videoWidth - minDim) / 2;
     const sy = (video.videoHeight - minDim) / 2;
     ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, canvas.width, canvas.height);
-
+    
     const base64 = canvas.toDataURL('image/jpeg', 0.9);
     setCapturedFace(base64);
     setFaceScanStep('captured');
-
+    
     stopFaceScanStream();
   };
 
@@ -134,7 +126,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
     if (!capturedFace) return;
     setFaceScanStep('verifying');
     setLoading(true);
-
+    
     try {
       // đối khớp qua API
       if (user.faceImage) {
@@ -144,7 +136,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
       } else {
         await new Promise(resolve => setTimeout(resolve, 1500));
       }
-
+      
       showToast('Xác thực khuôn mặt sinh trắc học khớp 99.8%!', 'success');
       setStep('contract');
     } catch (err) {
@@ -159,9 +151,9 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
     const canvas = signatureCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-
+    
     if (e.cancelable) e.preventDefault();
-
+    
     ctx.beginPath();
     const rect = canvas.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -177,9 +169,9 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
     const canvas = signatureCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-
+    
     if (e.cancelable) e.preventDefault();
-
+    
     const rect = canvas.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -212,7 +204,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
     const renterEmail = user.email;
     const licenseNo = user.kycDocuments?.license || 'Đã xác thực KYC';
     const cccdNo = user.kycDocuments?.cccd ? 'Đã xác thực' : 'Đang cập nhật';
-
+    
     return `CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
 Độc lập - Tự do - Hạnh phúc
 ---
@@ -281,7 +273,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
   const [pickupTime, setPickupTime] = useState(initialPickupTime || '10:00');
   const [returnTime, setReturnTime] = useState(initialReturnTime || '10:00');
   const { showToast } = useToast();
-
+  
   const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
   const TIME_OPTIONS = ["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
 
@@ -365,10 +357,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
   const diffTimeMs = endDatetime > startDatetime ? (endDatetime - startDatetime) : 0;
   let diffHours = Math.ceil(diffTimeMs / (1000 * 60 * 60));
   if (diffHours === 0) diffHours = 1;
-<<<<<<< HEAD
   const diffDays = Math.max(1, Math.ceil(diffHours / 24)); // số ngày thuê (tối thiểu 1)
-=======
->>>>>>> 57388984 (Update final version of Car Rental Platform)
 
   // --- SMART CAPPING PRICING LOGIC ---
   const pricePerDay = car.pricePerDay;
@@ -400,7 +389,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
 
   const basePrice = calculatePrice(diffHours);
   const diffDaysStr = Math.floor(diffHours / 24) > 0 ? `${Math.floor(diffHours / 24)} ngày ${diffHours % 24 > 0 ? `${diffHours % 24} giờ` : ''}` : `${diffHours} giờ`;
-
+  
   const insurancePrice = 50000 * Math.ceil(diffHours / 24); // 50,000 VND / day for standard insurance
   const serviceFee = 80000;
   const deliveryFee = pickupMethod === 'delivery' ? 100000 : 0;
@@ -428,9 +417,6 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
     return 'Bãi xe Chủ xe - ' + (location || 'Khu vực trung tâm');
   };
 
-<<<<<<< HEAD
-  const selfLocation = car.ownerId
-=======
   const getSystemAddress = (location) => {
     const loc = (location || '').toLowerCase();
     if (loc.includes('hà nội') || loc.includes('ha noi')) {
@@ -446,7 +432,6 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
   };
 
   const selfLocation = car.ownerId 
->>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
     ? getFakeOwnerAddress(car.location)
     : (!isCityOnly(pickupLocation) ? pickupLocation : getSystemAddress(pickupLocation));
 
@@ -483,34 +468,24 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
       showToast(`Số dư ví không đủ. Cần tối thiểu ${formatCurrency(reservationFee)} để thanh toán phí giữ chỗ.`, 'warning');
       return;
     }
-
+    
     setPayingState('processing');
     setLoading(true);
-
+    
     try {
       // Giả lập xử lý thanh toán qua cổng trong 1.5 giây
       await new Promise(resolve => setTimeout(resolve, 1500));
-<<<<<<< HEAD
-
-      if (paymentChoice === 'wallet') {
-        showToast('Xác thực số dư ví thành công!', 'success');
-      } else {
-        showToast('Xác thực thanh toán giữ chỗ thành công!', 'success');
-=======
       
       showToast(`Thanh toán phí giữ chỗ ${formatCurrency(reservationFee)} thành công!`, 'success');
       
       if (paymentChoice === 'wallet') {
         const newBalance = walletBalance - reservationFee;
         setWalletBalance(newBalance);
->>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
       }
-
-      // Sửa lỗi UX: Không trừ tiền ví ở bước này. Trừ tiền thực tế ở bước ký hợp đồng cuối cùng.
-
+      
       setPayingState('paid');
       setStep('face_scan');
-
+      
       // Tự động mở camera sau khi chuyển bước quét mặt
       setTimeout(() => {
         startFaceScan();
@@ -539,7 +514,6 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
       const signatureDataUrl = canvas.toDataURL('image/png');
       const finalPickupLocation = displayLocation.trim() || pickupLocation || car.location || 'Không xác định';
 
-<<<<<<< HEAD
       let mappedCarId = car.id;
       if (typeof mappedCarId === 'string') {
         if (mappedCarId.startsWith('lux-car-')) {
@@ -559,10 +533,6 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
 
       const bookingData = {
         carId: mappedCarId,
-=======
-      const bookingData = {
-        carId: car.id,
->>>>>>> 57388984 (Update final version of Car Rental Platform)
         pickupDate: `${pickupDate} ${pickupTime}:00`,
         returnDate: `${returnDate} ${returnTime}:00`,
         pickupLocation: finalPickupLocation,
@@ -574,7 +544,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
       };
 
       const newBooking = await api.bookings.create(bookingData);
-
+      
       // Lấy ID thật từ server để phục vụ cho các logic sau này
       setCreatedBookingId(newBooking.id);
 
@@ -589,7 +559,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
       }
 
       showToast(newBooking.message || 'Xác nhận thanh toán và đặt xe thành công!', 'success');
-
+      
       if (paymentChoice === 'wallet') {
         const newBalance = walletBalance - totalPayment;
         setWalletBalance(newBalance);
@@ -621,67 +591,74 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
     <>
       <div className="booking-modal-overlay">
         <div className={`booking-modal-card ${step === 2 || step === 'contract' ? 'wide-payment-modal' : ''}`} style={{ position: 'relative' }}>
-
-          {/* Spinner overlay for Step 2 payment processing */}
-          {payingState === 'processing' && (
+        
+        {/* Spinner overlay for Step 2 payment processing */}
+        {payingState === 'processing' && (
+          <div style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99,
+            borderRadius: '20px'
+          }}>
             <div style={{
-              position: 'absolute',
-              top: 0, left: 0, right: 0, bottom: 0,
-              background: 'rgba(255, 255, 255, 0.9)',
-              backdropFilter: 'blur(6px)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 99,
-              borderRadius: '20px'
-            }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                border: '4px solid #f3f4f6',
-                borderTopColor: '#6366f1',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-                marginBottom: '16px'
-              }}></div>
-              <h4 style={{ color: '#0f172a', fontWeight: 800, marginBottom: '6px', fontSize: '16px' }}>Đang xác thực giao dịch giữ chỗ...</h4>
-              <p style={{ color: '#64748b', fontSize: '13px' }}>Vui lòng chờ trong giây lát.</p>
-            </div>
-          )}
-
-          {/* Header */}
-          <div className="booking-modal-header">
-            <div className="header-title-box">
-              <span className="step-indicator">
-                {step === 1 ? 'BƯỚC 1/5' : step === 2 ? 'BƯỚC 2/5' : step === 'face_scan' ? 'BƯỚC 3/5' : step === 'contract' ? 'BƯỚC 4/5' : 'BƯỚC 5/5'}
-              </span>
-              <h3>
-                {step === 1 ? 'Xác Nhận Hành Trình' :
-                  step === 2 ? 'Thanh Toán Giữ Chỗ' :
-                    step === 'face_scan' ? 'Xác Thực Khuôn Mặt FaceID' :
-                      step === 'contract' ? 'Đọc & Ký Hợp Đồng' :
-                        'Đặt Xe Thành Công!'}
-              </h3>
-            </div>
-            <button className="btn-close-modal" onClick={() => { stopFaceScanStream(); onClose(); }} disabled={loading}>
-              <X size={20} />
-            </button>
+              width: '48px',
+              height: '48px',
+              border: '4px solid #f3f4f6',
+              borderTopColor: '#6366f1',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              marginBottom: '16px'
+            }}></div>
+            <h4 style={{ color: '#0f172a', fontWeight: 800, marginBottom: '6px', fontSize: '16px' }}>Đang xác thực giao dịch giữ chỗ...</h4>
+            <p style={{ color: '#64748b', fontSize: '13px' }}>Vui lòng chờ trong giây lát.</p>
           </div>
+        )}
 
-          {/* Step 1: Confirmation & Driver License */}
-          {step === 1 && (
-            <div className="booking-modal-body">
-              {/* Car Details Summary */}
-              <div className="booking-car-summary">
-                <img src={car.image} alt={car.model} className="summary-car-img" />
-                <div className="summary-car-info">
-                  <span className="car-brand-lbl">{car.brand}</span>
-                  <h4>{car.model}</h4>
-                  <p className="car-desc-sub">{car.seats} chỗ • {car.transmission} • {car.fuel}</p>
+        {/* Header */}
+        <div className="booking-modal-header">
+          <div className="header-title-box">
+            <span className="step-indicator">
+              {step === 1 ? 'BƯỚC 1/5' : step === 2 ? 'BƯỚC 2/5' : step === 'face_scan' ? 'BƯỚC 3/5' : step === 'contract' ? 'BƯỚC 4/5' : 'BƯỚC 5/5'}
+            </span>
+            <h3>
+              {step === 1 ? 'Xác Nhận Hành Trình' : 
+               step === 2 ? 'Thanh Toán Giữ Chỗ' : 
+               step === 'face_scan' ? 'Xác Thực Khuôn Mặt FaceID' : 
+               step === 'contract' ? 'Đọc & Ký Hợp Đồng' : 
+               'Đặt Xe Thành Công!'}
+            </h3>
+          </div>
+          <button className="btn-close-modal" onClick={() => { stopFaceScanStream(); onClose(); }} disabled={loading}>
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Step 1: Confirmation & Driver License */}
+        {step === 1 && (
+          <div className="booking-modal-body">
+            {/* Car Details Summary */}
+            <div className="booking-car-summary">
+              <img src={car.image} alt={car.model} className="summary-car-img" />
+              <div className="summary-car-info">
+                <span className="car-brand-lbl">{car.brand}</span>
+                <h4>{car.model}</h4>
+                <p className="car-desc-sub">{car.seats} chỗ • {car.transmission} • {car.fuel}</p>
+              </div>
+            </div>
+
+            {/* Trip Details Grid */}
+            <div className="booking-details-grid mt-4">
+              <div className="detail-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <MapPin size={16} className="text-info" />
+                  <span className="detail-lbl" style={{ margin: 0 }}>Địa điểm nhận/trả xe</span>
                 </div>
-<<<<<<< HEAD
-=======
                 {car.ownerId ? (
                   <span className="detail-val" style={{ paddingLeft: '24px', color: '#1e293b', fontWeight: 'bold' }}>
                     {selfLocation}
@@ -721,194 +698,89 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                     )}
                   </>
                 )}
->>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
               </div>
-
-              {/* Trip Details Grid */}
-              <div className="booking-details-grid mt-4">
-                <div className="detail-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <MapPin size={16} className="text-info" />
-                    <span className="detail-lbl" style={{ margin: 0 }}>Địa điểm nhận/trả xe</span>
-                  </div>
-                  {car.ownerId ? (
-                    <span className="detail-val" style={{ paddingLeft: '24px', color: '#1e293b', fontWeight: 'bold' }}>
-                      {selfLocation}
-                    </span>
-                  ) : (
-                    <>
-                      {pickupMethod !== 'delivery' && (
-                        <>
-                          {(selfLocation) ? (
-                            <span className="detail-val" style={{ paddingLeft: '24px' }}>{selfLocation}</span>
-                          ) : null}
-                          <input
-                            type="text"
-                            placeholder={selfLocation ? 'Sửa địa chỉ nhận xe...' : 'Nhập địa chỉ nhận xe của bạn...'}
-                            value={manualPickupAddress}
-                            onChange={(e) => setManualPickupAddress(e.target.value)}
-                            style={{
-                              width: '100%',
-                              padding: '10px 12px',
-                              borderRadius: '8px',
-                              border: selfLocation ? '1px solid #e2e8f0' : '2px solid #f59e0b',
-                              background: selfLocation ? '#f8fafc' : '#fffbeb',
-                              color: '#0f172a',
-                              fontSize: '13px',
-                              outline: 'none',
-                              boxSizing: 'border-box',
-                              fontFamily: "'Outfit', sans-serif"
-                            }}
-                          />
-                          {!selfLocation && (
-                            <span style={{ fontSize: '11px', color: '#d97706', fontWeight: 600, paddingLeft: '4px' }}>⚠️ Vui lòng nhập địa chỉ nhận xe để tiến hành đặt.</span>
-                          )}
-                        </>
-                      )}
-                      {pickupMethod === 'delivery' && (
-                        <span className="detail-val" style={{ paddingLeft: '24px' }}>{deliveryAddress || 'Chưa nhập địa chỉ giao'}</span>
-                      )}
-                    </>
-                  )}
-                </div>
-                <div className="detail-item edit-dates-item" style={{ minWidth: '220px' }}>
-                  <Calendar size={16} className="text-info" style={{ marginTop: '2px' }} />
-                  <div style={{ flex: 1 }}>
-                    <span className="detail-lbl">Thời gian thuê</span>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-                        <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 600 }}>Ngày & Giờ nhận</span>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <input
-                            type="date"
-                            min={todayStr}
-                            value={pickupDate}
-                            onChange={(e) => {
-                              const newPickup = e.target.value;
-                              setPickupDate(newPickup);
-                              const currentStart = new Date(`${newPickup}T${pickupTime}:00`);
-                              const currentEnd = new Date(`${returnDate}T${returnTime}:00`);
-                              if (currentStart >= currentEnd) {
-                                const tomorrow = new Date(currentStart);
-                                tomorrow.setDate(tomorrow.getDate() + 1);
-                                setReturnDate(tomorrow.toISOString().split('T')[0]);
-                              }
-                            }}
-                            style={{
-                              background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px',
-                              color: '#0f172a', padding: '8px 6px', fontSize: '13px', fontFamily: "'Inter', sans-serif",
-                              outline: 'none', width: '65%', boxSizing: 'border-box'
-                            }}
-                          />
-                          <select
-                            value={pickupTime}
-                            onChange={(e) => setPickupTime(e.target.value)}
-                            style={{
-                              background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px',
-                              color: '#0f172a', padding: '8px 4px', fontSize: '13px', fontFamily: "'Inter', sans-serif",
-                              outline: 'none', width: '35%', boxSizing: 'border-box', cursor: 'pointer'
-                            }}
-                          >
-                            {TIME_OPTIONS.map(time => (
-                              <option key={time} value={time}>{time}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <span style={{ color: '#64748b', marginTop: '14px', fontSize: '10px' }}>➔</span>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-                        <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 600 }}>Ngày & Giờ trả</span>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <input
-                            type="date"
-                            min={pickupDate || todayStr}
-                            value={returnDate}
-                            onChange={(e) => setReturnDate(e.target.value)}
-                            style={{
-                              background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px',
-                              color: '#0f172a', padding: '8px 6px', fontSize: '13px', fontFamily: "'Inter', sans-serif",
-                              outline: 'none', width: '65%', boxSizing: 'border-box'
-                            }}
-                          />
-                          <select
-                            value={returnTime}
-                            onChange={(e) => setReturnTime(e.target.value)}
-                            style={{
-                              background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px',
-                              color: '#0f172a', padding: '8px 4px', fontSize: '13px', fontFamily: "'Inter', sans-serif",
-                              outline: 'none', width: '35%', boxSizing: 'border-box', cursor: 'pointer'
-                            }}
-                          >
-                            {TIME_OPTIONS.map(time => (
-                              <option key={time} value={time} disabled={isReturnTimeDisabled(time)}>{time}</option>
-                            ))}
-                          </select>
-                        </div>
+              <div className="detail-item edit-dates-item" style={{ minWidth: '220px' }}>
+                <Calendar size={16} className="text-info" style={{ marginTop: '2px' }} />
+                <div style={{ flex: 1 }}>
+                  <span className="detail-lbl">Thời gian thuê</span>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+                      <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 600 }}>Ngày & Giờ nhận</span>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <input
+                          type="date"
+                          min={todayStr}
+                          value={pickupDate}
+                          onChange={(e) => {
+                            const newPickup = e.target.value;
+                            setPickupDate(newPickup);
+                            const currentStart = new Date(`${newPickup}T${pickupTime}:00`);
+                            const currentEnd = new Date(`${returnDate}T${returnTime}:00`);
+                            if (currentStart >= currentEnd) {
+                              const tomorrow = new Date(currentStart);
+                              tomorrow.setDate(tomorrow.getDate() + 1);
+                              setReturnDate(tomorrow.toISOString().split('T')[0]);
+                            }
+                          }}
+                          style={{
+                            background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px',
+                            color: '#0f172a', padding: '8px 6px', fontSize: '13px', fontFamily: "'Inter', sans-serif",
+                            outline: 'none', width: '65%', boxSizing: 'border-box'
+                          }}
+                        />
+                        <select
+                          value={pickupTime}
+                          onChange={(e) => setPickupTime(e.target.value)}
+                          style={{
+                            background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px',
+                            color: '#0f172a', padding: '8px 4px', fontSize: '13px', fontFamily: "'Inter', sans-serif",
+                            outline: 'none', width: '35%', boxSizing: 'border-box', cursor: 'pointer'
+                          }}
+                        >
+                          {TIME_OPTIONS.map(time => (
+                            <option key={time} value={time}>{time}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
-                    <span style={{ display: 'block', fontSize: '11px', color: '#6366f1', marginTop: '8px', fontWeight: 700 }}>
-                      Tổng thời gian: {diffDaysStr}
-                    </span>
+                    <span style={{ color: '#64748b', marginTop: '14px', fontSize: '10px' }}>➔</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+                      <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 600 }}>Ngày & Giờ trả</span>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <input
+                          type="date"
+                          min={pickupDate || todayStr}
+                          value={returnDate}
+                          onChange={(e) => setReturnDate(e.target.value)}
+                          style={{
+                            background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px',
+                            color: '#0f172a', padding: '8px 6px', fontSize: '13px', fontFamily: "'Inter', sans-serif",
+                            outline: 'none', width: '65%', boxSizing: 'border-box'
+                          }}
+                        />
+                        <select
+                          value={returnTime}
+                          onChange={(e) => setReturnTime(e.target.value)}
+                          style={{
+                            background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px',
+                            color: '#0f172a', padding: '8px 4px', fontSize: '13px', fontFamily: "'Inter', sans-serif",
+                            outline: 'none', width: '35%', boxSizing: 'border-box', cursor: 'pointer'
+                          }}
+                        >
+                          {TIME_OPTIONS.map(time => (
+                            <option key={time} value={time} disabled={isReturnTimeDisabled(time)}>{time}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
+                  <span style={{ display: 'block', fontSize: '11px', color: '#6366f1', marginTop: '8px', fontWeight: 700 }}>
+                    Tổng thời gian: {diffDaysStr}
+                  </span>
                 </div>
               </div>
+            </div>
 
-<<<<<<< HEAD
-              {/* Delivery Method Selection */}
-              {!car.ownerId ? (
-                <div className="delivery-method-card mt-4" style={{ marginTop: '20px' }}>
-                  <h5 style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    Hình thức nhận xe
-                  </h5>
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <button
-                      type="button"
-                      style={{
-                        flex: 1,
-                        padding: '14px',
-                        borderRadius: '12px',
-                        border: pickupMethod === 'self' ? '2px solid #6366f1' : '1px solid #e2e8f0',
-                        background: pickupMethod === 'self' ? '#f5f3ff' : '#ffffff',
-                        color: pickupMethod === 'self' ? '#4f46e5' : '#64748b',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        textAlign: 'left'
-                      }}
-                      onClick={() => setPickupMethod('self')}
-                    >
-                      <div style={{ fontSize: '13px', color: pickupMethod === 'self' ? '#4f46e5' : '#1e293b', marginBottom: '4px', fontWeight: '700' }}>
-                        🙋 Tự nhận xe
-                      </div>
-                      <div style={{ fontSize: '11px', fontWeight: 500, color: '#64748b', lineHeight: 1.4 }}>
-                        Khách nhận tại vị trí xe đậu (Miễn phí)
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      style={{
-                        flex: 1,
-                        padding: '14px',
-                        borderRadius: '12px',
-                        border: pickupMethod === 'delivery' ? '2px solid #6366f1' : '1px solid #e2e8f0',
-                        background: pickupMethod === 'delivery' ? '#f5f3ff' : '#ffffff',
-                        color: pickupMethod === 'delivery' ? '#4f46e5' : '#64748b',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        textAlign: 'left'
-                      }}
-                      onClick={() => setPickupMethod('delivery')}
-                    >
-                      <div style={{ fontSize: '13px', color: pickupMethod === 'delivery' ? '#4f46e5' : '#1e293b', marginBottom: '4px', fontWeight: '700' }}>
-                        🚚 Giao nhận tận nơi
-                      </div>
-                      <div style={{ fontSize: '11px', fontWeight: 500, color: '#64748b', lineHeight: 1.4 }}>
-                        ViVuCar giao xe tận nơi (+100.000đ)
-                      </div>
-                    </button>
-=======
             {/* Delivery Method Selection */}
             {!car.ownerId ? (
               <div className="delivery-method-card mt-4" style={{ marginTop: '20px' }}>
@@ -1013,47 +885,25 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                   <div>
                     <strong>Bằng lái xe đã xác thực!</strong>
                     <p>Bạn đã đủ điều kiện lái xe ô tô tự lái.</p>
->>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                   </div>
-
-                  {pickupMethod === 'delivery' && (
-                    <div style={{ marginTop: '14px' }}>
-                      <label style={{ display: 'block', fontSize: '11px', color: '#475569', marginBottom: '6px', fontWeight: 600 }}>
-                        Địa chỉ nhận xe chi tiết
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Nhập địa chỉ giao xe của bạn..."
-                        value={deliveryAddress}
-                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          borderRadius: '8px',
-                          border: '1px solid #cbd5e1',
-                          background: '#ffffff',
-                          color: '#0f172a',
-                          fontSize: '13px',
-                          outline: 'none',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
               ) : (
-                <div className="delivery-method-card mt-4" style={{ marginTop: '20px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px', padding: '16px' }}>
-                  <h5 style={{ fontSize: '13px', fontWeight: 800, color: '#0369a1', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    🔑 Hình thức nhận xe: Gặp chủ xe
-                  </h5>
-                  <p style={{ fontSize: '12.5px', color: '#0284c7', margin: 0, lineHeight: 1.5 }}>
-                    Đây là phương tiện được đăng ký cho thuê bởi Chủ xe cá nhân. Quý khách vui lòng di chuyển đến địa chỉ bãi đỗ của Chủ xe để nhận và kiểm tra xe trực tiếp.
-                  </p>
+                <div className="license-status-warning">
+                  <AlertTriangle size={20} className="text-warning" />
+                  <div style={{ flex: 1 }}>
+                    <strong>Cần xác thực bằng lái xe!</strong>
+                    <p>Luật cho thuê xe tự lái yêu cầu tải ảnh bằng lái để xác minh tư cách người lái.</p>
+
+                    <label className="upload-license-inline-btn mt-2">
+                      <Upload size={14} />
+                      <span>{licenseUploading ? 'Đang tải lên...' : 'Tải lên Bằng lái (Duyệt tự động ngay)'}</span>
+                      <input type="file" onChange={handleLicenseUpload} accept="image/*" style={{ display: 'none' }} disabled={licenseUploading} />
+                    </label>
+                  </div>
                 </div>
               )}
-<<<<<<< HEAD
+            </div>
 
-<<<<<<< HEAD
             {/* Hợp đồng mẫu & Đồng ý điều khoản (Yêu cầu 1.1) */}
             <div style={{
               background: '#f8fafc',
@@ -1141,10 +991,6 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
               <div>
                 <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.8, marginBottom: '4px' }}>
                   Phí giữ chỗ thanh toán ngay
-<<<<<<< HEAD
-=======
-=======
-=======
                 </div>
                 <div style={{ fontSize: '32px', fontWeight: 900, letterSpacing: '-0.5px' }}>
                   {formatCurrency(reservationFee)}
@@ -1159,78 +1005,68 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                 <div style={{ fontSize: '10px', opacity: 0.7, marginTop: '4px' }}>⏱ Hạn thanh toán: {formatTime(timeLeft)}</div>
               </div>
             </div>
->>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
 
->>>>>>> 57388984 (Update final version of Car Rental Platform)
-              {/* Cost Breakdown */}
-              <div className="cost-breakdown-card mt-4">
-                <h5>Chi tiết hóa đơn dự kiến</h5>
-                <div className="cost-row">
-                  <span>Phí thuê xe ({diffDaysStr})</span>
-                  <span>{formatCurrency(basePrice)}</span>
-<<<<<<< HEAD
->>>>>>> 3db0f021 (Fix merge conflicts in package.json after stash pop)
-=======
->>>>>>> 57388984 (Update final version of Car Rental Platform)
-                </div>
-                <div className="cost-row">
-                  <span>Bảo hiểm chuyến đi (Bắt buộc)</span>
-                  <span>{formatCurrency(50000)} x {Math.ceil(diffHours / 24)}</span>
-                </div>
-                <div className="cost-row">
-                  <span>Phí dịch vụ công nghệ</span>
-                  <span>{formatCurrency(serviceFee)}</span>
-                </div>
-                {pickupMethod === 'delivery' && (
-                  <div className="cost-row">
-                    <span>Phí giao nhận xe tận nơi</span>
-                    <span>{formatCurrency(deliveryFee)}</span>
+            {/* Payment Method Selector */}
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ fontSize: '12px', fontWeight: 800, color: '#475569', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                Chọn phương thức thanh toán giữ chỗ
+              </h4>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {/* Wallet Option */}
+                <button
+                  type="button"
+                  id="pay-method-wallet"
+                  style={{
+                    flex: 1, padding: '14px', borderRadius: '14px',
+                    border: paymentChoice === 'wallet' ? '2.5px solid #6366f1' : '1.5px solid #e2e8f0',
+                    background: paymentChoice === 'wallet' ? 'linear-gradient(135deg, #f5f3ff, #ede9fe)' : '#fff',
+                    cursor: 'pointer', transition: 'all 0.25s', textAlign: 'left',
+                    boxShadow: paymentChoice === 'wallet' ? '0 4px 16px rgba(99,102,241,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                    position: 'relative'
+                  }}
+                  onClick={() => setPaymentChoice('wallet')}
+                >
+                  {paymentChoice === 'wallet' && (
+                    <span style={{ position: 'absolute', top: '8px', right: '10px', background: '#6366f1', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#fff', fontWeight: 700 }}>✓</span>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '22px' }}>💼</span>
+                    <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: 750 }}>Ví ViVuCar</div>
                   </div>
-<<<<<<< HEAD
-                )}
-                <div className="cost-row" style={{ color: '#059669', fontWeight: 600 }}>
-                  <span>Đặt cọc bảo đảm (Thanh toán khi nhận xe)</span>
-                  <span>{formatCurrency(securityDeposit)}</span>
-                </div>
-                <hr className="cost-divider" />
-                <div className="cost-row total-row">
-                  <span>Tổng giá trị đơn thuê</span>
-                  <span className="text-primary">{formatCurrency(totalPayment)}</span>
-                </div>
-              </div>
-
-              {/* Driver License Verification status */}
-              <div className="license-verification-card mt-4">
-                {user.licenseStatus === 'verified' ? (
-                  <div className="license-status-success">
-                    <ShieldCheck size={20} className="text-success" />
-                    <div>
-                      <strong>Bằng lái xe đã xác thực!</strong>
-                      <p>Bạn đã đủ điều kiện lái xe ô tô tự lái.</p>
-=======
                   <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>
                     Số dư: <span style={{ color: walletBalance >= reservationFee ? '#10b981' : '#ef4444', fontWeight: 700, fontSize: '12px' }}>{formatCurrency(walletBalance)}</span>
                   </div>
                   {walletBalance < reservationFee && (
                     <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '4px', fontWeight: 600 }}>
                       ⚠ Thiếu {formatCurrency(reservationFee - walletBalance)}
->>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                     </div>
-                  </div>
-                ) : (
-                  <div className="license-status-warning">
-                    <AlertTriangle size={20} className="text-warning" />
-                    <div style={{ flex: 1 }}>
-                      <strong>Cần xác thực bằng lái xe!</strong>
-                      <p>Luật cho thuê xe tự lái yêu cầu tải ảnh bằng lái để xác minh tư cách người lái.</p>
+                  )}
+                </button>
 
-<<<<<<< HEAD
-                      <label className="upload-license-inline-btn mt-2">
-                        <Upload size={14} />
-                        <span>{licenseUploading ? 'Đang tải lên...' : 'Tải lên Bằng lái (Duyệt tự động ngay)'}</span>
-                        <input type="file" onChange={handleLicenseUpload} accept="image/*" style={{ display: 'none' }} disabled={licenseUploading} />
-                      </label>
-=======
+                {/* VietQR Option */}
+                <button
+                  type="button"
+                  id="pay-method-vietqr"
+                  style={{
+                    flex: 1, padding: '14px', borderRadius: '14px',
+                    border: paymentChoice === 'vietqr' ? '2.5px solid #6366f1' : '1.5px solid #e2e8f0',
+                    background: paymentChoice === 'vietqr' ? 'linear-gradient(135deg, #f5f3ff, #ede9fe)' : '#fff',
+                    cursor: 'pointer', transition: 'all 0.25s', textAlign: 'left',
+                    boxShadow: paymentChoice === 'vietqr' ? '0 4px 16px rgba(99,102,241,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                    position: 'relative'
+                  }}
+                  onClick={() => setPaymentChoice('vietqr')}
+                >
+                  {paymentChoice === 'vietqr' && (
+                    <span style={{ position: 'absolute', top: '8px', right: '10px', background: '#6366f1', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#fff', fontWeight: 700 }}>✓</span>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '22px' }}>🏧</span>
+                    <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: 750 }}>Chuyển khoản QR</div>
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>Quét mã VietQR chuyển khoản nhanh</div>
+                </button>
+
                 {/* VNPAY Option */}
                 <button
                   type="button"
@@ -1294,226 +1130,17 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                           Sao chép
                         </button>
                       </div>
->>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                     </div>
                   </div>
                 )}
-              </div>
 
-              {/* Step 1 Footer Action */}
-              <div className="booking-modal-footer mt-6">
-                <button type="button" className="btn btn-secondary" onClick={onClose}>Hủy bỏ</button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={
-                    user.licenseStatus !== 'verified' ||
-                    (pickupMethod === 'delivery' && !deliveryAddress.trim()) ||
-                    (pickupMethod === 'self' && !selfLocation && !manualPickupAddress.trim())
-                  }
-                  onClick={() => setStep(2)}
-                >
-                  Tiếp tục thanh toán giữ chỗ
-                </button>
-              </div>
-            </div>
-          )}
+                {/* Wallet Pay Flow */}
+                {paymentChoice === 'wallet' && (
+                  <div className="payment-card-sub white-card text-center">
+                    <h4 className="card-sub-title">Thanh toán bằng Ví ViVuCar</h4>
 
-          {/* Step 2: Payment Selector & Details */}
-          {step === 2 && (
-            <div className="booking-modal-body new-payment-layout">
+                    <div style={{ fontSize: '42px', marginBottom: '8px' }}>💼</div>
 
-<<<<<<< HEAD
-              {/* ===== RESERVATION PRICE HEADER ===== */}
-              <div style={{
-                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                borderRadius: '16px',
-                padding: '20px 24px',
-                marginBottom: '20px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                color: '#fff',
-                boxShadow: '0 8px 24px rgba(99,102,241,0.3)'
-              }}>
-                <div>
-                  <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.8, marginBottom: '4px' }}>
-                    Phí giữ chỗ thanh toán ngay
-                  </div>
-                  <div style={{ fontSize: '32px', fontWeight: 900, letterSpacing: '-0.5px' }}>
-                    {formatCurrency(500000)}
-                  </div>
-                  <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.8 }}>
-                    Khấu trừ khi thanh toán nhận xe. Phần còn lại {formatCurrency(totalPayment - 500000)} và cọc sẽ thanh toán lúc nhận xe.
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '11px', opacity: 0.8, marginBottom: '4px' }}>Mã đặt xe</div>
-                  <div style={{ fontSize: '15px', fontWeight: 800, fontFamily: 'monospace', background: 'rgba(255,255,255,0.15)', padding: '6px 12px', borderRadius: '8px' }}>{bookingId}</div>
-                  <div style={{ fontSize: '10px', opacity: 0.7, marginTop: '4px' }}>⏱ Hạn thanh toán: {formatTime(timeLeft)}</div>
-                </div>
-              </div>
-
-              {/* Payment Method Selector */}
-              <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ fontSize: '12px', fontWeight: 800, color: '#475569', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
-                  Chọn phương thức thanh toán giữ chỗ
-                </h4>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  {/* Wallet Option */}
-                  <button
-                    type="button"
-                    id="pay-method-wallet"
-                    style={{
-                      flex: 1, padding: '14px', borderRadius: '14px',
-                      border: paymentChoice === 'wallet' ? '2.5px solid #6366f1' : '1.5px solid #e2e8f0',
-                      background: paymentChoice === 'wallet' ? 'linear-gradient(135deg, #f5f3ff, #ede9fe)' : '#fff',
-                      cursor: 'pointer', transition: 'all 0.25s', textAlign: 'left',
-                      boxShadow: paymentChoice === 'wallet' ? '0 4px 16px rgba(99,102,241,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
-                      position: 'relative'
-                    }}
-                    onClick={() => setPaymentChoice('wallet')}
-                  >
-                    {paymentChoice === 'wallet' && (
-                      <span style={{ position: 'absolute', top: '8px', right: '10px', background: '#6366f1', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#fff', fontWeight: 700 }}>✓</span>
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '22px' }}>💼</span>
-                      <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: 750 }}>Ví ViVuCar</div>
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>
-                      Số dư: <span style={{ color: walletBalance >= 500000 ? '#10b981' : '#ef4444', fontWeight: 700, fontSize: '12px' }}>{formatCurrency(walletBalance)}</span>
-                    </div>
-                    {walletBalance < 500000 && (
-                      <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '4px', fontWeight: 600 }}>
-                        ⚠ Thiếu {formatCurrency(500000 - walletBalance)}
-                      </div>
-                    )}
-                  </button>
-
-                  {/* VietQR Option */}
-                  <button
-                    type="button"
-                    id="pay-method-vietqr"
-                    style={{
-                      flex: 1, padding: '14px', borderRadius: '14px',
-                      border: paymentChoice === 'vietqr' ? '2.5px solid #6366f1' : '1.5px solid #e2e8f0',
-                      background: paymentChoice === 'vietqr' ? 'linear-gradient(135deg, #f5f3ff, #ede9fe)' : '#fff',
-                      cursor: 'pointer', transition: 'all 0.25s', textAlign: 'left',
-                      boxShadow: paymentChoice === 'vietqr' ? '0 4px 16px rgba(99,102,241,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
-                      position: 'relative'
-                    }}
-                    onClick={() => setPaymentChoice('vietqr')}
-                  >
-                    {paymentChoice === 'vietqr' && (
-                      <span style={{ position: 'absolute', top: '8px', right: '10px', background: '#6366f1', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#fff', fontWeight: 700 }}>✓</span>
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '22px' }}>🏧</span>
-                      <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: 750 }}>Chuyển khoản QR</div>
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>Quét mã VietQR chuyển khoản nhanh</div>
-                  </button>
-
-                  {/* VNPAY Option */}
-                  <button
-                    type="button"
-                    id="pay-method-vnpay"
-                    style={{
-                      flex: 1, padding: '14px', borderRadius: '14px',
-                      border: paymentChoice === 'vnpay' ? '2.5px solid #6366f1' : '1.5px solid #e2e8f0',
-                      background: paymentChoice === 'vnpay' ? 'linear-gradient(135deg, #f5f3ff, #ede9fe)' : '#fff',
-                      cursor: 'pointer', transition: 'all 0.25s', textAlign: 'left',
-                      boxShadow: paymentChoice === 'vnpay' ? '0 4px 16px rgba(99,102,241,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
-                      position: 'relative'
-                    }}
-                    onClick={() => setPaymentChoice('vnpay')}
-                  >
-                    {paymentChoice === 'vnpay' && (
-                      <span style={{ position: 'absolute', top: '8px', right: '10px', background: '#6366f1', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#fff', fontWeight: 700 }}>✓</span>
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '22px' }}>💳</span>
-                      <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: 750 }}>Cổng VNPAY</div>
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>Ví điện tử / Thẻ ATM Việt Nam</div>
-                  </button>
-                </div>
-              </div>
-
-              <div className="payment-grid-columns">
-                {/* Left Column - Payment Details */}
-                <div className="payment-column-left">
-
-                  {/* VietQR Pay Flow */}
-                  {paymentChoice === 'vietqr' && (
-                    <div className="payment-card-sub white-card text-center" style={{ padding: '16px' }}>
-                      <h4 className="card-sub-title">Quét mã QR để chuyển phí giữ chỗ</h4>
-                      <p className="card-sub-description" style={{ color: '#6366f1', fontWeight: 700, fontSize: '12.5px', marginBottom: '10px' }}>
-                        Vui lòng chuyển khoản đúng số tiền phí giữ xe: <strong>500.000đ</strong>
-                      </p>
-
-                      <div className="vietqr-frame-box" style={{ padding: '8px', marginBottom: '10px' }}>
-                        <img src={vietQrUrl} alt="VietQR Payment Code" className="vietqr-image-render" style={{ width: '150px', height: '150px' }} />
-                        <div className="vietqr-napas-brand">napas 247 | 🏧 {sysConfig.bankName}</div>
-                      </div>
-
-                      <div className="bank-copyable-fields" style={{ gap: '6px' }}>
-                        <div className="copyable-field-row" style={{ padding: '6px 10px' }}>
-                          <div className="field-value-col">
-                            <span className="lbl">Nội dung CK:</span>
-                            <strong className="val text-orange" style={{ fontFamily: 'monospace', fontSize: '12px' }}>THUEXE {car.brand} {bookingId}</strong>
-                          </div>
-                          <button type="button" className="btn-copy-action" onClick={() => handleCopyText(`THUEXE ${car.brand} ${bookingId}`, 'Nội dung chuyển khoản')}>
-                            Sao chép
-                          </button>
-                        </div>
-
-                        <div className="copyable-field-row" style={{ padding: '6px 10px' }}>
-                          <div className="field-value-col">
-                            <span className="lbl">Số tài khoản:</span>
-                            <strong className="val" style={{ fontSize: '12px' }}>{sysConfig.bankAccountNumber}</strong>
-                          </div>
-                          <button type="button" className="btn-copy-action" onClick={() => handleCopyText(sysConfig.bankAccountNumber, 'Số tài khoản')}>
-                            Sao chép
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Wallet Pay Flow */}
-                  {paymentChoice === 'wallet' && (
-                    <div className="payment-card-sub white-card text-center">
-                      <h4 className="card-sub-title">Thanh toán bằng Ví ViVuCar</h4>
-
-                      <div style={{ fontSize: '42px', marginBottom: '8px' }}>💼</div>
-
-                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', margin: '10px 0', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                          <span style={{ color: '#64748b' }}>Phí giữ xe online (thanh toán ngay):</span>
-                          <strong style={{ color: '#6366f1' }}>{formatCurrency(500000)}</strong>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', borderTop: '1px solid #e2e8f0', paddingTop: '8px' }}>
-                          <span style={{ color: '#64748b' }}>Số dư ví hiện tại:</span>
-                          <strong style={{ color: walletBalance >= 500000 ? '#10b981' : '#ef4444' }}>{formatCurrency(walletBalance)}</strong>
-                        </div>
-                        {walletBalance >= 500000 && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                            <span style={{ color: '#64748b' }}>Số dư sau khi trừ:</span>
-                            <strong style={{ color: '#0f172a' }}>{formatCurrency(walletBalance - 500000)}</strong>
-                          </div>
-                        )}
-                      </div>
-
-                      {walletBalance < 500000 ? (
-                        <div className="alert-memo-warn text-red" style={{ background: '#fef2f2', borderColor: '#fca5a5', color: '#dc2626', margin: 0 }}>
-                          ⚠️ Số dư Ví không đủ. Cần thêm {formatCurrency(500000 - walletBalance)}. Vui lòng nạp thêm hoặc chọn VietQR.
-                        </div>
-                      ) : (
-                        <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', textAlign: 'center' }}>
-                          ✅ Số dư đủ thanh toán phí giữ chỗ. Bấm nút dưới để tiến hành.
-=======
                     <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', margin: '10px 0', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                         <span style={{ color: '#64748b' }}>Phí giữ xe online (thanh toán ngay):</span>
@@ -1527,94 +1154,40 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                           <span style={{ color: '#64748b' }}>Số dư sau khi trừ:</span>
                           <strong style={{ color: '#0f172a' }}>{formatCurrency(walletBalance - reservationFee)}</strong>
->>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                         </div>
                       )}
                     </div>
-                  )}
 
-<<<<<<< HEAD
-                  {/* VNPAY Pay Flow */}
-                  {paymentChoice === 'vnpay' && (
-                    <div className="payment-card-sub white-card text-center">
-                      <h4 className="card-sub-title">Thanh toán qua cổng VNPAY</h4>
-
-                      <div style={{ fontSize: '42px', marginBottom: '8px' }}>💳</div>
-
-                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', margin: '10px 0', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                          <span style={{ color: '#64748b' }}>Phí giữ chỗ online:</span>
-                          <strong style={{ color: '#0f172a' }}>{formatCurrency(500000)}</strong>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                          <span style={{ color: '#64748b' }}>Trạng thái:</span>
-                          <strong style={{ color: '#6366f1' }}>VNPAY Giả lập nhanh (Sandbox)</strong>
-                        </div>
-=======
                     {walletBalance < reservationFee ? (
                       <div className="alert-memo-warn text-red" style={{ background: '#fef2f2', borderColor: '#fca5a5', color: '#dc2626', margin: 0 }}>
                         ⚠️ Số dư Ví không đủ. Cần thêm {formatCurrency(reservationFee - walletBalance)}. Vui lòng nạp thêm hoặc chọn VietQR.
->>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                       </div>
-
-                      <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e3a8a', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: '500', textAlign: 'left', lineHeight: 1.4 }}>
-                        💡 Hệ thống sẽ giả lập giao dịch cổng thanh toán VNPAY siêu tốc để bạn kiểm thử luồng KYC khuôn mặt & Hợp đồng mà không cần thẻ thật.
+                    ) : (
+                      <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', textAlign: 'center' }}>
+                        ✅ Số dư đủ thanh toán phí giữ chỗ. Bấm nút dưới để tiến hành.
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
 
-                {/* Right Column - Order Summary */}
-                <div className="payment-column-right">
-                  <div className="payment-card-sub white-card text-left" style={{ padding: '16px' }}>
-                    <h4 className="card-sub-title text-center" style={{ fontSize: '14px', marginBottom: '10px', paddingBottom: '8px' }}>Tóm tắt hành trình</h4>
+                {/* VNPAY Pay Flow */}
+                {paymentChoice === 'vnpay' && (
+                  <div className="payment-card-sub white-card text-center">
+                    <h4 className="card-sub-title">Thanh toán qua cổng VNPAY</h4>
 
-                    <div className="car-preview-img-container" style={{ marginBottom: '10px' }}>
-                      <img src={car.image} alt={car.model} className="car-preview-image" style={{ height: '90px' }} />
-                    </div>
+                    <div style={{ fontSize: '42px', marginBottom: '8px' }}>💳</div>
 
-<<<<<<< HEAD
-                    <div className="rental-info-rows" style={{ gap: '8px' }}>
-                      <div className="info-row" style={{ fontSize: '12.5px', paddingBottom: '6px' }}>
-                        <span className="lbl">Khách thuê:</span>
-                        <strong className="val">{user.name}</strong>
-=======
                     <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', margin: '10px 0', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                         <span style={{ color: '#64748b' }}>Phí giữ chỗ online:</span>
                         <strong style={{ color: '#0f172a' }}>{formatCurrency(reservationFee)}</strong>
->>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                       </div>
-                      <div className="info-row" style={{ fontSize: '12.5px', paddingBottom: '6px' }}>
-                        <span className="lbl">Xe:</span>
-                        <strong className="val">{car.brand} {car.model}</strong>
-                      </div>
-                      <div className="info-row" style={{ fontSize: '12.5px', paddingBottom: '6px' }}>
-                        <span className="lbl">Thời gian:</span>
-                        <strong className="val" style={{ fontSize: '11px' }}>{pickupDate} ➔ {returnDate}</strong>
-                      </div>
-                      <div className="info-row" style={{ fontSize: '12.5px', paddingBottom: '6px' }}>
-                        <span className="lbl">Số ngày:</span>
-                        <strong className="val">{diffDaysStr}</strong>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <span style={{ color: '#64748b' }}>Trạng thái:</span>
+                        <strong style={{ color: '#6366f1' }}>VNPAY Giả lập nhanh (Sandbox)</strong>
                       </div>
                     </div>
 
-<<<<<<< HEAD
-                    {/* Chi tiết hóa đơn nhận xe */}
-                    <div style={{ marginTop: '10px', borderTop: '1px dashed #e2e8f0', paddingTop: '10px' }}>
-                      <div style={{ fontSize: '12px', display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <span style={{ color: '#64748b' }}>Tổng giá trị đơn thuê:</span>
-                        <strong>{formatCurrency(totalPayment)}</strong>
-                      </div>
-                      <div style={{ fontSize: '12px', display: 'flex', justifyContent: 'space-between', marginBottom: '4px', color: '#10b981', fontWeight: 600 }}>
-                        <span style={{ color: '#047857' }}>Đã thanh toán giữ chỗ:</span>
-                        <span>-{formatCurrency(500000)}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 800, borderTop: '1px solid #e2e8f0', paddingTop: '8px', marginTop: '6px' }}>
-                        <span style={{ color: '#0f172a' }}>Còn lại trả khi nhận xe:</span>
-                        <span style={{ color: '#e11d48' }}>{formatCurrency(totalPayment - 500000)}</span>
-                      </div>
-=======
                     <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e3a8a', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: '500', textAlign: 'left', lineHeight: 1.4 }}>
                       💡 Hệ thống sẽ giả lập giao dịch cổng thanh toán VNPAY siêu tốc để bạn kiểm thử luồng KYC khuôn mặt & Hợp đồng mà không cần thẻ thật.
                     </div>
@@ -1663,51 +1236,12 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 800, borderTop: '1px solid #e2e8f0', paddingTop: '8px', marginTop: '6px' }}>
                       <span style={{ color: '#0f172a' }}>Còn lại trả khi nhận xe:</span>
                       <span style={{ color: '#e11d48' }}>{formatCurrency(remainingPayment)}</span>
->>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* Step 2 Footer Action */}
-              <div className="booking-modal-footer mt-6" style={{ marginTop: '24px' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setStep(1)}
-                  disabled={loading}
-                >
-                  Quay lại
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleProcessReservationPayment}
-                  disabled={loading || (paymentChoice === 'wallet' && walletBalance < 500000)}
-                >
-                  {paymentChoice === 'wallet' ? (
-                    `Xác nhận trừ 500.000đ từ Ví`
-                  ) : paymentChoice === 'vnpay' ? (
-                    'Thanh toán qua VNPAY (Giả lập)'
-                  ) : (
-                    'Xác nhận đã chuyển khoản 500k'
-                  )}
-                </button>
-              </div>
             </div>
-          )}
 
-<<<<<<< HEAD
-          {/* Step 2a: Biometric Face Scan */}
-          {step === 'face_scan' && (
-            <div className="booking-modal-body text-center">
-              <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
-                Xác Thực Biometric FaceID
-              </h4>
-              <p style={{ fontSize: '13.5px', color: '#475569', marginBottom: '20px', lineHeight: 1.6 }}>
-                Vui lòng giữ đầu thẳng và đặt khuôn mặt ở giữa vòng tròn xanh lớn để chụp ảnh đối khớp sinh trắc học với ảnh FaceID gốc của bạn.
-              </p>
-=======
             {/* Step 2 Footer Action */}
             <div className="booking-modal-footer mt-6" style={{ marginTop: '24px' }}>
               <button 
@@ -1735,114 +1269,123 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
             </div>
           </div>
         )}
->>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
 
-              <div style={{ position: 'relative', width: '300px', height: '300px', margin: '0 auto 24px auto' }}>
-                {/* Circular Camera Frame */}
-                <div style={{
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: '50%',
-                  border: '5px solid #009698',
-                  overflow: 'hidden',
-                  background: '#0f172a',
-                  boxShadow: '0 8px 32px rgba(0, 150, 152, 0.3)',
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  {faceScanStep === 'idle' && (
-                    <div style={{ color: '#94a3b8', fontSize: '13px', padding: '20px' }}>
-                      Camera chưa sẵn sàng
-                    </div>
-                  )}
+        {/* Step 2a: Biometric Face Scan */}
+        {step === 'face_scan' && (
+          <div className="booking-modal-body text-center">
+            <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
+              Xác Thực Biometric FaceID
+            </h4>
+            <p style={{ fontSize: '13.5px', color: '#475569', marginBottom: '20px', lineHeight: 1.6 }}>
+              Vui lòng giữ đầu thẳng và đặt khuôn mặt ở giữa vòng tròn xanh lớn để chụp ảnh đối khớp sinh trắc học với ảnh FaceID gốc của bạn.
+            </p>
 
-                  {(faceScanStep === 'streaming' || faceScanStep === 'countdown') && (
-                    <video
-                      ref={faceVideoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        transform: 'scaleX(-1)'
-                      }}
-                    />
-                  )}
-
-                  {faceScanStep === 'countdown' && (
-                    <div style={{
-                      position: 'absolute',
-                      top: 0, left: 0, right: 0, bottom: 0,
-                      background: 'rgba(15, 23, 42, 0.4)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#ffffff',
-                      fontSize: '64px',
-                      fontWeight: 900,
-                      textShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                    }}>
-                      {faceCountdown}
-                    </div>
-                  )}
-
-                  {faceScanStep === 'captured' && capturedFace && (
-                    <img
-                      src={capturedFace}
-                      alt="Captured face"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  )}
-
-                  {faceScanStep === 'verifying' && (
-                    <div style={{
-                      position: 'absolute',
-                      top: 0, left: 0, right: 0, bottom: 0,
-                      background: 'rgba(15, 23, 42, 0.7)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#ffffff',
-                      gap: '12px'
-                    }}>
-                      <div style={{
-                        width: '32px',
-                        height: '32px',
-                        border: '3px solid rgba(255,255,255,0.3)',
-                        borderTopColor: '#ffffff',
-                        borderRadius: '50%',
-                        animation: 'spin 1s linear infinite'
-                      }}></div>
-                      <span style={{ fontSize: '13px', fontWeight: 600 }}>Đang so khớp bằng AI...</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Scanning Laser Line Effect */}
+            <div style={{ position: 'relative', width: '300px', height: '300px', margin: '0 auto 24px auto' }}>
+              {/* Circular Camera Frame */}
+              <div style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: '50%',
+                border: '5px solid #009698',
+                overflow: 'hidden',
+                background: '#0f172a',
+                boxShadow: '0 8px 32px rgba(0, 150, 152, 0.3)',
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {faceScanStep === 'idle' && (
+                  <div style={{ color: '#94a3b8', fontSize: '13px', padding: '20px' }}>
+                    Camera chưa sẵn sàng
+                  </div>
+                )}
+                
                 {(faceScanStep === 'streaming' || faceScanStep === 'countdown') && (
+                  <video
+                    ref={faceVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      transform: 'scaleX(-1)'
+                    }}
+                  />
+                )}
+
+                {faceScanStep === 'countdown' && (
                   <div style={{
                     position: 'absolute',
-                    top: '10%',
-                    left: 0,
-                    width: '100%',
-                    height: '3px',
-                    background: '#10b981',
-                    boxShadow: '0 0 8px #10b981, 0 0 15px #10b981',
-                    borderRadius: '50%',
-                    animation: 'scanLaser 2s linear infinite',
-                    zIndex: 2
-                  }} />
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(15, 23, 42, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    fontSize: '64px',
+                    fontWeight: 900,
+                    textShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                  }}>
+                    {faceCountdown}
+                  </div>
+                )}
+
+                {faceScanStep === 'captured' && capturedFace && (
+                  <img
+                    src={capturedFace}
+                    alt="Captured face"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                )}
+
+                {faceScanStep === 'verifying' && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(15, 23, 42, 0.7)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    gap: '12px'
+                  }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      border: '3px solid rgba(255,255,255,0.3)',
+                      borderTopColor: '#ffffff',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}></div>
+                    <span style={{ fontSize: '13px', fontWeight: 600 }}>Đang so khớp bằng AI...</span>
+                  </div>
                 )}
               </div>
 
-              {/* Action buttons */}
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '20px' }}>
-                {(faceScanStep === 'idle' || faceScanStep === 'captured') && (
+              {/* Scanning Laser Line Effect */}
+              {(faceScanStep === 'streaming' || faceScanStep === 'countdown') && (
+                <div style={{
+                  position: 'absolute',
+                  top: '10%',
+                  left: 0,
+                  width: '100%',
+                  height: '3px',
+                  background: '#10b981',
+                  boxShadow: '0 0 8px #10b981, 0 0 15px #10b981',
+                  borderRadius: '50%',
+                  animation: 'scanLaser 2s linear infinite',
+                  zIndex: 2
+                }} />
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '20px' }}>
+              {(faceScanStep === 'idle' || faceScanStep === 'captured') && (
                 <button
                   type="button"
                   className="btn btn-primary"
@@ -1968,76 +1511,80 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                   ✍ Vẽ chữ ký tay của bạn vào khung bên dưới:
                 </span>
                 {hasSigned && (
->>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
                   <button
                     type="button"
-                    className="btn btn-primary"
-                    onClick={startFaceScan}
-                    style={{ background: '#009698', borderColor: '#009698' }}
+                    onClick={clearSignature}
+                    style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
                   >
-                    📸 Kích hoạt Camera Quét mặt
-                  </button>
-                )}
-
-                {faceScanStep === 'streaming' && (
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleStartCountdown}
-                    style={{ background: '#10b981', borderColor: '#10b981' }}
-                  >
-                    ⚡ Chụp ảnh xác thực (Hẹn giờ 3s)
-                  </button>
-                )}
-
-                {faceScanStep === 'captured' && (
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleVerifyFace}
-                    disabled={loading}
-                    style={{ background: '#10b981', borderColor: '#10b981' }}
-                  >
-                    {loading ? 'Đang so khớp...' : '✓ Xác thực & Tiếp tục ký hợp đồng'}
+                    🗑 Xóa ký lại
                   </button>
                 )}
               </div>
 
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontSize: '12.5px', color: '#64748b', textAlign: 'left', lineHeight: 1.5 }}>
-                💡 <strong>Lưu ý đối chiếu:</strong> Ảnh sẽ được so khớp với ảnh FaceID mà bạn đăng ký lúc KYC. Nếu bạn chưa KYC khuôn mặt, hệ thống sẽ tự động sử dụng ảnh chụp này làm FaceID ký kết hợp đồng.
-              </div>
-
-              {/* Step Footer Action */}
-              <div className="booking-modal-footer mt-6" style={{ marginTop: '24px' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    stopFaceScanStream();
-                    setStep(2);
+              <div style={{
+                background: '#f8fafc',
+                border: '2px dashed #cbd5e1',
+                borderRadius: '12px',
+                height: '110px',
+                position: 'relative',
+                overflow: 'hidden',
+                touchAction: 'none'
+              }}>
+                <canvas
+                  ref={signatureCanvasRef}
+                  onMouseDown={startDrawing}
+                  onMouseMove={draw}
+                  onMouseUp={stopDrawing}
+                  onMouseLeave={stopDrawing}
+                  onTouchStart={startDrawing}
+                  onTouchMove={draw}
+                  onTouchEnd={stopDrawing}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'block',
+                    cursor: 'crosshair'
                   }}
-                  disabled={loading}
-                >
-                  Quay lại
-                </button>
-                <div></div>
+                />
+                {!hasSigned && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    pointerEvents: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#94a3b8',
+                    fontSize: '13px'
+                  }}>
+                    Dùng chuột hoặc tay (màn cảm ứng) vẽ chữ ký của bạn tại đây
+                  </div>
+                )}
               </div>
             </div>
-          )}
 
-          {/* Step 2b: Read & Sign Electronic Contract */}
-          {step === 'contract' && (
-            <div className="booking-modal-body">
-              <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>
-                Hợp Đồng Thuê Xe Tự Lái Điện Tử
-              </h4>
-              <p style={{ fontSize: '12.5px', color: '#64748b', marginBottom: '14px' }}>
-                Vui lòng kiểm tra kỹ hợp đồng, tích chọn các ô cam kết và ký tên trên bảng vẽ chữ ký số.
-              </p>
+            {/* Step Footer Action */}
+            <div className="booking-modal-footer mt-6" style={{ marginTop: '24px' }}>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={() => setStep('face_scan')}
+                disabled={loading}
+              >
+                Quay lại
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleBookingCompletion}
+                disabled={loading || !agreement1 || !agreement2 || !agreement3 || !hasSigned}
+              >
+                {loading ? 'Đang xác thực và tạo đơn...' : '✓ Ký hợp đồng & Hoàn tất'}
+              </button>
+            </div>
+          </div>
+        )}
 
-<<<<<<< HEAD
-              {/* Contract content paper box */}
-=======
         {/* Step 3: Success Screen */}
         {step === 3 && (
           <div className="booking-modal-body text-center">
@@ -2136,290 +1683,54 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
               alignItems: 'center',
               gap: '14px',
             }}>
->>>>>>> e712c70a (Fix bugs: hide active cars from find catalog, fix 30% reservation fee calculations, update DB total_amount, fix UI bugs)
               <div style={{
-                background: '#fafafa',
-                border: '1px solid #e2e8f0',
-                borderRadius: '12px',
-                padding: '16px',
-                height: '220px',
-                overflowY: 'auto',
-                fontFamily: 'monospace',
-                fontSize: '11.5px',
-                lineHeight: 1.5,
-                whiteSpace: 'pre-wrap',
-                color: '#334155',
-                boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.05)',
-                marginBottom: '16px'
+                width: 40, height: 40, borderRadius: '10px',
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
               }}>
-                {getContractText()}
+                <FileText size={18} color="#fff" />
               </div>
-
-              {/* Verification & Agreements */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-                <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: 'pointer', fontSize: '12.5px', color: '#334155', userSelect: 'none' }}>
-                  <input
-                    type="checkbox"
-                    checked={agreement1}
-                    onChange={(e) => setAgreement1(e.target.checked)}
-                    style={{ marginTop: '3px', cursor: 'pointer' }}
-                  />
-                  <span>Tôi xác nhận thông tin thuê xe và thông tin cá nhân trên là hoàn toàn chính xác.</span>
-                </label>
-
-                <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: 'pointer', fontSize: '12.5px', color: '#334155', userSelect: 'none' }}>
-                  <input
-                    type="checkbox"
-                    checked={agreement2}
-                    onChange={(e) => setAgreement2(e.target.checked)}
-                    style={{ marginTop: '3px', cursor: 'pointer' }}
-                  />
-                  <span>Tôi đã đọc toàn bộ các điều khoản và quy chế cho thuê xe tự lái của ViVuCar.</span>
-                </label>
-
-                <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: 'pointer', fontSize: '12.5px', color: '#334155', userSelect: 'none' }}>
-                  <input
-                    type="checkbox"
-                    checked={agreement3}
-                    onChange={(e) => setAgreement3(e.target.checked)}
-                    style={{ marginTop: '3px', cursor: 'pointer' }}
-                  />
-                  <span>Tôi cam kết chịu trách nhiệm bảo quản xe và thanh toán số tiền còn lại {formatCurrency(totalPayment - 500000)} kèm cọc khi nhận xe.</span>
-                </label>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#3730a3', marginBottom: '2px' }}>Hợp đồng điện tử đã được tạo</div>
+                <div style={{ fontSize: '11.5px', color: '#6366f1' }}>Xem và ký hợp đồng để xác nhận chuyến đi chính thức</div>
               </div>
-
-              {/* Signature Pad */}
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ display: 'flex', justifycontent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1e293b' }}>
-                    ✍ Vẽ chữ ký tay của bạn vào khung bên dưới:
-                  </span>
-                  {hasSigned && (
-                    <button
-                      type="button"
-                      onClick={clearSignature}
-                      style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
-                    >
-                      🗑 Xóa ký lại
-                    </button>
-                  )}
-                </div>
-
-                <div style={{
-                  background: '#f8fafc',
-                  border: '2px dashed #cbd5e1',
-                  borderRadius: '12px',
-                  height: '110px',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  touchAction: 'none'
-                }}>
-                  <canvas
-                    ref={signatureCanvasRef}
-                    onMouseDown={startDrawing}
-                    onMouseMove={draw}
-                    onMouseUp={stopDrawing}
-                    onMouseLeave={stopDrawing}
-                    onTouchStart={startDrawing}
-                    onTouchMove={draw}
-                    onTouchEnd={stopDrawing}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'block',
-                      cursor: 'crosshair'
-                    }}
-                  />
-                  {!hasSigned && (
-                    <div style={{
-                      position: 'absolute',
-                      top: 0, left: 0, right: 0, bottom: 0,
-                      pointerEvents: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#94a3b8',
-                      fontSize: '13px'
-                    }}>
-                      Dùng chuột hoặc tay (màn cảm ứng) vẽ chữ ký của bạn tại đây
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Step Footer Action */}
-              <div className="booking-modal-footer mt-6" style={{ marginTop: '24px' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setStep('face_scan')}
-                  disabled={loading}
-                >
-                  Quay lại
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleBookingCompletion}
-                  disabled={loading || !agreement1 || !agreement2 || !agreement3 || !hasSigned}
-                >
-                  {loading ? 'Đang xác thực và tạo đơn...' : '✓ Ký hợp đồng & Hoàn tất'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Success Screen */}
-          {step === 3 && (
-            <div className="booking-modal-body text-center">
-              <CheckCircle2 className="success-lottie-icon text-success mb-2" size={60} style={{ display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
-              <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#10b981', marginBottom: '8px' }}>Thuê Xe Thành Công!</h2>
-              <p className="subtitle mt-1" style={{ color: '#64748b', fontSize: '13.5px' }}>Hợp đồng thuê xe điện tử của bạn đã được xác thực ký số thành công.</p>
-
-              {/* Premium Printable Bill Receipt */}
-              <div className="printable-receipt-card mt-4" style={{ padding: '24px 20px', marginTop: '16px' }}>
-                <div className="receipt-header">
-                  <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', textAlign: 'center', marginBottom: '12px' }}>BIÊN LAI ĐẶT XE & HỢP ĐỒNG ĐIỆN TỬ</h4>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b' }}>
-                    <span>Mã đặt xe: <strong>{bookingId}</strong></span>
-                    <span>Ngày: {new Date().toLocaleDateString('vi-VN')}</span>
-                  </div>
-                </div>
-                <hr className="receipt-line" style={{ margin: '10px 0' }} />
-
-                <div className="receipt-grid" style={{ gap: '6px' }}>
-                  <div className="receipt-row">
-                    <span>Khách hàng:</span>
-                    <strong>{user.name}</strong>
-                  </div>
-                  <div className="receipt-row">
-                    <span>Mẫu xe:</span>
-                    <strong>{car.brand} {car.model}</strong>
-                  </div>
-                  <div className="receipt-row">
-                    <span>Thời gian thuê:</span>
-                    <strong style={{ fontSize: '11px' }}>{pickupDate} ➔ {returnDate} ({diffDaysStr})</strong>
-                  </div>
-                  <div className="receipt-row">
-                    <span>Vị trí nhận xe:</span>
-                    <strong style={{ textAlign: 'right' }}>{displayLocation}</strong>
-                  </div>
-                  <div className="receipt-row">
-                    <span>Thanh toán online (Giữ chỗ):</span>
-                    <strong style={{ color: '#10b981' }}>{formatCurrency(500000)}</strong>
-                  </div>
-                  <div className="receipt-row">
-                    <span>Tiền cọc xe tự lái (Trả khi nhận):</span>
-                    <strong>{formatCurrency(securityDeposit)}</strong>
-                  </div>
-                  <div className="receipt-row">
-                    <span>Phần còn lại (Trả khi nhận):</span>
-                    <strong style={{ color: '#e11d48' }}>{formatCurrency(totalPayment - 500000)}</strong>
-                  </div>
-
-                  {/* Visualizing Face Scan and Signature in Receipt */}
-                  <div style={{ display: 'flex', gap: '12px', marginTop: '12px', borderTop: '1px dashed #cbd5e1', paddingTop: '12px', justifyContent: 'center' }}>
-                    {capturedFace && (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <span style={{ fontSize: '9px', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>ẢNH FACEID XÁC THỰC</span>
-                        <div style={{
-                          width: '64px',
-                          height: '64px',
-                          borderRadius: '50%',
-                          overflow: 'hidden',
-                          border: '2px solid #10b981',
-                        }}>
-                          <img src={capturedFace} alt="Face validation" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
-                      </div>
-                    )}
-
-                    {signatureCanvasRef.current && (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: '9px', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>CHỮ KÝ BÊN THUÊ XE (BÊN B)</span>
-                        <div style={{
-                          width: '120px',
-                          height: '48px',
-                          border: '1px dashed #cbd5e1',
-                          borderRadius: '6px',
-                          background: '#f8fafc',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          overflow: 'hidden'
-                        }}>
-                          <img src={signatureCanvasRef.current.toDataURL('image/png')} alt="Handwritten Signature" style={{ maxWidth: '100%', maxHeight: '100%' }} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                </div>
-
-                <div className="receipt-stamp" style={{ bottom: '90px', right: '16px', fontSize: '9.5px', border: '2.5px double #10b981' }}>HỢP ĐỒNG ĐÃ KÝ SỐ ✓</div>
-              </div>
-
-              {/* Contract CTA */}
-              <div style={{
-                margin: '20px auto 0',
-                maxWidth: '420px',
-                background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
-                border: '1.5px solid #c4b5fd',
-                borderRadius: '14px',
-                padding: '16px 20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '14px',
-              }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  <FileText size={18} color="#fff" />
-                </div>
-                <div style={{ flex: 1, textAlign: 'left' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#3730a3', marginBottom: '2px' }}>Hợp đồng điện tử đã được tạo</div>
-                  <div style={{ fontSize: '11.5px', color: '#6366f1' }}>Xem và ký hợp đồng để xác nhận chuyến đi chính thức</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowContractModal(true)}
-                  style={{
-                    padding: '8px 16px',
-                    background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '12.5px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    boxShadow: '0 4px 12px rgba(99,102,241,0.35)',
-                  }}
-                >
-                  Xem hợp đồng
-                </button>
-              </div>
-
               <button
                 type="button"
-                className="btn btn-primary mt-6"
-                onClick={() => {
-                  setCurrentTab('my-trips');
-                  onClose();
+                onClick={() => setShowContractModal(true)}
+                style={{
+                  padding: '8px 16px',
+                  background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 4px 12px rgba(99,102,241,0.35)',
                 }}
-                style={{ width: '100%' }}
               >
-                Xem chuyến đi & Hợp đồng đã ký
+                Xem hợp đồng
               </button>
             </div>
-          )}
-        </div>
-      </div>
 
-<<<<<<< HEAD
+            <button
+              type="button"
+              className="btn btn-primary mt-6"
+              onClick={() => {
+                setCurrentTab('my-trips');
+                onClose();
+              }}
+              style={{ width: '100%' }}
+            >
+              Xem chuyến đi & Hợp đồng đã ký
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+
     {/* Contract Modal overlay */}
     {showContractModal && createdBookingId && (
       <ContractModal
@@ -2474,16 +1785,6 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
         </div>
       </div>
     )}
-=======
-      {/* Contract Modal overlay */}
-      {showContractModal && createdBookingId && (
-        <ContractModal
-          bookingId={createdBookingId}
-          user={user}
-          onClose={() => setShowContractModal(false)}
-        />
-      )}
->>>>>>> 57388984 (Update final version of Car Rental Platform)
     </>
   );
 };
@@ -3322,6 +2623,7 @@ const injectBookingStyles = () => {
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
     /* ── Sample Contract Overlay ── */
     .cm2-overlay {
       position: fixed;
