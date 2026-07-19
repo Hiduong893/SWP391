@@ -21,6 +21,7 @@ import { SimulatedInbox } from './components/SimulatedInbox';
 import { ChatbotWidget } from './components/ChatbotWidget';
 import { Blog } from './pages/Blog/Blog';
 import { BlogDetail } from './pages/Blog/BlogDetail';
+import { Recruitment } from './pages/Recruitment/Recruitment';
 
 import { api } from './utils/api';
 import { useToast } from './components/Toast';
@@ -253,6 +254,12 @@ function App() {
                   setSelectedBlogPost(post);
                   setCurrentTab('blog-detail');
                 }}
+              />
+            )}
+
+            {currentTab === 'recruitment' && (
+              <Recruitment
+                setCurrentTab={handleSetTabOrModal}
               />
             )}
 
