@@ -56,6 +56,7 @@ export const Register = ({ setCurrentTab }) => {
             <input
               type="text"
               className="form-input"
+              style={{ paddingLeft: '42px' }}
               placeholder="Nguyễn Văn A"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -71,6 +72,7 @@ export const Register = ({ setCurrentTab }) => {
             <input
               type="email"
               className="form-input"
+              style={{ paddingLeft: '42px' }}
               placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -86,7 +88,7 @@ export const Register = ({ setCurrentTab }) => {
             <input
               type={showPassword ? 'text' : 'password'}
               className="form-input"
-              style={{ paddingRight: '42px' }}
+              style={{ paddingLeft: '42px', paddingRight: '42px' }}
               placeholder="Ít nhất 6 ký tự"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -123,7 +125,7 @@ export const Register = ({ setCurrentTab }) => {
             <input
               type={showConfirmPassword ? 'text' : 'password'}
               className="form-input"
-              style={{ paddingRight: '42px' }}
+              style={{ paddingLeft: '42px', paddingRight: '42px' }}
               placeholder="Trùng khớp mật khẩu trên"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}

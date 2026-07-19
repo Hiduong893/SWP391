@@ -43,7 +43,7 @@ export const CashFlowTab = ({
                     </td>
                     <td className="text-bold-cell">{b.carName}</td>
                     <td className="text-purple-cell">{formatCurrency(b.totalPrice)}</td>
-                    <td className="text-orange-cell font-bold">5.000.000đ</td>
+                    <td className="text-orange-cell font-bold">500.000đ</td>
                     <td>
                       <span className={`kyc-status-label ${b.depositStatus === 'refunded' ? 'verified' : b.depositStatus === 'withheld' ? 'rejected' : 'pending'}`}>
                         {b.depositStatus === 'paid' ? 'Đang giữ cọc' : b.depositStatus === 'refunded' ? 'Đã hoàn cọc 100%' : b.depositStatus === 'withheld' ? 'Đã thu cọc' : 'Chưa cọc'}

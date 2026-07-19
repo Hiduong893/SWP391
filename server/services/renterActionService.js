@@ -9,23 +9,25 @@ const getDaysUntilPickup = (pickupDate) => {
   return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 };
 
-const applyRefundPolicy = (daysUntilPickup) => {
+// depositAmount: actual reservation fee paid (e.g. 30% of totalPrice)
+const applyRefundPolicy = (daysUntilPickup, depositAmount) => {
   const policies = [
-    { minDays: 7, refundPercent: 100, label: 'Hoàn 100% (Hủy sớm trước ≥7 ngày)' },
-    { minDays: 3, refundPercent: 50,  label: 'Hoàn 50%  (Hủy trước 3-6 ngày)'     },
-    { minDays: 1, refundPercent: 0,   label: 'Không hoàn (Hủy trễ, 1-2 ngày)'     },
-    { minDays: 0, refundPercent: 0,   label: 'Không thể hủy (Đã qua ngày khởi hành)' },
+    { minDays: 7, refundPercent: 100, label: 'Ho\u00e0n 100% (H\u1ee7y s\u1edbm tr\u01b0\u1edbc \u22657 ng\u00e0y)' },
+    { minDays: 3, refundPercent: 50,  label: 'Ho\u00e0n 50%  (H\u1ee7y tr\u01b0\u1edbc 3-6 ng\u00e0y)'     },
+    { minDays: 1, refundPercent: 0,   label: 'Kh\u00f4ng ho\u00e0n (H\u1ee7y tr\u1ec5, 1-2 ng\u00e0y)'     },
+    { minDays: 0, refundPercent: 0,   label: 'Kh\u00f4ng th\u1ec3 h\u1ee7y (\u0110\u00e3 qua ng\u00e0y kh\u1eedi h\u00e0nh)' },
   ];
+  const amt = Number(depositAmount) || 0;
   for (const policy of policies) {
     if (daysUntilPickup >= policy.minDays) {
       return {
         refundPercent: policy.refundPercent,
-        refundAmount: Math.floor((500000 * policy.refundPercent) / 100),
+        refundAmount: Math.floor((amt * policy.refundPercent) / 100),
         policyLabel: policy.label
       };
     }
   }
-  return { refundPercent: 0, refundAmount: 0, policyLabel: 'Không hoàn cọc' };
+  return { refundPercent: 0, refundAmount: 0, policyLabel: 'Kh\u00f4ng ho\u00e0n c\u1ecdc' };
 };
 
 export const renterActionService = {
@@ -37,29 +39,47 @@ export const renterActionService = {
       .query('SELECT * FROM Booking WHERE booking_id = @bookingId AND renter_id = @userId');
     
     if (bookingRes.recordset.length === 0) {
-      return { canCancel: false, message: 'Chuyến đi không tồn tại.' };
+      return { canCancel: false, message: 'Chuy\u1ebfn \u0111i kh\u00f4ng t\u1ed3n t\u1ea1i.' };
     }
     const booking = bookingRes.recordset[0];
     const cancellableStatuses = ['Pending', 'Approved'];
     if (!cancellableStatuses.includes(booking.status)) {
-      return { canCancel: false, message: `Không thể hủy chuyến đi ở trạng thái: ${booking.status}.` };
+      return { canCancel: false, message: `Kh\u00f4ng th\u1ec3 h\u1ee7y chuy\u1ebfn \u0111i \u1edf tr\u1ea1ng th\u00e1i: ${booking.status}.` };
+    }
+
+    // Actual reservation fee stored in DB (deposit_amount column stores 30% paid)
+    const depositAmount = Number(booking.deposit_amount) || 0;
+
+    // If owner hasn't approved yet (status = 'Pending'), allow free cancellation with full refund
+    if (booking.status === 'Pending') {
+      return {
+        canCancel: true,
+        isPendingOwner: true,
+        daysUntilPickup: getDaysUntilPickup(booking.start_datetime),
+        depositAmount,
+        refundAmount: depositAmount,
+        refundPercent: 100,
+        policyLabel: 'Ho\u00e0n 100% (Ch\u1ee7 xe ch\u01b0a duy\u1ec7t \u2014 h\u1ee7y mi\u1ec5n ph\u00ed)',
+        message: `H\u1ee7y mi\u1ec5n ph\u00ed v\u00ec ch\u1ee7 xe ch\u01b0a duy\u1ec7t. Ho\u00e0n to\u00e0n b\u1ed9: ${depositAmount.toLocaleString('vi-VN')} VND.`
+      };
     }
 
     const daysUntilPickup = getDaysUntilPickup(booking.start_datetime);
     if (daysUntilPickup < 0) {
-      return { canCancel: false, message: 'Đã qua ngày nhận xe.', daysUntilPickup };
+      return { canCancel: false, message: '\u0110\u00e3 qua ng\u00e0y nh\u1eadn xe.', daysUntilPickup };
     }
 
-    const { refundPercent, refundAmount, policyLabel } = applyRefundPolicy(daysUntilPickup);
+    const { refundPercent, refundAmount, policyLabel } = applyRefundPolicy(daysUntilPickup, depositAmount);
 
     return {
       canCancel: true,
+      isPendingOwner: false,
       daysUntilPickup,
-      depositAmount: 500000,
+      depositAmount,
       refundAmount,
       refundPercent,
       policyLabel,
-      message: `Nếu hủy ngay, bạn sẽ được hoàn: ${refundAmount.toLocaleString('vi-VN')} VND (${refundPercent}% phí giữ chỗ).`
+      message: `N\u1ebfu h\u1ee7y ngay, b\u1ea1n s\u1ebd \u0111\u01b0\u1ee3c ho\u00e0n: ${refundAmount.toLocaleString('vi-VN')} VND (${refundPercent}% ph\u00ed gi\u1eef ch\u1ed7).`
     };
   },
 
@@ -78,22 +98,32 @@ export const renterActionService = {
       `);
     
     if (bookingRes.recordset.length === 0) {
-      throw new Error('Không tìm thấy chuyến đi.');
+      throw new Error('Kh\u00f4ng t\u00ecm th\u1ea5y chuy\u1ebfn \u0111i.');
     }
     const booking = bookingRes.recordset[0];
     if (booking.status === 'Cancelled') {
-      throw new Error('Chuyến đi này đã được hủy trước đó.');
+      throw new Error('Chuy\u1ebfn \u0111i n\u00e0y \u0111\u00e3 \u0111\u01b0\u1ee3c h\u1ee7y tr\u01b0\u1edbc \u0111\u00f3.');
     }
     if (booking.status === 'Completed') {
-      throw new Error('Hành trình đã kết thúc, không thể hủy.');
+      throw new Error('H\u00e0nh tr\u00ecnh \u0111\u00e3 k\u1ebft th\u00fac, kh\u00f4ng th\u1ec3 h\u1ee7y.');
     }
 
-    const daysUntilPickup = getDaysUntilPickup(booking.start_datetime);
-    if (daysUntilPickup < 0) {
-      throw new Error('Ngày nhận xe đã qua, không thể hủy chuyến đi này.');
-    }
+    const depositAmount = Number(booking.deposit_amount) || 0;
 
-    const { refundPercent, refundAmount, policyLabel } = applyRefundPolicy(daysUntilPickup);
+    let refundPercent, refundAmount, policyLabel;
+
+    // If owner hasn't approved yet → 100% free cancellation
+    if (booking.status === 'Pending') {
+      refundPercent = 100;
+      refundAmount = depositAmount;
+      policyLabel = 'Ho\u00e0n 100% (Ch\u1ee7 xe ch\u01b0a duy\u1ec7t)';
+    } else {
+      const daysUntilPickup = getDaysUntilPickup(booking.start_datetime);
+      if (daysUntilPickup < 0) {
+        throw new Error('Ng\u00e0y nh\u1eadn xe \u0111\u00e3 qua, kh\u00f4ng th\u1ec3 h\u1ee7y chuy\u1ebfn \u0111i n\u00e0y.');
+      }
+      ({ refundPercent, refundAmount, policyLabel } = applyRefundPolicy(daysUntilPickup, depositAmount));
+    }
 
     // 2. Start SQL Transaction
     const transaction = new sql.Transaction(p);
@@ -135,33 +165,14 @@ export const renterActionService = {
       const isPaid = paymentStatusStr && 
         (paymentStatusStr.toLowerCase() === 'paid' || paymentStatusStr.toLowerCase() === 'success');
       
-      if (isPaid) {
-        if (booking.payment_method === 'wallet') {
-          // Renter paid FULL (rental_price + deposit_amount)
-          // Refund: deposit_amount + (rental_price - 500k) + refundAmount
-          const rentalPriceVal = Number(booking.rental_price);
-          const depositVal = Number(booking.deposit_amount);
-          const walletRefund = depositVal + Math.max(0, rentalPriceVal - 500000) + refundAmount;
-          
-          if (walletRefund > 0) {
-            await new sql.Request(transaction)
-              .input('userId', sql.Int, userId)
-              .input('bookingId', sql.Int, bookingId)
-              .input('amount', sql.Decimal(18, 2), walletRefund)
-              .input('txnType', sql.NVarChar, 'Refund')
-              .input('description', sql.NVarChar, `Hoàn trả tiền thuê & cọc giữ xe cho đơn đặt xe #${bookingId} do hủy chuyến (Hoàn cọc ${depositVal.toLocaleString('vi-VN')}đ + hoàn phí thuê xe theo chính sách).`)
-              .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
-          }
-        } else if (refundAmount > 0) {
-          // Paid via VNPAY or other offline methods
-          await new sql.Request(transaction)
-            .input('userId', sql.Int, userId)
-            .input('bookingId', sql.Int, bookingId)
-            .input('amount', sql.Decimal(18, 2), refundAmount)
-            .input('txnType', sql.NVarChar, 'Refund')
-            .input('description', sql.NVarChar, `Hoàn trả phí giữ chỗ (${refundPercent}%) cho đơn thuê xe #${bookingId} do hủy chuyến.`)
-            .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
-        }
+      if (isPaid && refundAmount > 0) {
+        await new sql.Request(transaction)
+          .input('userId', sql.Int, userId)
+          .input('bookingId', sql.Int, bookingId)
+          .input('amount', sql.Decimal(18, 2), refundAmount)
+          .input('txnType', sql.NVarChar, 'Refund')
+          .input('description', sql.NVarChar, `Ho\u00e0n tr\u1ea3 ph\u00ed gi\u1eef ch\u1ed7 (${refundPercent}%) cho \u0111\u01a1n thu\u00ea xe #${bookingId} do h\u1ee7y chuy\u1ebfn \u2014 ${policyLabel}.`)
+          .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
       }
 
       await transaction.commit();
@@ -170,8 +181,7 @@ export const renterActionService = {
         refundAmount,
         refundPercent,
         policyLabel,
-        daysUntilPickup,
-        depositAmount: 500000
+        depositAmount
       };
     } catch (err) {
       await transaction.rollback();

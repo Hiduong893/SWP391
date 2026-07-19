@@ -197,7 +197,7 @@ function App() {
           <p style={{ marginTop: 16, color: '#94a3b8', fontSize: '15px' }}>Đang tải ứng dụng...</p>
         </div>
       ) : (
-        <div className={`app-container ${currentTab === 'rent-car' ? 'rent-car-layout' : ''}`}>
+        <div className={`app-container ${['rent-car', 'admin-dashboard', 'cskh-dashboard', 'owner-dashboard'].includes(currentTab) ? 'rent-car-layout' : ''}`}>
           <main className="main-content">
             <Routes>
               {/* Core Marketplace Tab */}

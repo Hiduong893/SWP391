@@ -283,6 +283,7 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
             <input
               type="email"
               className="form-input"
+              style={{ paddingLeft: '42px' }}
               placeholder={loginMode === 'renter' ? 'name@example.com' : 'admin@vivucar.vn'}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -308,7 +309,7 @@ export const Login = ({ onLoginSuccess, setCurrentTab }) => {
             <input
               type={showPassword ? 'text' : 'password'}
               className="form-input"
-              style={{ paddingRight: '42px' }}
+              style={{ paddingLeft: '42px', paddingRight: '42px' }}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

@@ -129,8 +129,8 @@ export const contractModel = {
 
     const booking = bookingRes.recordset[0];
 
-    const RESERVATION_FEE = 500000;            // 500k cọc giữ chỗ online
-    const DEPOSIT_AMOUNT = 5000000;            // 5tr cọc bảo đảm tài sản
+    const RESERVATION_FEE = Math.round(Number(booking.total_amount) * 0.3);            // 500k cọc giữ chỗ online
+    const DEPOSIT_AMOUNT = 0;            // 5tr cọc bảo đảm tài sản
     // Tiền trả trước khi nhận xe = tổng tiền thuê + cọc bảo đảm - cọc giữ chỗ đã trả
     const rentalPrice = Number(booking.rental_price);
     const prepaymentAmount = rentalPrice + DEPOSIT_AMOUNT - RESERVATION_FEE;

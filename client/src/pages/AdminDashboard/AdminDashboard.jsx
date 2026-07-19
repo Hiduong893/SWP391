@@ -378,7 +378,7 @@ export const AdminDashboard = ({ setCurrentTab }) => {
   };
 
   // Helper selectors
-  const pendingKycUsers = usersList.filter(u => u.licenseStatus === 'pending');
+  const pendingKycUsers = usersList.filter(u => u.licenseStatus === 'pending' || u.cccdStatus === 'pending' || u.cccdBackStatus === 'pending' || u.faceStatus === 'pending');
   const verifiedKycUsers = usersList.filter(u => u.licenseStatus === 'verified');
   const isAdmin = currentUserRole === 'admin';
 

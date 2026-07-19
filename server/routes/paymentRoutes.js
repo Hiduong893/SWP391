@@ -64,7 +64,7 @@ router.post('/api/payments/vnpay/create', auth, async (req, res) => {
 
     // Unique txn reference to prevent duplicates: PAY-{bookingId}-{timestamp}
     const txnRef = `PAY-${bookingId}-${date.getTime()}`;
-    const amount = 500000; // Charge only the 500,000 VND reservation fee online
+    const amount = Math.round(booking.totalPrice * 0.3); // Charge only the 30% reservation fee online
 
     const vnpParams = {
       vnp_Version: '2.1.0',
@@ -241,7 +241,7 @@ router.get('/api/payments/vnpay/ipn', async (req, res) => {
 
     // 3. Check Amount (VNPAY amount is multiplied by 100)
     // Dynamic/Brittle check resolved: Expected amount is 500,000 VND (reservation fee)
-    const expectedAmountInCents = 500000 * 100;
+    const expectedAmountInCents = Math.round(booking.totalPrice * 0.3) * 100;
     if (amountInCents !== expectedAmountInCents) {
       return res.status(200).json({ RspCode: '04', Message: 'Invalid amount' });
     }

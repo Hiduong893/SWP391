@@ -10,7 +10,7 @@ const router = express.Router();
 // 15. POST Booking (Đặt xe & Đặt cọc)
 router.post('/api/bookings', auth, async (req, res) => {
   try {
-    const { carId, pickupDate, returnDate, pickupLocation, totalPrice, paymentMethod, scannedFace, contractSignature, agreementChecked } = req.body;
+    const { carId, pickupDate, returnDate, pickupLocation, totalPrice, rentalPriceForOwner, paymentMethod, scannedFace, contractSignature, agreementChecked } = req.body;
 
     if (!carId || !pickupDate || !returnDate || !pickupLocation || !totalPrice) {
       return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ thông tin đặt xe.' });
@@ -46,6 +46,7 @@ router.post('/api/bookings', auth, async (req, res) => {
       returnDate,
       pickupLocation,
       totalPrice,
+      rentalPriceForOwner,
       paymentMethod,
       contractDetails: {
         signature: contractSignature || null,
@@ -94,8 +95,9 @@ router.post('/api/bookings', auth, async (req, res) => {
       booking
     });
   } catch (error) {
-    console.error('Booking creation error:', error);
-    res.status(500).json({ message: 'Lỗi tạo giao dịch đặt xe.' });
+    console.error('Booking Creation Error:', error);
+    import('fs').then(fs => fs.writeFileSync('debug_error.log', error.stack || error.message));
+    res.status(500).json({ message: 'Lỗi tạo giao dịch đặt xe. ' + (error.message || '') });
   }
 });
 
@@ -129,8 +131,8 @@ router.put('/api/bookings/:id/handover', auth, async (req, res) => {
     const { id } = req.params;
     const { type, checklist, signature } = req.body;
 
-    if (!type || !checklist || !signature) {
-      return res.status(400).json({ message: 'Vui lòng hoàn thành checklist và ký tên bàn giao xe.' });
+    if (!type || !checklist) {
+      return res.status(400).json({ message: 'Vui lòng hoàn thành checklist bàn giao xe.' });
     }
 
     const booking = await db.bookings.findOne({ id });

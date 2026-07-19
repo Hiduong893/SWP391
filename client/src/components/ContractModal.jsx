@@ -303,8 +303,8 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
   const statusInfo = STATUS_MAP[contract.status] || { label: contract.status, cls: 'draft' };
   
   // Checking roles for signature CTA display
-  const isRenter = user.id === booking.userId;
-  const isCarOwner = car && String(car.ownerId || car.owner_id) === String(user?.id);
+  const isRenter = user && user.id === booking.userId;
+  const isCarOwner = car && user && String(car.ownerId || car.owner_id) === String(user?.id);
   const isRenterSigned = !!contract.renterSignedAt;
   const isOwnerSigned = !!contract.ownerSignedAt;
 
@@ -422,13 +422,13 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
                 {/* Phase 1 */}
                 <div className="cm2-phase-card">
                   <div className="cm2-phase-header">
-                    <span className="cm2-phase-title">Giai đoạn 1: Đặt cọc giữ xe (Phí giữ chỗ)</span>
+                    <span className="cm2-phase-title">Giai đoạn 1: Phí giữ chỗ (30% tổng đơn)</span>
                     <span className={`cm2-phase-status ${contract.reservationPaidAt ? 'status-paid' : 'status-unpaid'}`}>
                       {contract.reservationPaidAt ? '✓ ĐÃ THANH TOÁN' : '⚠ CHƯA THANH TOÁN'}
                     </span>
                   </div>
                   <div className="cm2-phase-body">
-                    <div className="cm2-phase-row">Số tiền yêu cầu: <strong>{fmt(contract.reservationFee || 500000)}</strong></div>
+                    <div className="cm2-phase-row">Số tiền yêu cầu: <strong>{fmt(contract.reservationFee)}</strong></div>
                     <div className="cm2-phase-row">Thời điểm nộp: <strong>{contract.reservationPaidAt ? fmtDt(contract.reservationPaidAt) : 'Ngay sau khi gửi đơn đặt xe'}</strong></div>
                     <div className="cm2-phase-row">Hình thức: <strong>Ví ViVuCar / Cổng thanh toán (VietQR/VNPAY)</strong></div>
                   </div>
@@ -437,34 +437,15 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
                 {/* Phase 2 */}
                 <div className="cm2-phase-card">
                   <div className="cm2-phase-header">
-                    <span className="cm2-phase-title">Giai đoạn 2: Trả trước khi nhận xe</span>
+                    <span className="cm2-phase-title">Giai đoạn 2: Trả phần còn lại khi nhận xe</span>
                     <span className={`cm2-phase-status ${contract.prepaymentPaidAt ? 'status-paid' : 'status-unpaid'}`}>
                       {contract.prepaymentPaidAt ? `✓ ĐÃ THANH TOÁN (${contract.prepaymentMethod || 'Ví'})` : '⚠ TRẢ KHI NHẬN XE'}
                     </span>
                   </div>
                   <div className="cm2-phase-body">
-                    <div className="cm2-phase-row">Số tiền yêu cầu: <strong>{fmt(contract.prepaymentAmount || (Number(booking?.rental_price || 0) + 5000000 - 500000))}</strong></div>
+                    <div className="cm2-phase-row">Số tiền yêu cầu: <strong>{fmt(contract.prepaymentAmount || (Number(booking?.rental_price || 0) - (contract.reservationFee || 0)))}</strong></div>
                     <div className="cm2-phase-row">Hạn thanh toán: <strong>Hạn chót vào lúc giao nhận xe {fmtD(booking?.start_datetime || booking?.startDatetime)}</strong></div>
-                    <div className="cm2-phase-row">Chi tiết tiền trả trước: <strong>Tổng tiền thuê xe + Tiền cọc tài sản (5tr) - 500k cọc giữ xe đã nộp</strong></div>
-                  </div>
-                </div>
-
-                {/* Phase 3 */}
-                <div className="cm2-phase-card">
-                  <div className="cm2-phase-header">
-                    <span className="cm2-phase-title">Giai đoạn 3: Hoàn trả tiền cọc bảo đảm</span>
-                    <span className={`cm2-phase-status ${contract.depositRefundAt ? 'status-paid' : 'status-pending'}`}>
-                      {contract.depositRefundAt ? '✓ ĐÃ HOÀN TRẢ' : '🔒 ĐANG GIỮ CỌC BẢO ĐẢM'}
-                    </span>
-                  </div>
-                  <div className="cm2-phase-body">
-                    <div className="cm2-phase-row">Số tiền ký cọc bảo đảm: <strong>{fmt(contract.depositAmount || 5000000)}</strong></div>
-                    <div className="cm2-phase-row">Điều kiện hoàn trả: <strong>Trong vòng 3 ngày làm việc sau khi Bên B trả xe nguyên vẹn, không phát sinh sự cố, muộn xe, hư hỏng hoặc phạt nguội.</strong></div>
-                    {contract.surchargeAmount > 0 && (
-                      <div className="cm2-phase-row" style={{ color: '#ef4444', fontWeight: 'bold' }}>
-                        Phát sinh khấu trừ: <strong>- {fmt(contract.surchargeAmount)} ({contract.surchargeReason})</strong>
-                      </div>
-                    )}
+                    <div className="cm2-phase-row">Chi tiết: <strong>Tổng tiền thuê xe - 30% phí giữ chỗ đã nộp</strong></div>
                   </div>
                 </div>
 

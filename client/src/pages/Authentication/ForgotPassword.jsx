@@ -102,6 +102,7 @@ export const ForgotPassword = ({ setCurrentTab }) => {
                 <input
                   type="email"
                   className="form-input"
+                  style={{ paddingLeft: '42px' }}
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -181,6 +182,7 @@ export const ForgotPassword = ({ setCurrentTab }) => {
                 <input
                   type="password"
                   className="form-input"
+                  style={{ paddingLeft: '42px' }}
                   placeholder="Mật khẩu tối thiểu 6 ký tự"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
@@ -196,6 +198,7 @@ export const ForgotPassword = ({ setCurrentTab }) => {
                 <input
                   type="password"
                   className="form-input"
+                  style={{ paddingLeft: '42px' }}
                   placeholder="Nhập lại mật khẩu mới"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}

@@ -100,11 +100,11 @@ export const CSKHHomeTab = ({
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
             <Headphones size={22} color="#818cf8" />
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#e2e8f0' }}>
+            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: `var(--cskh-text)` }}>
               Trung tâm Chăm sóc Khách hàng
             </h2>
           </div>
-          <p style={{ margin: 0, fontSize: 13.5, color: '#94a3b8' }}>
+          <p style={{ margin: 0, fontSize: 13.5, color: `var(--cskh-text-muted)` }}>
             Tổng hợp các nhiệm vụ cần xử lý hôm nay · ViVuCar CSKH System
           </p>
         </div>
@@ -117,7 +117,7 @@ export const CSKHHomeTab = ({
             textAlign: 'center',
           }}>
             <div style={{ fontSize: 28, fontWeight: 800, color: '#ef4444', lineHeight: 1 }}>{totalUrgent}</div>
-            <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 3 }}>việc cần làm</div>
+            <div style={{ fontSize: 11.5, color: `var(--cskh-text-muted)`, marginTop: 3 }}>việc cần làm</div>
           </div>
         )}
         {totalUrgent === 0 && (
@@ -129,7 +129,7 @@ export const CSKHHomeTab = ({
             textAlign: 'center',
           }}>
             <div style={{ fontSize: 28, fontWeight: 800, color: '#10b981', lineHeight: 1 }}>✓</div>
-            <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 3 }}>Đã xử lý hết</div>
+            <div style={{ fontSize: 11.5, color: `var(--cskh-text-muted)`, marginTop: 3 }}>Đã xử lý hết</div>
           </div>
         )}
       </div>
@@ -138,7 +138,7 @@ export const CSKHHomeTab = ({
       <div style={{ marginBottom: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
           <div style={{ width: 3, height: 16, borderRadius: 2, background: 'linear-gradient(180deg,#6366f1,#8b5cf6)' }} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0' }}>Tình trạng theo dõi</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: `var(--cskh-text)` }}>Tình trạng theo dõi</span>
         </div>
         <div className="cskh-kpi-grid">
           {kpis.map((k, i) => (
@@ -159,7 +159,7 @@ export const CSKHHomeTab = ({
                 <div className="cskh-kpi-sub">{k.sub}</div>
               </div>
               {k.tab && (
-                <ArrowRight size={14} style={{ marginLeft: 'auto', color: '#64748b', alignSelf: 'center' }} />
+                <ArrowRight size={14} style={{ marginLeft: 'auto', color: `var(--cskh-text-dim)`, alignSelf: 'center' }} />
               )}
             </div>
           ))}
@@ -181,11 +181,11 @@ export const CSKHHomeTab = ({
               <div key={b.id} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '8px 20px',
-                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                borderBottom: '1px solid var(--cskh-border-light)',
               }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0' }}>{b.userName}</div>
-                  <div style={{ fontSize: 11.5, color: '#94a3b8' }}>{b.carName}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: `var(--cskh-text)` }}>{b.userName}</div>
+                  <div style={{ fontSize: 11.5, color: `var(--cskh-text-muted)` }}>{b.carName}</div>
                 </div>
                 <span className={`cskh-badge ${b.status === 'completed' ? 'cskh-badge-green' : b.status === 'cancelled' ? 'cskh-badge-red' : b.status === 'approved' ? 'cskh-badge-blue' : 'cskh-badge-amber'}`}>
                   {b.status === 'completed' ? 'Hoàn tất' : b.status === 'cancelled' ? 'Đã hủy' : b.status === 'approved' ? 'Đã duyệt' : 'Đang chờ'}

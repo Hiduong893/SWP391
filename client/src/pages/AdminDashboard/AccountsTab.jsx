@@ -34,7 +34,8 @@ export const AccountsTab = ({
                   <tr>
                     <th>Thành viên</th>
                     <th>Email</th>
-                    <th>Ảnh CCCD</th>
+                    <th>Ảnh CCCD (Trước)</th>
+                    <th>Ảnh CCCD (Sau)</th>
                     <th>Ảnh Bằng lái</th>
                     <th style={{ textAlign: 'center' }}>Thao tác</th>
                   </tr>
@@ -52,7 +53,14 @@ export const AccountsTab = ({
                       <td>
                         {u.kycDocuments?.cccd ? (
                           <button className="action-btn text-teal btn-sm" onClick={() => setSelectedLicenseImage(u.kycDocuments.cccd)}>
-                            <Eye size={12} style={{ marginRight: 4 }} /> Xem CCCD
+                            <Eye size={12} style={{ marginRight: 4 }} /> Xem mặt trước
+                          </button>
+                        ) : <span className="text-muted small">Chưa tải</span>}
+                      </td>
+                      <td>
+                        {u.kycDocuments?.cccdBack ? (
+                          <button className="action-btn text-teal btn-sm" onClick={() => setSelectedLicenseImage(u.kycDocuments.cccdBack)}>
+                            <Eye size={12} style={{ marginRight: 4 }} /> Xem mặt sau
                           </button>
                         ) : <span className="text-muted small">Chưa tải</span>}
                       </td>

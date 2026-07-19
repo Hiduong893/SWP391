@@ -43,7 +43,9 @@ export const mapBookingRow = async (p, row) => {
     pickupDate: row.start_datetime ? new Date(row.start_datetime).toISOString() : '',
     returnDate: row.end_datetime ? new Date(row.end_datetime).toISOString() : '',
     pickupLocation: row.pickup_address,
-    totalPrice: Number(row.rental_price),
+    rentalPrice: Number(row.rental_price),
+    platformFee: Number(row.platform_fee),
+    totalPrice: Number(row.total_amount),
     depositAmount: Number(row.deposit_amount),
     depositStatus: paymentStatus,
     status: mappedStatus,
@@ -127,12 +129,14 @@ export const bookingModel = {
     const isOwnerCar = carRes.recordset.length > 0 && carRes.recordset[0].role_name === 'CarOwner';
 
     const status = isOwnerCar ? 'Pending' : 'Approved';
-    const price = parseInt(bookingData.totalPrice);
-    const deposit = 5000000;
+    const rentalPriceForOwner = parseInt(bookingData.rentalPriceForOwner || bookingData.totalPrice);
+    const totalPrice = parseInt(bookingData.totalPrice);
+    const deposit = 0;
+    const initialPlatformFee = totalPrice > rentalPriceForOwner ? totalPrice - rentalPriceForOwner : 0;
 
     // Check wallet balance if paymentMethod is wallet
     // When using wallet: must deduct ONLY reservation fee = 500,000 VND
-    const walletTotalAmount = 500000; 
+    const walletTotalAmount = Math.round(totalPrice * 0.3); 
     if (bookingData.paymentMethod === 'wallet') {
       const walletRes = await p.request()
         .input('userId', sql.Int, renterId)
@@ -158,14 +162,16 @@ export const bookingModel = {
       .input('pickupDate', sql.VarChar, pickupDateTime)
       .input('returnDate', sql.VarChar, returnDateTime)
       .input('pickupLocation', sql.NVarChar, bookingData.pickupLocation)
-      .input('price', sql.Decimal(18, 2), price)
+      .input('price', sql.Decimal(18, 2), rentalPriceForOwner)
       .input('deposit', sql.Decimal(18, 2), deposit)
+      .input('platformFee', sql.Decimal(18, 2), initialPlatformFee)
+      .input('totalAmount', sql.Decimal(18, 2), totalPrice)
       .input('status', sql.NVarChar, status)
       .input('contractDetails', sql.NVarChar, contractDetailsStr);
 
     const insertBookingQuery = `
       INSERT INTO Booking (renter_id, vehicle_id, start_datetime, end_datetime, pickup_address, return_address, rental_price, deposit_amount, platform_fee, total_amount, status, contract_details, created_at, updated_at)
-      VALUES (@renterId, @vehicleId, CAST(@pickupDate AS DATETIME2), CAST(@returnDate AS DATETIME2), @pickupLocation, @pickupLocation, @price, @deposit, 0, @price + @deposit, @status, @contractDetails, GETDATE(), GETDATE());
+      VALUES (@renterId, @vehicleId, CAST(@pickupDate AS DATETIME2), CAST(@returnDate AS DATETIME2), @pickupLocation, @pickupLocation, @price, @deposit, @platformFee, @totalAmount, @status, @contractDetails, GETDATE(), GETDATE());
       SELECT SCOPE_IDENTITY() as booking_id;
     `;
     const res = await request.query(insertBookingQuery);
@@ -224,7 +230,7 @@ export const bookingModel = {
 
       if (dbStatus === 'Completed') {
         const currentRes = await p.request().input('bookingId', sql.Int, bookingId)
-          .query('SELECT status, vehicle_id, rental_price FROM Booking WHERE booking_id = @bookingId');
+          .query('SELECT status, vehicle_id, rental_price, platform_fee FROM Booking WHERE booking_id = @bookingId');
         if (currentRes.recordset.length > 0) {
           const current = currentRes.recordset[0];
           if (current.status !== 'Completed') {
@@ -232,8 +238,8 @@ export const bookingModel = {
             const serviceFeePercent = configRes.recordset.length > 0 ? parseInt(configRes.recordset[0].config_value) : 5;
             
             const rentalPrice = Number(current.rental_price);
-            const platformFee = Math.floor(rentalPrice * (serviceFeePercent / 100));
-            const ownerIncome = rentalPrice - platformFee;
+            const commission = Math.floor(rentalPrice * (serviceFeePercent / 100));
+            const ownerIncome = rentalPrice - commission;
 
             const carRes = await p.request().input('vehicleId', sql.Int, current.vehicle_id)
               .query('SELECT owner_id FROM Vehicle WHERE vehicle_id = @vehicleId');
@@ -252,8 +258,8 @@ export const bookingModel = {
                 .input('vehicleId', sql.Int, current.vehicle_id)
                 .query("UPDATE Vehicle SET status = 'Available' WHERE vehicle_id = @vehicleId");
 
-              updates.push('platform_fee = @platformFee');
-              request.input('platformFee', sql.Decimal(18, 2), platformFee);
+              updates.push('platform_fee = platform_fee + @commission');
+              request.input('commission', sql.Decimal(18, 2), commission);
             }
           }
         }

@@ -282,9 +282,9 @@ router.put('/api/admin/bookings/:id/refund-deposit', auth, cskhOrAdminAuth, asyn
 
     if (status === 'refunded') {
       if (booking.paymentMethod === 'wallet') {
-        // Cộng 5.000.000đ tiền cọc vào ví người dùng qua stored procedure (an toàn, atomic)
+        // Cộng 500.000đ tiền giữ chỗ vào ví người dùng qua stored procedure (an toàn, atomic)
         const p = await getPool();
-        const refundAmount = 5000000;
+        const refundAmount = Math.round(booking.totalPrice * 0.3);
         const userId = parseInt(booking.userId);
         const bookingIdInt = parseInt(id);
 
@@ -293,7 +293,7 @@ router.put('/api/admin/bookings/:id/refund-deposit', auth, cskhOrAdminAuth, asyn
           .input('bookingId', sql.Int, bookingIdInt)
           .input('amount', sql.Decimal(18, 2), refundAmount)
           .input('txnType', sql.NVarChar, 'DepositRefund')
-          .input('description', sql.NVarChar, `Hoàn trả tiền cọc bảo đảm cho đặt xe #${id}`)
+          .input('description', sql.NVarChar, `Hoàn trả tiền phí giữ chỗ cho đặt xe #${id}`)
           .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
 
         console.log(`Deposit refunded to wallet: ${refundAmount} VND to userId=${userId} for bookingId=${id}`);
@@ -306,9 +306,9 @@ router.put('/api/admin/bookings/:id/refund-deposit', auth, cskhOrAdminAuth, asyn
     res.json({
       message: status === 'refunded'
         ? (booking.paymentMethod === 'wallet'
-            ? 'Đã duyệt hoàn trả tiền cọc 5.000.000 VND thành công! Tiền đã được cộng vào ví của người dùng.'
-            : 'Đã duyệt hoàn cọc 5.000.000 VND! Do đơn đặt xe này thanh toán ngoại tuyến/VNPAY, tiền cọc sẽ do chủ xe hoàn trả trực tiếp.')
-        : 'Đã giữ lại tiền đặt cọc do phát sinh các thiệt hại vật chất đối với xe.'
+            ? 'Đã duyệt hoàn trả phí giữ chỗ thành công! Tiền đã được cộng vào ví của người dùng.'
+            : 'Đã duyệt hoàn phí giữ chỗ! Do đơn đặt xe này thanh toán ngoại tuyến/VNPAY, tiền cọc sẽ do chủ xe hoàn trả trực tiếp.')
+        : 'Đã giữ lại tiền giữ chỗ do phát sinh các thiệt hại vật chất đối với xe.'
     });
   } catch (error) {
     console.error('Lỗi hoàn cọc:', error);
@@ -339,7 +339,7 @@ router.put('/api/admin/bookings/:id/confirm-vietqr', auth, cskhOrAdminAuth, asyn
     });
 
     res.json({
-      message: `Đã xác nhận nhận được 500.000đ VietQR cho đơn đặt xe #${id}. Booking đã được duyệt!`,
+      message: `Đã xác nhận nhận được phí giữ chỗ VietQR cho đơn đặt xe #${id}. Booking đã được duyệt!`,
     });
   } catch (error) {
     console.error('Lỗi xác nhận VietQR:', error);
@@ -453,8 +453,13 @@ router.get('/api/admin/stats', auth, cskhOrAdminAuth, async (req, res) => {
     const cars = await db.cars.findMany();
     const bookings = await db.bookings.findMany();
 
-    const confirmedBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'completed' || b.status === 'active');
-    const totalRevenue = confirmedBookings.reduce((sum, b) => sum + b.totalPrice, 0);
+    const confirmedBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'completed' || b.status === 'active' || b.status === 'Approved');
+    const totalCashFlow = confirmedBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+    const ownerPayouts = confirmedBookings.reduce((sum, b) => {
+      const gross = b.rentalPrice || 0;
+      return sum + (gross - Math.floor(gross * 0.05));
+    }, 0);
+    const platformProfit = totalCashFlow - ownerPayouts;
 
     const rentedCount = cars.filter(c => c.status === 'rented').length;
     const availableCount = cars.filter(c => c.status === 'available').length;
@@ -467,7 +472,10 @@ router.get('/api/admin/stats', auth, cskhOrAdminAuth, async (req, res) => {
         totalUsers: users.length,
         totalCars: cars.length,
         totalBookings: bookings.length,
-        totalRevenue,
+        totalCashFlow,
+        ownerPayouts,
+        platformProfit,
+        totalRevenue: totalCashFlow, // Backwards compatibility if needed
         rentedCars: rentedCount,
         availableCars: availableCount,
         maintenanceCars: maintenanceCount,

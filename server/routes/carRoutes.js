@@ -18,7 +18,14 @@ router.get('/api/cars', async (req, res) => {
     if (fuel) filters.fuel = fuel;
 
     let cars = await db.cars.findMany(filters);
-    cars = cars.filter(car => car.status === 'available' || car.status === 'rented');
+
+    // Lọc bỏ những xe đã có người thanh toán hoặc đang thuê
+    const allBookings = await db.bookings.findMany();
+    const busyCarIds = allBookings
+      .filter(b => ['pending', 'pending_owner', 'confirmed', 'active'].includes(b.status))
+      .map(b => b.carId);
+
+    cars = cars.filter(car => car.status === 'available' && !busyCarIds.includes(car.id));
 
     if (search) {
       const keyword = search.toLowerCase();
@@ -106,7 +113,8 @@ router.get('/api/owner/stats', auth, async (req, res) => {
     }));
 
     const completedBookings = myBookings.filter(b => b.status === 'completed');
-    const totalEarnings = completedBookings.reduce((sum, b) => sum + b.totalPrice, 0);
+    // Giả định chiết khấu hoa hồng là 5% (khớp với mặc định db). Để chính xác 100% có thể query WalletTransaction
+    const totalEarnings = completedBookings.reduce((sum, b) => sum + (b.rentalPrice - Math.floor(b.rentalPrice * 0.05)), 0);
 
     res.json({
       bookings: detailedBookings,
