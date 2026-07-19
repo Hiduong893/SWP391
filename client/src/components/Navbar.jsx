@@ -123,8 +123,8 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, s
           </button>
 
           <button
-            className="nav-item"
-            onClick={() => handleDummyClick('Blog')}
+            className={`nav-item ${currentTab === 'blog' || currentTab === 'blog-detail' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('blog')}
           >
             <span>Blog</span>
           </button>

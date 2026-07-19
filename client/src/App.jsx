@@ -19,6 +19,8 @@ import { OwnerDashboard } from './pages/OwnerDashboard/OwnerDashboard';
 import { BookingModal } from './components/BookingModal';
 import { SimulatedInbox } from './components/SimulatedInbox';
 import { ChatbotWidget } from './components/ChatbotWidget';
+import { Blog } from './pages/Blog/Blog';
+import { BlogDetail } from './pages/Blog/BlogDetail';
 
 import { api } from './utils/api';
 import { useToast } from './components/Toast';
@@ -27,6 +29,7 @@ import { Loader } from 'lucide-react';
 function App() {
   const [user, setUser] = useState(null);
   const [currentTab, setCurrentTab] = useState('rent-car'); // rent-car, list-car, my-trips, login, register, verify-email, forgot-password, reset-password, profile, change-password
+  const [selectedBlogPost, setSelectedBlogPost] = useState(null);
   const [verificationToken, setVerificationToken] = useState(null);
   const [resetToken, setResetToken] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -225,6 +228,31 @@ function App() {
                 setCurrentTab={handleSetTabOrModal}
                 onRentCarClick={setActiveBooking}
                 initialSearchParams={searchParams}
+              />
+            )}
+
+            {/* Blog & Blog Detail pages */}
+            {currentTab === 'blog' && (
+              <Blog
+                setCurrentTab={handleSetTabOrModal}
+                onSelectPost={(post) => {
+                  setSelectedBlogPost(post);
+                  setCurrentTab('blog-detail');
+                }}
+              />
+            )}
+
+            {currentTab === 'blog-detail' && selectedBlogPost && (
+              <BlogDetail
+                post={selectedBlogPost}
+                onBack={() => {
+                  setSelectedBlogPost(null);
+                  setCurrentTab('blog');
+                }}
+                onSelectPost={(post) => {
+                  setSelectedBlogPost(post);
+                  setCurrentTab('blog-detail');
+                }}
               />
             )}
 
