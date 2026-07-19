@@ -58,6 +58,15 @@ router.post('/api/bookings', auth, async (req, res) => {
     // Tạo hợp đồng mẫu/nháp (Draft) trong bảng RentalContract
     await contractModel.create(booking.id, paymentMethod === 'wallet');
 
+    // Người thuê đã đồng ý điều khoản + ký tay trong BookingModal → tự động ký hợp đồng điện tử ngay
+    try {
+      const clientIp = req.ip || req.connection?.remoteAddress || '127.0.0.1';
+      await contractModel.renterSign(booking.id, req.user.id, clientIp);
+    } catch (signErr) {
+      // Không chặn đặt xe nếu tự ký thất bại (ví dụ: đã ký rồi)
+      console.warn('Auto renter-sign warning:', signErr.message);
+    }
+
     if (paymentMethod !== 'vnpay') {
       if (car.ownerId) {
         await notificationService.createNotification(
