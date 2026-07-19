@@ -85,6 +85,7 @@ router.post('/api/bookings', auth, async (req, res) => {
       booking
     });
   } catch (error) {
+    console.error('Booking creation error:', error);
     res.status(500).json({ message: 'Lỗi tạo giao dịch đặt xe.' });
   }
 });
