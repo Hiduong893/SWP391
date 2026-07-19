@@ -2,6 +2,7 @@ import express from 'express';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
 import { notificationService } from '../services/notificationService.js';
+import { contractModel } from '../models/contractModel.js';
 
 const router = express.Router();
 
@@ -134,6 +135,16 @@ router.put('/api/owner/bookings/:id/approve', auth, async (req, res) => {
 
     const newStatus = approved ? 'confirmed' : 'cancelled';
     await db.bookings.update(id, { status: newStatus });
+
+    // Nếu phê duyệt → tự động ký hợp đồng phía chủ xe
+    if (approved) {
+      try {
+        const ownerIp = req.ip || req.connection?.remoteAddress || '127.0.0.1';
+        await contractModel.ownerSign(id, req.user.id, ownerIp);
+      } catch (signErr) {
+        console.warn('Auto owner-sign warning:', signErr.message);
+      }
+    }
 
     // Send notification to Renter
     await notificationService.createNotification(
