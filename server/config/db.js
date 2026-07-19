@@ -83,6 +83,10 @@ export const getPool = async () => {
         BEGIN
             ALTER TABLE Booking ADD payment_status NVARCHAR(50) NULL;
         END
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Booking') AND name = 'contract_details')
+        BEGIN
+            ALTER TABLE Booking ADD contract_details NVARCHAR(MAX) NULL;
+        END
 
         -- Normalize Review schema used by the trip-review feature
         IF OBJECT_ID('dbo.Review', 'U') IS NOT NULL
