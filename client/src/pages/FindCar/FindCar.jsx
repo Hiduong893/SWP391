@@ -491,7 +491,7 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
             </div>
             <div className="filter-modal-body">
               {activeDropdown === 'brand' && (
-                ['Tất cả', 'VinFast', 'Toyota', 'Mitsubishi', 'Hyundai', 'Kia', 'Honda', 'Mazda', 'MG', 'Suzuki'].map((b) => (
+                ['Tất cả', ...Array.from(new Set(cars.map(c => c.brand)))].map((b) => (
                   <label key={b} className="checkbox-label-pills">
                      <input
                       type="radio"
@@ -579,7 +579,7 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
               )}
 
               {activeDropdown === 'model' && (
-                ['Tất cả', 'Vios', 'VF8', 'SantaFe', 'City', 'Xpander', 'Seltos'].map((m) => (
+                ['Tất cả', ...Array.from(new Set(cars.map(c => c.model)))].map((m) => (
                   <label key={m} className="checkbox-label-pills">
                     <input
                       type="radio"

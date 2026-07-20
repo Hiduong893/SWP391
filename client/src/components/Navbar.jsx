@@ -82,7 +82,7 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, s
   return (
     <nav className="main-nav">
       <div className="nav-container">
-        <div className="nav-brand" onClick={() => setCurrentTab(user?.role === 'owner' ? 'owner-dashboard' : 'rent-car')}>
+        <div className="nav-brand" onClick={() => setCurrentTab('rent-car')}>
           <div className="brand-logo-container">
             <svg viewBox="0 0 100 100" className="brand-logo-svg" width="36" height="36">
               <rect width="100" height="100" rx="24" fill="#009698" />

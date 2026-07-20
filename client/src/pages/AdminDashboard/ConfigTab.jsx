@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Settings } from 'lucide-react';
 
 export const ConfigTab = ({
+  maintenanceMode,
+  setMaintenanceMode,
+  platformName,
+  setPlatformName,
   serviceFee,
   setServiceFee,
   insuranceMul,
@@ -19,9 +23,73 @@ export const ConfigTab = ({
   handleUpdateConfig,
   actionLoading
 }) => {
+  const [activeConfigTab, setActiveConfigTab] = useState('system');
+
   return (
     <div className="tab-pane-content fade-in-animation">
+      {/* Local Tabs Navigation */}
+      <div className="subtabs-bar mb-6">
+        <button 
+          className={`subtab-btn ${activeConfigTab === 'system' ? 'active' : ''}`} 
+          onClick={() => setActiveConfigTab('system')}
+          type="button"
+        >
+          Cài đặt hệ thống
+        </button>
+        <button 
+          className={`subtab-btn ${activeConfigTab === 'finance' ? 'active' : ''}`} 
+          onClick={() => setActiveConfigTab('finance')}
+          type="button"
+        >
+          Cấu hình tài chính & VietQR
+        </button>
+      </div>
 
+      {activeConfigTab === 'system' && (
+      <div className="config-form-card glassmorphism mb-6">
+        <div className="config-card-header">
+          <Settings size={18} className="text-yellow" />
+          <span>Trạng thái Vận hành</span>
+        </div>
+
+        <div className="config-inputs-form">
+          <div className="config-form-row">
+            <div className="config-input-group">
+              <label className="config-input-label">Tên nền tảng</label>
+              <input
+                type="text"
+                className="config-text-input"
+                value={platformName}
+                onChange={(e) => setPlatformName(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="config-form-row" style={{ marginTop: '16px' }}>
+            <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <label className="config-input-label" style={{ margin: 0, fontSize: '15px' }}>Chế độ Bảo trì (Maintenance)</label>
+                <label className="toggle-switch">
+                  <input 
+                    type="checkbox" 
+                    checked={maintenanceMode}
+                    onChange={(e) => setMaintenanceMode(e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+              <span className="input-helper-text" style={{ display: 'block', margin: 0 }}>Khi bật, toàn bộ hệ thống sẽ tạm ngừng hoạt động đối với người dùng để bảo trì kỹ thuật.</span>
+            </div>
+          </div>
+          
+          <button type="button" className="config-submit-btn" disabled={actionLoading} style={{ marginTop: '20px' }} onClick={handleUpdateConfig}>
+            Lưu cài đặt hệ thống
+          </button>
+        </div>
+      </div>
+      )}
+
+      {activeConfigTab === 'finance' && (
       <div className="config-form-card glassmorphism">
         <div className="config-card-header">
           <Settings size={18} className="text-yellow" />
@@ -135,11 +203,12 @@ export const ConfigTab = ({
             </div>
           </div>
 
-          <button type="submit" className="config-submit-btn" disabled={actionLoading} style={{ marginTop: '20px' }}>
-            Lưu cấu hình hệ thống
+          <button type="button" className="config-submit-btn" disabled={actionLoading} style={{ marginTop: '20px' }} onClick={handleUpdateConfig}>
+            Lưu cấu hình tài chính
           </button>
         </form>
       </div>
+      )}
 
     </div>
   );

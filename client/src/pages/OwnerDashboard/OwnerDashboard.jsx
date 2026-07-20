@@ -201,7 +201,12 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
           <div className="owner-stat-icon bg-purple"><DollarSign size={20} /></div>
         </div>
 
-        <div className="owner-stat-card-glass">
+        <div 
+          className="owner-stat-card-glass" 
+          style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
+          onClick={() => setActiveSubTab('my-cars')}
+          title="Xem danh sách xe của tôi"
+        >
           <div>
             <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Đội Xe Sở Hữu</span>
             <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>{myCarsList.length} xe</h3>
@@ -209,7 +214,12 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
           <div className="owner-stat-icon bg-blue"><Car size={20} /></div>
         </div>
 
-        <div className="owner-stat-card-glass">
+        <div 
+          className="owner-stat-card-glass"
+          style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
+          onClick={() => setActiveSubTab('stats')}
+          title="Xem danh sách đơn đặt lịch"
+        >
           <div>
             <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Số Đơn Đặt Lịch</span>
             <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>{ownerBookings.length} lượt</h3>

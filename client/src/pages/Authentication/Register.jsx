@@ -6,6 +6,7 @@ import { useToast } from '../../components/Toast';
 export const Register = ({ setCurrentTab }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [gender, setGender] = useState('Nam');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -33,7 +34,7 @@ export const Register = ({ setCurrentTab }) => {
 
     setLoading(true);
     try {
-      const data = await api.auth.register(name, email, password);
+      const data = await api.auth.register(name, email, password, gender);
       showToast(data.message, 'success', 6000);
       setCurrentTab('login'); // Switch to login screen
     } catch (error) {
@@ -62,6 +63,25 @@ export const Register = ({ setCurrentTab }) => {
               onChange={(e) => setName(e.target.value)}
               required
             />
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Giới tính</label>
+          <div style={{ display: 'flex', gap: '20px', alignItems: 'center', height: '42px', paddingLeft: '10px' }}>
+            {['Nam', 'Nữ', 'Khác'].map((option) => (
+              <label key={option} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: '#334155', fontSize: '14px' }}>
+                <input
+                  type="radio"
+                  name="gender"
+                  value={option}
+                  checked={gender === option}
+                  onChange={(e) => setGender(e.target.value)}
+                  style={{ width: '16px', height: '16px', accentColor: '#009698', cursor: 'pointer' }}
+                />
+                {option}
+              </label>
+            ))}
           </div>
         </div>
 

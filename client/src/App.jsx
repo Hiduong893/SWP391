@@ -41,6 +41,8 @@ function App() {
   const [authModal, setAuthModal] = useState(null); // 'login', 'register', 'forgot-password'
   const [activeBooking, setActiveBooking] = useState(null);
   const [searchParams, setSearchParams] = useState(null);
+  
+  const [systemConfig, setSystemConfig] = useState(null);
 
   // Parse currentTab from URL path for Navbar highlighting
   const currentTab = location.pathname === '/' ? 'rent-car' : location.pathname.substring(1).replace(/\/$/, '');
@@ -67,24 +69,31 @@ function App() {
 
   const checkAutoLogin = async () => {
     const token = localStorage.getItem('token');
-    if (!token) {
-      setLoading(false);
-      return;
+    let currentUser = null;
+
+    if (token) {
+      try {
+        const data = await api.user.getProfile();
+        currentUser = data.user;
+        setUser(data.user);
+        
+        if (data.user && data.user.role === 'owner' && location.pathname === '/') {
+          navigate('/owner-dashboard');
+        }
+      } catch (error) {
+        console.warn('Auto-login session expired.');
+        localStorage.removeItem('token');
+      }
     }
 
     try {
-      const data = await api.user.getProfile();
-      setUser(data.user);
-      
-      if (data.user && data.user.role === 'owner' && location.pathname === '/') {
-        navigate('/owner-dashboard');
-      }
-    } catch (error) {
-      console.warn('Auto-login session expired.');
-      localStorage.removeItem('token');
-    } finally {
-      setLoading(false);
+      const config = await api.system.getConfig();
+      setSystemConfig(config);
+    } catch (err) {
+      console.error('Failed to fetch system config', err);
     }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -177,6 +186,32 @@ function App() {
       navigate('/owner-dashboard');
     }
   };
+
+  const isMaintenance = systemConfig?.maintenanceMode === 'true' && (!user || user.role !== 'admin');
+
+  if (isMaintenance) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#0f172a', color: '#fff', textAlign: 'center', padding: '20px' }}>
+        <h1 style={{ fontSize: '36px', color: '#00bfa5', marginBottom: '16px' }}>{systemConfig?.platformName || 'ViVuCar'}</h1>
+        <h2 style={{ fontSize: '24px', marginBottom: '16px' }}>Hệ thống đang bảo trì</h2>
+        <p style={{ color: '#94a3b8', maxWidth: '600px', lineHeight: '1.6', marginBottom: '32px' }}>
+          Chúng tôi đang tiến hành nâng cấp và bảo trì hệ thống để mang lại trải nghiệm tốt nhất cho bạn. 
+          Vui lòng quay lại sau ít phút. Xin lỗi vì sự bất tiện này!
+        </p>
+        <button onClick={() => setAuthModal('login')} style={{ background: 'transparent', border: '1px solid #334155', color: '#94a3b8', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}>
+          Quản trị viên đăng nhập
+        </button>
+        {authModal === 'login' && (
+          <div className="auth-modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+            <div style={{ position: 'relative', width: '100%', maxWidth: '480px' }}>
+              <button onClick={() => setAuthModal(null)} style={{ position: 'absolute', top: 20, right: 20, background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', zIndex: 10 }}>✕</button>
+              <Login onLoginSuccess={(loggedInUser) => { setAuthModal(null); handleLoginSuccess(loggedInUser); }} setCurrentTab={setCurrentTab} />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <>

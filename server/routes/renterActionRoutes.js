@@ -42,7 +42,7 @@ definePut('/api/bookings/:id/cancel', '/api/renter/bookings/:id/cancel-with-refu
     const result = await renterActionService.cancelBooking(id, req.user.id);
     const refundMsg = result.refundAmount > 0
       ? `Phí giữ chỗ hoàn trả: ${result.refundAmount.toLocaleString('vi-VN')} VND (${result.refundPercent}%) đã được chuyển vào Ví cá nhân của bạn.`
-      : 'Phí giữ chỗ không được hoàn trả do hủy trễ (theo chính sách hủy của BonBonCar).';
+      : 'Phí giữ chỗ không được hoàn trả do hủy trễ (theo chính sách hủy của ViVuCar).';
 
     // Send notifications
     const booking = await db.bookings.findOne({ id });
@@ -167,7 +167,7 @@ definePost('/api/bookings/:id/reviews', '/api/renter/bookings/:id/trip-review', 
     });
 
     res.status(201).json({
-      message: 'Cảm ơn bạn đã gửi đánh giá! Phản hồi của bạn giúp cộng đồng BonBonCar ngày càng tốt hơn.',
+      message: 'Cảm ơn bạn đã gửi đánh giá! Phản hồi của bạn giúp cộng đồng ViVuCar ngày càng tốt hơn.',
       review
     });
   } catch (error) {
