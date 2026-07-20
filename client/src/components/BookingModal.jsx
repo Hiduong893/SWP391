@@ -545,11 +545,12 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
 
       const newBooking = await api.bookings.create(bookingData);
       
+      const realBookingId = newBooking.booking?.id || newBooking.booking?.booking_id || newBooking.id;
       // Lấy ID thật từ server để phục vụ cho các logic sau này
-      setCreatedBookingId(newBooking.id);
+      setCreatedBookingId(realBookingId);
 
       if (paymentChoice === 'vnpay') {
-        const vnpayRes = await api.bookings.createVnpayUrl(newBooking.id);
+        const vnpayRes = await api.bookings.createVnpayUrl(realBookingId);
         if (vnpayRes && vnpayRes.paymentUrl) {
           window.location.href = vnpayRes.paymentUrl;
           return; // Chuyển hướng trình duyệt sang VNPay
