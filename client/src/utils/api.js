@@ -60,10 +60,10 @@ const request = async (url, options = {}, retries = 4, delay = 1000) => {
 
 export const api = {
   auth: {
-    register: (name, email, password) => 
+    register: (name, email, password, gender) => 
       request('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({ name, email, password, gender })
       }),
       
     verifyEmail: (token) => 
@@ -295,6 +295,24 @@ export const api = {
   },
 
   support: {
+    sendNotification: (userId, title, message, type) =>
+      request('/admin/notifications', {
+        method: 'POST',
+        body: JSON.stringify({ userId, title, message, type })
+      }),
+      
+    // Voucher Management
+    getVouchers: () => request('/admin/vouchers'),
+    createVoucher: (voucherData) => 
+      request('/admin/vouchers', {
+        method: 'POST',
+        body: JSON.stringify(voucherData)
+      }),
+    deleteVoucher: (id) => 
+      request(`/admin/vouchers/${id}`, {
+        method: 'DELETE'
+      }),
+
     createTicket: (subject, message) =>
       request('/support/tickets', {
         method: 'POST',
@@ -445,10 +463,10 @@ export const api = {
         body: JSON.stringify({ status, rejectionReason })
       }),
 
-    updateSystemConfig: (config) =>
+    updateSystemConfig: (configData) =>
       request('/admin/system/config', {
         method: 'PUT',
-        body: JSON.stringify(config)
+        body: JSON.stringify(configData)
       }),
 
     updateUserRole: (id, role) =>
@@ -514,5 +532,9 @@ export const api = {
       request('/notifications/read-all', {
         method: 'POST'
       })
+  },
+  
+  vouchers: {
+    getActive: () => request('/vouchers/active')
   }
 };

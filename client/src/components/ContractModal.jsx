@@ -318,6 +318,9 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
     refundPolicy: 'Tiền cọc bảo đảm tài sản 5.000.000đ (hoặc tài sản thế chấp tương đương) sẽ được ViVuCar phong tỏa tạm thời. Khoản cọc này sẽ được hoàn trả 100% sau 3 ngày làm việc kể từ thời điểm trả xe thành công nếu không phát sinh: (1) Trả xe muộn giờ, (2) Xe bị bẩn hoặc có mùi hôi (phạt vệ sinh 200.000đ - 500.000đ), (3) Thiếu hụt nhiên liệu so với ban đầu (tính theo giá xăng thực tế + 100.000đ phí dịch vụ đổ xăng), (4) Va quẹt trầy xước hoặc các lỗi phạt nguội đang chờ xử lý.'
   };
 
+  const isDepositPaid = !!contract.reservationPaidAt || booking?.depositStatus === 'paid' || booking?.depositStatus === 'refunded' || booking?.depositStatus === 'success';
+  const depositPaidDate = contract.reservationPaidAt || (isDepositPaid ? booking?.createdAt : null);
+
   return (
     <div className="cm2-overlay" onClick={onClose}>
       <div className="cm2-wrap" onClick={e => e.stopPropagation()}>
@@ -423,13 +426,13 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
                 <div className="cm2-phase-card">
                   <div className="cm2-phase-header">
                     <span className="cm2-phase-title">Giai đoạn 1: Phí giữ chỗ (30% tổng đơn)</span>
-                    <span className={`cm2-phase-status ${contract.reservationPaidAt ? 'status-paid' : 'status-unpaid'}`}>
-                      {contract.reservationPaidAt ? '✓ ĐÃ THANH TOÁN' : '⚠ CHƯA THANH TOÁN'}
+                    <span className={`cm2-phase-status ${isDepositPaid ? 'status-paid' : 'status-unpaid'}`}>
+                      {isDepositPaid ? '✓ ĐÃ THANH TOÁN' : '⚠ CHƯA THANH TOÁN'}
                     </span>
                   </div>
                   <div className="cm2-phase-body">
-                    <div className="cm2-phase-row">Số tiền yêu cầu: <strong>{fmt(contract.reservationFee)}</strong></div>
-                    <div className="cm2-phase-row">Thời điểm nộp: <strong>{contract.reservationPaidAt ? fmtDt(contract.reservationPaidAt) : 'Ngay sau khi gửi đơn đặt xe'}</strong></div>
+                    <div className="cm2-phase-row">Số tiền yêu cầu: <strong>{fmt(contract.reservationFee || Math.round(booking?.totalPrice * 0.3))}</strong></div>
+                    <div className="cm2-phase-row">Thời điểm nộp: <strong>{depositPaidDate ? fmtDt(depositPaidDate) : 'Ngay sau khi gửi đơn đặt xe'}</strong></div>
                     <div className="cm2-phase-row">Hình thức: <strong>Ví ViVuCar / Cổng thanh toán (VietQR/VNPAY)</strong></div>
                   </div>
                 </div>

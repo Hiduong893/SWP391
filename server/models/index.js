@@ -5,6 +5,7 @@ import { ticketModel } from './ticketModel.js';
 import { emailModel, configModel } from './configModel.js';
 import { paymentModel } from './paymentModel.js';
 import { notificationModel } from './notificationModel.js';
+import { voucherModel } from './voucherModel.js';
 
 export const db = {
   users: userModel,
@@ -17,4 +18,5 @@ export const db = {
   system_config: configModel,
   payments: paymentModel,
   notifications: notificationModel,
+  vouchers: voucherModel,
 };

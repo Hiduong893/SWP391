@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users, Car, DollarSign, X, Settings, HelpCircle, Sun, Moon, Bell, LogOut,
-  LayoutDashboard, Brain
+  LayoutDashboard, Gift
 } from 'lucide-react';
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
@@ -12,7 +12,7 @@ import { OverviewTab } from './OverviewTab';
 import { FleetTab } from './FleetTab';
 import { AccountsTab } from './AccountsTab';
 import { CashFlowTab } from './CashFlowTab';
-import { ReportsTab } from './ReportsTab';
+import { VoucherTab } from './VoucherTab';
 import { ConfigTab } from './ConfigTab';
 
 export const AdminDashboard = ({ setCurrentTab }) => {
@@ -42,6 +42,8 @@ export const AdminDashboard = ({ setCurrentTab }) => {
   const [monthlyStats, setMonthlyStats] = useState([]);
 
   // Settings Config State (UC29)
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [platformName, setPlatformName] = useState('ViVuCar');
   const [serviceFee, setServiceFee] = useState(5);
   const [insuranceMul, setInsuranceMul] = useState(1.1);
   const [sysNotice, setSysNotice] = useState('');
@@ -120,6 +122,8 @@ export const AdminDashboard = ({ setCurrentTab }) => {
 
       // 10. System Config (UC29)
       const config = await api.system.getConfig();
+      setMaintenanceMode(config.maintenanceMode === 'true' || config.maintenanceMode === true);
+      setPlatformName(config.platformName || 'ViVuCar');
       setServiceFee(config.serviceFeePercent);
       setInsuranceMul(config.insuranceMultiplier);
       setSysNotice(config.systemNotice || '');
@@ -250,10 +254,12 @@ export const AdminDashboard = ({ setCurrentTab }) => {
 
   // 5. Cấu hình hệ thống (Admin Only - UC29)
   const handleUpdateConfig = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setActionLoading(true);
     try {
       const data = await api.admin.updateSystemConfig({
+        maintenanceMode: String(maintenanceMode),
+        platformName,
         serviceFeePercent: serviceFee,
         insuranceMultiplier: insuranceMul,
         systemNotice: sysNotice,
@@ -457,13 +463,10 @@ export const AdminDashboard = ({ setCurrentTab }) => {
 
           <button
             className={`menu-item ${activeTab === 'reports' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('reports'); setActiveSubTab('support'); }}
+            onClick={() => { setActiveTab('reports'); setActiveSubTab('vouchers'); }}
           >
-            <Brain size={18} />
-            <span>Báo cáo &amp; AI</span>
-            {(ticketsList.filter(t => t.status === 'open').length > 0 || incidentsList.filter(i => i.incident?.status === 'pending').length > 0) && (
-              <span className="badge-pulse"></span>
-            )}
+            <Gift size={18} />
+            <span>Gói & Thanh toán</span>
           </button>
         </nav>
 
@@ -511,7 +514,7 @@ export const AdminDashboard = ({ setCurrentTab }) => {
               {activeTab === 'fleet' && 'Quản lý đội xe hệ thống'}
               {activeTab === 'accounts' && 'Quản trị người dùng & KYC'}
               {activeTab === 'cashflow' && 'Giám sát dòng tiền & Thanh toán'}
-              {activeTab === 'reports' && 'Báo cáo & Trợ lý AI giám sát'}
+              {activeTab === 'reports' && 'Quản lý Gói dịch vụ & Mã Giảm Giá'}
               {activeTab === 'config' && 'Cấu hình hệ thống dịch vụ'}
             </h2>
 
@@ -540,20 +543,8 @@ export const AdminDashboard = ({ setCurrentTab }) => {
 
             {activeTab === 'reports' && (
               <div className="subtabs-bar flex-wrap" style={{ gap: 2 }}>
-                <button className={`subtab-btn ${activeSubTab === 'support' ? 'active' : ''}`} onClick={() => setActiveSubTab('support')}>
-                  Hỗ trợ ({ticketsList.filter(t => t.status === 'open').length})
-                </button>
-                <button className={`subtab-btn ${activeSubTab === 'reviews' ? 'active' : ''}`} onClick={() => setActiveSubTab('reviews')}>
-                  Đánh giá ({reviewsList.length})
-                </button>
-                <button className={`subtab-btn ${activeSubTab === 'incidents' ? 'active' : ''}`} onClick={() => setActiveSubTab('incidents')}>
-                  Sự cố ({incidentsList.filter(i => i.incident?.status === 'pending').length})
-                </button>
-                <button className={`subtab-btn ${activeSubTab === 'disputes' ? 'active' : ''}`} onClick={() => setActiveSubTab('disputes')}>
-                  Khiếu nại ({disputesList.filter(d => d.status === 'open').length})
-                </button>
-                <button className={`subtab-btn ${activeSubTab === 'ai_alerts' ? 'active' : ''}`} onClick={() => setActiveSubTab('ai_alerts')} style={{ color: '#00bfa5' }}>
-                  🤖 AI (3)
+                <button className={`subtab-btn ${activeSubTab === 'vouchers' ? 'active' : ''}`} onClick={() => setActiveSubTab('vouchers')}>
+                  Mã Giảm Giá
                 </button>
               </div>
             )}
@@ -643,32 +634,18 @@ export const AdminDashboard = ({ setCurrentTab }) => {
           )}
 
           {activeTab === 'reports' && (
-            <ReportsTab
-              activeSubTab={activeSubTab}
-              ticketsList={ticketsList}
-              selectedTicket={selectedTicket}
-              setSelectedTicket={setSelectedTicket}
-              replyText={replyText}
-              setReplyText={setReplyText}
-              handleReplyTicket={handleReplyTicket}
-              handleResolveTicket={handleResolveTicket}
-              reviewsList={reviewsList}
-              handleToggleReviewVisibility={handleToggleReviewVisibility}
-              incidentsList={incidentsList}
-              setSelectedLicenseImage={setSelectedLicenseImage}
-              handleResolveIncident={handleResolveIncident}
-              disputesList={disputesList}
-              selectedDispute={selectedDispute}
-              setSelectedDispute={setSelectedDispute}
-              disputeVerdict={disputeVerdict}
-              setDisputeVerdict={setDisputeVerdict}
-              handleResolveDispute={handleResolveDispute}
+            <VoucherTab
               actionLoading={actionLoading}
+              setActionLoading={setActionLoading}
             />
           )}
 
           {activeTab === 'config' && isAdmin && (
             <ConfigTab
+              maintenanceMode={maintenanceMode}
+              setMaintenanceMode={setMaintenanceMode}
+              platformName={platformName}
+              setPlatformName={setPlatformName}
               serviceFee={serviceFee}
               setServiceFee={setServiceFee}
               insuranceMul={insuranceMul}

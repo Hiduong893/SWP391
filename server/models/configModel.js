@@ -58,6 +58,8 @@ export const configModel = {
     let bankName = process.env.BANK_NAME || 'ViVuCar Bank';
     let bankAccountNumber = process.env.BANK_ACCOUNT_NUMBER || '1900533588';
     let bankAccountHolder = process.env.BANK_ACCOUNT_HOLDER || 'VIVUCAR SYSTEM';
+    let maintenanceMode = 'false';
+    let platformName = 'ViVuCar';
 
     for (const config of res.recordset) {
       if (config.config_key === 'PLATFORM_FEE_PERCENT') {
@@ -74,6 +76,10 @@ export const configModel = {
         bankAccountNumber = config.config_value || bankAccountNumber;
       } else if (config.config_key === 'BANK_ACCOUNT_HOLDER') {
         bankAccountHolder = config.config_value || bankAccountHolder;
+      } else if (config.config_key === 'MAINTENANCE_MODE') {
+        maintenanceMode = config.config_value;
+      } else if (config.config_key === 'PLATFORM_NAME') {
+        platformName = config.config_value;
       }
     }
 
@@ -84,7 +90,9 @@ export const configModel = {
       bankId,
       bankName,
       bankAccountNumber,
-      bankAccountHolder
+      bankAccountHolder,
+      maintenanceMode,
+      platformName
     };
   },
 
@@ -111,6 +119,8 @@ export const configModel = {
     await upsertConfig('BANK_NAME', newConfig.bankName, 'String');
     await upsertConfig('BANK_ACCOUNT_NUMBER', newConfig.bankAccountNumber, 'String');
     await upsertConfig('BANK_ACCOUNT_HOLDER', newConfig.bankAccountHolder, 'String');
+    await upsertConfig('MAINTENANCE_MODE', newConfig.maintenanceMode, 'String');
+    await upsertConfig('PLATFORM_NAME', newConfig.platformName, 'String');
 
     return await configModel.get();
   }
