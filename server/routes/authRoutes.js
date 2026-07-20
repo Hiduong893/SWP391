@@ -173,7 +173,7 @@ router.post('/login', authLimiter, async (req, res) => {
         otp = Math.floor(100000 + Math.random() * 900000).toString();
         await db.users.update(user.id, { emailVerificationToken: otp });
       }
-      
+
       await sendEmailWithRealFallback({
         to: user.email,
         subject: 'Gửi lại: Mã OTP xác thực tài khoản ViVuCar 🔄',
