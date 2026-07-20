@@ -354,7 +354,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                       <div className="trip-meta-item">
                         <Award size={14} className="text-muted" />
                         <span>Trạng thái cọc: <strong style={{ color: trip.depositStatus === 'refunded' ? '#34d399' : '#fbbf24' }}>
-                          {trip.depositStatus === 'paid' ? 'Đã thu cọc (Giữ bảo đảm)' : trip.depositStatus === 'refunded' ? 'Đã hoàn cọc 100% ✓' : 'Đang xử lý hoàn cọc'}
+                          {trip.depositStatus === 'paid' ? 'Đã đặt cọc' : trip.depositStatus === 'refunded' ? 'Đã hoàn cọc 100%' : 'Đang xử lý hoàn cọc'} ({formatCurrency(Math.round(trip.totalPrice * 0.3))})
                         </strong></span>
                       </div>
                     )}

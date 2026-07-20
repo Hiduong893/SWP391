@@ -4,6 +4,7 @@ import { auth } from '../middleware/auth.js';
 import { notificationService } from '../services/notificationService.js';
 import { compareFacesWithAI } from '../utils/aiHelper.js';
 import { contractModel } from '../models/contractModel.js';
+import { sql, getPool } from '../config/db.js';
 
 const router = express.Router();
 
@@ -172,6 +173,39 @@ router.put('/api/bookings/:id/handover', auth, async (req, res) => {
         id,
         'Booking'
       );
+
+      // Tự động phân bổ doanh thu khi chuyến đi hoàn thành (Trả xe)
+      if (type === 'return') {
+        try {
+          const pool = await getPool();
+          const ownerPayout = booking.totalPrice * 0.9;
+          const adminProfit = booking.totalPrice * 0.1;
+          
+          // Cộng tiền vào ví Chủ xe (90%)
+          await pool.request()
+            .input('userId', sql.Int, car.ownerId)
+            .input('bookingId', sql.Int, id)
+            .input('amount', sql.Decimal(18,2), ownerPayout)
+            .input('txnType', sql.VarChar, 'Revenue')
+            .input('description', sql.NVarChar, `Thanh toán đối soát doanh thu chuyến đi #${id}`)
+            .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+            
+          // Cộng tiền vào ví Admin (Lợi nhuận sàn 10%)
+          const adminRes = await pool.request().query("SELECT TOP 1 u.user_id FROM Users u JOIN UserRole ur ON u.user_id = ur.user_id JOIN Role r ON ur.role_id = r.role_id WHERE r.role_name = 'Admin'");
+          if (adminRes.recordset.length > 0) {
+            const adminId = adminRes.recordset[0].user_id;
+            await pool.request()
+              .input('userId', sql.Int, adminId)
+              .input('bookingId', sql.Int, id)
+              .input('amount', sql.Decimal(18,2), adminProfit)
+              .input('txnType', sql.VarChar, 'Commission')
+              .input('description', sql.NVarChar, `Lợi nhuận sàn 10% từ chuyến đi #${id}`)
+              .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+          }
+        } catch (err) {
+          console.error('Lỗi tự động đối soát chuyển tiền ví:', err);
+        }
+      }
     }
 
     res.json({
