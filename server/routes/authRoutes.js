@@ -58,28 +58,13 @@ router.post('/register', async (req, res) => {
       email,
       password: hashedPassword,
       name,
-      isEmailVerified: false,
-      emailVerificationToken,
+      isEmailVerified: true,
+      emailVerificationToken: null,
       role: 'renter'
     });
 
-    await sendEmailWithRealFallback({
-      to: email,
-      subject: 'Mã OTP xác thực tài khoản ViVuCar 🔑',
-      body: `
-        <h3>Chào mừng ${name} đến với ViVuCar!</h3>
-        <p>Cảm ơn bạn đã đăng ký tài khoản. Dưới đây là mã xác thực OTP gồm 6 chữ số của bạn (Có hiệu lực trong vòng 10 phút):</p>
-        <div style="font-size: 24px; font-weight: bold; color: #6366f1; background-color: #f3f4f6; border: 1px solid #e5e7eb; padding: 12px; border-radius: 8px; text-align: center; letter-spacing: 6px; margin: 20px 0; max-width: 200px; margin-left: auto; margin-right: auto;">
-          ${emailVerificationToken}
-        </div>
-        <p>Vui lòng nhập mã này vào ô xác thực trên ứng dụng để kích hoạt tài khoản của bạn.</p>
-        <br><br>
-        <p>Trân trọng,<br>Ban Quản Trị ViVuCar</p>
-      `
-    });
-
     res.status(201).json({
-      message: 'Đăng ký tài khoản thành công! Mã xác thực OTP đã được gửi vào email của bạn.'
+      message: 'Đăng ký tài khoản thành công và đã kích hoạt tự động! Bạn có thể đăng nhập ngay.'
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -188,7 +173,7 @@ router.post('/login', authLimiter, async (req, res) => {
         otp = Math.floor(100000 + Math.random() * 900000).toString();
         await db.users.update(user.id, { emailVerificationToken: otp });
       }
-      
+
       await sendEmailWithRealFallback({
         to: user.email,
         subject: 'Gửi lại: Mã OTP xác thực tài khoản ViVuCar 🔄',
