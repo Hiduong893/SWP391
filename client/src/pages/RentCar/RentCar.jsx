@@ -29,6 +29,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
   // System config & policies notice
   const [systemConfig, setSystemConfig] = useState(null);
   const [showSystemNotice, setShowSystemNotice] = useState(true);
+  const [activeVoucher, setActiveVoucher] = useState(null);
 
   // Car Details & Reviews Popup state
   const [selectedCarDetails, setSelectedCarDetails] = useState(null);
@@ -105,6 +106,17 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
     }
   };
 
+  const fetchActiveVoucher = async () => {
+    try {
+      const data = await api.vouchers.getActive();
+      if (data.vouchers && data.vouchers.length > 0) {
+        setActiveVoucher(data.vouchers[0]);
+      }
+    } catch (e) {
+      console.warn("Lỗi tải voucher đang hoạt động.");
+    }
+  };
+
   useEffect(() => {
     // Set default dates to tomorrow and next day
     const tomorrow = new Date();
@@ -117,6 +129,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
 
     fetchCars();
     fetchSystemConfig();
+    fetchActiveVoucher();
 
     const timer = setTimeout(() => {
       setShowSystemNotice(false);
@@ -901,7 +914,9 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                           {car.pricePerDay > 1000000 && (
                             <span className="promo-badge-glow-red">⚡ Flash Sale</span>
                           )}
-                          <span className="promo-badge-glow-yellow">🏷️ Giảm 10%</span>
+                          {activeVoucher && (
+                            <span className="promo-badge-glow-yellow">🏷️ Giảm {activeVoucher.discount_percent}%</span>
+                          )}
                         </div>
 
                         {/* Nhãn nhận xe ở góc dưới */}
@@ -998,8 +1013,11 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                         <img src={car.image} alt={car.model} className="card-image-element" />
 
                         {/* Top badges */}
-                        <div className="card-badge-top-container">
+                        <div className="card-badge-top-container" style={{ display: 'flex', gap: '4px' }}>
                           <span className="promo-badge-glow-yellow">👑 Xế xịn</span>
+                          {activeVoucher && (
+                            <span className="promo-badge-glow-yellow">🏷️ Giảm {activeVoucher.discount_percent}%</span>
+                          )}
                         </div>
 
                         {/* Bottom badge */}
