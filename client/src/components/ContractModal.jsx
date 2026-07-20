@@ -79,7 +79,7 @@ const inject = () => {
     .cm2-phase-row strong{color:#0f172a}
 
     /* ── Terms Snap ── */
-    .cm2-terms-wrap{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:16px 20px;max-height:260px;overflow-y:auto;box-shadow:inset 0 2px 4px rgba(0,0,0,0.02)}
+    .cm2-terms-wrap{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:16px 20px;box-shadow:inset 0 2px 4px rgba(0,0,0,0.02)}
     .cm2-term-item{margin-bottom:14px;font-size:12.5px;line-height:1.65;color:#475569}
     .cm2-term-item:last-child{margin-bottom:0}
     .cm2-term-item strong{color:#1e3a8a;display:block;margin-bottom:4px;font-size:13px;font-weight:700}
@@ -410,9 +410,9 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
                   <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Calendar size={13} /> Thời gian & Vị trí
                   </div>
-                  <div className="cm2-meta-item"><span className="cm2-meta-lbl">Nhận xe:</span><span className="cm2-meta-val">{fmtDt(booking?.start_datetime || booking?.startDatetime)}</span></div>
-                  <div className="cm2-meta-item"><span className="cm2-meta-lbl">Trả xe:</span><span className="cm2-meta-val">{fmtDt(booking?.end_datetime || booking?.endDatetime)}</span></div>
-                  <div className="cm2-meta-item"><span className="cm2-meta-lbl">Vị trí giao xe:</span><span className="cm2-meta-val">{booking?.deliveryAddress || 'Nhận tại bãi xe Bên A'}</span></div>
+                  <div className="cm2-meta-item"><span className="cm2-meta-lbl">Nhận xe:</span><span className="cm2-meta-val">{fmtDt(booking?.pickupDate || booking?.start_datetime || booking?.startDatetime)}</span></div>
+                  <div className="cm2-meta-item"><span className="cm2-meta-lbl">Trả xe:</span><span className="cm2-meta-val">{fmtDt(booking?.returnDate || booking?.end_datetime || booking?.endDatetime)}</span></div>
+                  <div className="cm2-meta-item"><span className="cm2-meta-lbl">Vị trí giao xe:</span><span className="cm2-meta-val">{booking?.pickupLocation || booking?.deliveryAddress || 'Nhận tại bãi xe Bên A'}</span></div>
                 </div>
               </div>
             </div>
