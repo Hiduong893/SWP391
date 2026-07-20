@@ -79,7 +79,7 @@ const inject = () => {
     .cm2-phase-row strong{color:#0f172a}
 
     /* ── Terms Snap ── */
-    .cm2-terms-wrap{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:16px 20px;box-shadow:inset 0 2px 4px rgba(0,0,0,0.02)}
+    .cm2-terms-wrap{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:16px 20px;max-height:260px;overflow-y:auto;box-shadow:inset 0 2px 4px rgba(0,0,0,0.02)}
     .cm2-term-item{margin-bottom:14px;font-size:12.5px;line-height:1.65;color:#475569}
     .cm2-term-item:last-child{margin-bottom:0}
     .cm2-term-item strong{color:#1e3a8a;display:block;margin-bottom:4px;font-size:13px;font-weight:700}
@@ -410,9 +410,9 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
                   <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Calendar size={13} /> Thời gian & Vị trí
                   </div>
-                  <div className="cm2-meta-item"><span className="cm2-meta-lbl">Nhận xe:</span><span className="cm2-meta-val">{fmtDt(booking?.pickupDate)}</span></div>
-                  <div className="cm2-meta-item"><span className="cm2-meta-lbl">Trả xe:</span><span className="cm2-meta-val">{fmtDt(booking?.returnDate)}</span></div>
-                  <div className="cm2-meta-item"><span className="cm2-meta-lbl">Vị trí giao xe:</span><span className="cm2-meta-val">{booking?.pickupLocation || 'Nhận tại bãi xe Bên A'}</span></div>
+                  <div className="cm2-meta-item"><span className="cm2-meta-lbl">Nhận xe:</span><span className="cm2-meta-val">{fmtDt(booking?.start_datetime || booking?.startDatetime)}</span></div>
+                  <div className="cm2-meta-item"><span className="cm2-meta-lbl">Trả xe:</span><span className="cm2-meta-val">{fmtDt(booking?.end_datetime || booking?.endDatetime)}</span></div>
+                  <div className="cm2-meta-item"><span className="cm2-meta-lbl">Vị trí giao xe:</span><span className="cm2-meta-val">{booking?.deliveryAddress || 'Nhận tại bãi xe Bên A'}</span></div>
                 </div>
               </div>
             </div>
@@ -446,8 +446,8 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
                     </span>
                   </div>
                   <div className="cm2-phase-body">
-                    <div className="cm2-phase-row">Số tiền yêu cầu: <strong>{fmt(contract.prepaymentAmount || (Number(booking?.rentalPrice || 0) - (contract.reservationFee || 0)))}</strong></div>
-                    <div className="cm2-phase-row">Hạn thanh toán: <strong>Hạn chót vào lúc giao nhận xe {fmtD(booking?.pickupDate)}</strong></div>
+                    <div className="cm2-phase-row">Số tiền yêu cầu: <strong>{fmt(contract.prepaymentAmount || (Number(booking?.rental_price || 0) - (contract.reservationFee || 0)))}</strong></div>
+                    <div className="cm2-phase-row">Hạn thanh toán: <strong>Hạn chót vào lúc giao nhận xe {fmtD(booking?.start_datetime || booking?.startDatetime)}</strong></div>
                     <div className="cm2-phase-row">Chi tiết: <strong>Tổng tiền thuê xe - 30% phí giữ chỗ đã nộp</strong></div>
                   </div>
                 </div>
@@ -455,38 +455,46 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
               </div>
             </div>
 
-            {/* Section 4: Terms and Conditions */}
+            {/* Section 4: Terms and Conditions Toggle */}
             <div className="cm2-section">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 className="cm2-sec-title">Điều khoản hợp đồng</h3>
+                <button 
+                  onClick={() => setShowTerms(!showTerms)} 
+                  style={{ background: 'none', border: 'none', color: '#6366f1', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  {showTerms ? 'Thu gọn' : 'Xem chi tiết'} {showTerms ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
               </div>
 
-              <div className="cm2-terms-wrap">
-                <div className="cm2-term-item">
-                  <strong>Điều 1: Trách nhiệm bàn giao phương tiện</strong>
-                  <span>Bên A cam kết giao xe đúng chủng loại, chất lượng kỹ thuật an toàn, biển kiểm soát và sạch sẽ. Bên B chịu trách nhiệm kiểm tra kỹ xe tại thời điểm nhận xe (nhiên liệu, trầy xước) và ký biên bản handover.</span>
+              {showTerms && (
+                <div className="cm2-terms-wrap">
+                  <div className="cm2-term-item">
+                    <strong>Điều 1: Trách nhiệm bàn giao phương tiện</strong>
+                    <span>Bên A cam kết giao xe đúng chủng loại, chất lượng kỹ thuật an toàn, biển kiểm soát và sạch sẽ. Bên B chịu trách nhiệm kiểm tra kỹ xe tại thời điểm nhận xe (nhiên liệu, trầy xước) và ký biên bản handover.</span>
+                  </div>
+                  <div className="cm2-term-item">
+                    <strong>Điều 2: Quy định hủy chuyến</strong>
+                    <span>{terms.cancellationPolicy}</span>
+                  </div>
+                  <div className="cm2-term-item">
+                    <strong>Điều 3: Xử lý thiệt hại vật chất & hư hỏng</strong>
+                    <span>{terms.damagePolicy}</span>
+                  </div>
+                  <div className="cm2-term-item">
+                    <strong>Điều 4: Phụ phí trả xe muộn hạn</strong>
+                    <span>{terms.lateReturnPolicy}</span>
+                  </div>
+                  <div className="cm2-term-item">
+                    <strong>Điều 5: Phạt nguội vi phạm giao thông</strong>
+                    <span>{terms.trafficViolationPolicy}</span>
+                  </div>
+                  <div className="cm2-term-item">
+                    <strong>Điều 6: Hoàn trả tiền cọc bảo đảm</strong>
+                    <span>{terms.refundPolicy}</span>
+                  </div>
                 </div>
-                <div className="cm2-term-item">
-                  <strong>Điều 2: Quy định hủy chuyến</strong>
-                  <span>{terms.cancellationPolicy}</span>
-                </div>
-                <div className="cm2-term-item">
-                  <strong>Điều 3: Xử lý thiệt hại vật chất & hư hỏng</strong>
-                  <span>{terms.damagePolicy}</span>
-                </div>
-                <div className="cm2-term-item">
-                  <strong>Điều 4: Phụ phí trả xe muộn hạn</strong>
-                  <span>{terms.lateReturnPolicy}</span>
-                </div>
-                <div className="cm2-term-item">
-                  <strong>Điều 5: Phạt nguội vi phạm giao thông</strong>
-                  <span>{terms.trafficViolationPolicy}</span>
-                </div>
-                <div className="cm2-term-item">
-                  <strong>Điều 6: Hoàn trả tiền cọc bảo đảm</strong>
-                  <span>{terms.refundPolicy}</span>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Section 4b: Owner Custom Terms Display (visible to all if exists) */}
