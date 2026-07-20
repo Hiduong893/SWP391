@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CreditCard } from 'lucide-react';
 
 export const CashFlowTab = ({
@@ -7,10 +7,48 @@ export const CashFlowTab = ({
   handleRefundDeposit,
   actionLoading
 }) => {
+  const [activeView, setActiveView] = useState('deposits');
+
   return (
     <div className="tab-pane-content fade-in-animation">
+      
+      {/* LOCAL TABS FOR CASHFLOW */}
+      <div className="flex gap-4 mb-6" style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+        <button 
+          onClick={() => setActiveView('deposits')}
+          style={{
+            padding: '10px 20px',
+            borderRadius: '8px',
+            fontWeight: '600',
+            border: 'none',
+            cursor: 'pointer',
+            backgroundColor: activeView === 'deposits' ? '#009698' : '#f1f5f9',
+            color: activeView === 'deposits' ? '#fff' : '#475569',
+            transition: 'all 0.2s'
+          }}
+        >
+          Quản lý Cọc & Hoàn Cọc
+        </button>
+        <button 
+          onClick={() => setActiveView('profits')}
+          style={{
+            padding: '10px 20px',
+            borderRadius: '8px',
+            fontWeight: '600',
+            border: 'none',
+            cursor: 'pointer',
+            backgroundColor: activeView === 'profits' ? '#009698' : '#f1f5f9',
+            color: activeView === 'profits' ? '#fff' : '#475569',
+            transition: 'all 0.2s'
+          }}
+        >
+          Bảng Đối Soát Doanh Thu
+        </button>
+      </div>
 
-      <div className="data-table-panel glassmorphism">
+      {/* Table 1: Deposits */}
+      {activeView === 'deposits' && (
+      <div className="data-table-panel glassmorphism mb-6">
         <div className="panel-header">
           <h4 className="panel-title">Giao dịch cọc thuê xe &amp; Duyệt trả cọc cho người dùng</h4>
         </div>
@@ -72,6 +110,56 @@ export const CashFlowTab = ({
           </div>
         )}
       </div>
+      )}
+
+      {/* Table 2: Revenue & Profit Reconciliation */}
+      {activeView === 'profits' && (
+      <div className="data-table-panel glassmorphism">
+        <div className="panel-header">
+          <h4 className="panel-title">Bảng đối soát doanh thu &amp; Phân bổ lợi nhuận sàn</h4>
+        </div>
+
+        {filteredBookings.length === 0 ? (
+          <div className="empty-state-panel">
+            <CreditCard size={36} className="text-muted" />
+            <h5>Không có giao dịch nào!</h5>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="custom-dashboard-table">
+              <thead>
+                <tr>
+                  <th>Mã đơn & Khách</th>
+                  <th>Phương tiện</th>
+                  <th>Tổng dòng tiền (100%)</th>
+                  <th style={{ color: '#d97706' }}>Đối soát Chủ xe (90%)</th>
+                  <th style={{ color: '#10b981' }}>Lợi nhuận Sàn (10%)</th>
+                  <th>Trạng thái thanh toán</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredBookings.map((b) => (
+                  <tr key={`profit-${b.id}`} className={b.status === 'cancelled' ? 'row-cancelled' : ''}>
+                    <td>
+                      <strong>#{b.id} - {b.userName}</strong>
+                    </td>
+                    <td className="text-bold-cell">{b.carName}</td>
+                    <td className="text-purple-cell font-bold">{formatCurrency(b.totalPrice)}</td>
+                    <td style={{ color: '#d97706', fontWeight: 'bold' }}>{formatCurrency(b.totalPrice * 0.9)}</td>
+                    <td style={{ color: '#10b981', fontWeight: 'bold' }}>{formatCurrency(b.totalPrice * 0.1)}</td>
+                    <td>
+                      <span className={`kyc-status-label ${b.status === 'completed' ? 'verified' : b.status === 'cancelled' ? 'rejected' : 'pending'}`}>
+                        {b.status === 'completed' ? 'Đã thanh toán (Hoàn thành)' : b.status === 'cancelled' ? 'Đã hủy' : 'Đang giữ tiền (Chuyến đi chưa xong)'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      )}
     </div>
   );
 };
