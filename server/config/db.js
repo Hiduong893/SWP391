@@ -210,6 +210,16 @@ export const getPool = async () => {
         BEGIN
             ALTER TABLE VehicleImage ALTER COLUMN image_url NVARCHAR(MAX) NOT NULL;
         END
+
+        IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('IncidentImage') AND name = 'image_url' AND max_length <> -1)
+        BEGIN
+            ALTER TABLE IncidentImage ALTER COLUMN image_url NVARCHAR(MAX) NOT NULL;
+        END
+
+        IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('HandoverImage') AND name = 'image_url' AND max_length <> -1)
+        BEGIN
+            ALTER TABLE HandoverImage ALTER COLUMN image_url NVARCHAR(MAX) NOT NULL;
+        END
       `);
 
       // Ensure stored procedure is created or updated with support for DepositRefund and auto-wallet creation
