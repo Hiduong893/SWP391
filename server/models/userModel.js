@@ -90,6 +90,7 @@ export const mapUserRow = async (p, userRow) => {
     phone: userRow.phone,
     avatar: userRow.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
     bio: userRow.bio || '',
+    gender: userRow.gender || null,
     isEmailVerified: userRow.is_email_verified === true || userRow.is_email_verified === 1,
     emailVerificationToken,
     resetPasswordToken,
@@ -161,10 +162,11 @@ export const userModel = {
     request.input('avatar', sql.NVarChar, userData.avatar || null);
     request.input('googleId', sql.VarChar, userData.googleId || null);
     request.input('isEmailVerified', sql.Bit, userData.isEmailVerified ? 1 : 0);
+    request.input('gender', sql.NVarChar, userData.gender || null);
 
     const insertUserQuery = `
-      INSERT INTO [User] (email, password_hash, full_name, avatar_url, google_id, is_email_verified, is_active, created_at, updated_at)
-      VALUES (@email, @password, @name, @avatar, @googleId, @isEmailVerified, 1, GETDATE(), GETDATE());
+      INSERT INTO [User] (email, password_hash, full_name, avatar_url, google_id, is_email_verified, gender, is_active, created_at, updated_at)
+      VALUES (@email, @password, @name, @avatar, @googleId, @isEmailVerified, @gender, 1, GETDATE(), GETDATE());
       SELECT SCOPE_IDENTITY() AS user_id;
     `;
     const res = await request.query(insertUserQuery);
@@ -233,6 +235,10 @@ export const userModel = {
     if (updateData.kycRejectionReason !== undefined) {
       userUpdates.push('kyc_rejection_reason = @kycRejectionReason');
       userRequest.input('kycRejectionReason', sql.NVarChar, updateData.kycRejectionReason);
+    }
+    if (updateData.gender !== undefined) {
+      userUpdates.push('gender = @gender');
+      userRequest.input('gender', sql.NVarChar, updateData.gender);
     }
 
     if (userUpdates.length > 0) {

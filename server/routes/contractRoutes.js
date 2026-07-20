@@ -42,7 +42,7 @@ router.get('/contracts/booking/:bookingId', auth, async (req, res) => {
 
     const renter = await db.users.findOne({ id: booking.userId });
     const car = await db.cars.findOne({ id: booking.carId });
-    const owner = car && car.ownerId ? await db.users.findOne({ id: car.ownerId }) : null;
+    const owner = car && (car.ownerId || car.owner_id) ? await db.users.findOne({ id: car.ownerId || car.owner_id }) : null;
 
     res.json({
       contract,

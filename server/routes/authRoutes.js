@@ -33,10 +33,10 @@ const sanitizeUser = (user) => {
   return safe;
 };
 
-// 1. Register (Đăng ký tài khoản)
+  // 1. Register (Đăng ký tài khoản)
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, gender } = req.body;
 
     if (!email || !password || !name) {
       return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin (Email, Mật khẩu, Họ tên).' });
@@ -58,6 +58,7 @@ router.post('/register', async (req, res) => {
       email,
       password: hashedPassword,
       name,
+      gender,
       isEmailVerified: false,
       emailVerificationToken,
       role: 'renter'
