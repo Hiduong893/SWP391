@@ -111,8 +111,8 @@ export const SimulatedInbox = ({ onNavigateToLink, triggerReload }) => {
             {emails.map((email) => {
               const isExpanded = selectedEmail?.id === email.id;
               return (
-                <div 
-                  key={email.id} 
+                <div
+                  key={email.id}
                   className={`email-item ${isExpanded ? 'expanded' : ''} ${!email.isRead ? 'unread' : ''}`}
                 >
                   <div className="email-summary" onClick={() => handleEmailClick(email)}>
@@ -125,10 +125,10 @@ export const SimulatedInbox = ({ onNavigateToLink, triggerReload }) => {
                     </div>
                     <div className="email-subject">{email.subject}</div>
                   </div>
-                  
+
                   {isExpanded && (
                     <div className="email-details">
-                      <div 
+                      <div
                         className="email-content"
                         dangerouslySetInnerHTML={{ __html: email.body }}
                         onClick={handleBodyLinkClick}
