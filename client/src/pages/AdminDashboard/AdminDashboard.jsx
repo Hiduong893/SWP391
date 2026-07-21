@@ -97,7 +97,7 @@ export const AdminDashboard = ({ setCurrentTab }) => {
       setBookingsList(bookingsData);
 
       // 4. Cars
-      const carsData = await api.cars.getCars({});
+      const carsData = await api.cars.getCars({ all: 'true' });
       setCarsList(carsData);
 
       // 5. Pending Cars (Moderation - UC27)
@@ -175,6 +175,21 @@ export const AdminDashboard = ({ setCurrentTab }) => {
       showToast(error.message || 'Lỗi duyệt KYC.', 'error');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  // 1b. Lọc doanh thu theo ngày/tháng/năm
+  const handleFilterRevenue = async (filterParams = {}) => {
+    try {
+      const statsData = await api.admin.getStats(filterParams);
+      setStats(statsData.stats);
+
+      const monthly = await api.admin.getMonthlyStats(filterParams);
+      setMonthlyStats(monthly.monthlyStats || []);
+
+      showToast('Đã trích xuất số liệu doanh thu!', 'success');
+    } catch (error) {
+      showToast('Lỗi lọc số liệu doanh thu.', 'error');
     }
   };
 
@@ -588,9 +603,12 @@ export const AdminDashboard = ({ setCurrentTab }) => {
             <OverviewTab
               stats={stats}
               usersList={usersList}
+              bookingsList={bookingsList}
+              carsList={carsList}
               monthlyStats={monthlyStats}
               handleUpdateUserRole={handleUpdateUserRole}
               handleApproveKyc={handleApproveKyc}
+              onFilterRevenue={handleFilterRevenue}
               actionLoading={actionLoading}
               showToast={showToast}
               setActiveTab={setActiveTab}
@@ -637,6 +655,8 @@ export const AdminDashboard = ({ setCurrentTab }) => {
             <VoucherTab
               actionLoading={actionLoading}
               setActionLoading={setActionLoading}
+              carsList={carsList}
+              bookingsList={bookingsList}
             />
           )}
 
