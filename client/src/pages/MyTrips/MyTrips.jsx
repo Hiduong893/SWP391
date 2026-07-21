@@ -600,7 +600,10 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                   <div style={{ fontSize: '11px', color: '#166534', fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chính sách hoàn cọc giữ chỗ</div>
                   <div style={{ fontSize: '13px', color: '#15803d', fontWeight: 600 }}>{cancelPreview.preview.policyLabel}</div>
                   <div style={{ fontSize: '12px', color: '#64748b', marginTop: 4 }}>
-                    Còn <strong style={{ color: '#0f172a' }}>{cancelPreview.preview.daysUntilPickup} ngày</strong> đến ngày nhận xe
+                    Còn <strong style={{ color: '#0f172a' }}>
+                      {Math.floor(cancelPreview.preview.hoursUntilPickup / 24) > 0 ? `${Math.floor(cancelPreview.preview.hoursUntilPickup / 24)} ngày ` : ''}
+                      {cancelPreview.preview.hoursUntilPickup % 24} giờ
+                    </strong> đến ngày nhận xe
                   </div>
                 </div>
               )}
