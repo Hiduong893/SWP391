@@ -303,7 +303,7 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
   const statusInfo = STATUS_MAP[contract.status] || { label: contract.status, cls: 'draft' };
   
   // Checking roles for signature CTA display
-  const isRenter = user && user.id === booking.userId;
+  const isRenter = user && String(user.id) === String(booking.userId);
   const isCarOwner = car && user && String(car.ownerId || car.owner_id) === String(user?.id);
   const isRenterSigned = !!contract.renterSignedAt;
   const isOwnerSigned = !!contract.ownerSignedAt;

@@ -137,7 +137,7 @@ router.put('/api/owner/bookings/:id/approve', auth, async (req, res) => {
     if (!booking) return res.status(404).json({ message: 'Yêu cầu đặt xe không tồn tại.' });
 
     const car = await db.cars.findOne({ id: booking.carId });
-    if (!car || car.ownerId !== req.user.id) {
+    if (!car || String(car.ownerId) !== String(req.user.id)) {
       return res.status(403).json({ message: 'Bạn không có quyền quản lý đơn đặt xe này.' });
     }
 
@@ -186,7 +186,7 @@ router.put('/api/owner/cars/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'Phương tiện không tồn tại.' });
     }
 
-    if (car.ownerId !== req.user.id) {
+    if (String(car.ownerId) !== String(req.user.id)) {
       return res.status(403).json({ message: 'Bạn không có quyền chỉnh sửa phương tiện này.' });
     }
 
@@ -220,7 +220,7 @@ router.delete('/api/owner/cars/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'Phương tiện không tồn tại.' });
     }
 
-    if (car.ownerId !== req.user.id) {
+    if (String(car.ownerId) !== String(req.user.id)) {
       return res.status(403).json({ message: 'Bạn không có quyền xóa phương tiện này.' });
     }
 
