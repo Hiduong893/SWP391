@@ -21,6 +21,7 @@ export const OverviewTab = ({
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [revenueViewMode, setRevenueViewMode] = useState('30days'); // '30days' | '12months'
 
   const getTodayStr = () => {
     const d = new Date();
@@ -43,19 +44,67 @@ export const OverviewTab = ({
     return getTodayStr().substring(0, 7);
   };
 
-  // Build dynamic SVG chart from monthlyStats
-  const revenues = monthlyStats.length > 0
-    ? monthlyStats.map(m => m.revenue)
-    : Array(12).fill(0);
-  const maxRev = Math.max(...revenues, 1);
-  const maxRevIndex = revenues.indexOf(maxRev);
+  // Dynamic 30-day daily revenue calculation from real bookingsList
+  const dailyRevenue30Days = (() => {
+    const days = 30;
+    const now = new Date();
+    const dateList = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+      const displayLabel = `${dd}/${mm}`;
+      dateList.push({ dateStr, displayLabel, revenue: 0 });
+    }
 
-  // Map month index to x coordinate (0..11 → 55..570)
-  const toX = (i) => 55 + (i / 11) * 515;
-  // Map revenue to y coordinate
+    if (bookingsList && Array.isArray(bookingsList)) {
+      bookingsList.forEach(b => {
+        if (!b) return;
+        const st = (b.status || '').toLowerCase();
+        if (st === 'cancelled' || st === 'rejected') return;
+
+        const rawTime = b.createdAt || b.created_at || b.pickupDate || b.start_date;
+        if (rawTime) {
+          try {
+            const bDate = new Date(rawTime);
+            if (!isNaN(bDate.getTime())) {
+              const yyyy = bDate.getFullYear();
+              const mm = String(bDate.getMonth() + 1).padStart(2, '0');
+              const dd = String(bDate.getDate()).padStart(2, '0');
+              const bYMD = `${yyyy}-${mm}-${dd}`;
+
+              const foundDay = dateList.find(d => d.dateStr === bYMD);
+              if (foundDay) {
+                foundDay.revenue += Number(b.totalPrice || b.total_amount || b.amount || 0);
+              }
+            }
+          } catch (e) {}
+        }
+      });
+    }
+
+    return dateList;
+  })();
+
+  const is30DaysMode = revenueViewMode === '30days';
+
+  const activeRevenues = is30DaysMode
+    ? dailyRevenue30Days.map(d => d.revenue)
+    : (monthlyStats.length > 0 ? monthlyStats.map(m => m.revenue) : Array(12).fill(0));
+
+  const activeLabels = is30DaysMode
+    ? dailyRevenue30Days.map(d => d.displayLabel)
+    : Array.from({ length: 12 }, (_, i) => `Thg ${i + 1}`);
+
+  const maxRev = Math.max(...activeRevenues, 1000000);
+
+  const toX = (i) => 55 + (i / Math.max(1, activeRevenues.length - 1)) * 515;
   const toY = (rev) => 265 - Math.round((rev / maxRev) * 230);
 
-  const points = revenues.map((rev, i) => ({ x: toX(i), y: toY(rev) }));
+  const points = activeRevenues.map((rev, i) => ({ x: toX(i), y: toY(rev), label: activeLabels[i], rev }));
 
   // Smooth Cubic Bezier Curve Generator
   const getSmoothCurvePath = (pts) => {
@@ -726,14 +775,58 @@ export const OverviewTab = ({
         {/* REVENUE TREND (CLEAN EMERALD WAVE SPLINE) */}
         <div className="chart-panel" style={{ background: '#ffffff', borderRadius: '20px', padding: '22px 24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', position: 'relative', overflow: 'visible' }}>
 
-          {/* HEADER MATCHING REFERENCE SCREENSHOT */}
-          <div className="panel-header" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-            <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: '#10b981', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}>
-              <TrendingUp size={20} />
+          {/* HEADER MATCHING REFERENCE SCREENSHOT & WITH MODE TOGGLE */}
+          <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: '#10b981', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}>
+                <TrendingUp size={20} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: '#0f172a' }}>Xu hướng doanh thu</h4>
+                <span style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px', display: 'block', fontWeight: 500 }}>
+                  {is30DaysMode ? '30 ngày gần nhất (Doanh thu thực tế theo ngày)' : '12 tháng năm 2026'}
+                </span>
+              </div>
             </div>
-            <div>
-              <h4 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: '#0f172a' }}>Xu hướng doanh thu</h4>
-              <span style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px', display: 'block' }}>30 ngày gần nhất</span>
+
+            {/* Mode Switcher Buttons */}
+            <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', padding: '3px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+              <button
+                type="button"
+                onClick={() => { setRevenueViewMode('30days'); setHoveredIndex(null); }}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '8px',
+                  fontSize: '11.5px',
+                  fontWeight: 800,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: is30DaysMode ? '#10b981' : 'transparent',
+                  color: is30DaysMode ? '#ffffff' : '#64748b',
+                  boxShadow: is30DaysMode ? '0 2px 8px rgba(16,185,129,0.3)' : 'none',
+                  transition: 'all 0.2s'
+                }}
+              >
+                📅 30 Ngày
+              </button>
+              <button
+                type="button"
+                onClick={() => { setRevenueViewMode('12months'); setHoveredIndex(null); }}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '8px',
+                  fontSize: '11.5px',
+                  fontWeight: 800,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: !is30DaysMode ? '#10b981' : 'transparent',
+                  color: !is30DaysMode ? '#ffffff' : '#64748b',
+                  boxShadow: !is30DaysMode ? '0 2px 8px rgba(16,185,129,0.3)' : 'none',
+                  transition: 'all 0.2s'
+                }}
+              >
+                📊 12 Tháng
+              </button>
             </div>
           </div>
 
@@ -769,7 +862,7 @@ export const OverviewTab = ({
               ))}
 
               {/* Y-Axis Labels */}
-              {yLabels.map((yl, i) => (
+              {revYLabels.map((yl, i) => (
                 <text key={i} x="38" y={yl.y + 4} textAnchor="end" style={{ fontFamily: "'Outfit', 'Inter', sans-serif", fontSize: '12px', fill: '#94a3b8', fontWeight: 600 }}>
                   {formatYLabel(yl.val)}
                 </text>
@@ -792,9 +885,9 @@ export const OverviewTab = ({
               {points.map((p, i) => (
                 <rect
                   key={`hitbox-${i}`}
-                  x={p.x - 22}
+                  x={p.x - (is30DaysMode ? 10 : 22)}
                   y="20"
-                  width="44"
+                  width={is30DaysMode ? 20 : 44}
                   height="250"
                   fill="transparent"
                   style={{ cursor: 'pointer' }}
@@ -803,8 +896,8 @@ export const OverviewTab = ({
                 />
               ))}
 
-              {/* Interactive Hover Highlight (Active ONLY when mouse hovers over a month) */}
-              {hoveredIndex !== null && (
+              {/* Interactive Hover Highlight (Active ONLY when mouse hovers over a point) */}
+              {hoveredIndex !== null && points[hoveredIndex] && (
                 <g style={{ pointerEvents: 'none' }}>
                   {/* Vertical Dotted Focus Cursor */}
                   <line
@@ -828,9 +921,8 @@ export const OverviewTab = ({
                     style={{ filter: 'drop-shadow(0 0 8px rgba(16,185,129,0.6))' }}
                   />
 
-                  {/* Floating Price & Month Card Tooltip */}
+                  {/* Floating Price Card Tooltip */}
                   <g transform={`translate(${Math.min(480, Math.max(80, toX(hoveredIndex)))}, ${Math.max(45, points[hoveredIndex].y - 42)})`}>
-                    {/* Tooltip Background Card */}
                     <rect
                       x="-75"
                       y="-32"
@@ -841,35 +933,36 @@ export const OverviewTab = ({
                       opacity="0.94"
                       style={{ filter: 'drop-shadow(0 10px 20px rgba(15,23,42,0.3))' }}
                     />
-                    {/* Arrow down indicator */}
                     <polygon
                       points="-6,14 6,14 0,20"
                       fill="#0f172a"
                       opacity="0.94"
                     />
-                    {/* Tooltip Text Content */}
                     <text x="0" y="-14" textAnchor="middle" fill="#94a3b8" fontSize="10.5" fontWeight="600" fontFamily="'Outfit', sans-serif">
-                      📅 Tháng {hoveredIndex + 1}/{new Date().getFullYear()}
+                      📅 {is30DaysMode ? `Ngày ${points[hoveredIndex].label}` : `Tháng ${hoveredIndex + 1}/${new Date().getFullYear()}`}
                     </text>
                     <text x="0" y="4" textAnchor="middle" fill="#34d399" fontSize="13" fontWeight="800" fontFamily="'Outfit', sans-serif">
-                      💰 {Number(revenues[hoveredIndex] || 0).toLocaleString('vi-VN')} đ
+                      💰 {Number(points[hoveredIndex].rev || 0).toLocaleString('vi-VN')} đ
                     </text>
                   </g>
                 </g>
               )}
 
-              {/* X-Axis Dates Labels */}
-              {Array.from({ length: 12 }, (_, i) => `Thg ${i + 1}`).map((mLabel, i) => {
-                const isHovered = hoveredIndex === i;
+              {/* X-Axis Labels */}
+              {(is30DaysMode ? [0, 6, 12, 18, 24, 29] : Array.from({ length: 12 }, (_, i) => i)).map((idx) => {
+                const p = points[idx];
+                if (!p) return null;
+                const mLabel = is30DaysMode ? p.label : `Thg ${idx + 1}`;
+                const isHovered = hoveredIndex === idx;
                 return (
                   <g
-                    key={`x-label-${i}`}
-                    onMouseEnter={() => setHoveredIndex(i)}
+                    key={`x-label-${idx}`}
+                    onMouseEnter={() => setHoveredIndex(idx)}
                     onMouseLeave={() => setHoveredIndex(null)}
                     style={{ cursor: 'pointer' }}
                   >
                     <text
-                      x={toX(i)}
+                      x={p.x}
                       y="288"
                       textAnchor="middle"
                       style={{
