@@ -13,12 +13,17 @@ export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
   const addToast = useCallback((message, type = 'info', duration = 4000) => {
-    const id = crypto.randomUUID();
-    setToasts((prev) => [...prev, { id, message, type }]);
-
-    setTimeout(() => {
-      removeToast(id);
-    }, duration);
+    setToasts((prev) => {
+      // Prevent stacking duplicate toast messages on screen
+      if (prev.some((t) => t.message === message)) {
+        return prev;
+      }
+      const id = crypto.randomUUID();
+      setTimeout(() => {
+        removeToast(id);
+      }, duration);
+      return [...prev, { id, message, type }];
+    });
   }, []);
 
   const removeToast = useCallback((id) => {

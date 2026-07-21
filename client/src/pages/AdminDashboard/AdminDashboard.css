@@ -2784,3 +2784,21 @@ input:checked + .toggle-slider:before {
   font-size: 13px;
   color: var(--admin-text-primary);
 }
+
+/* Modernized Date Picker Input Font Styling */
+input[type="date"], input[type="month"] {
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-weight: 700 !important;
+  color: #0f172a;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: opacity(0.75);
+  transition: transform 0.2s, filter 0.2s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  transform: scale(1.15);
+  filter: opacity(1);
+}

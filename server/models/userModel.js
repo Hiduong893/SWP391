@@ -327,20 +327,20 @@ export const userModel = {
     }
 
     // 5. Update license status and reviewer changes
+    const dbStatusMap = { 'pending': 'Pending', 'verified': 'Approved', 'rejected': 'Rejected' };
+
     if (updateData.licenseStatus !== undefined) {
-      const dbStatusMap = { 'pending': 'Pending', 'verified': 'Approved', 'rejected': 'Rejected' };
       const dbStatus = dbStatusMap[updateData.licenseStatus] || 'Pending';
       await p.request()
         .input('userId', sql.Int, userId)
         .input('status', sql.NVarChar, dbStatus)
         .query(`
           UPDATE KYC SET status = @status, reviewed_at = GETDATE()
-          WHERE user_id = @userId AND document_type = 'DriverLicense'
+          WHERE user_id = @userId
         `);
     }
 
     if (updateData.faceStatus !== undefined) {
-      const dbStatusMap = { 'pending': 'Pending', 'verified': 'Approved', 'rejected': 'Rejected' };
       const dbStatus = dbStatusMap[updateData.faceStatus] || 'Pending';
       await p.request()
         .input('userId', sql.Int, userId)
@@ -352,7 +352,6 @@ export const userModel = {
     }
 
     if (updateData.cccdStatus !== undefined) {
-      const dbStatusMap = { 'pending': 'Pending', 'verified': 'Approved', 'rejected': 'Rejected' };
       const dbStatus = dbStatusMap[updateData.cccdStatus] || 'Pending';
       await p.request()
         .input('userId', sql.Int, userId)
@@ -364,7 +363,6 @@ export const userModel = {
     }
 
     if (updateData.cccdBackStatus !== undefined) {
-      const dbStatusMap = { 'pending': 'Pending', 'verified': 'Approved', 'rejected': 'Rejected' };
       const dbStatus = dbStatusMap[updateData.cccdBackStatus] || 'Pending';
       await p.request()
         .input('userId', sql.Int, userId)

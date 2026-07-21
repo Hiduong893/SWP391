@@ -350,15 +350,27 @@ export const api = {
   },
 
   admin: {
-    getStats: () => 
-      request('/admin/stats', {
-        method: 'GET'
-      }),
+    getStats: (filters = {}) => {
+      const params = new URLSearchParams();
+      for (const key in filters) {
+        if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+          params.append(key, filters[key]);
+        }
+      }
+      const query = params.toString() ? `?${params.toString()}` : '';
+      return request(`/admin/stats${query}`, { method: 'GET' });
+    },
 
-    getMonthlyStats: () =>
-      request('/admin/stats/monthly', {
-        method: 'GET'
-      }),
+    getMonthlyStats: (filters = {}) => {
+      const params = new URLSearchParams();
+      for (const key in filters) {
+        if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+          params.append(key, filters[key]);
+        }
+      }
+      const query = params.toString() ? `?${params.toString()}` : '';
+      return request(`/admin/stats/monthly${query}`, { method: 'GET' });
+    },
       
     getUsers: () => 
       request('/admin/users', {
