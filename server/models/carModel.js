@@ -11,9 +11,6 @@ export const mapCarRow = (row) => {
   };
   const mappedStatus = statusMap[row.status] || 'available';
 
-  // If the owner role is Admin, treat as system-owned (ownerId = null) for the frontend
-  const isSystemCar = row.owner_role === 'Admin';
-
   return {
     id: String(row.vehicle_id),
     brand: row.brand_name,
@@ -24,7 +21,7 @@ export const mapCarRow = (row) => {
     pricePerDay: Number(row.daily_price),
     image: row.image || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80',
     location: row.location_address,
-    ownerId: (row.owner_id && !isSystemCar) ? String(row.owner_id) : null,
+    ownerId: row.owner_id ? String(row.owner_id) : null,
     status: mappedStatus,
     plateNumber: row.license_plate,
     yearOfManufacture: Number(row.year_of_manufacture || 2023),
