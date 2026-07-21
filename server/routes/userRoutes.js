@@ -4,6 +4,7 @@ import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
 import { verifyCCCDQr } from '../utils/qrHelper.js';
 import { verifyKycWithAI } from '../utils/aiHelper.js';
+import { getPool } from '../config/db.js';
 
 const router = express.Router();
 
@@ -251,9 +252,21 @@ router.post('/register-owner', auth, async (req, res) => {
 router.get('/wallet', auth, async (req, res) => {
   try {
     const user = await db.users.findOne({ id: req.user.id });
+    let transactions = [];
+    
+    const p = await getPool();
+    // Get wallet_id for user
+    const walletRes = await p.request().input('userId', req.user.id).query('SELECT wallet_id FROM Wallet WHERE user_id = @userId');
+    if (walletRes.recordset.length > 0) {
+      const walletId = walletRes.recordset[0].wallet_id;
+      const txRes = await p.request().input('walletId', walletId).query('SELECT * FROM WalletTransaction WHERE wallet_id = @walletId ORDER BY created_at DESC');
+      transactions = txRes.recordset;
+    }
+
     res.json({
       walletBalance: user.walletBalance || 0,
-      bankAccount: user.bankAccount
+      bankAccount: user.bankAccount,
+      transactions: transactions
     });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi tải thông tin ví.' });
@@ -277,7 +290,23 @@ router.post('/wallet/transaction', auth, async (req, res) => {
       currentBalance += value;
     }
 
+    // 1. Update JSON file (Legacy)
     const updatedUser = await db.users.update(req.user.id, { walletBalance: currentBalance });
+    
+    // 2. Insert into SQL WalletTransaction via SP
+    const { getPool, sql } = await import('../config/db.js');
+    const p = await getPool();
+    const txnType = type === 'withdraw' ? 'withdraw' : 'deposit';
+    const desc = type === 'withdraw' ? `Rút tiền về ngân hàng` : `Nạp tiền vào ví điện tử`;
+    
+    await p.request()
+      .input('userId', sql.Int, req.user.id)
+      .input('bookingId', sql.Int, null)
+      .input('amount', sql.Float, value)
+      .input('txnType', sql.NVarChar, txnType)
+      .input('description', sql.NVarChar, desc)
+      .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+
     res.json({
       message: type === 'withdraw' ? 'Yêu cầu rút tiền về ngân hàng thành công!' : 'Nạp tiền vào ví điện tử thành công!',
       walletBalance: updatedUser.walletBalance

@@ -22,6 +22,7 @@ export const mapCarRow = (row) => {
     image: row.image || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80',
     location: row.location_address,
     ownerId: row.owner_id ? String(row.owner_id) : null,
+    ownerName: row.owner_name || null,
     status: mappedStatus,
     plateNumber: row.license_plate,
     yearOfManufacture: Number(row.year_of_manufacture || 2023),
@@ -37,7 +38,8 @@ export const carModel = {
     let query = `
       SELECT v.*, b.brand_name, c.category_name,
              (SELECT TOP 1 image_url FROM VehicleImage vi WHERE vi.vehicle_id = v.vehicle_id ORDER BY sort_order) as image,
-             (SELECT TOP 1 r.role_name FROM UserRole ur INNER JOIN Role r ON ur.role_id = r.role_id WHERE ur.user_id = v.owner_id) as owner_role
+             (SELECT TOP 1 r.role_name FROM UserRole ur INNER JOIN Role r ON ur.role_id = r.role_id WHERE ur.user_id = v.owner_id) as owner_role,
+             (SELECT full_name FROM [User] u WHERE u.user_id = v.owner_id) as owner_name
       FROM Vehicle v
       INNER JOIN Brand b ON v.brand_id = b.brand_id
       INNER JOIN VehicleCategory c ON v.category_id = c.category_id
@@ -89,7 +91,8 @@ export const carModel = {
     let query = `
       SELECT v.*, b.brand_name, c.category_name,
              (SELECT TOP 1 image_url FROM VehicleImage vi WHERE vi.vehicle_id = v.vehicle_id ORDER BY sort_order) as image,
-             (SELECT TOP 1 r.role_name FROM UserRole ur INNER JOIN Role r ON ur.role_id = r.role_id WHERE ur.user_id = v.owner_id) as owner_role
+             (SELECT TOP 1 r.role_name FROM UserRole ur INNER JOIN Role r ON ur.role_id = r.role_id WHERE ur.user_id = v.owner_id) as owner_role,
+             (SELECT full_name FROM [User] u WHERE u.user_id = v.owner_id) as owner_name
       FROM Vehicle v
       INNER JOIN Brand b ON v.brand_id = b.brand_id
       INNER JOIN VehicleCategory c ON v.category_id = c.category_id

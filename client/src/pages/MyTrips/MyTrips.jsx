@@ -233,7 +233,7 @@ HỢP ĐỒNG CHO THUÊ XE TỰ LÁI ĐIỆN TỬ
 Hôm nay, tại nền tảng ViVuCar, các bên gồm:
 
 BÊN CHO THUÊ (BÊN A):
-- Tên đơn vị: Công ty Cổ phần Dịch vụ Xe tự lái ViVuCar
+- ${car.ownerId ? 'Họ và tên chủ xe:' : 'Tên đơn vị:'} ${car.ownerId ? (car.ownerName || 'Chủ xe cá nhân') : 'Công ty Cổ phần Dịch vụ Xe tự lái ViVuCar'}
 - Địa chỉ bãi bàn giao: ${trip.pickupLocation || 'Bãi xe Hệ thống'}
 
 BÊN THUÊ XE (BÊN B):

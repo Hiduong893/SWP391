@@ -97,7 +97,7 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
 
   // Top Rented Car (Xe thuê nhiều nhất thực tế từ CSDL)
   const topRentedCar = enrichedCars.length > 0 ? enrichedCars[0] : { name: 'VinFast VF 8 Plus', realBookingCount: 3 };
-  
+
   // Least Rented / Underperforming Car (Xe chưa có lượt thuê / ít người thuê thực tế từ CSDL)
   const leastRentedCar = enrichedCars.length > 0 ? enrichedCars[enrichedCars.length - 1] : { name: 'Honda City RS', realBookingCount: 0 };
 
@@ -123,7 +123,7 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
     if (!code || !discountPercent || !maxDiscountAmount) {
       return showToast('Vui lòng điền các trường bắt buộc (*)', 'warning');
     }
-    
+
     setActionLoading(true);
     try {
       const payload = {
@@ -135,10 +135,10 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
         targetCarName,
         expirationDate: expirationDate || null
       };
-      
+
       const data = await api.support.createVoucher(payload);
       showToast(data?.message || 'Tạo mã giảm giá thành công!', 'success');
-      
+
       // Reset form
       setCode('');
       setDiscountPercent('');
@@ -147,7 +147,7 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
       setTargetUser('all');
       setTargetCarName('Tất cả dòng xe');
       setExpirationDate('');
-      
+
       fetchVouchers();
     } catch (error) {
       showToast(error?.message || 'Lỗi tạo mã giảm giá', 'error');
@@ -357,7 +357,7 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
           gap: '16px',
           alignItems: 'stretch'
         }}>
-          
+
           {/* VIEW MODE 1: SUMMARY (EXACTLY 3 CARDS IN 1 ROW) */}
           {aiFilterView === 'summary' && (
             <>
@@ -735,7 +735,7 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
 
       {/* FORM & VOUCHER CARDS GRID */}
       <div className="charts-grid" style={{ gridTemplateColumns: '1.25fr 1.75fr', gap: '26px', marginTop: '28px' }}>
-        
+
         {/* Modern Form Card */}
         <div ref={formRef} style={{
           background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
@@ -754,16 +754,16 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
               Tạo Mã Giảm Giá Mới
             </h3>
           </div>
-          
+
           <form onSubmit={handleCreateVoucher} className="config-inputs-form">
             <div className="config-input-group mb-4">
               <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <Ticket size={13} color="#00bfa5" /> MÃ COUPON *
               </label>
-              <input 
-                type="text" 
-                className="config-text-input" 
-                placeholder="VD: MOCKAI30" 
+              <input
+                type="text"
+                className="config-text-input"
+                placeholder="VD: VIVUCAR16"
                 value={code}
                 onChange={e => setCode(e.target.value.toUpperCase())}
                 style={{
@@ -779,16 +779,16 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
                 required
               />
             </div>
-            
+
             <div className="config-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div className="config-input-group mb-4">
                 <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <Percent size={13} color="#00bfa5" /> GIẢM (%) *
                 </label>
-                <input 
-                  type="number" 
-                  className="config-text-input" 
-                  placeholder="VD: 50" 
+                <input
+                  type="number"
+                  className="config-text-input"
+                  placeholder="VD: 50"
                   min="1" max="100"
                   value={discountPercent}
                   onChange={e => setDiscountPercent(e.target.value)}
@@ -809,10 +809,10 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
                 <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   💵 GIẢM TỐI ĐA (VNĐ) *
                 </label>
-                <input 
-                  type="number" 
-                  className="config-text-input" 
-                  placeholder="VD: 100000" 
+                <input
+                  type="number"
+                  className="config-text-input"
+                  placeholder="VD: 100000"
                   value={maxDiscountAmount}
                   onChange={e => setMaxDiscountAmount(e.target.value)}
                   style={{
@@ -835,10 +835,10 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
                 <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <Users size={13} color="#00bfa5" /> LƯỢT DÙNG TỐI ĐA
                 </label>
-                <input 
-                  type="number" 
-                  className="config-text-input" 
-                  placeholder="Không giới hạn" 
+                <input
+                  type="number"
+                  className="config-text-input"
+                  placeholder="Không giới hạn"
                   min="1"
                   value={maxUsage}
                   onChange={e => setMaxUsage(e.target.value)}
@@ -856,8 +856,8 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
               </div>
               <div className="config-input-group mb-4">
                 <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px' }}>ĐỐI TƯỢNG KHÁCH HÀNG</label>
-                <select 
-                  className="period-select" 
+                <select
+                  className="period-select"
                   style={{
                     width: '100%',
                     padding: '12px 16px',
@@ -882,8 +882,8 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
               <label className="config-input-label" style={{ color: '#0284c7', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Car size={15} /> DÒNG XE ÁP DỤNG CỤ THỂ
               </label>
-              <select 
-                className="period-select" 
+              <select
+                className="period-select"
                 style={{
                   width: '100%',
                   padding: '12px 16px',
@@ -914,9 +914,9 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
               <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <Calendar size={13} color="#00bfa5" /> NGÀY HẾT HẠN (TÙY CHỌN)
               </label>
-              <input 
-                type="date" 
-                className="config-text-input" 
+              <input
+                type="date"
+                className="config-text-input"
                 value={expirationDate}
                 onChange={e => setExpirationDate(e.target.value)}
                 style={{
@@ -983,7 +983,7 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
                   <div style={{ flex: 1 }}>
                     <h4 style={{ margin: '0 0 4px 0', fontSize: '16.5px', color: '#0f172a', fontWeight: 800, letterSpacing: '0.3px' }}>{v.code}</h4>
                     <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#334155', fontWeight: 600 }}>Giảm <strong style={{ color: '#059669', fontWeight: 800 }}>{v.discount_percent}%</strong> (Tối đa {v.max_discount_amount?.toLocaleString()}đ)</p>
-                    
+
                     {v.target_car_name && v.target_car_name !== 'Tất cả dòng xe' && (
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', fontWeight: 700, color: '#0369a1', background: '#f0f9ff', padding: '3px 10px', borderRadius: '8px', border: '1px solid #7dd3fc', marginBottom: '8px' }}>
                         <Car size={13} /> Áp dụng: {v.target_car_name}
@@ -1000,8 +1000,8 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
                     </div>
                   </div>
                 </div>
-                
-                <button 
+
+                <button
                   onClick={() => handleDelete(v.id)}
                   style={{ position: 'absolute', top: '18px', right: '18px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#dc2626', borderRadius: '8px', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   title="Xóa mã giảm giá"
