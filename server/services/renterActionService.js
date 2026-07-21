@@ -1,33 +1,32 @@
 import { sql, getPool } from '../config/db.js';
 
-const getDaysUntilPickup = (pickupDate) => {
+const getHoursUntilPickup = (pickupDate) => {
   const now = new Date();
-  now.setHours(0, 0, 0, 0);
   const pickup = new Date(pickupDate);
-  pickup.setHours(0, 0, 0, 0);
   const diffMs = pickup - now;
-  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  return Math.floor(diffMs / (1000 * 60 * 60));
 };
 
 // depositAmount: actual reservation fee paid (e.g. 30% of totalPrice)
-const applyRefundPolicy = (daysUntilPickup, depositAmount) => {
-  const policies = [
-    { minDays: 7, refundPercent: 100, label: 'Ho\u00e0n 100% (H\u1ee7y s\u1edbm tr\u01b0\u1edbc \u22657 ng\u00e0y)' },
-    { minDays: 3, refundPercent: 50,  label: 'Ho\u00e0n 50%  (H\u1ee7y tr\u01b0\u1edbc 3-6 ng\u00e0y)'     },
-    { minDays: 1, refundPercent: 0,   label: 'Kh\u00f4ng ho\u00e0n (H\u1ee7y tr\u1ec5, 1-2 ng\u00e0y)'     },
-    { minDays: 0, refundPercent: 0,   label: 'Kh\u00f4ng th\u1ec3 h\u1ee7y (\u0110\u00e3 qua ng\u00e0y kh\u1eedi h\u00e0nh)' },
-  ];
+const applyRefundPolicy = (hoursUntilPickup, depositAmount) => {
   const amt = Number(depositAmount) || 0;
-  for (const policy of policies) {
-    if (daysUntilPickup >= policy.minDays) {
-      return {
-        refundPercent: policy.refundPercent,
-        refundAmount: Math.floor((amt * policy.refundPercent) / 100),
-        policyLabel: policy.label
-      };
-    }
+  
+  let refundPercent = 0;
+  let policyLabel = 'Không hoàn phí (Trong vòng 24 giờ)';
+  
+  if (hoursUntilPickup > 48) {
+    refundPercent = 100;
+    policyLabel = 'Hoàn 100% (Hủy trước > 48 giờ)';
+  } else if (hoursUntilPickup >= 24) {
+    refundPercent = 50;
+    policyLabel = 'Hoàn 50% (Hủy trước 24 - 48 giờ)';
   }
-  return { refundPercent: 0, refundAmount: 0, policyLabel: 'Kh\u00f4ng ho\u00e0n c\u1ecdc' };
+
+  return {
+    refundPercent,
+    refundAmount: Math.floor((amt * refundPercent) / 100),
+    policyLabel
+  };
 };
 
 export const renterActionService = {
@@ -55,31 +54,31 @@ export const renterActionService = {
       return {
         canCancel: true,
         isPendingOwner: true,
-        daysUntilPickup: getDaysUntilPickup(booking.start_datetime),
+        hoursUntilPickup: getHoursUntilPickup(booking.start_datetime),
         depositAmount,
         refundAmount: depositAmount,
         refundPercent: 100,
-        policyLabel: 'Ho\u00e0n 100% (Ch\u1ee7 xe ch\u01b0a duy\u1ec7t \u2014 h\u1ee7y mi\u1ec5n ph\u00ed)',
-        message: `H\u1ee7y mi\u1ec5n ph\u00ed v\u00ec ch\u1ee7 xe ch\u01b0a duy\u1ec7t. Ho\u00e0n to\u00e0n b\u1ed9: ${depositAmount.toLocaleString('vi-VN')} VND.`
+        policyLabel: 'Hoàn 100% (Chủ xe chưa duyệt — hủy miễn phí)',
+        message: `Hủy miễn phí vì chủ xe chưa duyệt. Hoàn toàn bộ: ${depositAmount.toLocaleString('vi-VN')} VND.`
       };
     }
 
-    const daysUntilPickup = getDaysUntilPickup(booking.start_datetime);
-    if (daysUntilPickup < 0) {
-      return { canCancel: false, message: '\u0110\u00e3 qua ng\u00e0y nh\u1eadn xe.', daysUntilPickup };
+    const hoursUntilPickup = getHoursUntilPickup(booking.start_datetime);
+    if (hoursUntilPickup < 0) {
+      return { canCancel: false, message: 'Đã qua ngày nhận xe.', hoursUntilPickup };
     }
 
-    const { refundPercent, refundAmount, policyLabel } = applyRefundPolicy(daysUntilPickup, depositAmount);
+    const { refundPercent, refundAmount, policyLabel } = applyRefundPolicy(hoursUntilPickup, depositAmount);
 
     return {
       canCancel: true,
       isPendingOwner: false,
-      daysUntilPickup,
+      hoursUntilPickup,
       depositAmount,
       refundAmount,
       refundPercent,
       policyLabel,
-      message: `N\u1ebfu h\u1ee7y ngay, b\u1ea1n s\u1ebd \u0111\u01b0\u1ee3c ho\u00e0n: ${refundAmount.toLocaleString('vi-VN')} VND (${refundPercent}% ph\u00ed gi\u1eef ch\u1ed7).`
+      message: `Nếu hủy ngay, bạn sẽ được hoàn: ${refundAmount.toLocaleString('vi-VN')} VND (${refundPercent}% phí giữ chỗ).`
     };
   },
 
@@ -118,11 +117,11 @@ export const renterActionService = {
       refundAmount = depositAmount;
       policyLabel = 'Ho\u00e0n 100% (Ch\u1ee7 xe ch\u01b0a duy\u1ec7t)';
     } else {
-      const daysUntilPickup = getDaysUntilPickup(booking.start_datetime);
-      if (daysUntilPickup < 0) {
-        throw new Error('Ng\u00e0y nh\u1eadn xe \u0111\u00e3 qua, kh\u00f4ng th\u1ec3 h\u1ee7y chuy\u1ebfn \u0111i n\u00e0y.');
+      const hoursUntilPickup = getHoursUntilPickup(booking.start_datetime);
+      if (hoursUntilPickup < 0) {
+        throw new Error('Ngày nhận xe đã qua, không thể hủy chuyến đi này.');
       }
-      ({ refundPercent, refundAmount, policyLabel } = applyRefundPolicy(daysUntilPickup, depositAmount));
+      ({ refundPercent, refundAmount, policyLabel } = applyRefundPolicy(hoursUntilPickup, depositAmount));
     }
 
     // 2. Start SQL Transaction
