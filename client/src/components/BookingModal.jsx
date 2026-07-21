@@ -122,6 +122,19 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
     stopFaceScanStream();
   };
 
+  const handleFileUploadFace = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        setCapturedFace(uploadEvent.target.result);
+        setFaceScanStep('captured');
+        showToast('Đã tải ảnh khuôn mặt thành công!', 'success');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleVerifyFace = async () => {
     if (!capturedFace) return;
     setFaceScanStep('verifying');
@@ -1385,16 +1398,22 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
             </div>
 
             {/* Action buttons */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
               {(faceScanStep === 'idle' || faceScanStep === 'captured') && (
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={startFaceScan}
-                  style={{ background: '#009698', borderColor: '#009698' }}
-                >
-                  📸 Kích hoạt Camera Quét mặt
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={startFaceScan}
+                    style={{ background: '#009698', borderColor: '#009698' }}
+                  >
+                    📸 Kích hoạt Camera Quét mặt
+                  </button>
+                  <label className="btn btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#334155' }}>
+                    <Upload size={16} /> Tải ảnh từ thiết bị
+                    <input type="file" accept="image/*" onChange={handleFileUploadFace} style={{ display: 'none' }} />
+                  </label>
+                </>
               )}
 
               {faceScanStep === 'streaming' && (
@@ -1422,11 +1441,11 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
             </div>
 
             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontSize: '12.5px', color: '#64748b', textAlign: 'left', lineHeight: 1.5 }}>
-              💡 <strong>Lưu ý đối chiếu:</strong> Ảnh sẽ được so khớp với ảnh FaceID mà bạn đăng ký lúc KYC. Nếu bạn chưa KYC khuôn mặt, hệ thống sẽ tự động sử dụng ảnh chụp này làm FaceID ký kết hợp đồng.
+              💡 <strong>Lưu ý đối chiếu:</strong> Bạn có thể bật Camera hoặc Tải ảnh khuôn mặt từ máy tính/điện thoại. Nếu máy không có camera, bạn có thể chọn Bỏ qua để chuyển tới bước ký hợp đồng.
             </div>
 
             {/* Step Footer Action */}
-            <div className="booking-modal-footer mt-6" style={{ marginTop: '24px' }}>
+            <div className="booking-modal-footer mt-6" style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between' }}>
               <button 
                 type="button" 
                 className="btn btn-secondary" 
@@ -1438,7 +1457,17 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
               >
                 Quay lại
               </button>
-              <div></div>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  stopFaceScanStream();
+                  setStep('contract');
+                }}
+                style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', border: 'none' }}
+              >
+                Ký hợp đồng điện tử ➔
+              </button>
             </div>
           </div>
         )}

@@ -41,7 +41,7 @@ function App() {
   const [authModal, setAuthModal] = useState(null); // 'login', 'register', 'forgot-password'
   const [activeBooking, setActiveBooking] = useState(null);
   const [searchParams, setSearchParams] = useState(null);
-  
+
   const [systemConfig, setSystemConfig] = useState(null);
 
   // Parse currentTab from URL path for Navbar highlighting
@@ -76,7 +76,7 @@ function App() {
         const data = await api.user.getProfile();
         currentUser = data.user;
         setUser(data.user);
-        
+
         if (data.user && data.user.role === 'owner' && location.pathname === '/') {
           navigate('/owner-dashboard');
         }
@@ -195,7 +195,7 @@ function App() {
         <h1 style={{ fontSize: '36px', color: '#00bfa5', marginBottom: '16px' }}>{systemConfig?.platformName || 'ViVuCar'}</h1>
         <h2 style={{ fontSize: '24px', marginBottom: '16px' }}>Hệ thống đang bảo trì</h2>
         <p style={{ color: '#94a3b8', maxWidth: '600px', lineHeight: '1.6', marginBottom: '32px' }}>
-          Chúng tôi đang tiến hành nâng cấp và bảo trì hệ thống để mang lại trải nghiệm tốt nhất cho bạn. 
+          Chúng tôi đang tiến hành nâng cấp và bảo trì hệ thống để mang lại trải nghiệm tốt nhất cho bạn.
           Vui lòng quay lại sau ít phút. Xin lỗi vì sự bất tiện này!
         </p>
         <button onClick={() => setAuthModal('login')} style={{ background: 'transparent', border: '1px solid #334155', color: '#94a3b8', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}>
