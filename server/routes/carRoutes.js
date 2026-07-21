@@ -9,7 +9,7 @@ const router = express.Router();
 // 13. GET Cars (Lấy danh sách xe với bộ lọc)
 router.get('/api/cars', async (req, res) => {
   try {
-    const { location, seats, transmission, fuel, search } = req.query;
+    const { location, seats, transmission, fuel, search, all } = req.query;
 
     const filters = {};
     if (location) filters.location = location;
@@ -19,13 +19,15 @@ router.get('/api/cars', async (req, res) => {
 
     let cars = await db.cars.findMany(filters);
 
-    // Lọc bỏ những xe đã có người thanh toán hoặc đang thuê
-    const allBookings = await db.bookings.findMany();
-    const busyCarIds = allBookings
-      .filter(b => ['pending', 'pending_owner', 'confirmed', 'active'].includes(b.status))
-      .map(b => b.carId);
+    if (all !== 'true') {
+      // Lọc bỏ những xe đã có người thanh toán hoặc đang thuê
+      const allBookings = await db.bookings.findMany();
+      const busyCarIds = allBookings
+        .filter(b => ['pending', 'pending_owner', 'confirmed', 'active'].includes(b.status))
+        .map(b => b.carId);
 
-    cars = cars.filter(car => car.status === 'available' && !busyCarIds.includes(car.id));
+      cars = cars.filter(car => car.status === 'available' && !busyCarIds.includes(car.id));
+    }
 
     if (search) {
       const keyword = search.toLowerCase();
