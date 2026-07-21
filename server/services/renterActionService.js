@@ -12,14 +12,14 @@ const applyRefundPolicy = (hoursUntilPickup, depositAmount) => {
   const amt = Number(depositAmount) || 0;
   
   let refundPercent = 0;
-  let policyLabel = 'Không hoàn phí (Trong vòng 24 giờ)';
+  let policyLabel = 'Không hoàn phí (Trong vòng 12 giờ)';
   
-  if (hoursUntilPickup > 48) {
+  if (hoursUntilPickup > 24) {
     refundPercent = 100;
-    policyLabel = 'Hoàn 100% (Hủy trước > 48 giờ)';
-  } else if (hoursUntilPickup >= 24) {
+    policyLabel = 'Hoàn 100% (Hủy trước > 24 giờ)';
+  } else if (hoursUntilPickup >= 12) {
     refundPercent = 50;
-    policyLabel = 'Hoàn 50% (Hủy trước 24 - 48 giờ)';
+    policyLabel = 'Hoàn 50% (Hủy trước 12 - 24 giờ)';
   }
 
   return {
