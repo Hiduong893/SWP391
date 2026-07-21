@@ -485,23 +485,25 @@ export const AdminDashboard = ({ setCurrentTab }) => {
   const verifiedKycUsers = usersList.filter(u => u.licenseStatus === 'verified');
   const isAdmin = currentUserRole === 'admin';
 
-  // Search logic for dynamic filtering
+  // Search logic for dynamic filtering with safe String conversion
   const filteredUsers = usersList.filter(u =>
-    u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.role?.toLowerCase().includes(searchQuery.toLowerCase())
+    (u.name && String(u.name).toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (u.email && String(u.email).toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (u.role && String(u.role).toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const filteredCars = carsList.filter(c =>
-    c.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.model?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.plateNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+    (c.brand && String(c.brand).toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (c.model && String(c.model).toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (c.name && String(c.name).toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (c.plateNumber && String(c.plateNumber).toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const filteredBookings = bookingsList.filter(b =>
-    b.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    b.carName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    b.id?.toLowerCase().includes(searchQuery.toLowerCase())
+    (b.userName && String(b.userName).toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (b.renterName && String(b.renterName).toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (b.carName && String(b.carName).toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (b.id !== undefined && b.id !== null && String(b.id).toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
