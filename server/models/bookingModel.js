@@ -198,7 +198,7 @@ export const bookingModel = {
     const payRequest = p.request()
       .input('bookingId', sql.Int, bookingId)
       .input('payerId', sql.Int, renterId)
-      .input('amount', sql.Decimal(18, 2), 500000)
+      .input('amount', sql.Decimal(18, 2), deposit)
       .input('method', sql.NVarChar, bookingData.paymentMethod || 'bank_transfer')
       .input('status', sql.NVarChar, initialStatus)
       .input('paidAt', sql.DateTime2, hasPaidAt);

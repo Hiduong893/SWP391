@@ -4,7 +4,7 @@ const getHoursUntilPickup = (pickupDate) => {
   const now = new Date();
   const pickup = new Date(pickupDate);
   const diffMs = pickup - now;
-  return Math.floor(diffMs / (1000 * 60 * 60));
+  return Math.max(0, diffMs / (1000 * 60 * 60)); // Exact hours (can be fraction)
 };
 
 // depositAmount: actual reservation fee paid (e.g. 30% of totalPrice)
@@ -54,7 +54,7 @@ export const renterActionService = {
       return {
         canCancel: true,
         isPendingOwner: true,
-        hoursUntilPickup: getHoursUntilPickup(booking.start_datetime),
+        hoursUntilPickup: Math.floor(getHoursUntilPickup(booking.start_datetime)),
         depositAmount,
         refundAmount: depositAmount,
         refundPercent: 100,
@@ -64,8 +64,8 @@ export const renterActionService = {
     }
 
     const hoursUntilPickup = getHoursUntilPickup(booking.start_datetime);
-    if (hoursUntilPickup < 0) {
-      return { canCancel: false, message: 'Đã qua ngày nhận xe.', hoursUntilPickup };
+    if (hoursUntilPickup <= 0 && new Date() > new Date(booking.start_datetime)) {
+      return { canCancel: false, message: 'Đã qua giờ nhận xe.', hoursUntilPickup: 0 };
     }
 
     const { refundPercent, refundAmount, policyLabel } = applyRefundPolicy(hoursUntilPickup, depositAmount);
@@ -118,8 +118,8 @@ export const renterActionService = {
       policyLabel = 'Ho\u00e0n 100% (Ch\u1ee7 xe ch\u01b0a duy\u1ec7t)';
     } else {
       const hoursUntilPickup = getHoursUntilPickup(booking.start_datetime);
-      if (hoursUntilPickup < 0) {
-        throw new Error('Ngày nhận xe đã qua, không thể hủy chuyến đi này.');
+      if (hoursUntilPickup <= 0 && new Date() > new Date(booking.start_datetime)) {
+        throw new Error('Giờ nhận xe đã qua, không thể hủy chuyến đi này.');
       }
       ({ refundPercent, refundAmount, policyLabel } = applyRefundPolicy(hoursUntilPickup, depositAmount));
     }

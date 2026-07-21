@@ -290,27 +290,8 @@ export const getPool = async () => {
       // Seed default values if database is empty
       await seedDb(pool);
 
-      // Perform partitioning of vehicles to satisfy "half Gặp chủ xe, half Tự nhận xe"
-      // owner@bonboncar.vn is Owner (Gặp chủ xe)
-      // admin@bonboncar.vn is Admin (Tự nhận xe)
-      const adminRes = await pool.request().query("SELECT user_id FROM [User] WHERE email = 'admin@bonboncar.vn'");
-      const ownerRes = await pool.request().query("SELECT user_id FROM [User] WHERE email = 'owner@bonboncar.vn'");
-      if (adminRes.recordset.length > 0 && ownerRes.recordset.length > 0) {
-        const adminId = adminRes.recordset[0].user_id;
-        const ownerId = ownerRes.recordset[0].user_id;
-        
-        const carsRes = await pool.request().query("SELECT vehicle_id FROM Vehicle ORDER BY vehicle_id");
-        const carIds = carsRes.recordset.map(r => r.vehicle_id);
-        
-        for (let i = 0; i < carIds.length; i++) {
-          const targetOwnerId = i < Math.ceil(carIds.length / 2) ? adminId : ownerId;
-          await pool.request()
-            .input('vehicleId', sql.Int, carIds[i])
-            .input('ownerId', sql.Int, targetOwnerId)
-            .query("UPDATE Vehicle SET owner_id = @ownerId WHERE vehicle_id = @vehicleId");
-        }
-        console.log(`Vehicles ownership partitioned: ${Math.ceil(carIds.length / 2)} cars owned by Admin (Tự nhận xe), ${carIds.length - Math.ceil(carIds.length / 2)} cars owned by Owner (Gặp chủ xe)`);
-      }
+      // The logic to automatically partition vehicles has been removed 
+      // so it no longer overwrites the database on every server restart.
     } catch (err) {
       console.error('Error running SQL migrations or seeding database:', err);
     }
