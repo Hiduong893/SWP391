@@ -1229,11 +1229,11 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                     </div>
                     <div className="info-row" style={{ fontSize: '12.5px', paddingBottom: '6px' }}>
                       <span className="lbl">Thời gian:</span>
-                      <strong className="val" style={{ fontSize: '11px' }}>{pickupDate} ➔ {returnDate}</strong>
+                      <strong className="val" style={{ fontSize: '11px' }}>{pickupTime} {pickupDate} ➔ {returnTime} {returnDate}</strong>
                     </div>
                     <div className="info-row" style={{ fontSize: '12.5px', paddingBottom: '6px' }}>
-                      <span className="lbl">Số ngày:</span>
-                      <strong className="val">{diffDays} ngày</strong>
+                      <span className="lbl">Thời lượng:</span>
+                      <strong className="val">{diffDaysStr}</strong>
                     </div>
                   </div>
 
@@ -1643,8 +1643,8 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                   <strong>{car.brand} {car.model}</strong>
                 </div>
                 <div className="receipt-row">
-                  <span>Thời gian thuê:</span>
-                  <strong style={{ fontSize: '11px' }}>{pickupDate} ➔ {returnDate} ({diffDays} ngày)</strong>
+                  <span className="lbl">Thời gian thuê:</span>
+                  <strong style={{ fontSize: '11px' }}>{pickupTime} {pickupDate} ➔ {returnTime} {returnDate} ({diffDaysStr})</strong>
                 </div>
                 <div className="receipt-row">
                   <span>Vị trí nhận xe:</span>
