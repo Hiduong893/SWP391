@@ -49,7 +49,7 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, s
         setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
       }
       setIsOpen(false);
-      
+
       // Smart navigation
       if (user.role === 'renter') {
         setCurrentTab('my-trips');
@@ -173,7 +173,7 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, s
           {user ? (
             <div className="nav-user-area">
               <div className="nav-notification-container" ref={dropdownRef}>
-                <button 
+                <button
                   className={`nav-notification-btn ${unreadCount > 0 ? 'has-unread' : ''}`}
                   onClick={() => setIsOpen(!isOpen)}
                   title="Thông báo"
@@ -197,8 +197,8 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, s
                         <div className="nav-notif-empty">Không có thông báo mới.</div>
                       ) : (
                         notifications.map((notif) => (
-                          <div 
-                            key={notif.id} 
+                          <div
+                            key={notif.id}
                             className={`nav-notif-item ${notif.isRead ? 'read' : 'unread'}`}
                             onClick={() => handleNotificationClick(notif)}
                           >

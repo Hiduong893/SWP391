@@ -37,7 +37,7 @@ router.get('/api/admin/vouchers', auth, cskhOrAdminAuth, async (req, res) => {
 // POST create voucher (Admin only)
 router.post('/api/admin/vouchers', auth, cskhOrAdminAuth, async (req, res) => {
   try {
-    const { code, discountPercent, maxDiscountAmount, maxUsage, targetUser, expirationDate } = req.body;
+    const { code, discountPercent, maxDiscountAmount, maxUsage, targetUser, targetCarName, expirationDate } = req.body;
     
     if (!code || !discountPercent || !maxDiscountAmount) {
       return res.status(400).json({ message: 'Vui lòng điền mã coupon, % giảm và số tiền giảm tối đa.' });
@@ -49,6 +49,7 @@ router.post('/api/admin/vouchers', auth, cskhOrAdminAuth, async (req, res) => {
       maxDiscountAmount: parseFloat(maxDiscountAmount),
       maxUsage: maxUsage ? parseInt(maxUsage) : null,
       targetUser,
+      targetCarName,
       expirationDate
     });
 

@@ -47,6 +47,13 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
     }
   };
 
+  const getTodayStr = () => {
+    const d = new Date();
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  };
+
+  const todayStr = getTodayStr();
+
   useEffect(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -54,8 +61,15 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
     dayAfter.setDate(dayAfter.getDate() + 3);
 
     const initLocation = initialSearchParams ? initialSearchParams.location : '';
-    const initPickup = initialSearchParams ? initialSearchParams.pickupDate : tomorrow.toISOString().split('T')[0];
-    const initReturn = initialSearchParams ? initialSearchParams.returnDate : dayAfter.toISOString().split('T')[0];
+    let initPickup = initialSearchParams ? initialSearchParams.pickupDate : tomorrow.toISOString().split('T')[0];
+    let initReturn = initialSearchParams ? initialSearchParams.returnDate : dayAfter.toISOString().split('T')[0];
+
+    if (initPickup && initPickup < todayStr) {
+      initPickup = todayStr;
+      const nextDay = new Date(todayStr);
+      nextDay.setDate(nextDay.getDate() + 1);
+      initReturn = nextDay.toISOString().split('T')[0];
+    }
 
     setSelectedLocation(initLocation);
     setPickupDate(initPickup);
@@ -66,6 +80,11 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
 
   const handleSearchSubmit = (e) => {
     if (e) e.preventDefault();
+    const currentToday = getTodayStr();
+    if (pickupDate && pickupDate < currentToday) {
+      showToast('Ngày nhận xe không thể ở trong quá khứ (trước ngày hôm nay).', 'warning');
+      return;
+    }
     if (new Date(pickupDate) >= new Date(returnDate)) {
       showToast('Ngày trả xe phải sau ngày nhận xe ít nhất 1 ngày.', 'warning');
       return;
@@ -256,8 +275,17 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
             <Calendar size={18} className="field-icon-premium" />
             <input 
               type="date" 
+              min={todayStr}
               value={pickupDate}
-              onChange={(e) => setPickupDate(e.target.value)}
+              onChange={(e) => {
+                const newPickup = e.target.value;
+                setPickupDate(newPickup);
+                if (new Date(newPickup) >= new Date(returnDate)) {
+                  const nextDay = new Date(newPickup);
+                  nextDay.setDate(nextDay.getDate() + 1);
+                  setReturnDate(nextDay.toISOString().split('T')[0]);
+                }
+              }}
               className="search-date-premium"
               title="Ngày nhận xe"
               required
@@ -265,6 +293,7 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
             <span className="search-date-separator">đến</span>
             <input 
               type="date" 
+              min={pickupDate || todayStr}
               value={returnDate}
               onChange={(e) => setReturnDate(e.target.value)}
               className="search-date-premium"
