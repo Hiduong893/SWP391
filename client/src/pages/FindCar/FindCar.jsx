@@ -740,17 +740,17 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
                     </thead>
                     <tbody>
                       <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <td style={{ padding: '10px', textAlign: 'left', color: '#334155', fontWeight: '500' }}>Trước &gt; 48 giờ</td>
+                        <td style={{ padding: '10px', textAlign: 'left', color: '#334155', fontWeight: '500' }}>Trước &gt; 24 giờ</td>
                         <td style={{ padding: '10px', textAlign: 'center', color: '#334155' }}>Hoàn <strong>100%</strong> phí giữ chỗ</td>
                         <td style={{ padding: '10px', textAlign: 'center', color: '#334155' }}>Không áp dụng</td>
                       </tr>
                       <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <td style={{ padding: '10px', textAlign: 'left', color: '#334155', fontWeight: '500' }}>Trước 24 - 48 giờ</td>
+                        <td style={{ padding: '10px', textAlign: 'left', color: '#334155', fontWeight: '500' }}>Trước 12 - 24 giờ</td>
                         <td style={{ padding: '10px', textAlign: 'center', color: '#334155' }}>Hoàn <strong>50%</strong> phí giữ chỗ</td>
                         <td style={{ padding: '10px', textAlign: 'center', color: '#334155' }}>Không hoàn phí</td>
                       </tr>
                       <tr>
-                        <td style={{ padding: '10px', textAlign: 'left', color: '#334155', fontWeight: '500' }}>Trong vòng 24 giờ</td>
+                        <td style={{ padding: '10px', textAlign: 'left', color: '#334155', fontWeight: '500' }}>Trong vòng 12 giờ</td>
                         <td style={{ padding: '10px', textAlign: 'center', color: '#334155' }}>Không hoàn phí</td>
                         <td style={{ padding: '10px', textAlign: 'center', color: '#334155' }}>Không hoàn phí</td>
                       </tr>

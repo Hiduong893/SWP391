@@ -1466,17 +1466,17 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                       </thead>
                       <tbody>
                         <tr>
-                          <td>Trước &gt; 48 giờ</td>
+                          <td>Trước &gt; 24 giờ</td>
                           <td>Hoàn <strong>100%</strong> phí giữ chỗ</td>
                           <td>Không áp dụng</td>
                         </tr>
                         <tr>
-                          <td>Trước 24 - 48 giờ</td>
+                          <td>Trước 12 - 24 giờ</td>
                           <td>Hoàn <strong>50%</strong> phí giữ chỗ</td>
                           <td>Không hoàn phí</td>
                         </tr>
                         <tr>
-                          <td>Trong vòng 24 giờ</td>
+                          <td>Trong vòng 12 giờ</td>
                           <td>Không hoàn phí</td>
                           <td>Không hoàn phí</td>
                         </tr>
