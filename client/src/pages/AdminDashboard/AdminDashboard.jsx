@@ -193,6 +193,88 @@ export const AdminDashboard = ({ setCurrentTab }) => {
     }
   };
 
+  // 1c. Xuất file Báo cáo Excel (.csv UTF-8 BOM chuẩn Microsoft Excel)
+  const handleExportExcelReport = () => {
+    try {
+      const todayStr = new Date().toLocaleDateString('vi-VN');
+      let csv = "\uFEFF"; // UTF-8 BOM for Microsoft Excel Vietnamese accents
+
+      // Section 1: Overview KPIs
+      csv += "=== BÁO CÁO TỔNG QUAN HỆ THỐNG VIVUCAR ===\n";
+      csv += `Ngày xuất báo cáo:,${todayStr}\n`;
+      csv += `Tổng doanh thu hệ thống:,${(stats.totalCashFlow || stats.totalRevenue || 0).toLocaleString('vi-VN')} VNĐ\n`;
+      csv += `Tổng số thành viên:,${usersList.length || stats.totalUsers || 0} tài khoản\n`;
+      csv += `Tổng số chuyến xe đã đặt:,${bookingsList.length || stats.totalBookings || 0} đơn\n`;
+      csv += `Tổng số xe cho thuê:,${carsList.length || stats.totalCars || 0} xe\n\n`;
+
+      // Section 2: Bookings & Transactions
+      csv += "=== CHI TIẾT ĐƠN HÀNG & CHUYẾN XE ===\n";
+      csv += "Mã đơn,Khách hàng,Email,Dòng xe,Ngày đặt,Tổng tiền (VNĐ),Trạng thái\n";
+
+      if (bookingsList && bookingsList.length > 0) {
+        bookingsList.forEach((b, idx) => {
+          const code = `BOOK-${b.id || b.booking_id || idx + 1}`;
+          const name = `"${(b.renterName || b.userName || b.renter_name || 'Khách hàng').replace(/"/g, '""')}"`;
+          const email = `"${(b.renterEmail || b.userEmail || b.renter_email || '').replace(/"/g, '""')}"`;
+          const car = `"${(b.carName || b.car_name || 'VinFast VF 8 Plus').replace(/"/g, '""')}"`;
+          const date = b.createdAt ? new Date(b.createdAt).toLocaleDateString('vi-VN') : (b.pickupDate ? new Date(b.pickupDate).toLocaleDateString('vi-VN') : todayStr);
+          const amount = Number(b.totalPrice || b.total_amount || b.amount || 0);
+          const status = b.status === 'completed' || b.status === 'confirmed' || b.status === 'paid' ? 'Đã thanh toán' : (b.status === 'cancelled' ? 'Đã hủy' : 'Chờ xử lý');
+
+          csv += `${code},${name},${email},${car},${date},${amount},${status}\n`;
+        });
+      }
+
+      // Section 3: Users List
+      csv += "\n=== DANH SÁCH THÀNH VIÊN ===\n";
+      csv += "ID,Họ và tên,Email,Vai trò,Ngày đăng ký,Trạng thái KYC\n";
+      if (usersList && usersList.length > 0) {
+        usersList.forEach(u => {
+          const uId = u.id || u.user_id;
+          const uName = `"${(u.name || u.fullName || u.full_name || 'Thành viên').replace(/"/g, '""')}"`;
+          const uEmail = `"${(u.email || '').replace(/"/g, '""')}"`;
+          const uRole = u.role === 'admin' ? 'Admin' : (u.role === 'cskh' ? 'CSKH' : (u.role === 'owner' ? 'Chủ xe' : 'Khách thuê'));
+          const uDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString('vi-VN') : todayStr;
+          const uKyc = u.licenseStatus === 'verified' ? 'Đã xác thực KYC' : 'Chưa xác thực';
+
+          csv += `${uId},${uName},${uEmail},${uRole},${uDate},${uKyc}\n`;
+        });
+      }
+
+      // Section 4: Cars List
+      csv += "\n=== DANH SÁCH XE HỆ THỐNG ===\n";
+      csv += "ID,Tên xe,Biển số,Giá thuê/ngày (VNĐ),Địa điểm,Trạng thái\n";
+      if (carsList && carsList.length > 0) {
+        carsList.forEach(c => {
+          const cId = c.id || c.vehicle_id;
+          const cName = `"${(c.brand ? `${c.brand} ${c.model}` : (c.name || 'Mẫu xe')).replace(/"/g, '""')}"`;
+          const cPlate = `"${(c.licensePlate || c.license_plate || c.plateNumber || '').replace(/"/g, '""')}"`;
+          const cPrice = Number(c.pricePerDay || c.price_per_day || 0);
+          const cLoc = `"${(c.location || c.city || 'TP.HCM').replace(/"/g, '""')}"`;
+          const cStatus = c.status === 'available' ? 'Sẵn sàng cho thuê' : (c.status === 'busy' ? 'Đang được thuê' : 'Bảo trì');
+
+          csv += `${cId},${cName},${cPlate},${cPrice},${cLoc},${cStatus}\n`;
+        });
+      }
+
+      // Trigger file download
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Bao_Cao_Tong_Quan_ViVuCar_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast("📊 Đã xuất file Báo cáo Excel (.csv) thành công!", "success");
+    } catch (error) {
+      console.error("Lỗi xuất báo cáo Excel:", error);
+      showToast("Lỗi xuất file báo cáo Excel.", "error");
+    }
+  };
+
   // 2. Kiểm duyệt xe mới (UC27)
   const handleModerateCar = async (carId, approve, reason = '') => {
     setActionLoading(true);
@@ -569,9 +651,9 @@ export const AdminDashboard = ({ setCurrentTab }) => {
             {activeTab === 'overview' && (
               <button
                 className="action-btn btn-outline header-report-btn"
-                onClick={() => showToast("Tính năng xuất báo cáo PDF/Excel đang được khởi tạo.", "info")}
+                onClick={handleExportExcelReport}
               >
-                Xuất báo cáo
+                📊 Xuất báo cáo Excel
               </button>
             )}
 
@@ -609,6 +691,7 @@ export const AdminDashboard = ({ setCurrentTab }) => {
               handleUpdateUserRole={handleUpdateUserRole}
               handleApproveKyc={handleApproveKyc}
               onFilterRevenue={handleFilterRevenue}
+              onExportExcel={handleExportExcelReport}
               actionLoading={actionLoading}
               showToast={showToast}
               setActiveTab={setActiveTab}

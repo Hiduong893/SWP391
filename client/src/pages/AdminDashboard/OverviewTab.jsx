@@ -10,6 +10,7 @@ export const OverviewTab = ({
   handleUpdateUserRole,
   handleApproveKyc,
   onFilterRevenue,
+  onExportExcel,
   actionLoading,
   showToast,
   setActiveTab,
@@ -510,6 +511,30 @@ export const OverviewTab = ({
             }}
           >
             Lọc ngay
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (onExportExcel) onExportExcel();
+              else if (showToast) showToast('Đang tạo và tải file Excel...', 'info');
+            }}
+            style={{
+              fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+              padding: '7px 18px',
+              background: 'linear-gradient(135deg, #10b981, #059669)',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '10px',
+              fontSize: '13px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(16,185,129,0.3)',
+              letterSpacing: '0.2px',
+              marginLeft: '8px'
+            }}
+          >
+            📊 Xuất File Excel (.csv)
           </button>
         </div>
       </div>
