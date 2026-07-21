@@ -49,6 +49,17 @@ definePut('/api/bookings/:id/cancel', '/api/renter/bookings/:id/cancel-with-refu
     if (booking) {
       const car = await db.cars.findOne({ id: booking.carId });
       const user = await db.users.findOne({ id: req.user.id });
+      // Notify Renter
+      await notificationService.createNotification(
+        req.user.id,
+        'Hủy chuyến thành công',
+        `Bạn đã hủy thành công chuyến đi xe ${car.brand} ${car.model} (Mã: #${id}). ${refundMsg}`,
+        'BookingUpdate',
+        id,
+        'Booking'
+      );
+
+      // Notify Owner
       if (car && car.ownerId) {
         await notificationService.createNotification(
           car.ownerId,

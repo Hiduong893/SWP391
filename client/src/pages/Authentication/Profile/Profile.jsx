@@ -132,10 +132,12 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
 
   // Wallet States (UC19)
   const [walletBalance, setWalletBalance] = useState(user.walletBalance || 0);
+  const [transactions, setTransactions] = useState([]);
   const [bankAccount, setBankAccount] = useState(user.bankAccount || null);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [walletTxType, setWalletTxType] = useState('deposit'); // deposit | withdraw
   const [walletTxAmount, setWalletTxAmount] = useState('');
+  const [showFullTransactions, setShowFullTransactions] = useState(false);
 
   // Bank Account linking form states (UC24)
   const [showBankForm, setShowBankForm] = useState(false);
@@ -176,6 +178,7 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
     try {
       const data = await api.user.getWallet();
       setWalletBalance(data.walletBalance);
+      setTransactions(data.transactions || []);
       setBankAccount(data.bankAccount);
     } catch (e) {
       console.warn("Lỗi tải ví tiền.");
@@ -184,6 +187,10 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
 
   useEffect(() => {
     fetchWalletDetails();
+
+    const handleRefresh = () => fetchWalletDetails();
+    window.addEventListener('refreshDashboard', handleRefresh);
+    return () => window.removeEventListener('refreshDashboard', handleRefresh);
   }, [user]);
 
   // Draw image on canvas whenever editor states change
@@ -362,7 +369,7 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
 
     try {
       const data = await api.user.transactWallet(walletTxType, walletTxAmount);
-      setWalletBalance(data.walletBalance);
+      await fetchWalletDetails();
       showToast(data.message, 'success');
       setShowWalletModal(false);
       setWalletTxAmount('');
@@ -839,7 +846,77 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
             </form>
           )}
         </div>
+
+        {/* TRANSACTION HISTORY */}
+        <div className="glass-card" style={{ width: '100%', textAlign: 'left', padding: '24px' }}>
+          <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
+            <FileText size={16} style={{ color: 'var(--accent-primary)' }} />
+            <span>Lịch sử giao dịch</span>
+          </h4>
+          
+          {transactions.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)', fontSize: '13px' }}>
+              Chưa có giao dịch nào
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {transactions.slice(0, 3).map(tx => (
+                <div key={tx.txn_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', flex: '0 0 88px', width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ flex: 1, paddingRight: 16, textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4 }}>{tx.description || tx.txn_type}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: 4 }}>
+                      {new Date(tx.created_at).toLocaleString('vi-VN')}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: 800, whiteSpace: 'nowrap', textAlign: 'right', color: tx.amount > 0 && tx.txn_type !== 'BookingPayment' && tx.txn_type !== 'withdraw' ? '#10b981' : '#ef4444' }}>
+                    {tx.amount > 0 && tx.txn_type !== 'BookingPayment' && tx.txn_type !== 'withdraw' ? '+' : '-'}{formatCurrency(Math.abs(tx.amount))}
+                  </div>
+                </div>
+              ))}
+              
+              {transactions.length > 3 && (
+                <button 
+                  onClick={() => setShowFullTransactions(true)}
+                  className="btn btn-secondary mt-2" 
+                  style={{ width: '100%', fontSize: '12px', padding: '8px' }}
+                >
+                  Xem toàn bộ lịch sử
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* --- POPUP MODAL: FULL TRANSACTION HISTORY --- */}
+      {showFullTransactions && (
+        <div className="editor-modal-overlay" onClick={() => setShowFullTransactions(false)}>
+          <div className="editor-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', width: '90%', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="editor-modal-header" style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.08))' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <FileText size={18} style={{ color: 'var(--accent-primary)' }} />
+                <span>Toàn bộ lịch sử giao dịch</span>
+              </h3>
+              <button className="editor-close-btn" onClick={() => setShowFullTransactions(false)}><X size={20} /></button>
+            </div>
+            <div className="editor-modal-body" style={{ padding: '20px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {transactions.map(tx => (
+                <div key={tx.txn_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', flex: '0 0 100px', width: '100%', boxSizing: 'border-box', background: 'var(--bg-secondary, rgba(255,255,255,0.03))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(255,255,255,0.06))' }}>
+                  <div style={{ flex: 1, paddingRight: 16, textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4 }}>{tx.description || tx.txn_type}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: 6 }}>
+                      {new Date(tx.created_at).toLocaleString('vi-VN')}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '16px', fontWeight: 800, whiteSpace: 'nowrap', textAlign: 'right', color: tx.amount > 0 && tx.txn_type !== 'BookingPayment' && tx.txn_type !== 'withdraw' ? '#10b981' : '#ef4444' }}>
+                    {tx.amount > 0 && tx.txn_type !== 'BookingPayment' && tx.txn_type !== 'withdraw' ? '+' : '-'}{formatCurrency(Math.abs(tx.amount))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* --- POPUP MODAL: WALLET TRANSACTION (Deposit / Withdraw - UC19) --- */}
       {showWalletModal && (

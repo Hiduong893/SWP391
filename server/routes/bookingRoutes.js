@@ -69,24 +69,42 @@ router.post('/api/bookings', auth, async (req, res) => {
       console.warn('Auto renter-sign warning:', signErr.message);
     }
 
-    if (paymentMethod !== 'vnpay') {
-      if (car.ownerId) {
+    // Gửi thông báo (không chặn booking nếu notification lỗi)
+    try {
+      if (paymentMethod !== 'vnpay') {
+        // 1. Thông báo cho Renter (người vừa đặt xe)
         await notificationService.createNotification(
-          car.ownerId,
+          req.user.id,
+          'Đặt xe thành công',
+          `Bạn đã đặt xe ${car.brand} ${car.model} thành công (Mã: #${booking.id}). ${booking.status === 'pending_owner' ? 'Đang chờ chủ xe phê duyệt.' : 'Chuyến đi đã được xác nhận.'}`,
+          'BookingUpdate',
+          booking.id,
+          'Booking'
+        );
+
+        // 2. Thông báo cho Chủ xe (nếu là xe của owner thực sự)
+        if (car.ownerId) {
+          await notificationService.createNotification(
+            car.ownerId,
+            'Yêu cầu đặt xe mới',
+            `Khách hàng ${user.name} đã đặt xe ${car.brand} ${car.model} của bạn (Mã: #${booking.id}). Vui lòng phê duyệt yêu cầu.`,
+            'BookingUpdate',
+            booking.id,
+            'Booking'
+          );
+        }
+
+        // 3. Thông báo cho CSKH
+        await notificationService.notifyCSKH(
           'Yêu cầu đặt xe mới',
-          `Khách hàng ${user.name} đã đặt xe ${car.brand} ${car.model} của bạn (Mã: #${booking.id}).`,
+          `Khách hàng ${user.name} đã đặt xe ${car.brand} ${car.model} (Mã: #${booking.id}).`,
           'BookingUpdate',
           booking.id,
           'Booking'
         );
       }
-      await notificationService.notifyCSKH(
-        'Yêu cầu đặt xe mới',
-        `Khách hàng ${user.name} đã đặt xe ${car.brand} ${car.model} (Mã: #${booking.id}).`,
-        'BookingUpdate',
-        booking.id,
-        'Booking'
-      );
+    } catch (notifErr) {
+      console.warn('Notification send warning (non-blocking):', notifErr.message);
     }
 
     res.status(201).json({
@@ -178,16 +196,19 @@ router.put('/api/bookings/:id/handover', auth, async (req, res) => {
       if (type === 'return') {
         try {
           const pool = await getPool();
-          const ownerPayout = booking.totalPrice * 0.9;
+          // Khách hàng đã trả 70% trực tiếp cho Chủ xe lúc nhận xe.
+          // Tổng doanh thu Chủ xe được hưởng là 90%. 
+          // Do đó, Admin chỉ cần thanh toán nốt 20% (90% - 70%) từ phần cọc 30% đang giữ.
+          const ownerPayout = booking.totalPrice * 0.2; 
           const adminProfit = booking.totalPrice * 0.1;
           
-          // Cộng tiền vào ví Chủ xe (90%)
+          // Cộng phần tiền còn thiếu vào ví Chủ xe (20%)
           await pool.request()
             .input('userId', sql.Int, car.ownerId)
             .input('bookingId', sql.Int, id)
             .input('amount', sql.Decimal(18,2), ownerPayout)
             .input('txnType', sql.VarChar, 'Revenue')
-            .input('description', sql.NVarChar, `Thanh toán đối soát doanh thu chuyến đi #${id}`)
+            .input('description', sql.NVarChar, `Thanh toán 20% cọc còn lại chuyến đi #${id} (Đã nhận 70% tiền mặt)`)
             .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
             
           // Cộng tiền vào ví Admin (Lợi nhuận sàn 10%)
