@@ -648,14 +648,6 @@ export const AdminDashboard = ({ setCurrentTab }) => {
           </div>
 
           <div className="header-actions">
-            {activeTab === 'overview' && (
-              <button
-                className="action-btn btn-outline header-report-btn"
-                onClick={handleExportExcelReport}
-              >
-                📊 Xuất báo cáo Excel
-              </button>
-            )}
 
             {/* Notification bell */}
             <button className="icon-btn notification-btn" title="Thông báo" onClick={() => showToast("Chưa có thông báo hệ thống mới.", "success")}>
