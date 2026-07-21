@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DollarSign, Car, Users, CreditCard, Filter, TrendingUp, ShieldCheck, ArrowUpRight, Sparkles, FileText, Activity, AlertTriangle, CheckCircle2, Database, HardDrive, MessageSquare, Clock, Award, ChevronRight, UserCheck } from 'lucide-react';
+import { DollarSign, Car, Users, CreditCard, Filter, TrendingUp, ShieldCheck, ArrowUpRight, Sparkles, FileText, Activity, AlertTriangle, CheckCircle2, Database, HardDrive, MessageSquare, Clock, Award, ChevronRight, UserCheck, UserPlus } from 'lucide-react';
 
 export const OverviewTab = ({
   stats = { totalUsers: 0, totalCars: 0, totalBookings: 0, totalRevenue: 0 },
@@ -130,7 +130,9 @@ export const OverviewTab = ({
   };
 
   const smoothCurvePath = getSmoothCurvePath(points);
-  const smoothAreaPath = smoothCurvePath + ` L ${points[points.length - 1].x} 265 L 55 265 Z`;
+  const smoothAreaPath = points && points.length > 0
+    ? smoothCurvePath + ` L ${points[points.length - 1].x} 265 L 55 265 Z`
+    : '';
 
   // Y-axis labels
   const yLabels = [
@@ -862,7 +864,7 @@ export const OverviewTab = ({
               ))}
 
               {/* Y-Axis Labels */}
-              {revYLabels.map((yl, i) => (
+              {yLabels.map((yl, i) => (
                 <text key={i} x="38" y={yl.y + 4} textAnchor="end" style={{ fontFamily: "'Outfit', 'Inter', sans-serif", fontSize: '12px', fill: '#94a3b8', fontWeight: 600 }}>
                   {formatYLabel(yl.val)}
                 </text>

@@ -306,11 +306,15 @@ function App() {
               } />
 
               <Route path="/admin-dashboard" element={
-                user && user.role === 'admin' ? <AdminDashboard setCurrentTab={setCurrentTab} /> : <Navigate to="/" />
+                (!user && localStorage.getItem('token')) || (user && (user.role === 'admin' || user.role === 'cskh'))
+                  ? <AdminDashboard setCurrentTab={setCurrentTab} />
+                  : <Navigate to="/" />
               } />
 
               <Route path="/cskh-dashboard" element={
-                user && user.role === 'cskh' ? <CSKHDashboard setCurrentTab={setCurrentTab} /> : <Navigate to="/" />
+                (!user && localStorage.getItem('token')) || (user && (user.role === 'cskh' || user.role === 'admin'))
+                  ? <CSKHDashboard setCurrentTab={setCurrentTab} />
+                  : <Navigate to="/" />
               } />
 
               <Route path="/verify-email" element={
