@@ -6,6 +6,7 @@ import { useToast } from '../../components/Toast';
 export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchParams }) => {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [vouchersList, setVouchersList] = useState([]);
   const { showToast } = useToast();
 
   // Search states (Matches search-bar-premium layout)
@@ -47,6 +48,45 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
     }
   };
 
+  const fetchActiveVouchers = async () => {
+    try {
+      const data = await api.vouchers.getActive();
+      let list = [];
+      if (Array.isArray(data)) list = data;
+      else if (data && Array.isArray(data.vouchers)) list = data.vouchers;
+      setVouchersList(list);
+    } catch (e) {
+      console.warn("Lỗi tải vouchers trong FindCar.");
+    }
+  };
+
+  const getMatchingVoucherForCar = (carItem) => {
+    if (!carItem || !Array.isArray(vouchersList) || vouchersList.length === 0) return null;
+    const carName = (carItem.name || carItem.title || `${carItem.brand || ''} ${carItem.model || ''}`).trim().toLowerCase();
+
+    const matching = vouchersList.filter(v => {
+      if (!v || v.status === 'inactive') return false;
+      const target = (v.target_car_name || v.targetCarName || 'Tất cả dòng xe').trim().toLowerCase();
+      if (target === 'tất cả dòng xe' || target === 'all') return true;
+      if (carName.includes(target) || target.includes(carName)) return true;
+      return false;
+    });
+
+    if (matching.length === 0) return null;
+
+    matching.sort((a, b) => {
+      const targetA = (a.target_car_name || a.targetCarName || '').toLowerCase();
+      const targetB = (b.target_car_name || b.targetCarName || '').toLowerCase();
+      const isSpecificA = targetA !== 'tất cả dòng xe' && targetA !== 'all';
+      const isSpecificB = targetB !== 'tất cả dòng xe' && targetB !== 'all';
+      if (isSpecificA && !isSpecificB) return -1;
+      if (!isSpecificA && isSpecificB) return 1;
+      return (b.discount_percent || b.discountPercent || 0) - (a.discount_percent || a.discountPercent || 0);
+    });
+
+    return matching[0];
+  };
+
   const getTodayStr = () => {
     const d = new Date();
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
@@ -55,6 +95,9 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
   const todayStr = getTodayStr();
 
   useEffect(() => {
+    fetchCars();
+    fetchActiveVouchers();
+    
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const dayAfter = new Date();
@@ -222,9 +265,9 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
       list = list.filter(car => car.ownerId);
     }
 
-    // 7. Filter by Sale (Giảm giá 10% - xe giá > 1.0M)
+    // 7. Filter by Sale (Chỉ lọc những xe thực sự có mã giảm giá / Voucher đang hoạt động)
     if (isSaleOnly) {
-      list = list.filter(car => car.pricePerDay > 1000000);
+      list = list.filter(car => getMatchingVoucherForCar(car) !== null);
     }
 
     // 8. Filter by Premium (Xế xịn - giá > 1.5M)
@@ -320,7 +363,7 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
           className={`pill-item ${isSaleOnly ? 'active' : ''}`}
           onClick={() => {
             setIsSaleOnly(!isSaleOnly);
-            showToast(isSaleOnly ? 'Đã tắt bộ lọc khuyến mãi.' : 'Đã lọc xe đang được khuyến mãi (Giảm 10%).', 'info');
+            showToast(isSaleOnly ? 'Đã tắt bộ lọc khuyến mãi.' : 'Đã lọc danh sách xe đang có mã giảm giá (Voucher).', 'info');
           }}
         >
           <Zap size={14} className="pill-icon" style={{ color: isSaleOnly ? '#ffffff' : '#10b981' }} />
@@ -421,6 +464,7 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
               const dayPriceOrig = Math.round((car.pricePerDay * 1.1) / 1000) + 'K';
               const dayPriceActual = Math.round(car.pricePerDay / 1000) + 'K';
               const mockDistance = (1.5 + (parseInt(car.id) % 3) * 1.2).toFixed(1);
+              const carVoucher = getMatchingVoucherForCar(car);
 
               return (
                 <div key={car.id} className="find-car-card">
@@ -428,10 +472,14 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
                   <div className="find-card-image-box" onClick={() => handleViewCarDetails(car)}>
                     <img src={car.image} alt={car.model} className="find-card-img" />
                     
-                    {/* Badge Sale */}
-                    <div className="find-card-badge-top">
-                      <span className="find-badge-sale">🏷️ Giảm 10%</span>
-                    </div>
+                    {/* Badge Sale / Voucher */}
+                    {carVoucher && (
+                      <div className="find-card-badge-top">
+                        <span className="find-badge-sale" style={{ background: '#00bfa5', color: '#ffffff', fontWeight: 800 }}>
+                          🏷️ Mã {carVoucher.code} (-{carVoucher.discount_percent || carVoucher.discountPercent}%)
+                        </span>
+                      </div>
+                    )}
 
                     {/* Badge Nhận xe */}
                     <div className="find-card-badge-bottom">

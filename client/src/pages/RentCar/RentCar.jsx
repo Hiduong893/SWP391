@@ -106,15 +106,48 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
     }
   };
 
+  const [vouchersList, setVouchersList] = useState([]);
+
   const fetchActiveVoucher = async () => {
     try {
       const data = await api.vouchers.getActive();
-      if (data.vouchers && data.vouchers.length > 0) {
-        setActiveVoucher(data.vouchers[0]);
+      let list = [];
+      if (Array.isArray(data)) list = data;
+      else if (data && Array.isArray(data.vouchers)) list = data.vouchers;
+      setVouchersList(list);
+      if (list.length > 0) {
+        setActiveVoucher(list[0]);
       }
     } catch (e) {
       console.warn("Lỗi tải voucher đang hoạt động.");
     }
+  };
+
+  const getMatchingVoucherForCar = (carItem) => {
+    if (!carItem || !Array.isArray(vouchersList) || vouchersList.length === 0) return null;
+    const carName = (carItem.name || carItem.title || `${carItem.brand || ''} ${carItem.model || ''}`).trim().toLowerCase();
+
+    const matching = vouchersList.filter(v => {
+      if (!v || v.status === 'inactive') return false;
+      const target = (v.target_car_name || v.targetCarName || 'Tất cả dòng xe').trim().toLowerCase();
+      if (target === 'tất cả dòng xe' || target === 'all') return true;
+      if (carName.includes(target) || target.includes(carName)) return true;
+      return false;
+    });
+
+    if (matching.length === 0) return null;
+
+    matching.sort((a, b) => {
+      const targetA = (a.target_car_name || a.targetCarName || '').toLowerCase();
+      const targetB = (b.target_car_name || b.targetCarName || '').toLowerCase();
+      const isSpecificA = targetA !== 'tất cả dòng xe' && targetA !== 'all';
+      const isSpecificB = targetB !== 'tất cả dòng xe' && targetB !== 'all';
+      if (isSpecificA && !isSpecificB) return -1;
+      if (!isSpecificA && isSpecificB) return 1;
+      return (b.discount_percent || b.discountPercent || 0) - (a.discount_percent || a.discountPercent || 0);
+    });
+
+    return matching[0];
   };
 
   useEffect(() => {
@@ -403,7 +436,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
       status: 'available',
       plateNumber: '30K-999.99',
       rating: 5.0,
-      badges: ['Giảm 10%', 'Xế xịn', 'Tự nhận xe']
+      badges: ['Xế xịn', 'Tự nhận xe']
     },
     {
       id: 'lux-car-2',
@@ -898,6 +931,8 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
 
               <div className="premium-car-row-scrollable" ref={catalogScrollRef}>
                 {cars.map((car) => {
+                  const carVoucher = getMatchingVoucherForCar(car);
+
                   //Các gtri hiển thị động dựa trên daily_price
                   const fourHourOrig = Math.round((car.pricePerDay * 0.45) / 1000) + 'K';
                   const fourHourActual = Math.round((car.pricePerDay * 0.38) / 1000) + 'K';
@@ -910,12 +945,14 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                       <div className="card-image-box">
                         <img src={car.image} alt={car.model} className="card-image-element" />
                         {/* Nhãn khuyến mãi góc trên bên trái */}
-                        <div className="card-badge-top-container" style={{ display: 'flex', gap: '4px' }}>
+                        <div className="card-badge-top-container" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                          {carVoucher && (
+                            <span className="promo-badge-glow-yellow" style={{ background: '#00bfa5', color: '#fff', border: 'none' }}>
+                              🏷️ Mã {carVoucher.code} (-{carVoucher.discount_percent || carVoucher.discountPercent}%)
+                            </span>
+                          )}
                           {car.pricePerDay > 1000000 && (
                             <span className="promo-badge-glow-red">⚡ Flash Sale</span>
-                          )}
-                          {activeVoucher && (
-                            <span className="promo-badge-glow-yellow">🏷️ Giảm {activeVoucher.discount_percent}%</span>
                           )}
                         </div>
 
@@ -999,6 +1036,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
 
                 return listToRender.map((car) => {
                   const isDbCar = !String(car.id).startsWith('lux-car-');
+                  const carVoucher = getMatchingVoucherForCar(car);
 
                   // Compute dynamic pricing or use mock values
                   const fourHourOrig = isDbCar ? Math.round((car.pricePerDay * 0.55) / 1000) + 'K' : car.fourHourPriceOrig;
@@ -1013,11 +1051,13 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                         <img src={car.image} alt={car.model} className="card-image-element" />
 
                         {/* Top badges */}
-                        <div className="card-badge-top-container" style={{ display: 'flex', gap: '4px' }}>
-                          <span className="promo-badge-glow-yellow">👑 Xế xịn</span>
-                          {activeVoucher && (
-                            <span className="promo-badge-glow-yellow">🏷️ Giảm {activeVoucher.discount_percent}%</span>
+                        <div className="card-badge-top-container" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                          {carVoucher && (
+                            <span className="promo-badge-glow-yellow" style={{ background: '#00bfa5', color: '#fff', border: 'none' }}>
+                              🏷️ Mã {carVoucher.code} (-{carVoucher.discount_percent || carVoucher.discountPercent}%)
+                            </span>
                           )}
+                          <span className="promo-badge-glow-yellow">👑 Xế xịn</span>
                         </div>
 
                         {/* Bottom badge */}
