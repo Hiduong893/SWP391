@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Tag, Plus, Trash2, Calendar, Users, Percent, Gift, Sparkles, Car, Zap, Flame, TrendingDown, Ticket } from 'lucide-react';
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
+import { DatePickerVi } from '../../components/DatePickerVi';
 
 export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], bookingsList = [] }) => {
   const [vouchers, setVouchers] = useState([]);
@@ -12,6 +13,28 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
   const [internalCars, setInternalCars] = useState(Array.isArray(carsList) ? carsList : []);
   const [internalBookings, setInternalBookings] = useState(Array.isArray(bookingsList) ? bookingsList : []);
 
+  const getTodayStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatViDate = (dateStr) => {
+    if (!dateStr) return '';
+    const cleanStr = String(dateStr).split('T')[0];
+    const parts = cleanStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    try {
+      return new Date(dateStr).toLocaleDateString('vi-VN');
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
   // Form state
   const [code, setCode] = useState('');
   const [discountPercent, setDiscountPercent] = useState('');
@@ -19,7 +42,17 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
   const [maxUsage, setMaxUsage] = useState('');
   const [targetUser, setTargetUser] = useState('all');
   const [targetCarName, setTargetCarName] = useState('Tất cả dòng xe');
+  const [startDate, setStartDate] = useState(getTodayStr);
   const [expirationDate, setExpirationDate] = useState('');
+
+  const setPresetDuration = (days) => {
+    const base = startDate ? new Date(startDate) : new Date();
+    base.setDate(base.getDate() + days);
+    const year = base.getFullYear();
+    const month = String(base.getMonth() + 1).padStart(2, '0');
+    const day = String(base.getDate()).padStart(2, '0');
+    setExpirationDate(`${year}-${month}-${day}`);
+  };
 
   const formRef = useRef(null);
   const { showToast } = useToast();
@@ -120,8 +153,23 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
 
   const handleCreateVoucher = async (e) => {
     if (e) e.preventDefault();
-    if (!code || !discountPercent || !maxDiscountAmount) {
+    if (!code || !discountPercent) {
       return showToast('Vui lòng điền các trường bắt buộc (*)', 'warning');
+    }
+
+    const todayStr = getTodayStr();
+
+    if (startDate && startDate < todayStr) {
+      return showToast('Ngày bắt đầu không được nhỏ hơn ngày hôm nay!', 'error');
+    }
+
+    if (expirationDate) {
+      if (expirationDate < todayStr) {
+        return showToast('Ngày hết hạn không được ở trong quá khứ!', 'error');
+      }
+      if (startDate && expirationDate < startDate) {
+        return showToast('Ngày hết hạn phải sau hoặc bằng Ngày bắt đầu!', 'error');
+      }
     }
 
     setActionLoading(true);
@@ -129,10 +177,11 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
       const payload = {
         code,
         discountPercent: parseInt(discountPercent),
-        maxDiscountAmount: parseFloat(maxDiscountAmount),
+        maxDiscountAmount: maxDiscountAmount ? parseFloat(maxDiscountAmount) : null,
         maxUsage: maxUsage ? parseInt(maxUsage) : null,
         targetUser,
         targetCarName,
+        startDate: (startDate && startDate !== todayStr) ? startDate : new Date().toISOString(),
         expirationDate: expirationDate || null
       };
 
@@ -146,6 +195,7 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
       setMaxUsage('');
       setTargetUser('all');
       setTargetCarName('Tất cả dòng xe');
+      setStartDate(todayStr);
       setExpirationDate('');
 
       fetchVouchers();
@@ -160,7 +210,13 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
   const handleInstantCreateVoucher = async (voucherPayload) => {
     setActionLoading(true);
     try {
-      const data = await api.support.createVoucher(voucherPayload);
+      const todayStr = getTodayStr();
+      const payloadWithDates = {
+        ...voucherPayload,
+        startDate: voucherPayload.startDate || todayStr,
+        expirationDate: voucherPayload.expirationDate || null
+      };
+      const data = await api.support.createVoucher(payloadWithDates);
       showToast(`🚀 Đã phát hành trực tiếp Mã [${voucherPayload.code}] cho ${voucherPayload.targetCarName}!`, 'success');
       fetchVouchers();
     } catch (error) {
@@ -756,39 +812,41 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
           </div>
 
           <form onSubmit={handleCreateVoucher} className="config-inputs-form">
-            <div className="config-input-group mb-4">
-              <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <Ticket size={13} color="#00bfa5" /> MÃ COUPON *
-              </label>
-              <input
-                type="text"
-                className="config-text-input"
-                placeholder="VD: VIVUCAR16"
-                value={code}
-                onChange={e => setCode(e.target.value.toUpperCase())}
-                style={{
-                  background: '#ffffff',
-                  border: '1.5px solid #cbd5e1',
-                  borderRadius: '12px',
-                  padding: '12px 16px',
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  color: '#0f172a',
-                  boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
-                }}
-                required
-              />
-            </div>
+            {/* HÀNG 1: THÔNG TIN MÃ & MỨC GIẢM */}
+            <div className="config-form-row mb-4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div className="config-input-group">
+                <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Ticket size={13} color="#00bfa5" /> MÃ COUPON *
+                </label>
+                <input
+                  type="text"
+                  className="config-text-input"
+                  placeholder="VD: VIVUCAR16"
+                  value={code}
+                  onChange={e => setCode(e.target.value.toUpperCase())}
+                  style={{
+                    background: '#ffffff',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '12px',
+                    padding: '12px 16px',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    color: '#0f172a',
+                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)',
+                    width: '100%'
+                  }}
+                  required
+                />
+              </div>
 
-            <div className="config-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-              <div className="config-input-group mb-4">
+              <div className="config-input-group">
                 <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <Percent size={13} color="#00bfa5" /> GIẢM (%) *
                 </label>
                 <input
                   type="number"
                   className="config-text-input"
-                  placeholder="VD: 50"
+                  placeholder="VD: 10"
                   min="1" max="100"
                   value={discountPercent}
                   onChange={e => setDiscountPercent(e.target.value)}
@@ -800,62 +858,52 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
                     fontSize: '14px',
                     fontWeight: 700,
                     color: '#0f172a',
-                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
-                  }}
-                  required
-                />
-              </div>
-              <div className="config-input-group mb-4">
-                <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  💵 GIẢM TỐI ĐA (VNĐ) *
-                </label>
-                <input
-                  type="number"
-                  className="config-text-input"
-                  placeholder="VD: 100000"
-                  value={maxDiscountAmount}
-                  onChange={e => setMaxDiscountAmount(e.target.value)}
-                  style={{
-                    background: '#ffffff',
-                    border: '1.5px solid #cbd5e1',
-                    borderRadius: '12px',
-                    padding: '12px 16px',
-                    fontSize: '14px',
-                    fontWeight: 700,
-                    color: '#0f172a',
-                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
+                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)',
+                    width: '100%'
                   }}
                   required
                 />
               </div>
             </div>
 
-            <div className="config-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-              <div className="config-input-group mb-4">
-                <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Users size={13} color="#00bfa5" /> LƯỢT DÙNG TỐI ĐA
+            {/* HÀNG 2: PHẠM VI ÁP DỤNG & ĐỐI TƯỢNG */}
+            <div className="config-form-row mb-4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div className="config-input-group">
+                <label className="config-input-label" style={{ color: '#0284c7', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Car size={14} /> DÒNG XE ÁP DỤNG CỤ THỂ
                 </label>
-                <input
-                  type="number"
-                  className="config-text-input"
-                  placeholder="Không giới hạn"
-                  min="1"
-                  value={maxUsage}
-                  onChange={e => setMaxUsage(e.target.value)}
+                <select
+                  className="period-select"
                   style={{
-                    background: '#ffffff',
-                    border: '1.5px solid #cbd5e1',
-                    borderRadius: '12px',
+                    width: '100%',
                     padding: '12px 16px',
-                    fontSize: '14px',
+                    background: '#f0f9ff',
+                    fontSize: '13.5px',
                     fontWeight: 700,
-                    color: '#0f172a',
-                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
+                    color: '#0369a1',
+                    border: '1.5px solid #0284c7',
+                    borderRadius: '12px',
+                    boxShadow: '0 2px 8px rgba(2, 132, 199, 0.08)'
                   }}
-                />
+                  value={targetCarName}
+                  onChange={e => setTargetCarName(e.target.value)}
+                >
+                  <option value="Tất cả dòng xe">🌐 Tất cả dòng xe (Toàn hệ thống)</option>
+                  {safeCars.map(c => {
+                    const nameStr = getCarDisplayName(c);
+                    return (
+                      <option key={c.id || nameStr} value={nameStr}>
+                        🚗 {nameStr} {c.plateNumber ? `(${c.plateNumber})` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
-              <div className="config-input-group mb-4">
-                <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px' }}>ĐỐI TƯỢNG KHÁCH HÀNG</label>
+
+              <div className="config-input-group">
+                <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Users size={13} color="#00bfa5" /> ĐỐI TƯỢNG KHÁCH HÀNG
+                </label>
                 <select
                   className="period-select"
                   style={{
@@ -877,58 +925,130 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
               </div>
             </div>
 
-            {/* DÒNG XE ÁP DỤNG SPECIFIC TARGET CAR FEATURE */}
-            <div className="config-input-group mb-4">
-              <label className="config-input-label" style={{ color: '#0284c7', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Car size={15} /> DÒNG XE ÁP DỤNG CỤ THỂ
-              </label>
-              <select
-                className="period-select"
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  background: '#f0f9ff',
-                  fontSize: '13.5px',
-                  fontWeight: 700,
-                  color: '#0369a1',
-                  border: '1.5px solid #0284c7',
-                  borderRadius: '12px',
-                  boxShadow: '0 2px 8px rgba(2, 132, 199, 0.08)'
-                }}
-                value={targetCarName}
-                onChange={e => setTargetCarName(e.target.value)}
-              >
-                <option value="Tất cả dòng xe">🌐 Tất cả dòng xe (Toàn hệ thống)</option>
-                {safeCars.map(c => {
-                  const nameStr = getCarDisplayName(c);
-                  return (
-                    <option key={c.id || nameStr} value={nameStr}>
-                      🚗 {nameStr} {c.plateNumber ? `(${c.plateNumber})` : ''}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-
+            {/* HÀNG 3: GIỚI HẠN LƯỢT DÙNG */}
             <div className="config-input-group mb-4">
               <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <Calendar size={13} color="#00bfa5" /> NGÀY HẾT HẠN (TÙY CHỌN)
+                <Users size={13} color="#00bfa5" /> LƯỢT DÙNG TỐI ĐA
               </label>
               <input
-                type="date"
+                type="number"
                 className="config-text-input"
-                value={expirationDate}
-                onChange={e => setExpirationDate(e.target.value)}
+                placeholder="Ví dụ: 50 (Bỏ trống nếu không giới hạn số lượt)"
+                min="1"
+                value={maxUsage}
+                onChange={e => setMaxUsage(e.target.value)}
                 style={{
                   background: '#ffffff',
                   border: '1.5px solid #cbd5e1',
                   borderRadius: '12px',
                   padding: '12px 16px',
-                  fontSize: '13.5px',
+                  fontSize: '14px',
                   fontWeight: 700,
-                  color: '#0f172a'
+                  color: '#0f172a',
+                  boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)',
+                  width: '100%'
                 }}
               />
+            </div>
+
+            {/* RÀNG BUỘC NGÀY THÁNG NĂM (START DATE & EXPIRATION DATE) */}
+            <div className="config-form-row mb-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div className="config-input-group">
+                <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Calendar size={13} color="#00bfa5" /> NGÀY BẮT ĐẦU *
+                </label>
+                <DatePickerVi
+                  className="config-text-input"
+                  value={startDate}
+                  min={getTodayStr()}
+                  onChange={newStart => {
+                    setStartDate(newStart);
+                    if (expirationDate && newStart > expirationDate) {
+                      setExpirationDate(newStart);
+                    }
+                  }}
+                  required
+                  style={{
+                    background: '#ffffff',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '12px',
+                    padding: '12px 16px',
+                    fontSize: '13.5px',
+                    fontWeight: 700,
+                    color: '#0f172a'
+                  }}
+                />
+                {startDate && (
+                  <span style={{ fontSize: '11px', color: '#059669', fontWeight: 700, marginTop: '4px', display: 'block' }}>
+                    📅 Từ ngày: {formatViDate(startDate)}
+                  </span>
+                )}
+              </div>
+
+              <div className="config-input-group">
+                <label className="config-input-label" style={{ color: '#475569', fontSize: '11.5px', fontWeight: 800, letterSpacing: '0.3px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Calendar size={13} color="#00bfa5" /> NGÀY HẾT HẠN (TÙY CHỌN)
+                </label>
+                <DatePickerVi
+                  className="config-text-input"
+                  value={expirationDate}
+                  min={startDate || getTodayStr()}
+                  onChange={setExpirationDate}
+                  style={{
+                    background: '#ffffff',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '12px',
+                    padding: '12px 16px',
+                    fontSize: '13.5px',
+                    fontWeight: 700,
+                    color: '#0f172a'
+                  }}
+                />
+                {expirationDate ? (
+                  <span style={{ fontSize: '11px', color: '#d97706', fontWeight: 700, marginTop: '4px', display: 'block' }}>
+                    ⏳ HSD: {formatViDate(expirationDate)}
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, marginTop: '4px', display: 'block' }}>
+                    ♾️ Vô thời hạn
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* QUICK PRESET BUTTONS FOR EXPIRATION DATES */}
+            <div style={{ marginBottom: '18px', background: '#f8fafc', padding: '10px 14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <span style={{ fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.3px', display: 'block', marginBottom: '8px' }}>
+                ⚡ CHỌN NHANH THỜI HẠN SỬ DỤNG:
+              </span>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {[
+                  { label: '+7 ngày', days: 7 },
+                  { label: '+15 ngày', days: 15 },
+                  { label: '+30 ngày', days: 30 },
+                  { label: '+90 ngày', days: 90 },
+                  { label: '♾️ Vô hạn', days: 0 }
+                ].map(p => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => p.days > 0 ? setPresetDuration(p.days) : setExpirationDate('')}
+                    style={{
+                      padding: '5px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      background: (p.days === 0 && !expirationDate) ? '#e0f2fe' : '#ffffff',
+                      color: (p.days === 0 && !expirationDate) ? '#0284c7' : '#334155',
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+                    }}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <button
@@ -982,7 +1102,10 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
                   </div>
                   <div style={{ flex: 1 }}>
                     <h4 style={{ margin: '0 0 4px 0', fontSize: '16.5px', color: '#0f172a', fontWeight: 800, letterSpacing: '0.3px' }}>{v.code}</h4>
-                    <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#334155', fontWeight: 600 }}>Giảm <strong style={{ color: '#059669', fontWeight: 800 }}>{v.discount_percent}%</strong> (Tối đa {v.max_discount_amount?.toLocaleString()}đ)</p>
+                    <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#334155', fontWeight: 600 }}>
+                      Giảm <strong style={{ color: '#059669', fontWeight: 800 }}>{v.discount_percent}%</strong>
+                      {v.max_discount_amount ? ` (Tối đa ${v.max_discount_amount.toLocaleString()}đ)` : ''}
+                    </p>
 
                     {v.target_car_name && v.target_car_name !== 'Tất cả dòng xe' && (
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', fontWeight: 700, color: '#0369a1', background: '#f0f9ff', padding: '3px 10px', borderRadius: '8px', border: '1px solid #7dd3fc', marginBottom: '8px' }}>
@@ -990,13 +1113,20 @@ export const VoucherTab = ({ actionLoading, setActionLoading, carsList = [], boo
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '11.5px', color: '#64748b', marginTop: '4px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11.5px', color: '#64748b', marginTop: '6px' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <Users size={13} /> Dùng: <strong style={{ color: '#0f172a' }}>{v.current_usage}{v.max_usage ? `/${v.max_usage}` : ''}</strong>
                       </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: v.expiration_date && new Date(v.expiration_date) < new Date() ? '#dc2626' : '#d97706', fontWeight: 600 }}>
-                        <Calendar size={13} /> HSD: {v.expiration_date ? new Date(v.expiration_date).toLocaleDateString('vi-VN') : 'Không GH'}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        {v.start_date && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#059669', fontWeight: 600 }}>
+                            <Calendar size={13} /> Từ: {formatViDate(v.start_date)}
+                          </span>
+                        )}
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: v.expiration_date && new Date(v.expiration_date) < new Date() ? '#dc2626' : '#d97706', fontWeight: 600 }}>
+                          <Calendar size={13} /> HSD: {v.expiration_date ? formatViDate(v.expiration_date) : 'Vô thời hạn'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
