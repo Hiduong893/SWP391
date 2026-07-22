@@ -1,4 +1,4 @@
-RequestError: Invalid object name 'RentalContract'.
+RequestError: The INSERT statement conflicted with the CHECK constraint "CHK_Payment_Amount". The conflict occurred in database "CarRentalPlatform", table "dbo.Payment", column 'amount'.
     at handleError (D:\LEARN\SE V SU26\SWP391\Project SU26\SWP391\server\node_modules\mssql\lib\tedious\request.js:411:15)
     at Connection.emit (node:events:509:28)
     at Connection.emit (D:\LEARN\SE V SU26\SWP391\Project SU26\SWP391\server\node_modules\tedious\lib\connection.js:1013:18)
