@@ -545,7 +545,7 @@ export const AdminDashboard = ({ setCurrentTab }) => {
 
           <button
             className={`menu-item ${activeTab === 'accounts' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('accounts'); setActiveSubTab('kyc'); }}
+            onClick={() => { setActiveTab('accounts'); setActiveSubTab('roles'); }}
           >
             <Users size={18} />
             <span>Tài khoản</span>
@@ -631,11 +631,11 @@ export const AdminDashboard = ({ setCurrentTab }) => {
 
             {activeTab === 'accounts' && (
               <div className="subtabs-bar">
-                <button className={`subtab-btn ${activeSubTab === 'kyc' ? 'active' : ''}`} onClick={() => setActiveSubTab('kyc')}>
-                  Duyệt KYC ({pendingKycUsers.length})
-                </button>
                 <button className={`subtab-btn ${activeSubTab === 'roles' ? 'active' : ''}`} onClick={() => setActiveSubTab('roles')}>
                   Thành viên ({usersList.length})
+                </button>
+                <button className={`subtab-btn ${activeSubTab === 'kyc' ? 'active' : ''}`} onClick={() => setActiveSubTab('kyc')}>
+                  Duyệt KYC ({pendingKycUsers.length})
                 </button>
               </div>
             )}
