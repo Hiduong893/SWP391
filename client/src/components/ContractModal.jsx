@@ -432,6 +432,7 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
                   </div>
                   <div className="cm2-phase-body">
                     <div className="cm2-phase-row">Số tiền yêu cầu: <strong>{fmt(contract.reservationFee || Math.round(booking?.totalPrice * 0.3))}</strong></div>
+                    <div className="cm2-phase-row">Ưu đãi áp dụng: <strong style={{ color: '#059669' }}>🏷️ Khấu trừ 10% chiết khấu giá niêm yết xe</strong></div>
                     <div className="cm2-phase-row">Thời điểm nộp: <strong>{depositPaidDate ? fmtDt(depositPaidDate) : 'Ngay sau khi gửi đơn đặt xe'}</strong></div>
                     <div className="cm2-phase-row">Hình thức: <strong>Ví ViVuCar / Cổng thanh toán (VietQR/VNPAY)</strong></div>
                   </div>

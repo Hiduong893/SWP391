@@ -280,6 +280,10 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
   const [walletBalance, setWalletBalance] = useState(user?.walletBalance || 0);
   const [walletAnimating, setWalletAnimating] = useState(false);
 
+  // Voucher states
+  const [vouchersList, setVouchersList] = useState([]);
+  const [selectedVoucher, setSelectedVoucher] = useState(null);
+
   const { car, pickupLocation, pickupTime: initialPickupTime, returnTime: initialReturnTime } = bookingDetails;
   const [pickupDate, setPickupDate] = useState(bookingDetails.pickupDate);
   const [returnDate, setReturnDate] = useState(bookingDetails.returnDate);
@@ -319,6 +323,40 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
       fetchWallet();
     }
   }, [user]);
+
+  // Fetch active vouchers and auto-match for current car
+  useEffect(() => {
+    api.vouchers.getActive()
+      .then(data => {
+        let list = [];
+        if (Array.isArray(data)) list = data;
+        else if (data && Array.isArray(data.vouchers)) list = data.vouchers;
+        setVouchersList(list);
+
+        if (car && list.length > 0) {
+          const carName = (car.name || car.title || `${car.brand || ''} ${car.model || ''}`).trim().toLowerCase();
+          const matching = list.filter(v => {
+            if (!v || v.status === 'inactive') return false;
+            const target = (v.target_car_name || v.targetCarName || 'Tất cả dòng xe').trim().toLowerCase();
+            if (target === 'tất cả dòng xe' || target === 'all') return true;
+            return carName.includes(target) || target.includes(carName);
+          }).sort((a, b) => {
+            const targetA = (a.target_car_name || a.targetCarName || '').toLowerCase();
+            const targetB = (b.target_car_name || b.targetCarName || '').toLowerCase();
+            const isSpecificA = targetA !== 'tất cả dòng xe' && targetA !== 'all';
+            const isSpecificB = targetB !== 'tất cả dòng xe' && targetB !== 'all';
+            if (isSpecificA && !isSpecificB) return -1;
+            if (!isSpecificA && isSpecificB) return 1;
+            return (b.discount_percent || b.discountPercent || 0) - (a.discount_percent || a.discountPercent || 0);
+          });
+
+          if (matching.length > 0) {
+            setSelectedVoucher(matching[0]);
+          }
+        }
+      })
+      .catch(e => console.warn('BookingModal fetch vouchers:', e));
+  }, [car]);
 
   useEffect(() => {
     if (step !== 2) return;
@@ -406,7 +444,16 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
   const insurancePrice = 50000 * Math.ceil(diffHours / 24); // 50,000 VND / day for standard insurance
   const serviceFee = 80000;
   const deliveryFee = pickupMethod === 'delivery' ? 100000 : 0;
-  const totalPrice = basePrice + insurancePrice + serviceFee + deliveryFee;
+
+  // Calculate voucher discount amount
+  let voucherDiscountAmount = 0;
+  if (selectedVoucher) {
+    const pct = selectedVoucher.discount_percent || selectedVoucher.discountPercent || 0;
+    const maxAmt = selectedVoucher.max_discount_amount || selectedVoucher.maxDiscountAmount || Infinity;
+    voucherDiscountAmount = Math.min(Math.round(basePrice * (pct / 100)), maxAmt);
+  }
+
+  const totalPrice = Math.max(0, basePrice - voucherDiscountAmount + insurancePrice + serviceFee + deliveryFee);
   const reservationFee = Math.round(totalPrice * 0.3);
   const totalPayment = totalPrice; // No deposit fee
   // Determine display and submission location with robust fallbacks
@@ -863,28 +910,88 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
               </div>
             )}
 
+            {/* Active Voucher Card */}
+            <div className="voucher-card-container mt-4" style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '1px solid #6ee7b7', borderRadius: '16px', padding: '14px 18px', boxShadow: '0 4px 14px rgba(16,185,129,0.08)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: '#047857', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  🎁 VOUCHER KHUYẾN MÃI ÁP DỤNG
+                </span>
+                {selectedVoucher && (
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#047857', background: '#ffffff', padding: '3px 10px', borderRadius: '12px', border: '1px solid #a7f3d0' }}>
+                    ✓ ĐÃ TỰ ĐỘNG ÁP DỤNG
+                  </span>
+                )}
+              </div>
+
+              {selectedVoucher ? (
+                <div style={{ background: '#ffffff', borderRadius: '12px', padding: '12px 14px', border: '1px solid #a7f3d0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <strong style={{ fontSize: '15px', color: '#0f172a', fontWeight: 800, letterSpacing: '0.3px' }}>
+                        Mã [{selectedVoucher.code}]
+                      </strong>
+                      <span style={{ background: '#ecfdf5', color: '#059669', fontSize: '11px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', border: '1px solid #6ee7b7' }}>
+                        Giảm {selectedVoucher.discount_percent || selectedVoucher.discountPercent}%
+                      </span>
+                    </div>
+                    <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#475569', fontWeight: 600 }}>
+                      {selectedVoucher.target_car_name && selectedVoucher.target_car_name !== 'Tất cả dòng xe'
+                        ? `Áp dụng riêng cho: ${selectedVoucher.target_car_name}`
+                        : 'Áp dụng cho toàn bộ dòng xe'}
+                      {selectedVoucher.max_discount_amount ? ` (Tối đa ${selectedVoucher.max_discount_amount.toLocaleString()}đ)` : ''}
+                    </p>
+                  </div>
+
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 800, color: '#059669' }}>
+                      -{formatCurrency(voucherDiscountAmount)}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p style={{ margin: 0, fontSize: '12.5px', color: '#047857', fontWeight: 600 }}>
+                  Chưa có voucher phù hợp với dòng xe này.
+                </p>
+              )}
+            </div>
+
             {/* Cost Breakdown */}
             <div className="cost-breakdown-card mt-4">
               <h5>Chi tiết hóa đơn dự kiến</h5>
+              
               <div className="cost-row">
                 <span>Phí thuê xe ({diffDaysStr})</span>
-                <span>{formatCurrency(basePrice)}</span>
+                <span style={{ color: '#0f172a', fontWeight: 700 }}>{formatCurrency(basePrice)}</span>
               </div>
+
+              {selectedVoucher && voucherDiscountAmount > 0 && (
+                <div className="cost-row" style={{ color: '#059669', fontWeight: 800, background: '#ecfdf5', padding: '8px 12px', borderRadius: '10px', margin: '6px 0', border: '1px solid #a7f3d0' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    🎟️ Voucher [{selectedVoucher.code}] (-{selectedVoucher.discount_percent || selectedVoucher.discountPercent}%)
+                  </span>
+                  <span>-{formatCurrency(voucherDiscountAmount)}</span>
+                </div>
+              )}
+
               <div className="cost-row">
                 <span>Bảo hiểm chuyến đi (Bắt buộc)</span>
                 <span>{formatCurrency(50000)} x {Math.ceil(diffHours / 24)}</span>
               </div>
+
               <div className="cost-row">
                 <span>Phí dịch vụ công nghệ</span>
                 <span>{formatCurrency(serviceFee)}</span>
               </div>
+
               {pickupMethod === 'delivery' && (
                 <div className="cost-row">
                   <span>Phí giao nhận xe tận nơi</span>
                   <span>{formatCurrency(deliveryFee)}</span>
                 </div>
               )}
+
               <hr className="cost-divider" />
+
               <div className="cost-row total-row">
                 <span>Tổng giá trị đơn thuê</span>
                 <span className="text-primary">{formatCurrency(totalPrice)}</span>
