@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { DollarSign, Car, Users, CreditCard, Filter, TrendingUp, ShieldCheck, ArrowUpRight, Sparkles, FileText, Activity, AlertTriangle, CheckCircle2, Database, HardDrive, MessageSquare, Clock, Award, ChevronRight, UserCheck, UserPlus } from 'lucide-react';
+import { DatePickerVi } from '../../components/DatePickerVi';
 
 export const OverviewTab = ({
   stats = { totalUsers: 0, totalCars: 0, totalBookings: 0, totalRevenue: 0 },
@@ -487,11 +488,10 @@ export const OverviewTab = ({
 
         {/* Right: Date Range Selector */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <input
-            type="date"
+          <DatePickerVi
             value={fromDate}
-            onChange={(e) => {
-              setFromDate(e.target.value);
+            onChange={(val) => {
+              setFromDate(val);
               setActivePreset('custom');
             }}
             style={{
@@ -505,16 +505,14 @@ export const OverviewTab = ({
               outline: 'none',
               background: '#ffffff',
               height: '36px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              cursor: 'pointer'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
             }}
           />
           <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 700, fontFamily: "'Outfit', 'Inter', sans-serif" }}>đến</span>
-          <input
-            type="date"
+          <DatePickerVi
             value={toDate}
-            onChange={(e) => {
-              setToDate(e.target.value);
+            onChange={(val) => {
+              setToDate(val);
               setActivePreset('custom');
             }}
             style={{
@@ -528,8 +526,7 @@ export const OverviewTab = ({
               outline: 'none',
               background: '#ffffff',
               height: '36px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              cursor: 'pointer'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
             }}
           />
           <button
