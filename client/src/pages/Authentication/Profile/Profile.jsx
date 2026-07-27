@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Mail, Calendar, FileText, Camera, Edit2, Check, X, Upload, Link, CheckCircle, ZoomIn, RotateCw, Move, ShieldCheck, CreditCard, DollarSign, ArrowDownLeft, ArrowUpRight, ShieldAlert, Key } from 'lucide-react';
+import { User, Mail, Calendar, FileText, Camera, Edit2, Check, X, Upload, Link, CheckCircle, ZoomIn, RotateCw, Move, ShieldCheck, CreditCard, DollarSign, ArrowDownLeft, ArrowUpRight, ShieldAlert, Key, QrCode, Sparkles, Building2, Zap } from 'lucide-react';
 import { api } from '../../../utils/api';
 import { useToast } from '../../../components/Toast';
 import './Profile.css';
@@ -137,6 +137,7 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [walletTxType, setWalletTxType] = useState('deposit'); // deposit | withdraw
   const [walletTxAmount, setWalletTxAmount] = useState('');
+  const [depositMethod, setDepositMethod] = useState('vietqr'); // vietqr | vnpay | momo
   const [showFullTransactions, setShowFullTransactions] = useState(false);
 
   // Bank Account linking form states (UC24)
@@ -918,48 +919,279 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
         </div>
       )}
 
-      {/* --- POPUP MODAL: WALLET TRANSACTION (Deposit / Withdraw - UC19) --- */}
+      {/* --- POPUP MODAL: WALLET TRANSACTION (Deposit / Withdraw - UC19 REDESIGNED) --- */}
       {showWalletModal && (
         <div className="editor-modal-overlay" onClick={() => setShowWalletModal(false)}>
-          <div className="editor-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-            <div className="editor-modal-header">
-              <h3>{walletTxType === 'deposit' ? 'Nạp Tiền Vào Ví' : 'Rút Tiền Về Ngân Hàng'}</h3>
-              <button className="editor-close-btn" onClick={() => setShowWalletModal(false)}><X size={20} /></button>
+          <div className="wallet-modal-card-redesigned" onClick={(e) => e.stopPropagation()}>
+            
+            {/* Header with gradient & live balance */}
+            <div className="wallet-modal-header-redesigned">
+              <div className="wallet-modal-title-group">
+                <div className={`wallet-modal-icon-badge ${walletTxType === 'deposit' ? 'deposit-bg' : 'withdraw-bg'}`}>
+                  {walletTxType === 'deposit' ? <ArrowDownLeft size={22} /> : <ArrowUpRight size={22} />}
+                </div>
+                <div>
+                  <h4>{walletTxType === 'deposit' ? 'Nạp Tiền Vào Ví' : 'Rút Tiền Về Ngân Hàng'}</h4>
+                  <p className="wallet-modal-subtitle">Giao dịch tức thì 24/7 • An toàn & bảo mật</p>
+                </div>
+              </div>
+              <button className="editor-close-btn" onClick={() => setShowWalletModal(false)}>
+                <X size={20} />
+              </button>
             </div>
 
-            <form onSubmit={handleWalletTxSubmit} className="editor-modal-body" style={{ display: 'block', padding: '24px', textAlign: 'left' }}>
-              <div style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: 10, padding: 12, marginBottom: 16, fontSize: '12.5px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <DollarSign size={14} className="text-primary" />
-                <span>{walletTxType === 'deposit' ? 'Mô phỏng nạp tiền tức thì qua cổng thanh toán liên kết.' : 'Tiền sẽ được giải ngân rút về số tài khoản ngân hàng liên kết.'}</span>
-              </div>
+            {/* Sub-Header Tabs: Switch between Deposit & Withdraw */}
+            <div className="wallet-modal-tabs">
+              <button
+                type="button"
+                className={`wallet-modal-tab-btn ${walletTxType === 'deposit' ? 'active deposit-active' : ''}`}
+                onClick={() => { setWalletTxType('deposit'); setWalletTxAmount(''); }}
+              >
+                <ArrowDownLeft size={16} />
+                <span>Nạp tiền</span>
+              </button>
+              <button
+                type="button"
+                className={`wallet-modal-tab-btn ${walletTxType === 'withdraw' ? 'active withdraw-active' : ''}`}
+                onClick={() => { setWalletTxType('withdraw'); setWalletTxAmount(''); }}
+              >
+                <ArrowUpRight size={16} />
+                <span>Rút tiền</span>
+              </button>
+            </div>
 
-              {walletTxType === 'withdraw' && !bankAccount && (
-                <div style={{ background: 'rgba(244,63,94,0.06)', border: '1px solid rgba(244,63,94,0.15)', borderRadius: 10, padding: 12, marginBottom: 16, fontSize: '12.5px', color: '#fda4af', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <ShieldAlert size={14} />
-                  <span>Vui lòng liên kết tài khoản ngân hàng ở thẻ bên ngoài trước khi rút tiền!</span>
+            {/* Current Balance Bar */}
+            <div className="wallet-balance-info-bar">
+              <span className="balance-info-label">Số dư ví khả dụng:</span>
+              <span className="balance-info-value">{formatCurrency(walletBalance)}</span>
+            </div>
+
+            <form onSubmit={handleWalletTxSubmit} className="wallet-modal-body-redesigned">
+              
+              {/* DEPOSIT TYPE: METHOD SELECTOR */}
+              {walletTxType === 'deposit' && (
+                <div className="wallet-deposit-methods">
+                  <label className="wallet-section-label">Phương thức nạp tiền:</label>
+                  <div className="deposit-method-grid">
+                    <div
+                      className={`deposit-method-card ${depositMethod === 'vietqr' ? 'selected' : ''}`}
+                      onClick={() => setDepositMethod('vietqr')}
+                    >
+                      <div className="method-icon-box vietqr-box">
+                        <QrCode size={18} />
+                      </div>
+                      <div className="method-text">
+                        <span className="method-title">VietQR / Ngân hàng</span>
+                        <span className="method-sub">Quét mã QR chuyển khoản 24/7 (Miễn phí)</span>
+                      </div>
+                      <div className="method-radio"></div>
+                    </div>
+
+                    <div
+                      className={`deposit-method-card ${depositMethod === 'vnpay' ? 'selected' : ''}`}
+                      onClick={() => setDepositMethod('vnpay')}
+                    >
+                      <div className="method-icon-box vnpay-box">
+                        <CreditCard size={18} />
+                      </div>
+                      <div className="method-text">
+                        <span className="method-title">VNPAY Gateway</span>
+                        <span className="method-sub">Thẻ ATM nội địa / Visa / Mastercard</span>
+                      </div>
+                      <div className="method-radio"></div>
+                    </div>
+
+                    <div
+                      className={`deposit-method-card ${depositMethod === 'momo' ? 'selected' : ''}`}
+                      onClick={() => setDepositMethod('momo')}
+                    >
+                      <div className="method-icon-box momo-box">
+                        <Zap size={18} />
+                      </div>
+                      <div className="method-text">
+                        <span className="method-title">Ví Điện Tử (MoMo / ZaloPay)</span>
+                        <span className="method-sub">Thanh toán tức thì từ ứng dụng ví</span>
+                      </div>
+                      <div className="method-radio"></div>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              <div className="form-group">
-                <label className="form-label">Nhập số tiền giao dịch (VND):</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  placeholder="Ví dụ: 1000000"
-                  value={walletTxAmount}
-                  onChange={(e) => setWalletTxAmount(e.target.value)}
-                  disabled={walletTxType === 'withdraw' && !bankAccount}
-                  required
-                />
+              {/* WITHDRAW TYPE: BANK ACCOUNT PREVIEW */}
+              {walletTxType === 'withdraw' && (
+                <div className="wallet-withdraw-bank-preview">
+                  <label className="wallet-section-label">Tài khoản ngân hàng thụ hưởng:</label>
+                  {bankAccount ? (
+                    <div className="withdraw-bank-card-box">
+                      <div className="bank-card-icon-area">
+                        <Building2 size={24} className="bank-building-icon" />
+                      </div>
+                      <div className="bank-card-details">
+                        <div className="bank-name-tag">{bankAccount.bankName}</div>
+                        <div className="bank-acc-num">
+                          •••• •••• •••• {bankAccount.accountNumber.slice(-4) || '1234'}
+                        </div>
+                        <div className="bank-acc-holder">{bankAccount.accountHolder?.toUpperCase()}</div>
+                      </div>
+                      <div className="bank-instant-badge">⚡ Rút tức thì 1-3p</div>
+                    </div>
+                  ) : (
+                    <div className="withdraw-no-bank-alert">
+                      <ShieldAlert size={18} className="text-rose" />
+                      <div style={{ flex: 1 }}>
+                        <strong style={{ fontSize: '13px', color: '#fecdd3' }}>Chưa liên kết ngân hàng</strong>
+                        <p style={{ margin: '2px 0 0', fontSize: '11.5px', color: '#fda4af' }}>Cần liên kết tài khoản ngân hàng trước khi rút tiền.</p>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-link-bank-inline"
+                        onClick={() => { setShowWalletModal(false); setShowBankForm(true); }}
+                      >
+                        <Link size={12} /> Liên kết ngay
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* QUICK PRESET CHIPS */}
+              <div className="wallet-presets-section">
+                <label className="wallet-section-label">
+                  {walletTxType === 'deposit' ? 'Chọn nhanh số tiền nạp:' : 'Chọn nhanh số tiền rút:'}
+                </label>
+                <div className="preset-chips-grid">
+                  {(walletTxType === 'deposit' 
+                    ? [200000, 500000, 1000000, 2000000, 5000000, 10000000]
+                    : [100000, 500000, 1000000, 5000000]
+                  ).map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      className={`preset-chip-btn ${parseInt(walletTxAmount) === amt ? 'active' : ''}`}
+                      onClick={() => setWalletTxAmount(String(amt))}
+                    >
+                      {formatCurrency(amt)}
+                    </button>
+                  ))}
+                  {walletTxType === 'withdraw' && (
+                    <button
+                      type="button"
+                      className={`preset-chip-btn max-chip ${parseInt(walletTxAmount) === walletBalance && walletBalance > 0 ? 'active' : ''}`}
+                      onClick={() => setWalletTxAmount(String(walletBalance))}
+                      disabled={walletBalance <= 0}
+                    >
+                      Rút tối đa
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="editor-modal-footer mt-6" style={{ padding: 0, border: 'none', background: 'none' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowWalletModal(false)}>Hủy</button>
-                <button type="submit" className="btn btn-primary" disabled={walletTxType === 'withdraw' && !bankAccount} style={{ width: 'auto', padding: '10px 24px' }}>
-                  Xác Nhận Giao Dịch
+              {/* AMOUNT INPUT FIELD */}
+              <div className="wallet-amount-input-group">
+                <label className="wallet-section-label">Số tiền nhập tùy chỉnh (VND):</label>
+                <div className="custom-amount-input-wrapper">
+                  <input
+                    type="number"
+                    className="custom-wallet-input"
+                    placeholder="Ví dụ: 1,000,000"
+                    value={walletTxAmount}
+                    onChange={(e) => setWalletTxAmount(e.target.value)}
+                    disabled={walletTxType === 'withdraw' && !bankAccount}
+                    min="10000"
+                    step="10000"
+                    required
+                  />
+                  <span className="currency-suffix">VNĐ</span>
+                  {walletTxAmount && (
+                    <button
+                      type="button"
+                      className="input-clear-btn"
+                      onClick={() => setWalletTxAmount('')}
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+
+                {walletTxAmount && parseInt(walletTxAmount) > 0 && (
+                  <div className="amount-formatted-preview">
+                    ✨ Số tiền bằng số: <strong>{formatCurrency(parseInt(walletTxAmount))}</strong>
+                  </div>
+                )}
+
+                {walletTxType === 'withdraw' && walletTxAmount && parseInt(walletTxAmount) > walletBalance && (
+                  <div className="amount-warning-text">
+                    ⚠️ Số tiền rút vượt quá số dư khả dụng hiện tại ({formatCurrency(walletBalance)})
+                  </div>
+                )}
+              </div>
+
+              {/* SUMMARY BREAKDOWN BOX */}
+              {walletTxAmount && parseInt(walletTxAmount) > 0 && (
+                <div className="wallet-summary-box">
+                  <div className="summary-row">
+                    <span>Số dư ví hiện tại</span>
+                    <span>{formatCurrency(walletBalance)}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span>{walletTxType === 'deposit' ? 'Số tiền nạp vào' : 'Số tiền rút ra'}</span>
+                    <span className={walletTxType === 'deposit' ? 'text-emerald' : 'text-rose'}>
+                      {walletTxType === 'deposit' ? '+' : '-'}{formatCurrency(parseInt(walletTxAmount))}
+                    </span>
+                  </div>
+                  <div className="summary-row">
+                    <span>Phí dịch vụ giao dịch</span>
+                    <span style={{ color: '#10b981', fontWeight: 600 }}>Miễn phí 100%</span>
+                  </div>
+                  <div className="summary-divider"></div>
+                  <div className="summary-row total-row">
+                    <span>Số dư dự kiến sau GD</span>
+                    <strong>
+                      {formatCurrency(
+                        walletTxType === 'deposit'
+                          ? walletBalance + parseInt(walletTxAmount)
+                          : Math.max(0, walletBalance - parseInt(walletTxAmount))
+                      )}
+                    </strong>
+                  </div>
+                </div>
+              )}
+
+              {/* FOOTER ACTIONS */}
+              <div className="wallet-modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary wallet-btn-cancel"
+                  onClick={() => setShowWalletModal(false)}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  className={`btn wallet-btn-submit ${walletTxType === 'deposit' ? 'btn-deposit-submit' : 'btn-withdraw-submit'}`}
+                  disabled={
+                    (walletTxType === 'withdraw' && (!bankAccount || parseInt(walletTxAmount) > walletBalance)) ||
+                    !walletTxAmount ||
+                    parseInt(walletTxAmount) <= 0
+                  }
+                >
+                  {walletTxType === 'deposit' ? (
+                    <>
+                      <Sparkles size={16} />
+                      <span>Xác Nhận Nạp {walletTxAmount && parseInt(walletTxAmount) > 0 ? formatCurrency(parseInt(walletTxAmount)) : ''}</span>
+                    </>
+                  ) : (
+                    <>
+                      <ArrowUpRight size={16} />
+                      <span>Xác Nhận Rút {walletTxAmount && parseInt(walletTxAmount) > 0 ? formatCurrency(parseInt(walletTxAmount)) : ''}</span>
+                    </>
+                  )}
                 </button>
               </div>
+
             </form>
+
           </div>
         </div>
       )}

@@ -3,7 +3,7 @@ const API_BASE = '/api';
 // Helper to make fetch calls with authorization header (with automatic retries for slow backend startup)
 const request = async (url, options = {}, retries = 4, delay = 1000) => {
   const token = localStorage.getItem('token');
-  
+
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {})
@@ -28,7 +28,7 @@ const request = async (url, options = {}, retries = 4, delay = 1000) => {
       // Xử lý lỗi JSON parse nếu backend trả về HTML không mong muốn
       const contentType = response.headers.get("content-type");
       if (contentType && !contentType.includes("application/json")) {
-          throw new Error('Unexpected content type: ' + contentType);
+        throw new Error('Unexpected content type: ' + contentType);
       }
 
       const data = await response.json();
@@ -40,14 +40,14 @@ const request = async (url, options = {}, retries = 4, delay = 1000) => {
       return data;
     } catch (error) {
       // Nếu là lỗi kết nối mạng hoặc lỗi server chưa sẵn sàng (trả về 502/504/HTML)
-      const isNetworkError = error instanceof TypeError || 
-                             error.name === 'SyntaxError' ||
-                             error.message?.includes('Failed to fetch') || 
-                             error.message?.includes('network') ||
-                             error.message?.includes('Failed to execute') ||
-                             error.message?.includes('Server is starting') ||
-                             error.message?.includes('Unexpected content type');
-                             
+      const isNetworkError = error instanceof TypeError ||
+        error.name === 'SyntaxError' ||
+        error.message?.includes('Failed to fetch') ||
+        error.message?.includes('network') ||
+        error.message?.includes('Failed to execute') ||
+        error.message?.includes('Server is starting') ||
+        error.message?.includes('Unexpected content type');
+
       if (isNetworkError && i < retries) {
         console.warn(`[API] Kết nối thất bại hoặc server chưa sẵn sàng, đang thử lại sau ${delay}ms... (${i + 1}/${retries})`);
         await new Promise(resolve => setTimeout(resolve, delay));
@@ -60,84 +60,84 @@ const request = async (url, options = {}, retries = 4, delay = 1000) => {
 
 export const api = {
   auth: {
-    register: (name, email, password, gender) => 
+    register: (name, email, password, gender) =>
       request('/auth/register', {
         method: 'POST',
         body: JSON.stringify({ name, email, password, gender })
       }),
-      
-    verifyEmail: (token) => 
+
+    verifyEmail: (token) =>
       request(`/auth/verify-email?token=${token}`, {
         method: 'GET'
       }),
-      
-    verifyEmailDirect: (email) => 
+
+    verifyEmailDirect: (email) =>
       request('/auth/verify-email-direct', {
         method: 'POST',
         body: JSON.stringify({ email })
       }),
-      
-    verifyEmailOtp: (email, code) => 
+
+    verifyEmailOtp: (email, code) =>
       request('/auth/verify-email-otp', {
         method: 'POST',
         body: JSON.stringify({ email, code })
       }),
-      
-    login: (email, password) => 
+
+    login: (email, password) =>
       request('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password })
       }),
-      
-    googleLogin: (credential) => 
+
+    googleLogin: (credential) =>
       request('/auth/google-login', {
         method: 'POST',
         body: JSON.stringify({ credential })
       }),
-      
-    forgotPassword: (email) => 
+
+    forgotPassword: (email) =>
       request('/auth/forgot-password', {
         method: 'POST',
         body: JSON.stringify({ email })
       }),
-      
-    verifyResetCode: (email, code) => 
+
+    verifyResetCode: (email, code) =>
       request('/auth/verify-reset-code', {
         method: 'POST',
         body: JSON.stringify({ email, code })
       }),
-      
-    resetPassword: (email, code, newPassword) => 
+
+    resetPassword: (email, code, newPassword) =>
       request('/auth/reset-password', {
         method: 'POST',
         body: JSON.stringify({ email, code, newPassword })
       })
   },
-  
+
   user: {
-    getProfile: () => 
+    getProfile: () =>
       request('/user/profile', {
         method: 'GET'
       }),
-      
-    editProfile: (name, bio) => 
+
+    editProfile: (name, bio) =>
       request('/user/profile/edit', {
         method: 'PUT',
         body: JSON.stringify({ name, bio })
       }),
-      
-    updateAvatar: (avatar) => 
+
+    updateAvatar: (avatar) =>
       request('/user/profile/avatar', {
         method: 'PUT',
         body: JSON.stringify({ avatar })
       }),
-      
-    changePassword: (currentPassword, newPassword) => 
+
+    changePassword: (currentPassword, newPassword) =>
       request('/user/change-password', {
         method: 'PUT',
         body: JSON.stringify({ currentPassword, newPassword })
       }),
-      
+
     uploadLicense: (licenseImage) =>
       request('/user/license', {
         method: 'PUT',
@@ -149,7 +149,6 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify({ cccdImage, licenseImage, carPapersImage, cccdBackImage, faceImage })
       }),
-
 
     getWallet: () =>
       request('/user/wallet', {
@@ -173,7 +172,7 @@ export const api = {
         method: 'POST'
       })
   },
-  
+
   cars: {
     getCars: (filters = {}) => {
       const params = new URLSearchParams();
@@ -185,33 +184,33 @@ export const api = {
       const query = params.toString() ? `?${params.toString()}` : '';
       return request(`/cars${query}`, { method: 'GET' });
     },
-    
-    listCar: (carData) => 
+
+    listCar: (carData) =>
       request('/cars', {
         method: 'POST',
         body: JSON.stringify(carData)
       })
   },
-  
+
   bookings: {
-    create: (bookingData) => 
+    create: (bookingData) =>
       request('/bookings', {
         method: 'POST',
         body: JSON.stringify(bookingData)
       }),
-      
+
     createVnpayUrl: (bookingId) =>
       request('/payments/vnpay/create', {
         method: 'POST',
         body: JSON.stringify({ bookingId })
       }),
-      
-    getMyTrips: () => 
+
+    getMyTrips: () =>
       request('/bookings/my-trips', {
         method: 'GET'
       }),
-      
-    cancel: (id) => 
+
+    cancel: (id) =>
       request(`/bookings/${id}/cancel`, {
         method: 'PUT'
       }),
@@ -234,7 +233,7 @@ export const api = {
       request(`/contracts/booking/${bookingId}`, {
         method: 'GET'
       }),
-      
+
     renterSign: (bookingId) =>
       request(`/contracts/booking/${bookingId}/renter-sign`, {
         method: 'POST'
@@ -300,15 +299,15 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ userId, title, message, type })
       }),
-      
+
     // Voucher Management
     getVouchers: () => request('/admin/vouchers'),
-    createVoucher: (voucherData) => 
+    createVoucher: (voucherData) =>
       request('/admin/vouchers', {
         method: 'POST',
         body: JSON.stringify(voucherData)
       }),
-    deleteVoucher: (id) => 
+    deleteVoucher: (id) =>
       request(`/admin/vouchers/${id}`, {
         method: 'DELETE'
       }),
@@ -371,33 +370,27 @@ export const api = {
       const query = params.toString() ? `?${params.toString()}` : '';
       return request(`/admin/stats/monthly${query}`, { method: 'GET' });
     },
-      
-    getUsers: () => 
-      request('/admin/users', {
-        method: 'GET'
-      }),
-      
-    approveLicense: (id, status) => 
+
+    getUsers: () =>
+      request('/admin/users', { method: 'GET' }),
+
+    approveLicense: (id, status) =>
       request(`/admin/users/${id}/license`, {
         method: 'PUT',
         body: JSON.stringify({ status })
       }),
-      
-    getBookings: () => 
-      request('/admin/bookings', {
-        method: 'GET'
-      }),
-      
-    updateBookingStatus: (id, status) => 
+
+    getBookings: () =>
+      request('/admin/bookings', { method: 'GET' }),
+
+    updateBookingStatus: (id, status) =>
       request(`/admin/bookings/${id}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status })
       }),
-      
-    deleteCar: (id) => 
-      request(`/admin/cars/${id}`, {
-        method: 'DELETE'
-      }),
+
+    deleteCar: (id) =>
+      request(`/admin/cars/${id}`, { method: 'DELETE' }),
 
     approveKyc: (id, status) =>
       request(`/admin/users/${id}/kyc`, {
@@ -406,19 +399,13 @@ export const api = {
       }),
 
     getIncidents: () =>
-      request('/admin/incidents', {
-        method: 'GET'
-      }),
+      request('/admin/incidents', { method: 'GET' }),
 
     resolveIncident: (bookingId) =>
-      request(`/admin/incidents/${bookingId}/resolve`, {
-        method: 'PUT'
-      }),
+      request(`/admin/incidents/${bookingId}/resolve`, { method: 'PUT' }),
 
     getSupportTickets: () =>
-      request('/admin/support/tickets', {
-        method: 'GET'
-      }),
+      request('/admin/support/tickets', { method: 'GET' }),
 
     replySupportTicket: (id, replyText) =>
       request(`/admin/support/tickets/${id}/reply`, {
@@ -427,14 +414,10 @@ export const api = {
       }),
 
     resolveSupportTicket: (id) =>
-      request(`/admin/support/tickets/${id}/resolve`, {
-        method: 'PUT'
-      }),
+      request(`/admin/support/tickets/${id}/resolve`, { method: 'PUT' }),
 
     getReviews: () =>
-      request('/admin/reviews', {
-        method: 'GET'
-      }),
+      request('/admin/reviews', { method: 'GET' }),
 
     updateReviewStatus: (id, status) =>
       request(`/admin/reviews/${id}/status`, {
@@ -443,9 +426,7 @@ export const api = {
       }),
 
     getDisputes: () =>
-      request('/admin/disputes', {
-        method: 'GET'
-      }),
+      request('/admin/disputes', { method: 'GET' }),
 
     resolveDispute: (id, resolutionDetails) =>
       request(`/admin/disputes/${id}/resolve`, {
@@ -460,14 +441,10 @@ export const api = {
       }),
 
     confirmVietqr: (bookingId) =>
-      request(`/admin/bookings/${bookingId}/confirm-vietqr`, {
-        method: 'PUT'
-      }),
+      request(`/admin/bookings/${bookingId}/confirm-vietqr`, { method: 'PUT' }),
 
     getPendingCars: () =>
-      request('/admin/cars/pending', {
-        method: 'GET'
-      }),
+      request('/admin/cars/pending', { method: 'GET' }),
 
     moderateCar: (id, status, rejectionReason) =>
       request(`/admin/cars/${id}/moderation`, {
@@ -488,9 +465,7 @@ export const api = {
       }),
 
     deleteUser: (id) =>
-      request(`/admin/users/${id}`, {
-        method: 'DELETE'
-      }),
+      request(`/admin/users/${id}`, { method: 'DELETE' }),
 
     queryAIAssistant: (message, history) =>
       request('/admin/ai-assistant', {
@@ -499,53 +474,57 @@ export const api = {
       }),
 
     suggestTicketReply: (id) =>
-      request(`/admin/support/tickets/${id}/ai-suggest`, {
-        method: 'GET'
+      request(`/admin/support/tickets/${id}/ai-suggest`, { method: 'GET' }),
+
+    // ─── CSKH: Chi tiết đầy đủ 1 tranh chấp (renter + owner + booking + xe)
+    getDisputeDetail: (id) =>
+      request(`/admin/disputes/${id}`, { method: 'GET' }),
+
+    // ─── CSKH: Gửi thông báo tới chủ xe trong tranh chấp
+    notifyOwnerDispute: (id, message) =>
+      request(`/admin/disputes/${id}/notify-owner`, {
+        method: 'POST',
+        body: JSON.stringify({ message })
+      }),
+
+    // ─── CSKH: Ghi chú xử lý sự cố
+    addIncidentNote: (bookingId, note) =>
+      request(`/admin/incidents/${bookingId}/note`, {
+        method: 'POST',
+        body: JSON.stringify({ note })
       })
   },
 
   chatbot: {
-    sendMessage: (message, history) => 
+    sendMessage: (message, history) =>
       request('/chatbot/message', {
         method: 'POST',
         body: JSON.stringify({ message, history })
       })
   },
-  
+
   emails: {
-    getEmails: () => 
-      request('/emails', {
-        method: 'GET'
-      }),
-      
-    markRead: () => 
-      request('/emails/mark-read', {
-        method: 'POST'
-      }),
-      
-    clearAll: () => 
-      request('/emails/clear', {
-        method: 'POST'
-      })
+    getEmails: () =>
+      request('/emails', { method: 'GET' }),
+
+    markRead: () =>
+      request('/emails/mark-read', { method: 'POST' }),
+
+    clearAll: () =>
+      request('/emails/clear', { method: 'POST' })
   },
 
   notifications: {
     getNotifications: () =>
-      request('/notifications', {
-        method: 'GET'
-      }),
-      
+      request('/notifications', { method: 'GET' }),
+
     markAsRead: (id) =>
-      request(`/notifications/${id}/read`, {
-        method: 'PUT'
-      }),
-      
+      request(`/notifications/${id}/read`, { method: 'PUT' }),
+
     markAllAsRead: () =>
-      request('/notifications/read-all', {
-        method: 'POST'
-      })
+      request('/notifications/read-all', { method: 'POST' })
   },
-  
+
   vouchers: {
     getActive: () => request('/vouchers/active')
   }

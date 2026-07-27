@@ -925,4 +925,123 @@ router.get('/api/admin/support/tickets/:id/ai-suggest', auth, cskhOrAdminAuth, a
   }
 });
 
+// ─── CSKH: Lấy chi tiết đầy đủ 1 tranh chấp (renter + owner + booking + xe) ───
+router.get('/api/admin/disputes/:id', auth, cskhOrAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const disputes = await db.disputes.findMany();
+    const d = disputes.find(x => String(x.id) === String(id));
+    if (!d) return res.status(404).json({ message: 'Tranh chấp không tồn tại.' });
+
+    const renter  = await db.users.findOne({ id: d.renterId }) || {};
+    const owner   = await db.users.findOne({ id: d.ownerId })  || {};
+    const booking = await db.bookings.findOne({ id: d.bookingId }) || {};
+    const car     = booking.carId ? await db.cars.findOne({ id: booking.carId }) || {} : {};
+
+    res.json({
+      ...d,
+      renterName:  renter.name  || 'Người thuê',
+      renterEmail: renter.email || '',
+      renterPhone: renter.phone || '',
+      ownerName:   owner.name   || 'Chủ xe',
+      ownerEmail:  owner.email  || '',
+      ownerPhone:  owner.phone  || '',
+      booking: {
+        id:          booking.id,
+        pickupDate:  booking.pickupDate,
+        returnDate:  booking.returnDate,
+        totalPrice:  booking.totalPrice,
+        status:      booking.status,
+        carName:     car.brand ? `${car.brand} ${car.model}` : 'Xe',
+        carPlate:    car.plateNumber || '',
+        carImage:    car.image       || '',
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching dispute detail:', error);
+    res.status(500).json({ message: 'Lỗi tải chi tiết tranh chấp.' });
+  }
+});
+
+// ─── CSKH: Gửi thông báo tới Chủ xe trong tranh chấp ───────────────────────
+router.post('/api/admin/disputes/:id/notify-owner', auth, cskhOrAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { message: noteMessage } = req.body;
+
+    if (!noteMessage) return res.status(400).json({ message: 'Vui lòng nhập nội dung thông báo cho chủ xe.' });
+
+    const disputes = await db.disputes.findMany();
+    const d = disputes.find(x => String(x.id) === String(id));
+    if (!d) return res.status(404).json({ message: 'Tranh chấp không tồn tại.' });
+
+    const renter  = await db.users.findOne({ id: d.renterId }) || { name: 'Người thuê' };
+
+    // Gửi notification tới chủ xe
+    if (d.ownerId && d.ownerId !== 'admin') {
+      await notificationService.createNotification(
+        d.ownerId,
+        '⚖️ CSKH liên hệ về tranh chấp',
+        `CSKH ViVuCar thông báo: ${noteMessage} — Liên quan đến tranh chấp với khách hàng ${renter.name} (Booking #${d.bookingId}).`,
+        'DisputeAlert',
+        d.bookingId,
+        'Booking'
+      );
+    }
+
+    // Gửi notification cho renter biết CSKH đã liên hệ owner
+    await notificationService.createNotification(
+      d.renterId,
+      '📢 CSKH đã liên hệ chủ xe',
+      `CSKH đã gửi thông báo tới chủ xe về tranh chấp của bạn (Booking #${d.bookingId}). Vui lòng chờ phản hồi.`,
+      'DisputeAlert',
+      d.bookingId,
+      'Booking'
+    );
+
+    res.json({ message: 'Đã gửi thông báo tới chủ xe và cập nhật người thuê thành công!' });
+  } catch (error) {
+    console.error('Error notifying owner about dispute:', error);
+    res.status(500).json({ message: 'Lỗi gửi thông báo chủ xe.' });
+  }
+});
+
+// ─── CSKH: Ghi chú xử lý sự cố với nội dung tùy chỉnh ─────────────────────
+router.post('/api/admin/incidents/:bookingId/note', auth, cskhOrAdminAuth, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { note } = req.body;
+
+    const booking = await db.bookings.findOne({ id: bookingId });
+    if (!booking) return res.status(404).json({ message: 'Không tìm thấy chuyến đi.' });
+
+    const currentReport = booking.issueReport || {};
+    await db.bookings.update(bookingId, {
+      issueReport: {
+        ...currentReport,
+        cskhNote: note,
+        cskhNoteAt: new Date().toISOString(),
+        cskhStaffId: req.user.id,
+        cskhStaffName: req.user.name
+      }
+    });
+
+    // Notify renter
+    await notificationService.createNotification(
+      booking.userId,
+      '📋 CSKH đã cập nhật sự cố của bạn',
+      `Nhân viên CSKH đã ghi nhận và cập nhật tiến độ xử lý sự cố trong chuyến đi #${bookingId}.`,
+      'IncidentUpdate',
+      bookingId,
+      'Booking'
+    );
+
+    res.json({ message: 'Đã ghi chú xử lý sự cố và thông báo cho khách hàng!' });
+  } catch (error) {
+    console.error('Error adding incident note:', error);
+    res.status(500).json({ message: 'Lỗi ghi chú sự cố.' });
+  }
+});
+
 export default router;
+
