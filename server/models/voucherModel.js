@@ -101,6 +101,16 @@ export const voucherModel = {
   getActiveVouchers: async () => {
     try {
       const p = await getPool();
+      await p.request().query(`
+        IF EXISTS (SELECT * FROM sys.tables WHERE name = 'Vouchers')
+        BEGIN
+          IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Vouchers') AND name = 'start_date')
+          BEGIN
+            ALTER TABLE Vouchers ADD start_date DATETIME2 NULL;
+          END;
+        END
+      `);
+
       const res = await p.request().query(`
         SELECT * FROM Vouchers 
         WHERE status = 'active'
@@ -115,6 +125,7 @@ export const voucherModel = {
       return [];
     }
   },
+
 
   delete: async (id) => {
     try {

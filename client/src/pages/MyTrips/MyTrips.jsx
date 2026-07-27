@@ -955,6 +955,42 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                 })}
               </div>
 
+              {/* Emergency / Anomaly Report Guidance */}
+              <div style={{
+                background: 'linear-gradient(135deg, #fff1f2, #fef2f2)',
+                border: '1px solid #fecdd3',
+                borderRadius: '14px',
+                padding: '12px 16px',
+                marginBottom: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <AlertTriangle size={18} color="#e11d48" style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: '12px', color: '#9f1239', fontWeight: 600, lineHeight: 1.4 }}>
+                    Xe có trầy xước từ trước hoặc thiết bị hỏng hóc?
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const tripToReport = activeHandoverTrip.trip;
+                    setActiveHandoverTrip(null);
+                    setActiveIncidentTrip(tripToReport);
+                  }}
+                  style={{
+                    background: '#e11d48', color: '#ffffff', border: 'none',
+                    borderRadius: '8px', padding: '7px 12px', fontSize: '11.5px',
+                    fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+                    boxShadow: '0 2px 8px rgba(225,29,72,0.25)'
+                  }}
+                >
+                  🚨 Báo sự cố & Tải ảnh ngay
+                </button>
+              </div>
+
               {/* Bottom Actions */}
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', paddingTop: 16, borderTop: '1px solid #f1f5f9' }}>
                 <button
