@@ -40,19 +40,24 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
     };
   }, []);
 
-  // Initialize Canvas width dynamically
+  // Initialize Canvas width and height dynamically based on rect
   React.useEffect(() => {
     if (step === 'contract' && signatureCanvasRef.current) {
       const canvas = signatureCanvasRef.current;
-      setTimeout(() => {
-        const rect = canvas.parentNode.getBoundingClientRect();
-        canvas.width = rect.width || 320;
-        canvas.height = 140;
+      const timer = setTimeout(() => {
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width || 450;
+        canvas.height = rect.height || 120;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         setHasSigned(false);
         setIsDrawing(false);
-      }, 100);
+      }, 150);
+      return () => clearTimeout(timer);
     }
   }, [step]);
+
 
   const startFaceScan = async () => {
     setFaceScanStep('streaming');
@@ -160,20 +165,30 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
     }
   };
 
+  const getCanvasPos = (e, canvas) => {
+    const rect = canvas.getBoundingClientRect();
+    let clientX = e.clientX;
+    let clientY = e.clientY;
+    if (e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    }
+    const scaleX = canvas.width / (rect.width || 1);
+    const scaleY = canvas.height / (rect.height || 1);
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  };
+
   const startDrawing = (e) => {
     const canvas = signatureCanvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
     if (e.cancelable) e.preventDefault();
-    
+    const ctx = canvas.getContext('2d');
+    const pos = getCanvasPos(e, canvas);
     ctx.beginPath();
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    ctx.moveTo(x, y);
+    ctx.moveTo(pos.x, pos.y);
     setIsDrawing(true);
   };
 
@@ -181,22 +196,16 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
     if (!isDrawing) return;
     const canvas = signatureCanvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
     if (e.cancelable) e.preventDefault();
-    
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    ctx.lineTo(x, y);
+    const ctx = canvas.getContext('2d');
+    const pos = getCanvasPos(e, canvas);
+    ctx.lineTo(pos.x, pos.y);
     ctx.strokeStyle = '#0f172a';
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.stroke();
-    setHasSigned(true);
+    if (!hasSigned) setHasSigned(true);
   };
 
   const stopDrawing = () => {
@@ -210,6 +219,7 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     setHasSigned(false);
   };
+
 
   const getContractText = () => {
     const today = new Date().toLocaleDateString('vi-VN');
@@ -1659,10 +1669,10 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
               </div>
 
               <div style={{
-                background: '#f8fafc',
-                border: '2px dashed #cbd5e1',
+                background: '#ffffff',
+                border: '2px dashed #94a3b8',
                 borderRadius: '12px',
-                height: '110px',
+                height: '130px',
                 position: 'relative',
                 overflow: 'hidden',
                 touchAction: 'none'
