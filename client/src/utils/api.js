@@ -16,6 +16,7 @@ const request = async (url, options = {}, retries = 4, delay = 1000) => {
   for (let i = 0; i <= retries; i++) {
     try {
       const response = await fetch(`${API_BASE}${url}`, {
+        cache: 'no-store',
         ...options,
         headers
       });
@@ -198,6 +199,12 @@ export const api = {
       request('/bookings', {
         method: 'POST',
         body: JSON.stringify(bookingData)
+      }),
+
+    verifyFaceForBooking: (scannedFace) =>
+      request('/bookings/verify-face', {
+        method: 'POST',
+        body: JSON.stringify({ scannedFace })
       }),
       
     createVnpayUrl: (bookingId) =>

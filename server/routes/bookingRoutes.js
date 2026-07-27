@@ -2,16 +2,66 @@ import express from 'express';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
 import { notificationService } from '../services/notificationService.js';
-import { compareFacesWithAI } from '../utils/aiHelper.js';
+import { compareFacesWithAI, compareFaceWithDocument } from '../utils/aiHelper.js';
 import { contractModel } from '../models/contractModel.js';
 import { sql, getPool } from '../config/db.js';
 
 const router = express.Router();
 
+// Face verification endpoint — compare live photo with CCCD/License (Option A)
+router.post('/api/bookings/verify-face', auth, async (req, res) => {
+  try {
+    const { scannedFace } = req.body;
+    if (!scannedFace) {
+      return res.status(400).json({ verified: false, reason: 'Thiếu ảnh khuôn mặt.' });
+    }
+
+    const user = await db.users.findOne({ id: req.user.id });
+
+    // Check CCCD/License exists
+    const cccdImage = user.kycDocuments?.cccd || null;
+    const licenseImage = user.kycDocuments?.license || null;
+
+    if (!cccdImage && !licenseImage) {
+      return res.status(400).json({
+        verified: false,
+        reason: 'Tài khoản chưa tải lên ảnh CCCD hoặc Bằng lái xe. Vui lòng cập nhật trong Hồ sơ cá nhân.',
+        apiError: false
+      });
+    }
+
+    console.log('Running AI face-document verification for booking...');
+    const result = await compareFaceWithDocument(
+      { cccd: cccdImage, license: licenseImage },
+      scannedFace
+    );
+
+    console.log('Face-Document verification result:', { verified: result.verified, score: result.score, apiError: result.apiError });
+
+    res.json({
+      verified: result.verified,
+      score: result.score || 0,
+      reason: result.reason || '',
+      apiError: result.apiError || false,
+      allowProceed: result.apiError === true // Allow proceed when API errors (CSKH will review)
+    });
+  } catch (error) {
+    console.error('Face verification endpoint error:', error);
+    // On unexpected error, allow proceed with CSKH fallback
+    res.json({
+      verified: false,
+      score: 0,
+      reason: 'Hệ thống xác thực khuôn mặt tạm thời gặp sự cố. Đơn đặt xe sẽ chờ CSKH duyệt thủ công.',
+      apiError: true,
+      allowProceed: true
+    });
+  }
+});
+
 // 15. POST Booking (Đặt xe & Đặt cọc)
 router.post('/api/bookings', auth, async (req, res) => {
   try {
-    const { carId, pickupDate, returnDate, pickupLocation, totalPrice, rentalPriceForOwner, paymentMethod, scannedFace, contractSignature, agreementChecked } = req.body;
+    const { carId, pickupDate, returnDate, pickupLocation, totalPrice, rentalPriceForOwner, paymentMethod, scannedFace, contractSignature, agreementChecked, faceVerificationSkipped } = req.body;
 
     if (!carId || !pickupDate || !returnDate || !pickupLocation || !totalPrice) {
       return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ thông tin đặt xe.' });
@@ -26,18 +76,41 @@ router.post('/api/bookings', auth, async (req, res) => {
       return res.status(400).json({ message: 'Tài khoản chưa xác thực Bằng lái xe. Vui lòng xác thực trước khi đặt xe.' });
     }
 
-    // Biometric face verification check if user has registered face in KYC
-    if (user.kycDocuments?.faceImage) {
-      if (!scannedFace) {
-        return res.status(400).json({ message: 'Vui lòng thực hiện quét khuôn mặt sinh trắc học để xác thực đặt xe.' });
-      }
+    // Option A: Face verification against CCCD/License (not registered face)
+    // If faceVerificationSkipped is true (API error fallback), allow booking but flag it
+    let faceVerificationStatus = 'not_required';
 
-      console.log('Running AI face verification for checkout...');
-      const faceResult = await compareFacesWithAI(user.kycDocuments.faceImage, scannedFace);
-      if (!faceResult.verified) {
-        return res.status(400).json({ message: `Xác thực khuôn mặt thất bại: ${faceResult.reason || 'Khuôn mặt không khớp'}` });
+    if (scannedFace) {
+      if (faceVerificationSkipped) {
+        // API error case: allow booking, mark as pending manual review
+        faceVerificationStatus = 'pending_manual';
+        console.log('Face verification skipped due to API error. Booking will require CSKH manual review.');
+      } else {
+        // Normal case: re-verify on server side
+        const cccdImage = user.kycDocuments?.cccd || null;
+        const licenseImage = user.kycDocuments?.license || null;
+
+        if (cccdImage || licenseImage) {
+          console.log('Running server-side AI face-document verification for booking...');
+          const faceResult = await compareFaceWithDocument(
+            { cccd: cccdImage, license: licenseImage },
+            scannedFace
+          );
+
+          if (faceResult.apiError) {
+            // API error on server side too — allow booking with CSKH flag
+            faceVerificationStatus = 'pending_manual';
+            console.log('Server AI face verification failed (API error). Flagging for CSKH review.');
+          } else if (!faceResult.verified) {
+            return res.status(400).json({
+              message: `Xác thực khuôn mặt thất bại: ${faceResult.reason || 'Khuôn mặt không khớp với ảnh trên CCCD/Bằng lái xe.'}`
+            });
+          } else {
+            faceVerificationStatus = 'verified';
+            console.log('AI Face-Document Verification passed. Score:', faceResult.score);
+          }
+        }
       }
-      console.log('AI Face Verification passed. Score:', faceResult.score);
     }
 
     const booking = await db.bookings.create({
@@ -53,7 +126,8 @@ router.post('/api/bookings', auth, async (req, res) => {
         signature: contractSignature || null,
         signedAt: new Date().toISOString(),
         scannedFace: scannedFace || null,
-        agreementChecked: agreementChecked === true
+        agreementChecked: agreementChecked === true,
+        faceVerificationStatus
       }
     });
 
@@ -95,9 +169,13 @@ router.post('/api/bookings', auth, async (req, res) => {
         }
 
         // 3. Thông báo cho CSKH
+        const cskhMessage = faceVerificationStatus === 'pending_manual'
+          ? `⚠️ [CẦN DUYỆT THỦ CÔNG] Khách hàng ${user.name} đã đặt xe ${car.brand} ${car.model} (Mã: #${booking.id}). Xác thực FaceID tự động bị lỗi — cần CSKH đối chiếu khuôn mặt thủ công.`
+          : `Khách hàng ${user.name} đã đặt xe ${car.brand} ${car.model} (Mã: #${booking.id}).`;
+
         await notificationService.notifyCSKH(
-          'Yêu cầu đặt xe mới',
-          `Khách hàng ${user.name} đã đặt xe ${car.brand} ${car.model} (Mã: #${booking.id}).`,
+          faceVerificationStatus === 'pending_manual' ? '⚠️ Đặt xe mới — Cần duyệt FaceID thủ công' : 'Yêu cầu đặt xe mới',
+          cskhMessage,
           'BookingUpdate',
           booking.id,
           'Booking'
@@ -107,11 +185,16 @@ router.post('/api/bookings', auth, async (req, res) => {
       console.warn('Notification send warning (non-blocking):', notifErr.message);
     }
 
-    res.status(201).json({
-      message: booking.status === 'pending_owner'
+    const successMessage = faceVerificationStatus === 'pending_manual'
+      ? 'Đặt xe thành công! Lưu ý: Xác thực khuôn mặt đang chờ CSKH duyệt thủ công do hệ thống AI gặp sự cố.'
+      : booking.status === 'pending_owner'
         ? 'Đặt xe và chuyển cọc thành công! Đang chờ Chủ xe phê duyệt chấp thuận hành trình.'
-        : 'Đặt xe và chuyển cọc thành công! Vé thuê xe của bạn đã được xác nhận.',
-      booking
+        : 'Đặt xe và chuyển cọc thành công! Vé thuê xe của bạn đã được xác nhận.';
+
+    res.status(201).json({
+      message: successMessage,
+      booking,
+      faceVerificationStatus
     });
   } catch (error) {
     console.error('Booking Creation Error:', error);

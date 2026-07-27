@@ -131,12 +131,13 @@ export const bookingModel = {
     const status = isOwnerCar ? 'Pending' : 'Approved';
     const rentalPriceForOwner = parseInt(bookingData.rentalPriceForOwner || bookingData.totalPrice);
     const totalPrice = parseInt(bookingData.totalPrice);
-    const deposit = 0;
+    const reservationFee = Math.round(totalPrice * 0.3);
+    const deposit = reservationFee > 0 ? reservationFee : 0;
     const initialPlatformFee = totalPrice > rentalPriceForOwner ? totalPrice - rentalPriceForOwner : 0;
 
     // Check wallet balance if paymentMethod is wallet
-    // When using wallet: must deduct ONLY reservation fee = 500,000 VND
-    const walletTotalAmount = Math.round(totalPrice * 0.3); 
+    // When using wallet: must deduct ONLY reservation fee
+    const walletTotalAmount = reservationFee; 
     if (bookingData.paymentMethod === 'wallet') {
       const walletRes = await p.request()
         .input('userId', sql.Int, renterId)

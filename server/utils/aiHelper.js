@@ -1,62 +1,44 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import dotenv from 'dotenv';
 import { verifyCCCDQr } from './qrHelper.js';
 
 dotenv.config();
 
-const apiKey = process.env.GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+const apiKey = process.env.AGENT_ROUTER_API_KEY || process.env.GEMINI_API_KEY; // Fallback for backward compatibility in .env if they haven't changed it
+const baseURL = process.env.AGENT_ROUTER_BASE_URL;
 
-// Helper to convert base64 image data to the structure required by Gemini SDK
-function base64ToGenerativePart(base64Data) {
+// Initialize OpenAI client (to be used with Agent Router)
+const openai = apiKey ? new OpenAI({
+  apiKey: apiKey,
+  baseURL: baseURL || 'https://api.openai.com/v1', // Fallback to OpenAI default if not provided
+}) : null;
+
+// Default model for Agent Router
+const CLAUDE_MODEL = 'claude-3-5-sonnet-20240620';
+
+function formatImageForOpenAI(base64Data) {
   if (!base64Data) return null;
-  
-  // Ignore HTTP URLs as they cannot be passed as inline base64 bytes
   if (base64Data.startsWith('http://') || base64Data.startsWith('https://')) {
-    return null;
+    return null; // Remote URLs not supported for this specific vision implementation if expected base64
   }
-  
-  let mimeType = 'image/jpeg';
-  let data = base64Data;
-  
   if (base64Data.startsWith('data:')) {
-    const match = base64Data.match(/^data:([^;]+);base64,(.+)$/);
-    if (match && match.length === 3) {
-      mimeType = match[1];
-      data = match[2];
-    }
+    return base64Data;
   }
-  
-  return {
-    inlineData: {
-      data,
-      mimeType
-    }
-  };
+  return `data:image/jpeg;base64,${base64Data}`;
 }
 
 /**
- * Automate KYC Document Verification using Gemini 1.5 Flash Vision
- * @param {string} cccdImage - Base64 of front CCCD card
- * @param {string} cccdBackImage - Base64 of back CCCD card
- * @param {string} licenseImage - Base64 of driver license card
- * @param {string} expectedName - The name on the registered user account
- * @returns {Promise<{verified: boolean, extractedName: string, idNumber: string, licenseClass: string, isDocumentAuthentic: boolean, reason: string}>}
+ * Automate KYC Document Verification using Claude 3.5 Sonnet Vision
  */
 export async function verifyKycWithAI(cccdImage, cccdBackImage, licenseImage, expectedName) {
-  if (!genAI) {
+  if (!openai) {
     return {
       verified: false,
-      reason: 'Hệ thống chưa cấu hình khóa API Gemini (GEMINI_API_KEY).'
+      reason: 'Hệ thống chưa cấu hình khóa API (AGENT_ROUTER_API_KEY).'
     };
   }
 
   try {
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-flash-latest',
-      generationConfig: { responseMimeType: 'application/json' }
-    });
-
     const prompt = `Bạn là hệ thống AI quét và xác thực giấy tờ danh tính (CCCD và Bằng lái xe) tự động của nền tảng thuê xe tự lái ViVuCar.
 Nhiệm vụ của bạn là phân tích các bức ảnh giấy tờ được gửi kèm:
 1. Ảnh Mặt trước CCCD (nếu có).
@@ -86,33 +68,40 @@ Hãy trả về kết quả dưới định dạng JSON duy nhất khớp với 
   "rejectionReason": string (Lý do từ chối chi tiết bằng tiếng Việt nếu verified = false, ví dụ: "Họ tên trên bằng lái xe (TRẦN VĂN B) không khớp với tên đăng ký tài khoản (NGUYỄN VĂN A)")
 }`;
 
-    const contents = [prompt];
-    
-    const parts = [
-      { img: cccdImage, name: 'cccd_front' },
-      { img: cccdBackImage, name: 'cccd_back' },
-      { img: licenseImage, name: 'license' }
-    ];
+    const contentArray = [{ type: 'text', text: prompt }];
+    const images = [cccdImage, cccdBackImage, licenseImage];
+    let hasValidImage = false;
 
-    for (const item of parts) {
-      const part = base64ToGenerativePart(item.img);
-      if (part) {
-        contents.push(part);
+    for (const imgBase64 of images) {
+      const formattedUrl = formatImageForOpenAI(imgBase64);
+      if (formattedUrl) {
+        hasValidImage = true;
+        contentArray.push({
+          type: 'image_url',
+          image_url: { url: formattedUrl }
+        });
       }
     }
 
-    if (contents.length === 1) {
-      return {
-        verified: false,
-        reason: 'Không có ảnh giấy tờ nào được tải lên để xác minh.'
-      };
+    if (!hasValidImage) {
+      return { verified: false, reason: 'Không có ảnh giấy tờ nào được tải lên để xác minh.' };
     }
 
-    const response = await model.generateContent(contents);
-    const textResponse = response.response.text();
+    const response = await openai.chat.completions.create({
+      model: CLAUDE_MODEL,
+      messages: [{ role: 'user', content: contentArray }],
+      response_format: { type: "json_object" }
+    });
+
+    const textResponse = response.choices[0].message.content;
     console.log('AI KYC RAW Response:', textResponse);
     
-    const jsonResult = JSON.parse(textResponse);
+    let jsonStr = textResponse.trim();
+    if (jsonStr.startsWith('```json')) jsonStr = jsonStr.substring(7);
+    else if (jsonStr.startsWith('```')) jsonStr = jsonStr.substring(3);
+    if (jsonStr.endsWith('```')) jsonStr = jsonStr.substring(0, jsonStr.length - 3);
+
+    const jsonResult = JSON.parse(jsonStr.trim());
     return {
       verified: jsonResult.verified === true,
       extractedName: jsonResult.extractedName || '',
@@ -124,7 +113,6 @@ Hãy trả về kết quả dưới định dạng JSON duy nhất khớp với 
   } catch (error) {
     console.error('Error in verifyKycWithAI, attempting local QR fallback:', error.message);
     
-    // Robust Fallback: Attempt local QR Code check if front CCCD image is provided
     if (cccdImage) {
       try {
         console.log('Attempting local QR verification for CCCD front image...');
@@ -139,30 +127,22 @@ Hãy trả về kết quả dưới định dạng JSON duy nhất khớp với 
             reason: ''
           };
         } else {
-          return {
-            verified: false,
-            reason: `Lỗi kết nối AI (${error.message || 'Mã khóa API bị khóa'}). Quét QR dự phòng thất bại: ${qrResult.reason}`
-          };
+          return { verified: false, reason: `Lỗi kết nối AI. Quét QR dự phòng thất bại: ${qrResult.reason}` };
         }
       } catch (fallbackErr) {
         console.error('Local QR fallback failed:', fallbackErr);
       }
     }
 
-    return {
-      verified: false,
-      reason: `Hệ thống AI gặp sự cố kết nối: Mã khóa GEMINI_API_KEY trong file .env đã bị Google vô hiệu hóa do phát hiện rò rỉ bảo mật. Vui lòng cập nhật khóa mới.`
-    };
+    return { verified: false, reason: `Hệ thống AI gặp sự cố kết nối: Vui lòng kiểm tra lại cấu hình API KEY.` };
   }
 }
 
 /**
- * Handle support chat requests using Gemini SDK with injected user & database contexts
+ * Handle support chat requests using Claude via OpenAI SDK
  */
 export async function askChatbotAI(message, history = [], userContext = {}, systemContext = {}) {
-  if (!genAI) {
-    return runLocalChatbotFallback(message, userContext);
-  }
+  if (!openai) return runLocalChatbotFallback(message, userContext);
 
   try {
     const carsStr = systemContext.activeCars || "Không có thông tin xe";
@@ -197,28 +177,25 @@ HƯỚNG DẪN TRẢ LỜI CỦA BẠN:
 
 Lưu ý: Không tự ý hiển thị thẻ nếu câu trả lời không hướng dẫn người dùng điều hướng. Chỉ đặt thẻ ở cuối tin nhắn.`;
 
-    const chatModel = genAI.getGenerativeModel({
-      model: 'gemini-flash-latest',
-      systemInstruction: systemInstruction
-    });
+    const messages = [{ role: 'system', content: systemInstruction }];
 
-    const contents = [];
     if (history && Array.isArray(history)) {
       history.forEach(msg => {
-        contents.push({
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.content || msg.text || '' }]
+        messages.push({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.content || msg.text || ''
         });
       });
     }
     
-    contents.push({
-      role: 'user',
-      parts: [{ text: message }]
+    messages.push({ role: 'user', content: message });
+
+    const response = await openai.chat.completions.create({
+      model: CLAUDE_MODEL,
+      messages: messages
     });
 
-    const response = await chatModel.generateContent({ contents });
-    return response.response.text();
+    return response.choices[0].message.content;
   } catch (error) {
     console.error('Error in askChatbotAI, falling back to local engine:', error.message);
     return runLocalChatbotFallback(message, userContext);
@@ -226,7 +203,7 @@ Lưu ý: Không tự ý hiển thị thẻ nếu câu trả lời không hướn
 }
 
 /**
- * Robust rule-based chatbot fallback with smart navigation action button injection
+ * Robust rule-based chatbot fallback
  */
 function runLocalChatbotFallback(message, userContext) {
   const lowerMessage = message.toLowerCase();
@@ -250,7 +227,7 @@ function runLocalChatbotFallback(message, userContext) {
   } else if (lowerMessage.includes('admin') || lowerMessage.includes('liên hệ') || lowerMessage.includes('hỗ trợ') || lowerMessage.includes('cskh')) {
     reply = 'Bạn có thể gửi yêu cầu hỗ trợ (Support Ticket) trực tiếp trên trang quản trị hoặc liên hệ hòm thư hỗ trợ support@vivucar.vn để được CSKH giải quyết nhanh chóng.';
   } else {
-    reply = `Chào ${userContext.name || 'bạn'}! Tôi là Trợ lý ảo ViVuCar. Hiện tại hệ thống kết nối AI (Gemini API Key trong file .env) đang gặp sự cố bảo mật bị Google khóa (do rò rỉ mã khóa). Tuy nhiên, tôi vẫn hỗ trợ bạn tìm nhanh thông tin về: Quy trình KYC, số dư Ví, cách thức thuê xe và lịch trình chuyến đi của bạn. Bạn muốn xem phần nào?`;
+    reply = `Chào ${userContext.name || 'bạn'}! Tôi là Trợ lý ảo ViVuCar. Hiện tại hệ thống kết nối AI đang gặp sự cố. Tuy nhiên, tôi vẫn hỗ trợ bạn tìm nhanh thông tin về: Quy trình KYC, số dư Ví, cách thức thuê xe và lịch trình chuyến đi của bạn. Bạn muốn xem phần nào?`;
   }
 
   return reply;
@@ -266,13 +243,8 @@ function translateKycStatus(status) {
   return map[status] || map['not_uploaded'];
 }
 
-/**
- * Handle admin operations assistant requests using Gemini SDK with injected live database contexts
- */
 export async function askAdminChatbotAI(message, history = [], systemContext = {}) {
-  if (!genAI) {
-    return runLocalAdminChatbotFallback(message, systemContext);
-  }
+  if (!openai) return runLocalAdminChatbotFallback(message, systemContext);
 
   try {
     const stats = systemContext.stats || {};
@@ -310,28 +282,25 @@ HƯỚNG DẪN TRẢ LỜI CỦA BẠN:
 3. Sử dụng tiếng Việt chuẩn, xưng hô lịch sự (Ví dụ: "Tôi là Trợ lý Vận hành AI...", "Chào Admin...").
 4. Hãy sử dụng định dạng Markdown (đậm nhạt, danh sách, bảng biểu) để báo cáo trông trực quan, sạch đẹp và chuyên nghiệp nhất.`;
 
-    const chatModel = genAI.getGenerativeModel({
-      model: 'gemini-flash-latest',
-      systemInstruction: systemInstruction
-    });
+    const messages = [{ role: 'system', content: systemInstruction }];
 
-    const contents = [];
     if (history && Array.isArray(history)) {
       history.forEach(msg => {
-        contents.push({
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.content || msg.text || '' }]
+        messages.push({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.content || msg.text || ''
         });
       });
     }
 
-    contents.push({
-      role: 'user',
-      parts: [{ text: message }]
+    messages.push({ role: 'user', content: message });
+
+    const response = await openai.chat.completions.create({
+      model: CLAUDE_MODEL,
+      messages: messages
     });
 
-    const response = await chatModel.generateContent({ contents });
-    return response.response.text();
+    return response.choices[0].message.content;
   } catch (error) {
     console.error('Error in askAdminChatbotAI, falling back:', error.message);
     return runLocalAdminChatbotFallback(message, systemContext);
@@ -346,7 +315,7 @@ function runLocalAdminChatbotFallback(message, systemContext) {
   const stats = systemContext.stats || {};
   const revStr = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalRevenue || 0);
 
-  let reply = `[Chế độ dự phòng offline] Chào Admin! Do khóa kết nối Gemini API gặp sự cố hoặc chưa cấu hình, tôi sẽ phản hồi dựa trên dữ liệu hệ thống cục bộ:\n\n`;
+  let reply = `[Chế độ dự phòng offline] Chào Admin! Do khóa kết nối API gặp sự cố hoặc chưa cấu hình, tôi sẽ phản hồi dựa trên dữ liệu hệ thống cục bộ:\n\n`;
 
   if (lower.includes('báo cáo') || lower.includes('thống kê') || lower.includes('doanh thu') || lower.includes('số liệu')) {
     reply += `**Báo Cáo Vận Hành Hệ Thống ViVuCar:**\n` +
@@ -368,24 +337,18 @@ function runLocalAdminChatbotFallback(message, systemContext) {
       `1. **Thống kê tổng quan**: Số lượng thành viên, doanh thu hệ thống (${revStr}).\n` +
       `2. **Quản lý phê duyệt**: KYC đang chờ (${systemContext.pendingKycCount}), xe chờ duyệt (${systemContext.pendingCarsCount}).\n` +
       `3. **Giám sát khẩn cấp**: Báo cáo sự cố va chạm (${systemContext.unresolvedIncidentsCount}) và tranh chấp (${systemContext.activeDisputesCount}).\n\n` +
-      `*Vui lòng cập nhật GEMINI_API_KEY trong file .env để mở khóa đầy đủ sức mạnh phân tích ngôn ngữ tự nhiên.*`;
+      `*Vui lòng cấu hình API Key để mở khóa AI.*`;
   }
 
   return reply;
 }
 
-/**
- * Generate AI-suggested auto-reply for support tickets using Gemini 1.5 Flash
- */
 export async function suggestSupportTicketReply(ticket, userContext = {}) {
-  if (!genAI) {
+  if (!openai) {
     return `Chào bạn, ViVuCar đã tiếp nhận yêu cầu hỗ trợ của bạn về chủ đề "${ticket.subject}". Chúng tôi đang kiểm tra chi tiết thông tin tài khoản của bạn và sẽ phản hồi sớm nhất trong vòng 10-15 phút tới. Cảm ơn bạn đã đồng hành cùng ViVuCar!`;
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
-    
-    // Compile ticket conversation history
     let chatHistoryStr = `- Tin nhắn gốc của khách: "${ticket.message}"\n`;
     if (ticket.replies && ticket.replies.length > 0) {
       ticket.replies.forEach(rep => {
@@ -413,8 +376,12 @@ YÊU CẦU PHẢN HỒI:
 3. Câu trả lời ngắn gọn, rõ ràng, tập trung giải quyết vấn đề. Nếu liên quan đến việc chờ hệ thống duyệt KYC, hãy nhắc nhở họ rằng bộ phận duyệt đang xử lý nhanh chóng.
 4. CHỈ TRẢ VỀ nội dung văn bản câu trả lời nháp, không kèm theo bất kỳ chú thích hay định dạng thừa nào khác ngoài câu trả lời hỗ trợ.`;
 
-    const response = await model.generateContent(prompt);
-    return response.response.text().trim();
+    const response = await openai.chat.completions.create({
+      model: CLAUDE_MODEL,
+      messages: [{ role: 'user', content: prompt }]
+    });
+    
+    return response.choices[0].message.content.trim();
   } catch (error) {
     console.error('Error generating ticket auto-reply suggestion:', error.message);
     return `Chào bạn, ViVuCar đã nhận được phản hồi hỗ trợ từ bạn. Nhân viên CSKH đang xử lý thông tin yêu cầu của bạn về "${ticket.subject}" và sẽ gửi câu trả lời chính thức ngay lập tức. Mong bạn thông cảm vì sự chờ đợi này!`;
@@ -422,11 +389,124 @@ YÊU CẦU PHẢN HỒI:
 }
 
 /**
- * Compare two face images (registered KYC face vs scanned booking face) using Gemini Vision
- * @param {string} registeredFace - Base64 of registered KYC face image
- * @param {string} scannedFace - Base64 of scanned face image at checkout
- * @returns {Promise<{verified: boolean, score: number, reason: string}>}
+ * Compare a live camera face photo against face on CCCD/Driver License documents.
+ * This is the core of Option A: no separate face registration needed.
+ * @param {Object} documentImages - { cccd, cccdBack, license } base64 images
+ * @param {string} livePhoto - base64 image from camera capture during booking
+ * @returns {{ verified: boolean, score: number, reason: string, apiError?: boolean }}
  */
+export async function compareFaceWithDocument(documentImages, livePhoto) {
+  if (!livePhoto) {
+    return {
+      verified: false,
+      score: 0,
+      reason: 'Thiếu ảnh khuôn mặt quét từ camera.',
+      apiError: false
+    };
+  }
+
+  const { cccd, license } = documentImages || {};
+  if (!cccd && !license) {
+    return {
+      verified: false,
+      score: 0,
+      reason: 'Tài khoản chưa tải lên ảnh CCCD hoặc Bằng lái xe. Vui lòng cập nhật trong Hồ sơ cá nhân.',
+      apiError: false
+    };
+  }
+
+  if (!openai) {
+    console.log('API not configured, FaceID verification skipped (fallback mode).');
+    return {
+      verified: false,
+      score: 0,
+      reason: 'Hệ thống AI chưa cấu hình. Đơn đặt xe sẽ chờ CSKH duyệt thủ công.',
+      apiError: true
+    };
+  }
+
+  try {
+    const prompt = `Bạn là hệ thống xác thực sinh trắc học khuôn mặt tự động bảo mật cao cấp của nền tảng thuê xe tự lái ViVuCar.
+
+Nhiệm vụ: Đối chiếu khuôn mặt người dùng chụp từ camera trực tiếp (ảnh selfie) với khuôn mặt in trên giấy tờ tùy thân (CCCD hoặc Bằng lái xe).
+
+Các ảnh được gửi kèm theo thứ tự:
+${cccd ? '- Ảnh 1: Căn cước công dân (CCCD) mặt trước — chứa ảnh chân dung nhỏ của chủ thẻ.' : ''}
+${license ? `- Ảnh ${cccd ? '2' : '1'}: Giấy phép lái xe (GPLX) — chứa ảnh chân dung nhỏ của chủ giấy phép.` : ''}
+- Ảnh cuối cùng: Ảnh selfie chụp trực tiếp từ camera thiết bị của người dùng đang đặt xe.
+
+Hãy thực hiện phân tích kỹ lưỡng:
+1. Trích xuất khuôn mặt từ ảnh trên giấy tờ CCCD/GPLX (ảnh nhỏ, thường ở góc trái hoặc phải).
+2. So sánh các đặc điểm nhận dạng: cấu trúc khuôn mặt, mắt, mũi, miệng, hình dáng xương hàm, tỷ lệ khoảng cách giữa các bộ phận.
+3. Lưu ý: Ảnh trên giấy tờ có thể nhỏ, chất lượng thấp hơn ảnh selfie. Cho phép sai lệch hợp lý do góc chụp, ánh sáng, tuổi tác thay đổi nhẹ.
+4. Quyết định: Hai bức ảnh có phải là CÙNG MỘT NGƯỜI không?
+
+Trả về kết quả JSON duy nhất:
+{
+  "verified": boolean (true nếu khuôn mặt selfie khớp với khuôn mặt trên giấy tờ),
+  "score": number (điểm tin cậy 0-100),
+  "reason": string (giải thích bằng tiếng Việt, ví dụ: "Khuôn mặt trùng khớp 92% với ảnh trên CCCD" hoặc "Khuôn mặt không khớp: cấu trúc mắt và mũi hoàn toàn khác biệt")
+}`;
+
+    const contentArray = [{ type: 'text', text: prompt }];
+
+    // Add document images first
+    if (cccd) {
+      const formatted = formatImageForOpenAI(cccd);
+      if (formatted) contentArray.push({ type: 'image_url', image_url: { url: formatted } });
+    }
+    if (license) {
+      const formatted = formatImageForOpenAI(license);
+      if (formatted) contentArray.push({ type: 'image_url', image_url: { url: formatted } });
+    }
+
+    // Add live photo last
+    const formattedLive = formatImageForOpenAI(livePhoto);
+    if (formattedLive) {
+      contentArray.push({ type: 'image_url', image_url: { url: formattedLive } });
+    }
+
+    if (contentArray.length < 3) {
+      return {
+        verified: false,
+        score: 0,
+        reason: 'Lỗi định dạng ảnh. Không thể xử lý ảnh giấy tờ hoặc ảnh selfie.',
+        apiError: false
+      };
+    }
+
+    const response = await openai.chat.completions.create({
+      model: CLAUDE_MODEL,
+      messages: [{ role: 'user', content: contentArray }],
+      response_format: { type: "json_object" }
+    });
+
+    const textResponse = response.choices[0].message.content;
+    console.log('AI Face-Document Comparison RAW Response:', textResponse);
+
+    let jsonStr = textResponse.trim();
+    if (jsonStr.startsWith('```json')) jsonStr = jsonStr.substring(7);
+    else if (jsonStr.startsWith('```')) jsonStr = jsonStr.substring(3);
+    if (jsonStr.endsWith('```')) jsonStr = jsonStr.substring(0, jsonStr.length - 3);
+
+    const jsonResult = JSON.parse(jsonStr.trim());
+    return {
+      verified: jsonResult.verified === true && (jsonResult.score || 0) >= 75,
+      score: jsonResult.score || 0,
+      reason: jsonResult.reason || '',
+      apiError: false
+    };
+  } catch (error) {
+    console.error('Error in compareFaceWithDocument:', error.message);
+    return {
+      verified: false,
+      score: 0,
+      reason: `Hệ thống AI xác thực khuôn mặt tạm thời gặp sự cố. Đơn đặt xe sẽ chờ CSKH duyệt thủ công.`,
+      apiError: true
+    };
+  }
+}
+
 export async function compareFacesWithAI(registeredFace, scannedFace) {
   if (!registeredFace || !scannedFace) {
     return {
@@ -435,9 +515,8 @@ export async function compareFacesWithAI(registeredFace, scannedFace) {
     };
   }
 
-  // 100% Robust mock fallback if Gemini is not configured or in sandbox
-  if (!genAI) {
-    console.log('Gemini API not configured, using local biometric mock matching.');
+  if (!openai) {
+    console.log('API not configured, using local biometric mock matching.');
     return {
       verified: true,
       score: 99.8,
@@ -446,11 +525,6 @@ export async function compareFacesWithAI(registeredFace, scannedFace) {
   }
 
   try {
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-flash-latest',
-      generationConfig: { responseMimeType: 'application/json' }
-    });
-
     const prompt = `Bạn là hệ thống xác thực sinh trắc học khuôn mặt tự động bảo mật của nền tảng thuê xe tự lái ViVuCar.
 Nhiệm vụ của bạn là đối chiếu hai bức ảnh chân dung khuôn mặt được gửi kèm:
 1. Ảnh Chân dung khuôn mặt đã xác minh trước đó (Đăng ký KYC).
@@ -466,24 +540,40 @@ Hãy trả về kết quả dưới định dạng JSON duy nhất khớp với 
   "reason": string (Lý do ngắn gọn bằng tiếng Việt, ví dụ: "Khuôn mặt trùng khớp 98% dựa trên cấu trúc nhân dạng mắt, mũi, miệng.")
 }`;
 
-    const contents = [
-      prompt,
-      base64ToGenerativePart(registeredFace),
-      base64ToGenerativePart(scannedFace)
-    ].filter(Boolean);
+    const contentArray = [{ type: 'text', text: prompt }];
 
-    if (contents.length < 3) {
+    const formattedRegistered = formatImageForOpenAI(registeredFace);
+    const formattedScanned = formatImageForOpenAI(scannedFace);
+
+    if (formattedRegistered) {
+      contentArray.push({ type: 'image_url', image_url: { url: formattedRegistered } });
+    }
+    if (formattedScanned) {
+      contentArray.push({ type: 'image_url', image_url: { url: formattedScanned } });
+    }
+
+    if (contentArray.length < 3) {
       return {
         verified: false,
         reason: 'Lỗi định dạng ảnh khuôn mặt.'
       };
     }
 
-    const response = await model.generateContent(contents);
-    const textResponse = response.response.text();
+    const response = await openai.chat.completions.create({
+      model: CLAUDE_MODEL,
+      messages: [{ role: 'user', content: contentArray }],
+      response_format: { type: "json_object" }
+    });
+
+    const textResponse = response.choices[0].message.content;
     console.log('AI Face Comparison RAW Response:', textResponse);
     
-    const jsonResult = JSON.parse(textResponse);
+    let jsonStr = textResponse.trim();
+    if (jsonStr.startsWith('```json')) jsonStr = jsonStr.substring(7);
+    else if (jsonStr.startsWith('```')) jsonStr = jsonStr.substring(3);
+    if (jsonStr.endsWith('```')) jsonStr = jsonStr.substring(0, jsonStr.length - 3);
+
+    const jsonResult = JSON.parse(jsonStr.trim());
     return {
       verified: jsonResult.verified === true,
       score: jsonResult.score || 0,
