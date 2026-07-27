@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, MapPin, DollarSign, RefreshCw, XCircle, ShieldCheck, Compass, Info, FileText, AlertTriangle, Star, ShieldAlert, Award, Upload, MessageSquare, PhoneCall, Send, HelpCircle } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, RefreshCw, XCircle, ShieldCheck, Compass, Info, FileText, AlertTriangle, Star, ShieldAlert, Award, Upload, MessageSquare, PhoneCall, Send, HelpCircle, CheckCircle2, Fuel, Sparkles, Disc, CheckSquare, Car } from 'lucide-react';
 import { api } from '../../utils/api';
 import { ContractModal } from '../../components/ContractModal';
 import { renterActionApi } from '../../utils/renterActionApi';
@@ -745,66 +745,251 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
         </div>
       )}
 
-      {/* --- POPUP 1: BIÊN BẢN BÀN GIAO ĐIỆN TỬ (UC18) --- */}
+      {/* --- POPUP 1: BIÊN BẢN BÀN GIAO XE ĐIỆN TỬ PREMIUM (UC18) --- */}
       {activeHandoverTrip && (
         <div className="lightbox-overlay" onClick={() => setActiveHandoverTrip(null)}>
-          <div className="lightbox-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-            <div className="lightbox-header">
-              <h4>Biên Bản Bàn Giao Xe Điện Tử ({activeHandoverTrip.type === 'pickup' ? 'Nhận Xe' : 'Trả Xe'})</h4>
-              <button className="btn-close-lightbox" onClick={() => setActiveHandoverTrip(null)}><XCircle size={20} /></button>
+          <div
+            className="lightbox-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: '560px',
+              borderRadius: '24px',
+              overflow: 'hidden',
+              background: '#ffffff',
+              boxShadow: '0 25px 60px -12px rgba(15, 23, 42, 0.35)',
+              border: '1px solid rgba(226, 232, 240, 0.8)',
+              padding: 0
+            }}
+          >
+            {/* Header with Dark Teal Gradient */}
+            <div style={{
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f766e 100%)',
+              padding: '24px 28px',
+              color: '#ffffff',
+              position: 'relative'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: '14px',
+                    background: 'rgba(255, 255, 255, 0.12)', backdropFilter: 'blur(8px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '1px solid rgba(255, 255, 255, 0.2)', color: '#2dd4bf'
+                  }}>
+                    <ShieldCheck size={24} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#99f6e4', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      Xác nhận điện tử
+                    </span>
+                    <h3 style={{ margin: '2px 0 0', fontSize: '18px', fontWeight: 800, color: '#ffffff' }}>
+                      Biên Bản Bàn Giao ({activeHandoverTrip.type === 'pickup' ? 'Nhận Xe' : 'Trả Xe'})
+                    </h3>
+                  </div>
+                </div>
+                <button
+                  className="btn-close-lightbox"
+                  onClick={() => setActiveHandoverTrip(null)}
+                  style={{
+                    background: 'rgba(255,255,255,0.1)', border: 'none', color: '#94a3b8',
+                    width: 32, height: 32, borderRadius: '10px', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
+                  }}
+                >
+                  <XCircle size={18} />
+                </button>
+              </div>
+
+              {/* Vehicle & Trip details banner */}
+              <div style={{
+                marginTop: 16,
+                background: 'rgba(255, 255, 255, 0.08)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: '12px',
+                padding: '10px 14px',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12.5px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Car size={15} color="#2dd4bf" />
+                  <span style={{ fontWeight: 700, color: '#f8fafc' }}>
+                    {activeHandoverTrip.trip.car?.brand} {activeHandoverTrip.trip.car?.model}
+                  </span>
+                </div>
+                <span style={{
+                  fontSize: '11px', fontWeight: 700, background: '#14b8a6', color: '#042f2e',
+                  padding: '2px 10px', borderRadius: '20px', fontFamily: 'monospace'
+                }}>
+                  Mã vé: {activeHandoverTrip.trip.id.slice(0, 8).toUpperCase()}
+                </span>
+              </div>
             </div>
 
-            <form onSubmit={handleHandoverSubmit} className="lightbox-body" style={{ display: 'block', padding: '24px', textAlign: 'left' }}>
-              <div className="handover-notice mb-4">
-                <Info size={16} />
-                <span>Vui lòng kiểm tra thực tế trạng thái chiếc xe cùng chủ xe trước khi ký biên bản bàn giao điện tử này.</span>
+            {/* Form Content */}
+            <form onSubmit={handleHandoverSubmit} style={{ padding: '24px 28px', textAlign: 'left' }}>
+              {/* Inspection Prompt Banner */}
+              <div style={{
+                background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '14px',
+                padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12
+              }}>
+                <Info size={20} color="#16a34a" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: '12.5px', color: '#166534', fontWeight: 500, lineHeight: 1.5 }}>
+                  Vui lòng đối chiếu thực tế tình trạng xe cùng chủ xe trước khi hoàn tất kiểm tra 4 điều kiện an toàn.
+                </span>
               </div>
 
-              <div className="checklist-group">
-                <label className="checkbox-item-custom">
-                  <input
-                    type="checkbox"
-                    checked={handoverChecks.noScratches}
-                    onChange={(e) => setHandoverChecks({ ...handoverChecks, noScratches: e.target.checked })}
-                    required
-                  />
-                  <span>Xác nhận không phát sinh vết trầy xước/va quẹt mới</span>
-                </label>
-
-                <label className="checkbox-item-custom">
-                  <input
-                    type="checkbox"
-                    checked={handoverChecks.fuelOk}
-                    onChange={(e) => setHandoverChecks({ ...handoverChecks, fuelOk: e.target.checked })}
-                    required
-                  />
-                  <span>Xác nhận mức nhiên liệu/điện chuẩn theo quy định (&gt;50%)</span>
-                </label>
-
-                <label className="checkbox-item-custom">
-                  <input
-                    type="checkbox"
-                    checked={handoverChecks.cleanCar}
-                    onChange={(e) => setHandoverChecks({ ...handoverChecks, cleanCar: e.target.checked })}
-                    required
-                  />
-                  <span>Xác nhận khoang cabin sạch sẽ, không mùi hôi</span>
-                </label>
-
-                <label className="checkbox-item-custom">
-                  <input
-                    type="checkbox"
-                    checked={handoverChecks.tiresOk}
-                    onChange={(e) => setHandoverChecks({ ...handoverChecks, tiresOk: e.target.checked })}
-                    required
-                  />
-                  <span>Kiểm tra áp suất lốp, phanh xe, đèn và còi hoạt động tốt</span>
-                </label>
+              {/* Quick Select All Button */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Danh mục kiểm tra bắt buộc (4/4)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allChecked = Object.values(handoverChecks).every(Boolean);
+                    setHandoverChecks({
+                      noScratches: !allChecked,
+                      fuelOk: !allChecked,
+                      cleanCar: !allChecked,
+                      tiresOk: !allChecked
+                    });
+                  }}
+                  style={{
+                    background: 'none', border: 'none', color: '#0d9488', fontSize: '12px',
+                    fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4
+                  }}
+                >
+                  <CheckSquare size={13} />
+                  {Object.values(handoverChecks).every(Boolean) ? 'Bỏ chọn tất cả' : '✓ Chọn tất cả nhanh'}
+                </button>
               </div>
 
-              <div className="popup-actions mt-6" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setActiveHandoverTrip(null)}>Bỏ qua</button>
-                <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '10px 24px' }}>
+              {/* 4 Checklist Interactive Cards */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+                {[
+                  {
+                    key: 'noScratches',
+                    title: 'Ngoại thất & Vết trầy xước',
+                    desc: 'Xác nhận không phát sinh vết móp méo / trầy xước va quệt mới',
+                    icon: ShieldCheck,
+                    color: '#10b981',
+                    bgActive: '#ecfdf5'
+                  },
+                  {
+                    key: 'fuelOk',
+                    title: 'Mức Nhiên liệu / Pin điện',
+                    desc: 'Xác nhận mức nhiên liệu/điện đạt chuẩn theo bàn giao (>50%)',
+                    icon: Fuel,
+                    color: '#3b82f6',
+                    bgActive: '#eff6ff'
+                  },
+                  {
+                    key: 'cleanCar',
+                    title: 'Nội thất & Vệ sinh Cabin',
+                    desc: 'Khoang cabin sạch sẽ, không rác thải và không mùi hôi',
+                    icon: Sparkles,
+                    color: '#8b5cf6',
+                    bgActive: '#f5f3ff'
+                  },
+                  {
+                    key: 'tiresOk',
+                    title: 'Lốp, Phanh, Đèn & Còi',
+                    desc: 'Áp suất lốp, phanh an toàn, hệ thống tín hiệu hoạt động tốt',
+                    icon: Disc,
+                    color: '#f59e0b',
+                    bgActive: '#fffbeb'
+                  }
+                ].map(item => {
+                  const isChecked = handoverChecks[item.key];
+                  const ItemIcon = item.icon;
+                  return (
+                    <div
+                      key={item.key}
+                      onClick={() => setHandoverChecks({ ...handoverChecks, [item.key]: !isChecked })}
+                      style={{
+                        padding: '14px 16px',
+                        borderRadius: '14px',
+                        border: isChecked ? `2px solid ${item.color}` : '1.5px solid #e2e8f0',
+                        background: isChecked ? item.bgActive : '#ffffff',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 14,
+                        boxShadow: isChecked ? `0 4px 14px ${item.color}20` : 'none'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{
+                          width: 38, height: 38, borderRadius: '10px',
+                          background: isChecked ? `${item.color}20` : '#f1f5f9',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: isChecked ? item.color : '#94a3b8',
+                          flexShrink: 0
+                        }}>
+                          <ItemIcon size={18} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '13.5px', fontWeight: 700, color: isChecked ? '#0f172a' : '#334155' }}>
+                            {item.title}
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: 2 }}>
+                            {item.desc}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Custom Checkbox Indicator */}
+                      <div style={{
+                        width: 22, height: 22, borderRadius: '7px',
+                        border: isChecked ? 'none' : '2px solid #cbd5e1',
+                        background: isChecked ? item.color : '#ffffff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: '#ffffff', flexShrink: 0, transition: 'all 0.2s'
+                      }}>
+                        {isChecked && <CheckCircle2 size={16} color="#ffffff" />}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Bottom Actions */}
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', paddingTop: 16, borderTop: '1px solid #f1f5f9' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setActiveHandoverTrip(null)}
+                  style={{
+                    padding: '12px 20px', borderRadius: '12px', border: '1px solid #cbd5e1',
+                    background: '#ffffff', color: '#64748b', fontWeight: 600, fontSize: '13px', cursor: 'pointer'
+                  }}
+                >
+                  Bỏ qua
+                </button>
+                <button
+                  type="submit"
+                  disabled={!Object.values(handoverChecks).every(Boolean)}
+                  style={{
+                    padding: '12px 28px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background: Object.values(handoverChecks).every(Boolean)
+                      ? 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)'
+                      : '#cbd5e1',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    fontSize: '13.5px',
+                    cursor: Object.values(handoverChecks).every(Boolean) ? 'pointer' : 'not-allowed',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    boxShadow: Object.values(handoverChecks).every(Boolean)
+                      ? '0 6px 20px rgba(13, 148, 136, 0.35)'
+                      : 'none',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <CheckCircle2 size={16} />
                   {activeHandoverTrip.type === 'pickup' ? 'Xác nhận Nhận Xe' : 'Xác nhận Trả Xe'}
                 </button>
               </div>
@@ -812,6 +997,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
           </div>
         </div>
       )}
+
 
       {/* --- POPUP 2: BÁO CÁO SỰ CỐ KHẨN CẤP (UC17) --- */}
       {activeIncidentTrip && (
