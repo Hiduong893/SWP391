@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText } from 'lucide-react';
+import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, ShieldAlert, AlertTriangle, Info } from 'lucide-react';
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
 import { ContractModal } from '../../components/ContractModal';
@@ -22,6 +22,27 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
   const [editLocation, setEditLocation] = useState('Hà Nội');
   const [editCarImage, setEditCarImage] = useState('');
   const [editImageLoading, setEditImageLoading] = useState(false);
+
+  // Owner Dispute State
+  const [activeDisputeBooking, setActiveDisputeBooking] = useState(null);
+  const [ownerDisputeDesc, setOwnerDisputeDesc] = useState('');
+
+  const handleOwnerDisputeSubmit = async (e) => {
+    e.preventDefault();
+    if (!ownerDisputeDesc.trim() || !activeDisputeBooking) return;
+    setActionLoading(true);
+    try {
+      const data = await api.support.createDispute(activeDisputeBooking.id, ownerDisputeDesc);
+      showToast(data.message || 'Đã gửi báo cáo sai phạm tới CSKH thành công!', 'success');
+      setActiveDisputeBooking(null);
+      setOwnerDisputeDesc('');
+      fetchOwnerDashboard(true);
+    } catch (err) {
+      showToast(err.message || 'Lỗi gửi báo cáo sai phạm.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const { showToast } = useToast();
 
@@ -373,14 +394,26 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                           </td>
                           <td style={{ padding: 14 }}>
                             {b.status !== 'rejected' && b.status !== 'cancelled' && (
-                              <button 
-                                type="button"
-                                className="btn btn-secondary"
-                                style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
-                                onClick={() => setSelectedBookingForContract(b.id)}
-                              >
-                                <FileText size={12} /> Chi tiết HĐ
-                              </button>
+                              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                <button 
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                                  onClick={() => setSelectedBookingForContract(b.id)}
+                                >
+                                  <FileText size={12} /> Chi tiết HĐ
+                                </button>
+
+                                <button 
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                                  onClick={() => setActiveDisputeBooking(b)}
+                                  title="Báo cáo sai phạm / khiếu nại tới CSKH"
+                                >
+                                  <ShieldAlert size={12} /> Báo sai phạm
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -561,6 +594,56 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
             user={user}
             onClose={() => setSelectedBookingForContract(null)}
           />
+        )}
+
+        {/* Owner Dispute / Violation Report Modal */}
+        {activeDisputeBooking && (
+          <div className="editor-modal-overlay" onClick={() => setActiveDisputeBooking(null)}>
+            <div className="editor-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px', borderRadius: '20px', overflow: 'hidden', background: '#ffffff' }}>
+              <div style={{ padding: '18px 22px', borderBottom: '1px solid #fee2e2', background: 'linear-gradient(135deg, #fff1f2, #fef2f2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <ShieldAlert size={22} color="#dc2626" />
+                  <h3 style={{ margin: 0, fontSize: '16px', color: '#991b1b', fontWeight: 800 }}>Báo cáo sai phạm từ Người thuê</h3>
+                </div>
+                <button onClick={() => setActiveDisputeBooking(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex' }}><X size={18} /></button>
+              </div>
+
+              <form onSubmit={handleOwnerDisputeSubmit} style={{ padding: '22px', textAlign: 'left' }}>
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 14px', marginBottom: 16 }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
+                    Khách thuê: {activeDisputeBooking.userName} ({activeDisputeBooking.userEmail})
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: 2 }}>
+                    Xe: <strong>{activeDisputeBooking.carName}</strong> • Mã đơn: <strong>{activeDisputeBooking.id.slice(0, 8).toUpperCase()}</strong>
+                  </div>
+                </div>
+
+                <div style={{ background: '#fef2f2', border: '1px solid #fecdd3', borderRadius: '10px', padding: '10px 14px', fontSize: '12px', color: '#9f1239', lineHeight: 1.5, marginBottom: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <Info size={16} style={{ flexShrink: 0 }} />
+                  <span>Báo cáo sai phạm sẽ được chuyển trực tiếp lên Ban CSKH để kiểm tra hợp đồng và đối chiếu 2 bên.</span>
+                </div>
+
+                <div style={{ marginBottom: 18 }}>
+                  <label style={{ fontSize: '12.5px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Nội dung sai phạm / khiếu nại:</label>
+                  <textarea
+                    rows={4}
+                    placeholder="Mô tả chi tiết sai phạm (VD: Khách trả xe bị xước móp mới, trả trễ hạn không báo trước, hút thuốc trong xe...)"
+                    value={ownerDisputeDesc}
+                    onChange={(e) => setOwnerDisputeDesc(e.target.value)}
+                    style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }}
+                    required
+                  ></textarea>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={() => setActiveDisputeBooking(null)} style={{ padding: '10px 18px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#fff', color: '#64748b', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>Hủy bỏ</button>
+                  <button type="submit" disabled={actionLoading} style={{ padding: '10px 24px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #dc2626, #b91c1c)', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
+                    {actionLoading ? 'Đang gửi...' : 'Gửi Báo Cáo Lên CSKH ➔'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
       </div>
     </div>
