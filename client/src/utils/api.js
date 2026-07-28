@@ -585,5 +585,16 @@ export const api = {
   
   vouchers: {
     getActive: () => request('/vouchers/active')
+  },
+
+  contracts: {
+    getByBookingId: (bookingId) => request(`/contracts/booking/${bookingId}`),
+    renterSign: (bookingId) => request(`/contracts/booking/${bookingId}/renter-sign`, { method: 'POST' }),
+    ownerSign: (bookingId) => request(`/contracts/booking/${bookingId}/owner-sign`, { method: 'POST' }),
+    updateOwnerTerms: (bookingId, customTerms) => request(`/contracts/booking/${bookingId}/owner-terms`, {
+      method: 'PUT',
+      body: JSON.stringify({ customTerms })
+    }),
+    getTopics: () => request('/contracts/custom-term-topics'),
   }
 };

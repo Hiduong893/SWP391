@@ -834,7 +834,7 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
                 CON DẤU & CHỮ KÝ ĐIỆN TỬ (BÊN A & BÊN B)
               </h3>
 
-              {/* Người thuê: hiển thị trạng thái đã ký (tự động khi đặt xe) */}
+              {/* Người thuê: hiển thị trạng thái đã ký hoặc form ký */}
               {isRenter && (
                 isRenterSigned ? (
                   <div className="cm2-signed-ok">
@@ -842,24 +842,61 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
                     <span>Bạn đã ký hợp đồng điện tử khi hoàn tất đặt xe. Chữ ký có hiệu lực pháp lý cho toàn bộ nội dung hợp đồng và phụ lục đính kèm.</span>
                   </div>
                 ) : contract.status !== 'Cancelled' && (
-                  <div style={{ display:'flex', alignItems:'center', gap:'8px', color:'#92400e', fontSize:'13px', fontWeight:600, padding:'14px 16px', background:'#fef9c3', border:'1.5px solid #fde68a', borderRadius:'10px', marginBottom: '14px' }}>
-                    <Clock size={16} />
-                    <span>Hợp đồng đang được xử lý. Chữ ký sẽ được ghi nhận sau khi thanh toán hoàn tất.</span>
+                  <div className="cm2-sign-wrap" style={{ marginBottom: '16px' }}>
+                    <div className="cm2-sign-title">
+                      <Pen size={16} /> Ký Điện Tử Hợp Đồng (Bên B - Người Thuê)
+                    </div>
+                    <label className="cm2-sign-check">
+                      <input
+                        type="checkbox"
+                        checked={agreed}
+                        onChange={(e) => setAgreed(e.target.checked)}
+                      />
+                      <span>
+                        Tôi ({renter?.name || user?.name || 'Bên B'}) xác nhận đã đọc kỹ, hiểu rõ và đồng ý với toàn bộ nội dung hợp đồng điện tử này cùng các điều khoản bổ sung & phụ lục đính kèm.
+                      </span>
+                    </label>
+                    <button
+                      className="cm2-sign-btn"
+                      disabled={!agreed || signing}
+                      onClick={handleSign}
+                    >
+                      {signing ? 'Đang ghi nhận chữ ký E-Sign...' : '✍️ Xác Nhận Ký Điện Tử Hợp Đồng'}
+                    </button>
                   </div>
                 )
               )}
 
-              {/* Chủ xe: không ký thủ công — ký tự động khi phê duyệt booking */}
+              {/* Chủ xe: hiển thị trạng thái đã ký hoặc form ký */}
               {isCarOwner && (
                 isOwnerSigned ? (
                   <div className="cm2-signed-ok">
                     <CheckCircle2 size={18} />
-                    <span>Bạn đã xác nhận hợp đồng khi phê duyệt yêu cầu thuê xe. Chữ ký có hiệu lực pháp lý cho toàn bộ nội dung hợp đồng và phụ lục đính kèm.</span>
+                    <span>Bạn đã xác nhận ký hợp đồng điện tử. Chữ ký có hiệu lực pháp lý cho toàn bộ nội dung hợp đồng và phụ lục đính kèm.</span>
                   </div>
                 ) : contract.status !== 'Cancelled' && (
-                  <div style={{ display:'flex', alignItems:'center', gap:'8px', color:'#1e40af', fontSize:'13px', fontWeight:600, padding:'14px 16px', background:'#dbeafe', border:'1.5px solid #93c5fd', borderRadius:'10px', marginBottom: '14px' }}>
-                    <Clock size={16} />
-                    <span>Hợp đồng sẽ được ký tự động khi bạn <strong>Phê duyệt</strong> yêu cầu thuê xe trong trang Quản lý.</span>
+                  <div className="cm2-sign-wrap" style={{ marginBottom: '16px', background: 'linear-gradient(135deg, #fff7ed, #fef3c7)', border: '2px solid #f59e0b' }}>
+                    <div className="cm2-sign-title" style={{ color: '#b45309' }}>
+                      <Pen size={16} /> Ký Điện Tử Hợp Đồng (Bên A - Chủ Xe)
+                    </div>
+                    <label className="cm2-sign-check">
+                      <input
+                        type="checkbox"
+                        checked={agreed}
+                        onChange={(e) => setAgreed(e.target.checked)}
+                      />
+                      <span style={{ color: '#78350f' }}>
+                        Tôi ({owner?.name || user?.name || 'Bên A'}) xác nhận phê duyệt bàn giao phương tiện và ký điện tử chấp thuận toàn bộ điều khoản hợp đồng thuê xe này.
+                      </span>
+                    </label>
+                    <button
+                      className="cm2-sign-btn"
+                      style={{ background: 'linear-gradient(135deg, #d97706, #f59e0b)' }}
+                      disabled={!agreed || signing}
+                      onClick={handleSign}
+                    >
+                      {signing ? 'Đang ghi nhận chữ ký E-Sign...' : '✍️ Xác Nhận Ký Điện Tử Hợp Đồng (Bên A)'}
+                    </button>
                   </div>
                 )
               )}
