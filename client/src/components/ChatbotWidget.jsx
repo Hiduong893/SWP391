@@ -116,11 +116,13 @@ export function ChatbotWidget({ user, setCurrentTab }) {
   };
 
   const quickPrompts = [
+    { label: '🎧 Chat trực tiếp với CSKH', action: 'GOTO_SUPPORT', text: 'Tôi muốn gửi yêu cầu chat trực tiếp với nhân viên CSKH.' },
     { label: '🔑 Quy trình KYC Bằng lái', text: 'Hướng dẫn tôi các bước xác thực bằng lái xe và CCCD để thuê xe.' },
     { label: '💰 Giá thuê & Đặt cọc', text: 'Giá thuê xe khoảng bao nhiêu tiền một ngày và cần đặt cọc giữ xe thế nào?' },
     { label: '💳 Nạp/Rút ví & VNPAY', text: 'Cách thức thanh toán qua VNPAY hoặc ví điện tử như thế nào?' },
     { label: '🚗 Đăng ký cho thuê xe', text: 'Tôi muốn đăng ký cho thuê xe của mình trên hệ thống thì làm thế nào?' }
   ];
+
 
   const renderMessageContent = (text) => {
     if (!text) return '';
@@ -519,7 +521,14 @@ export function ChatbotWidget({ user, setCurrentTab }) {
                 <div 
                   key={idx} 
                   className="quick-prompt-chip" 
-                  onClick={() => handleSend(prompt.text)}
+                  onClick={() => {
+                    if (prompt.action === 'GOTO_SUPPORT') {
+                      if (setCurrentTab) setCurrentTab('my-trips');
+                      setIsOpen(false);
+                    } else {
+                      handleSend(prompt.text);
+                    }
+                  }}
                 >
                   {prompt.label}
                 </div>
