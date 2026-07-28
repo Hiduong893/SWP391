@@ -411,6 +411,16 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                             <AlertTriangle size={13} />
                             Báo sự cố
                           </button>
+
+                          {/* UC34: Khiếu nại */}
+                          <button
+                            className="btn btn-secondary btn-action-trip"
+                            style={{ border: '1px solid rgba(239, 68, 68, 0.2)', color: '#fda4af' }}
+                            onClick={() => setActiveDisputeTrip(trip)}
+                          >
+                            <ShieldAlert size={13} />
+                            Khiếu nại
+                          </button>
                         </>
                       )}
 
