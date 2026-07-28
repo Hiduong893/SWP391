@@ -120,7 +120,7 @@ export const CSKHPaymentTab = ({
         <div className="cskh-card-header">
           <h4 className="cskh-card-title">
             <CheckCircle size={15} color="#10b981" />
-            Chuyến đi hoàn tất — Cần quyết định cọc bảo đảm (5.000.000đ)
+            Chuyến đi hoàn tất — Cần quyết định hoàn/giữ cọc giữ chỗ (30% tổng đơn)
           </h4>
           {needsRefund.length > 0 && (
             <span className="cskh-badge cskh-badge-green">{needsRefund.length} chờ xử lý</span>

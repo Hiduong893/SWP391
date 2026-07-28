@@ -132,7 +132,7 @@ export const CSKHDashboard = ({ setCurrentTab }) => {
 
   const handleRefundDeposit = async (bookingId, refund) => {
     const msg = refund
-      ? 'Xác nhận HOÀN LẠI 5.000.000đ tiền cọc vào ví khách?'
+      ? 'Xác nhận HOÀN LẠI tiền cọc giữ chỗ vào ví khách?'
       : 'Xác nhận GIỮ LẠI tiền cọc (khách vi phạm điều khoản)?';
     if (!window.confirm(msg)) return;
     setActionLoading(true);
