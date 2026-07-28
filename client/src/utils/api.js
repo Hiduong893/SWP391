@@ -278,6 +278,24 @@ export const api = {
     deleteCar: (id) =>
       request(`/owner/cars/${id}`, {
         method: 'DELETE'
+      }),
+
+    createDispute: (bookingId, description, amount, evidenceUrls) =>
+      request(`/owner/bookings/${bookingId}/dispute`, {
+        method: 'POST',
+        body: JSON.stringify({ description, amount, evidenceUrls })
+      }),
+
+    reportTrafficViolation: (bookingId, amount, description, ticketImageUrl) =>
+      request(`/bookings/${bookingId}/report-violation`, {
+        method: 'POST',
+        body: JSON.stringify({ amount, description, ticketImageUrl })
+      }),
+
+    reportTrafficViolation: (bookingId, amount, description, ticketImageUrl) =>
+      request(`/bookings/${bookingId}/report-violation`, {
+        method: 'POST',
+        body: JSON.stringify({ amount, description, ticketImageUrl })
       })
   },
 

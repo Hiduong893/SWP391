@@ -249,4 +249,78 @@ router.get('/api/cars/:id/reviews', async (req, res) => {
   }
 });
 
+// NEW: Owner initiates a general dispute for a completed booking
+router.post('/api/owner/bookings/:id/dispute', auth, async (req, res) => {
+  try {
+    const { id } = req.params; // bookingId
+    const { description, amount, evidenceUrls } = req.body;
+
+    if (!description) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp mô tả chi tiết khiếu nại.' });
+    }
+
+    const booking = await db.bookings.findOne({ id });
+    if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
+
+    const car = await db.cars.findOne({ id: booking.carId });
+    // Ensure the person initiating the dispute is the owner of the car
+    if (!car || String(car.ownerId) !== String(req.user.id)) {
+      return res.status(403).json({ message: 'Bạn không có quyền khiếu nại cho chuyến đi này.' });
+    }
+
+    // Only allow disputes for completed bookings
+    if (booking.status !== 'completed') {
+      return res.status(400).json({ message: 'Chỉ có thể tạo khiếu nại cho các chuyến đi đã hoàn thành.' });
+    }
+
+    // Check if a dispute already exists for this booking by this owner
+    const existingDispute = await db.disputes.findMany({ bookingId: id, ownerId: req.user.id, status: 'open' });
+    if (existingDispute.length > 0) {
+      return res.status(409).json({ message: 'Bạn đã có một khiếu nại đang mở cho chuyến đi này.' });
+    }
+
+    const newDispute = await db.disputes.create({
+      bookingId: id,
+      renterId: booking.userId, // The user who rented the car
+      ownerId: req.user.id,     // The owner initiating the dispute
+      type: 'owner_general_dispute', // A new type for owner-initiated general disputes
+      description: description,
+      amount: amount ? parseFloat(amount) : 0, // Optional amount if it's a financial claim
+      evidenceUrls: evidenceUrls || [],
+      status: 'open', // 'open' for admin/cskh review
+    });
+
+    // Update booking status to 'disputed'
+    await db.bookings.update(id, { status: 'disputed' });
+
+    // Notify CSKH
+    await notificationService.notifyCSKH(
+      'Khiếu nại mới từ Chủ xe',
+      `Chủ xe ${req.user.name} vừa tạo một khiếu nại mới cho chuyến đi #${id}. Vui lòng vào mục "Khiếu nại" để xử lý.`,
+      'DisputeUpdate',
+      newDispute.id,
+      'Dispute'
+    );
+
+    // Notify Renter
+    await notificationService.createNotification(
+      booking.userId,
+      'Khiếu nại mới từ Chủ xe',
+      `Chủ xe đã tạo một khiếu nại liên quan đến chuyến đi #${id} của bạn. Vui lòng kiểm tra chi tiết và chờ phản hồi từ CSKH.`,
+      'DisputeUpdate',
+      newDispute.id,
+      'Dispute'
+    );
+
+    res.status(201).json({
+      message: 'Đã gửi khiếu nại thành công. CSKH sẽ xem xét và thông báo đến bạn và người thuê trong thời gian sớm nhất.',
+      dispute: newDispute,
+    });
+
+  } catch (error) {
+    console.error('Error creating owner dispute:', error);
+    res.status(500).json({ message: 'Lỗi khi gửi khiếu nại từ chủ xe.' });
+  }
+});
+
 export default router;
