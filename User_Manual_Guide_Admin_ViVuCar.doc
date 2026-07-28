@@ -1,0 +1,505 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Hướng dẫn Sử dụng Hệ thống Dành cho Quản trị viên - ViVuCar</title>
+<style>
+  body {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 13pt;
+    line-height: 1.6;
+    color: #000000;
+    margin: 40px;
+    background-color: #ffffff;
+  }
+  h1 {
+    font-family: 'Arial', sans-serif;
+    font-size: 22pt;
+    font-weight: bold;
+    color: #1a365d;
+    border-bottom: 3px solid #1a365d;
+    padding-bottom: 8px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+  h2 {
+    font-family: 'Arial', sans-serif;
+    font-size: 14pt;
+    font-weight: bold;
+    color: #2b6cb0;
+    margin-top: 25px;
+    margin-bottom: 12px;
+  }
+  p {
+    margin-bottom: 10px;
+    text-align: justify;
+  }
+  .step-box {
+    margin-bottom: 20px;
+  }
+  .step-item {
+    margin-bottom: 18px;
+    padding: 12px 15px;
+    background-color: #f8fafc;
+    border-left: 4px solid #dc2626;
+    border-radius: 6px;
+  }
+  .step-title {
+    font-weight: bold;
+    color: #1e3a8a;
+    font-size: 13.5pt;
+  }
+  .image-container {
+    text-align: center;
+    margin: 14px 0 18px 0;
+  }
+  .image-container img {
+    max-width: 95%;
+    height: auto;
+    border: 2px solid #dc2626;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);
+  }
+  .image-caption {
+    font-style: italic;
+    font-size: 10.5pt;
+    color: #dc2626;
+    font-weight: bold;
+    margin-top: 8px;
+  }
+  hr {
+    border: none;
+    border-top: 1px solid #cbd5e1;
+    margin: 30px 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>5. Hướng dẫn Sử dụng Hệ thống Dành cho Quản trị viên (User Manual Guide for Administrator)</h1>
+<p><strong>Nền tảng hệ thống:</strong> Nền tảng Hỗ trợ Cho thuê xe Tự lái ViVuCar (ViVuCar Self-Drive Car Rental Platform)</p>
+<p><strong>Đối tượng sử dụng:</strong> Quản trị viên Hệ thống (Master Admin) & Nhân viên Vận hành CSKH (Operational Staff)</p>
+<hr>
+
+<h2>5.1. Dashboard Overview & System Analytics (Tổng quan Thống kê & Telemetry Hệ thống)</h2>
+<p>Chức năng này cung cấp cho Quản trị viên cái nhìn toàn diện về tình hình vận hành của sàn, tổng dòng tiền giao dịch, số lượng xe cho thuê active, chỉ số tài chính CFO và biểu đồ tăng trưởng doanh thu theo thời gian thực.</p>
+
+<div class="step-box">
+  <div class="step-item">
+    <p><span class="step-title">Bước 1:</span> Đăng nhập hệ thống với tài khoản Admin, tại thanh menu điều hướng bên trái (Sidebar), nhấp chọn tab <strong>"Tổng quan" (Overview)</strong> để mở giao diện Dashboard chính.</p>
+    <div class="image-container">
+      <img src="precise_step_51_1.png" alt="Bước 5.1.1: Nhấp chọn nút Tổng quan" />
+      <div class="image-caption">🔴 Bước 5.1.1: Nhấp chọn nút "Tổng quan" trên Sidebar (Khung viền đỏ khoanh đúng vị trí nút bấm)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 2:</span> Theo dõi các thẻ thống kê chỉ số KPI vận hành cốt lõi: <strong>Tổng dòng tiền</strong> (Total Cash Flow), <strong>Tổng thành viên</strong> (Users), <strong>Chuyến xe đã đặt</strong> (Bookings), và <strong>Tổng xe cho thuê</strong> (Fleet Size).</p>
+    <div class="image-container">
+      <img src="precise_step_51_2.png" alt="Bước 5.1.2: Thẻ chỉ số KPI Tổng dòng tiền" />
+      <div class="image-caption">🔴 Bước 5.1.2: Quan sát các Thẻ chỉ số KPI "Tổng dòng tiền", "Tổng thành viên", "Chuyến xe đã đặt" & "Tổng xe cho thuê" (Khung viền đỏ khoanh bao bọc đầy đủ 4 thẻ chỉ số)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 3:</span> Kiểm tra <strong>Bảng chỉ số Telemetry CFO</strong>: Giá trị đơn hàng trung bình (AOV), Doanh thu bị mất do hủy đơn (Lost Revenue), và Tỷ lệ chuyển đổi khách thuê thành chủ xe.</p>
+    <div class="image-container">
+      <img src="precise_step_51_3.png" alt="Bước 5.1.3: Bảng chỉ số CFO Telemetry" />
+      <div class="image-caption">🔴 Bước 5.1.3: Đối soát Bảng phân tích tài chính CFO (Khung viền đỏ khoanh đúng vị trí khu vực số liệu)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 4:</span> Quan sát các biểu đồ trực quan hóa dữ liệu: <strong>Biểu đồ xu hướng doanh thu 30 ngày / 12 tháng</strong> và <strong>Bảng xếp hạng Top xe được thuê nhiều nhất</strong>.</p>
+    <div class="image-container">
+      <img src="precise_step_51_4.png" alt="Bước 5.1.4: Biểu đồ xu hướng doanh thu" />
+      <div class="image-caption">🔴 Bước 5.1.4: Quan sát Biểu đồ xu hướng tăng trưởng doanh thu (Khung viền đỏ khoanh đúng biểu đồ)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 5:</span> Nhấp nút <strong>"Xuất Báo cáo Excel (.CSV)"</strong> ở góc trên bên phải để xuất toàn bộ dữ liệu kiểm toán thành file spreadsheet định dạng UTF-8 BOM chuẩn Excel.</p>
+    <div class="image-container">
+      <img src="precise_step_51_5.png" alt="Bước 5.1.5: Nút Xuất Báo cáo Excel (.CSV)" />
+      <div class="image-caption">🔴 Bước 5.1.5: Nhấp nút "Xuất Báo cáo Excel (.CSV)" (Khung viền đỏ khoanh đúng vị trí nút xuất file)</div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h2>5.2. Moderate Vehicle Submissions and Fleet Management (Kiểm duyệt Xe mới & Quản lý Đội xe)</h2>
+<p>Quy trình kiểm duyệt này cho phép Quản trị viên xem xét các hồ sơ ký gửi xe mới từ Chủ xe (UC27), xác minh thông số kỹ thuật, biển số, hình ảnh và phê duyệt hoặc từ chối đưa xe lên sàn thương mại.</p>
+
+<div class="step-box">
+  <div class="step-item">
+    <p><span class="step-title">Bước 1:</span> Trên thanh Sidebar điều hướng chính, nhấp chọn tab <strong>"Đội xe" (Fleet)</strong>.</p>
+    <div class="image-container">
+      <img src="precise_step_52_1.png" alt="Bước 5.2.1: Nhấp chọn mục Đội xe" />
+      <div class="image-caption">🔴 Bước 5.2.1: Nhấp chọn nút "Đội xe" trên thanh Sidebar (Khung viền đỏ khoanh đúng vị trí nút tab)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 2:</span> Chuyển sang sub-tab <strong>"Xe chờ duyệt" (Pending Moderation)</strong> để hiển thị hàng đợi danh sách các xe mới đăng ký đang chờ xác minh.</p>
+    <div class="image-container">
+      <img src="precise_step_52_2.png" alt="Bước 5.2.2: Sub-tab Xe chờ duyệt" />
+      <div class="image-caption">🔴 Bước 5.2.2: Nhấp chọn sub-tab "Xe chờ duyệt" (Khung viền đỏ khoanh đúng vị trí sub-tab)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 3:</span> Nhấp vào thẻ xe cần duyệt để đối soát chi tiết: Hãng xe, Mẫu xe, Biển số xe, Giá thuê/ngày, Số tiền cọc, Hộp số, Nhiên liệu và album ảnh xe.</p>
+    <div class="image-container">
+      <img src="precise_step_52_3.png" alt="Bước 5.2.3: Thẻ thông số xe & Biển số" />
+      <div class="image-caption">🔴 Bước 5.2.3: Kiểm tra Biển số & Thông số kỹ thuật xe (Khung viền đỏ khoanh đúng ô biển số)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 4:</span> Nếu hồ sơ đạt tiêu chuẩn an toàn, nhấp nút màu xanh <strong>"Phê duyệt" (Approve)</strong>. Hệ thống sẽ đổi trạng thái xe thành "Available" và công khai xe trên catalog thuê toàn sàn.</p>
+    <div class="image-container">
+      <img src="precise_step_52_4.png" alt="Bước 5.2.4: Nút Phê duyệt xe" />
+      <div class="image-caption">🔴 Bước 5.2.4: Nhấp nút "Phê duyệt" (Khung viền đỏ khoanh đúng vị trí nút Duyệt đăng màu xanh)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 5:</span> Nếu thông tin không đạt tiêu chuẩn, nhấp nút màu đỏ <strong>"Từ chối" (Reject)</strong>. Nhập nội dung lý do phản hồi vào ô thoại và gửi để thông báo lại cho Chủ xe chỉnh sửa.</p>
+    <div class="image-container">
+      <img src="precise_step_52_5.png" alt="Bước 5.2.5: Nút Từ chối xe" />
+      <div class="image-caption">🔴 Bước 5.2.5: Nhấp nút "Từ chối" (Khung viền đỏ khoanh đúng vị trí nút Từ chối màu đỏ)</div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h2>5.3. Manage User Accounts and Driver License KYC (Duyệt KYC Bằng lái xe & Quản lý Thành viên)</h2>
+<p>Tính năng quản trị này cho phép Quản trị viên xác minh giấy tờ danh tính KYC (Bằng lái xe / CCCD - UC31), phân quyền tài khoản (UC30) hoặc khóa các tài khoản vi phạm tiêu chuẩn cộng đồng.</p>
+
+<div class="step-box">
+  <div class="step-item">
+    <p><span class="step-title">Bước 1:</span> Tại menu Sidebar điều hướng, nhấp chọn tab <strong>"Tài khoản" (Accounts & KYC)</strong>.</p>
+    <div class="image-container">
+      <img src="precise_step_53_1.png" alt="Bước 5.3.1: Nhấp chọn mục Tài khoản" />
+      <div class="image-caption">🔴 Bước 5.3.1: Nhấp chọn nút "Tài khoản" trên thanh Sidebar (Khung viền đỏ khoanh đúng vị trí nút tab)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 2:</span> Nhấp chọn sub-tab <strong>"Duyệt KYC" (KYC Moderation)</strong> để xem danh sách khách hàng vừa tải lên hình ảnh Bằng lái xe/CCCD.</p>
+    <div class="image-container">
+      <img src="precise_step_53_2.png" alt="Bước 5.3.2: Sub-tab Duyệt KYC" />
+      <div class="image-caption">🔴 Bước 5.3.2: Nhấp chọn sub-tab "Duyệt KYC" (Khung viền đỏ khoanh đúng vị trí sub-tab)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 3:</span> Nhấp vào ảnh để xem độ phân giải cao dạng Lightbox modal. Nếu thông tin trùng khớp giấy tờ pháp lý, nhấp nút <strong>"Duyệt KYC" (Approve KYC)</strong> để mở quyền thuê xe.</p>
+    <div class="image-container">
+      <img src="precise_step_53_3.png" alt="Bước 5.3.3: Nút Duyệt KYC" />
+      <div class="image-caption">🔴 Bước 5.3.3: Nhấp nút "Duyệt KYC" (Khung viền đỏ khoanh đúng vị trí nút Duyệt KYC)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 4:</span> Chuyển sang sub-tab <strong>"Thành viên" (User Directory)</strong>. Nhập từ khóa vào ô Tìm kiếm để tra cứu người dùng theo Tên, Email hoặc Vai trò.</p>
+    <div class="image-container">
+      <img src="precise_step_53_4.png" alt="Bước 5.3.4: Sub-tab Thành viên" />
+      <div class="image-caption">🔴 Bước 5.3.4: Nhấp chọn sub-tab "Thành viên" (Khung viền đỏ khoanh đúng vị trí sub-tab Thành viên)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 5:</span> Chọn menu dropdown Phân quyền để nâng/hạ quyền tài khoản (Renter, Owner, CSKH, Admin) hoặc nhấp nút <strong>"Khóa" / "Xóa tài khoản"</strong> để vô hiệu hóa tài khoản vi phạm.</p>
+    <div class="image-container">
+      <img src="precise_step_53_5.png" alt="Bước 5.3.5: Nút Khóa / Dropdown Phân quyền" />
+      <div class="image-caption">🔴 Bước 5.3.5: Thao tác Dropdown Phân quyền hoặc Nút Khóa (Khung viền đỏ khoanh đúng vị trí thao tác)</div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h2>5.4. Manage CashFlow, Bookings and Deposit Refunds (Quản lý Đơn hàng, Dòng tiền & Duyệt hoàn cọc)</h2>
+<p>Giao diện quản lý tài chính giúp Quản trị viên giám sát các giao dịch đặt xe trực tuyến, đối soát tiền cọc chuyển khoản VietQR và duyệt hoàn tiền cọc tự động qua Ví ViVu (UC28).</p>
+
+<div class="step-box">
+  <div class="step-item">
+    <p><span class="step-title">Bước 1:</span> Nhấp chọn tab <strong>"Dòng tiền" (CashFlow)</strong> trên menu Sidebar điều hướng.</p>
+    <div class="image-container">
+      <img src="precise_step_54_1.png" alt="Bước 5.4.1: Nhấp chọn mục Dòng tiền" />
+      <div class="image-caption">🔴 Bước 5.4.1: Nhấp chọn nút "Dòng tiền" trên thanh Sidebar (Khung viền đỏ khoanh đúng vị trí nút tab)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 2:</span> Màn hình hiển thị Bảng sổ cái giao dịch đơn hàng bao gồm: Mã đơn BOOK-id, Khách thuê, Dòng xe thuê, Phương thức thanh toán, Tổng tiền và Trạng thái cọc.</p>
+    <div class="image-container">
+      <img src="precise_step_54_2.png" alt="Bước 5.4.2: Mã giao dịch BOOK-" />
+      <div class="image-caption">🔴 Bước 5.4.2: Kiểm tra Mã đơn hàng "BOOK-" (Khung viền đỏ khoanh đúng vị trí mã đơn)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 3:</span> Đối với các đơn hàng thanh toán cọc giữ chỗ bằng chuyển khoản ngân hàng VietQR, sau khi đối soát sao kê, nhấp nút <strong>"Xác nhận VietQR"</strong> để chuyển trạng thái thành "Đã cọc".</p>
+    <div class="image-container">
+      <img src="precise_step_54_3.png" alt="Bước 5.4.3: Nút Xác nhận VietQR" />
+      <div class="image-caption">🔴 Bước 5.4.3: Nhấp nút "Xác nhận VietQR" (Khung viền đỏ khoanh đúng vị trí nút Xác nhận VietQR)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 4:</span> Sau khi chuyến đi hoàn tất và kiểm tra trả xe không phát sinh đền bù, tìm đến hàng đơn hàng và nhấp nút <strong>"Duyệt hoàn cọc" (Approve Deposit Refund)</strong>.</p>
+    <div class="image-container">
+      <img src="precise_step_54_4.png" alt="Bước 5.4.4: Nút Duyệt hoàn cọc" />
+      <div class="image-caption">🔴 Bước 5.4.4: Nhấp nút "Duyệt hoàn cọc" (Khung viền đỏ khoanh đúng vị trí nút Duyệt hoàn cọc)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 5:</span> Nếu thanh toán bằng <strong>Ví ViVu</strong>, hệ thống tự động gọi Stored Procedure usp_ProcessWalletTransaction để hoàn lại 30% tiền cọc trực tiếp vào số dư ví của Renter.</p>
+    <div class="image-container">
+      <img src="precise_step_54_5.png" alt="Bước 5.4.5: Badge trạng thái Ví ViVu" />
+      <div class="image-caption">🔴 Bước 5.4.5: Quan sát trạng thái Hoàn tiền "Ví ViVu" (Khung viền đỏ khoanh đúng vị trí badge Ví ViVu)</div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h2>5.5. Manage Promotional Vouchers and Discount Campaigns (Quản lý Mã giảm giá & Voucher)</h2>
+<p>Chức năng này cho phép Quản trị viên thiết lập, chỉnh sửa và quản lý các chiến dịch mã giảm giá khuyến mãi kích cầu giao dịch khi khách hàng thanh toán đặt xe.</p>
+
+<div class="step-box">
+  <div class="step-item">
+    <p><span class="step-title">Bước 1:</span> Trên menu Sidebar điều hướng, nhấp chọn tab <strong>"Gói & Thanh toán" (Vouchers)</strong>.</p>
+    <div class="image-container">
+      <img src="precise_step_55_1.png" alt="Bước 5.5.1: Nhấp chọn mục Gói & Thanh toán" />
+      <div class="image-caption">🔴 Bước 5.5.1: Nhấp chọn nút "Gói & Thanh toán" trên Sidebar (Khung viền đỏ khoanh đúng vị trí nút tab)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 2:</span> Màn hình Quản lý Voucher hiện ra. Sử dụng ô tìm kiếm để tra cứu các mã voucher đang tồn tại theo Tên hoặc Mã code.</p>
+    <div class="image-container">
+      <img src="precise_step_55_2.png" alt="Bước 5.5.2: Ô Tìm kiếm Voucher" />
+      <div class="image-caption">🔴 Bước 5.5.2: Nhập từ khóa tại ô "Tìm kiếm Voucher" (Khung viền đỏ khoanh đúng vị trí ô input)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 3:</span> Nhấp nút <strong>"+ Tạo mã giảm giá mới" (Create New Voucher)</strong> để mở cửa sổ thiết lập. Nhập Mã voucher, Mức % hoặc số tiền giảm, Giá trị đơn tối thiểu và Hạn sử dụng.</p>
+    <div class="image-container">
+      <img src="precise_step_55_3.png" alt="Bước 5.5.3: Nút + Tạo mã giảm giá mới" />
+      <div class="image-caption">🔴 Bước 5.5.3: Nhấp nút "+ Tạo mã giảm giá mới" (Khung viền đỏ khoanh đúng vị trí nút Tạo mới)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 4:</span> Nhấp nút <strong>"Lưu Voucher" (Save Voucher)</strong> để ghi nhận thông tin mã khuyến mãi vào CSDL hệ thống.</p>
+    <div class="image-container">
+      <img src="precise_step_55_4.png" alt="Bước 5.5.4: Nút Lưu Voucher" />
+      <div class="image-caption">🔴 Bước 5.5.4: Nhấp nút "Lưu Voucher" (Khung viền đỏ khoanh đúng vị trí nút Lưu)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 5:</span> Sử dụng các công tắc Bật/Tắt trạng thái kích hoạt hoặc nhấp biểu tượng <strong>"Xóa"</strong> để ngừng áp dụng các voucher đã hết hạn.</p>
+    <div class="image-container">
+      <img src="precise_step_55_5.png" alt="Bước 5.5.5: Nút Xóa / Công tắc Voucher" />
+      <div class="image-caption">🔴 Bước 5.5.5: Nhấp nút "Xóa" hoặc công tắc Trạng thái (Khung viền đỏ khoanh đúng vị trí nút thao tác)</div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h2>5.6. System Configuration & Maintenance Notices (Cấu hình Hệ thống & Chế độ Bảo trì)</h2>
+<p>Chức năng này cho phép Quản trị viên tối cao thiết lập các thông số tài chính vận hành sàn, cài đặt thông báo banner toàn hệ thống, cấu hình tài khoản VietQR và kích hoạt Chế độ bảo trì (UC29).</p>
+
+<div class="step-box">
+  <div class="step-item">
+    <p><span class="step-title">Bước 1:</span> Trên menu Sidebar chính, nhấp chọn tab <strong>"Cấu hình" (Config)</strong>.</p>
+    <div class="image-container">
+      <img src="precise_step_56_1.png" alt="Bước 5.6.1: Nhấp chọn mục Cấu hình" />
+      <div class="image-caption">🔴 Bước 5.6.1: Nhấp chọn nút "Cấu hình" trên Sidebar (Khung viền đỏ khoanh đúng vị trí nút tab)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 2:</span> Kiểm tra công tắc <strong>"Chế độ bảo trì" (Maintenance Mode)</strong>. Bật công tắc này sang trạng thái "Active" khi cần khóa truy cập các đường dẫn công khai để cập nhật hệ thống khẩn cấp.</p>
+    <div class="image-container">
+      <img src="precise_step_56_2.png" alt="Bước 5.6.2: Công tắc Chế độ bảo trì" />
+      <div class="image-caption">🔴 Bước 5.6.2: Bật công tắc "Chế độ bảo trì" (Khung viền đỏ khoanh đúng vị trí nút toggle switch)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 3:</span> Nhập nội dung thông báo thông điệp toàn sàn vào ô <strong>"Thông báo hệ thống" (System Notice)</strong>. Nội dung này sẽ tự động phát sóng tới giao diện tất cả người dùng dưới dạng banner động.</p>
+    <div class="image-container">
+      <img src="precise_step_56_3.png" alt="Bước 5.6.3: Ô nhập Thông báo hệ thống" />
+      <div class="image-caption">🔴 Bước 5.6.3: Nhập văn bản tại ô "Thông báo hệ thống" (Khung viền đỏ khoanh đúng vị trí ô textarea)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 4:</span> Điều chỉnh các giới hạn tài chính trong các ô nhập liệu: <strong>Phí dịch vụ sàn (%)</strong>, <strong>Hệ số bảo hiểm</strong>, và Thông tin tài khoản ngân hàng nhận tiền cọc VietQR.</p>
+    <div class="image-container">
+      <img src="precise_step_56_4.png" alt="Bước 5.6.4: Ô nhập Phí dịch vụ sàn" />
+      <div class="image-caption">🔴 Bước 5.6.4: Nhập tham số tại ô "Phí dịch vụ sàn (%)" (Khung viền đỏ khoanh đúng ô input tài chính)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 5:</span> Nhấp nút <strong>"Lưu cấu hình hệ thống" (Save Configuration)</strong> để thực thi cập nhật các thay đổi vào CSDL và đồng bộ biến runtime toàn sàn.</p>
+    <div class="image-container">
+      <img src="precise_step_56_5.png" alt="Bước 5.6.5: Nút Lưu cài đặt hệ thống" />
+      <div class="image-caption">🔴 Bước 5.6.5: Nhấp nút "Lưu cài đặt hệ thống" (Khung viền đỏ khoanh đúng vị trí nút Lưu)</div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h2>5.7. Support Ticket Moderation and AI Reply Assistant (Hòm thư Hỗ trợ CSKH & Trợ lý Gợi ý AI)</h2>
+<p>Quy trình này giúp nhân viên CSKH và Quản trị viên tiếp nhận các ticket yêu cầu hỗ trợ từ người dùng (UC32), đồng thời sử dụng công nghệ AI tự động gợi ý phản hồi chuẩn xác.</p>
+
+<div class="step-box">
+  <div class="step-item">
+    <p><span class="step-title">Bước 1:</span> Từ thanh Sidebar điều hướng, mở mục <strong>"Hòm thư hỗ trợ" (Support Tickets)</strong>.</p>
+    <div class="image-container">
+      <img src="precise_step_57_1.png" alt="Bước 5.7.1: Nhấp mục Hòm thư hỗ trợ" />
+      <div class="image-caption">🔴 Bước 5.7.1: Nhấp chọn sub-tab "Hòm thư hỗ trợ" (Khung viền đỏ khoanh đúng vị trí nút tab)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 2:</span> Chọn một yêu cầu hỗ trợ đang mở từ danh sách để xem chi tiết thông tin tài khoản, lịch sử đặt xe và nội dung khiếu nại.</p>
+    <div class="image-container">
+      <img src="precise_step_57_2.png" alt="Bước 5.7.2: Thẻ Ticket hỗ trợ" />
+      <div class="image-caption">🔴 Bước 5.7.2: Nhấp chọn Hàng yêu cầu Ticket (Khung viền đỏ khoanh đúng vị trí hàng ticket)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 3:</span> Nhấp nút <strong>"Gợi ý trả lời AI" (Generate AI Suggestion)</strong>. Trợ lý AI sẽ phân tích trạng thái KYC, số dư ví và nhật ký đơn hàng để soạn câu trả lời mẫu tối ưu.</p>
+    <div class="image-container">
+      <img src="precise_step_57_3.png" alt="Bước 5.7.3: Nút Gợi ý trả lời AI" />
+      <div class="image-caption">🔴 Bước 5.7.3: Nhấp nút "Gợi ý trả lời AI" (Khung viền đỏ khoanh đúng vị trí nút AI)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 4:</span> Chỉnh sửa nội dung văn bản phản hồi và nhấp nút <strong>"Gửi phản hồi" (Send Reply)</strong> để gửi thông báo trực tiếp tới hộp thư người dùng.</p>
+    <div class="image-container">
+      <img src="precise_step_57_4.png" alt="Bước 5.7.4: Nút Gửi phản hồi" />
+      <div class="image-caption">🔴 Bước 5.7.4: Nhấp nút "Gửi phản hồi" (Khung viền đỏ khoanh đúng vị trí nút Gửi)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 5:</span> Sau khi hỗ trợ xong, nhấp nút <strong>"Hoàn tất & Đóng Ticket"</strong> để cập nhật trạng thái ticket thành Resolved.</p>
+    <div class="image-container">
+      <img src="precise_step_57_5.png" alt="Bước 5.7.5: Nút Hoàn tất & Đóng Ticket" />
+      <div class="image-caption">🔴 Bước 5.7.5: Nhấp nút "Hoàn tất & Đóng Ticket" (Khung viền đỏ khoanh đúng vị trí nút Đóng Ticket)</div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h2>5.8. Dispute Resolution and Incident Management (Xử lý Tranh chấp & Báo cáo Sự cố)</h2>
+<p>Tính năng này giúp Quản trị viên đóng vai trò trọng tài hòa giải các vụ tranh chấp hư hỏng xe giữa Khách thuê và Chủ xe, dựa trên biên bản kiểm tra bàn giao trả xe (UC34 & UC35).</p>
+
+<div class="step-box">
+  <div class="step-item">
+    <p><span class="step-title">Bước 1:</span> Mở mục <strong>"Báo cáo sự cố / Tranh chấp" (Incidents & Disputes)</strong> trong Admin Panel.</p>
+    <div class="image-container">
+      <img src="precise_step_58_1.png" alt="Bước 5.8.1: Nhấp mục Tranh chấp" />
+      <div class="image-caption">🔴 Bước 5.8.1: Nhấp chọn sub-tab "Tranh chấp" (Khung viền đỏ khoanh đúng vị trí nút tab)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 2:</span> Kiểm tra danh sách báo cáo va quẹt, đối soát hình ảnh vết xước móp check-out, chỉ số số ODO và lượng nhiên liệu thực tế lúc trả xe.</p>
+    <div class="image-container">
+      <img src="precise_step_58_2.png" alt="Bước 5.8.2: Hàng sự cố kiểm tra" />
+      <div class="image-caption">🔴 Bước 5.8.2: Đối soát hàng Sự cố hư hỏng xe (Khung viền đỏ khoanh đúng vị trí hàng sự cố)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 3:</span> Xem xét đơn khiếu nại tài chính đền bù được gửi từ hai bên (Chủ xe và Khách thuê).</p>
+    <div class="image-container">
+      <img src="precise_step_58_3.png" alt="Bước 5.8.3: Khung đơn Khiếu nại" />
+      <div class="image-caption">🔴 Bước 5.8.3: Xem xét khung đơn "Khiếu nại" (Khung viền đỏ khoanh đúng vị trí khung khiếu nại)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 4:</span> Nhập thông tin kết luận phán quyết trọng tài vào ô giải quyết, xác định rõ số tiền khấu trừ cọc đền bù hư hỏng.</p>
+    <div class="image-container">
+      <img src="precise_step_58_4.png" alt="Bước 5.8.4: Ô nhập Phán quyết trọng tài" />
+      <div class="image-caption">🔴 Bước 5.8.4: Nhập nội dung tại ô "Phán quyết" (Khung viền đỏ khoanh đúng vị trí ô textarea phán quyết)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 5:</span> Nhấp nút <strong>"Ban hành Phán quyết" (Resolve Dispute)</strong>. Hệ thống sẽ quyết toán số tiền cọc còn lại và kết thúc đơn hàng thành công.</p>
+    <div class="image-container">
+      <img src="precise_step_58_5.png" alt="Bước 5.8.5: Nút Ban hành Phán quyết" />
+      <div class="image-caption">🔴 Bước 5.8.5: Nhấp nút "Ban hành Phán quyết" (Khung viền đỏ khoanh đúng vị trí nút Phán quyết)</div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h2>5.9. Review Moderation and Content Censorship (Kiểm duyệt Đánh giá & Bình luận)</h2>
+<p>Công cụ quản trị này cho phép Nhân viên vận hành kiểm duyệt các bình luận đánh giá xe (UC33), ẩn các từ ngữ độc hại vi phạm tiêu chuẩn cộng đồng để bảo vệ uy tín nền tảng.</p>
+
+<div class="step-box">
+  <div class="step-item">
+    <p><span class="step-title">Bước 1:</span> Mở mục <strong>"Kiểm duyệt Đánh giá" (Review Moderation)</strong> trong Admin Panel.</p>
+    <div class="image-container">
+      <img src="precise_step_59_1.png" alt="Bước 5.9.1: Nhấp mục Đánh giá" />
+      <div class="image-caption">🔴 Bước 5.9.1: Nhấp chọn sub-tab "Đánh giá" (Khung viền đỏ khoanh đúng vị trí nút tab)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 2:</span> Rà soát bảng tổng hợp đánh giá người dùng hiển thị số sao, nội dung nhận xét và trạng thái hiển thị.</p>
+    <div class="image-container">
+      <img src="precise_step_59_2.png" alt="Bước 5.9.2: Hàng bình luận Nhận xét" />
+      <div class="image-caption">🔴 Bước 5.9.2: Rà soát Hàng bình luận "Nhận xét" (Khung viền đỏ khoanh đúng vị trí hàng nhận xét)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 3:</span> Phát hiện các bình luận chứa từ ngữ thô tục, xúc phạm hoặc vi phạm chính sách do người dùng báo cáo.</p>
+    <div class="image-container">
+      <img src="precise_step_59_3.png" alt="Bước 5.9.3: Điểm Sao đánh giá" />
+      <div class="image-caption">🔴 Bước 5.9.3: Đánh giá Điểm số "Sao" & Nội dung (Khung viền đỏ khoanh đúng vị trí ô đánh giá)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 4:</span> Nhấp nút <strong>"Ẩn đánh giá" (Hide Review)</strong> để chuyển trạng thái thành Hidden, gỡ bỏ bình luận ngay lập tức khỏi trang chi tiết xe công khai.</p>
+    <div class="image-container">
+      <img src="precise_step_59_4.png" alt="Bước 5.9.4: Nút Ẩn đánh giá" />
+      <div class="image-caption">🔴 Bước 5.9.4: Nhấp nút "Ẩn đánh giá" (Khung viền đỏ khoanh đúng vị trí nút Ẩn)</div>
+    </div>
+  </div>
+
+  <div class="step-item">
+    <p><span class="step-title">Bước 5:</span> Đối với các đánh giá hợp lệ bị ẩn nhầm, nhấp nút <strong>"Hiện đánh giá" (Show Review)</strong> để khôi phục hiển thị bình luận.</p>
+    <div class="image-container">
+      <img src="precise_step_59_5.png" alt="Bước 5.9.5: Nút Hiện đánh giá" />
+      <div class="image-caption">🔴 Bước 5.9.5: Nhấp nút "Hiện đánh giá" (Khung viền đỏ khoanh đúng vị trí nút Hiện)</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
