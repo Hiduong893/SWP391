@@ -330,13 +330,14 @@ export const contractModel = {
    * Thêm phụ phí phát sinh (admin/CSKH)
    * Ví dụ: hư hỏng, trả muộn, phạt nguội
    */
-  addSurcharge: async (bookingId, amount, reason, addedBy) => {
+  addSurcharge: async (bookingId, amount, reason, addedById) => {
     const p = await getPool();
     await p.request()
       .input('bookingId', sql.Int, parseInt(bookingId))
       .input('amount', sql.Decimal(18, 2), parseFloat(amount))
       .input('reason', sql.NVarChar, reason)
-      .input('addedBy', sql.Int, parseInt(addedBy))
+      // addedById có thể là null nếu hệ thống tự thêm
+      .input('addedBy', sql.Int, addedById ? parseInt(addedById) : null)
       .query(`
         UPDATE RentalContract 
         SET surcharge_amount = surcharge_amount + @amount,

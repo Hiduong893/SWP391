@@ -142,6 +142,57 @@ router.get('/api/bookings/my-trips', auth, async (req, res) => {
   }
 });
 
+// 17. Owner reports a traffic violation ticket (Phạt nguội)
+router.post('/api/bookings/:id/report-violation', auth, async (req, res) => {
+  try {
+    const { id } = req.params; // bookingId
+    const { amount, description, ticketImageUrl } = req.body;
+
+    if (!amount || !description) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp số tiền phạt và mô tả chi tiết.' });
+    }
+
+    const booking = await db.bookings.findOne({ id });
+    if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
+
+    const car = await db.cars.findOne({ id: booking.carId });
+    // Ensure the person reporting is the owner of the car
+    if (!car || String(car.ownerId) !== String(req.user.id)) {
+      return res.status(403).json({ message: 'Bạn không có quyền báo cáo cho chuyến đi này.' });
+    }
+
+    // Create a dispute/claim of type 'traffic_violation'
+    const newDispute = await db.disputes.create({
+      bookingId: id,
+      renterId: booking.userId,
+      ownerId: req.user.id,
+      type: 'traffic_violation',
+      description: `Chủ xe báo cáo phạt nguội: ${description}`,
+      amount: parseFloat(amount),
+      evidenceUrls: ticketImageUrl ? [ticketImageUrl] : [],
+      status: 'open', // 'open' for admin/cskh review
+    });
+
+    // Notify CSKH
+    await notificationService.notifyCSKH(
+      'Báo cáo phạt nguội mới',
+      `Chủ xe ${req.user.name} vừa báo cáo một phiếu phạt nguội cho chuyến đi #${id}. Vui lòng vào mục "Khiếu nại" để xử lý.`,
+      'DisputeUpdate',
+      newDispute.id,
+      'Dispute'
+    );
+
+    res.status(201).json({
+      message: 'Đã gửi báo cáo phạt nguội thành công. CSKH sẽ xem xét và thông báo đến bạn và người thuê trong thời gian sớm nhất.',
+      dispute: newDispute,
+    });
+
+  } catch (error) {
+    console.error('Error reporting traffic violation:', error);
+    res.status(500).json({ message: 'Lỗi khi gửi báo cáo phạt nguội.' });
+  }
+});
+
 
 
 // 18. Sign Electronic Handover Documents (Biên bản bàn giao Nhận/Trả xe)
