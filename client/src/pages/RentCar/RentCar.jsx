@@ -946,11 +946,6 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                         <img src={car.image} alt={car.model} className="card-image-element" />
                         {/* Nhãn khuyến mãi góc trên bên trái */}
                         <div className="card-badge-top-container" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                          {carVoucher && (
-                            <span className="promo-badge-glow-yellow" style={{ background: '#00bfa5', color: '#fff', border: 'none' }}>
-                              🏷️ Mã {carVoucher.code} (-{carVoucher.discount_percent || carVoucher.discountPercent}%)
-                            </span>
-                          )}
                           {car.pricePerDay > 1000000 && (
                             <span className="promo-badge-glow-red">⚡ Flash Sale</span>
                           )}
@@ -969,6 +964,21 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                       {/* Nội dung chi tiết xe */}
                       <div className="card-body-content-premium">
                         <h3 className="card-title-main-premium">{car.brand.toUpperCase()} {car.model}</h3>
+                        
+                        {carVoucher && (
+                          <div style={{ margin: '4px 0 6px 0' }}>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '4px',
+                              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                              color: '#ffffff', fontSize: '11px', fontWeight: '800',
+                              padding: '3px 10px', borderRadius: '20px',
+                              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
+                            }}>
+                              🏷️ Mã {carVoucher.code} (-{carVoucher.discount_percent || carVoucher.discountPercent}%)
+                            </span>
+                          </div>
+                        )}
+
                         <p className="card-location-subtext">Quận {car.location.replace('Quận ', '')}</p>
                         {/* Hộp hiển thị giá kép (4h & 24h) giống Ảnh 2 */}
                         <div className="double-pricing-spec-grid">
@@ -1052,11 +1062,6 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
 
                         {/* Top badges */}
                         <div className="card-badge-top-container" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                          {carVoucher && (
-                            <span className="promo-badge-glow-yellow" style={{ background: '#00bfa5', color: '#fff', border: 'none' }}>
-                              🏷️ Mã {carVoucher.code} (-{carVoucher.discount_percent || carVoucher.discountPercent}%)
-                            </span>
-                          )}
                           <span className="promo-badge-glow-yellow">👑 Xế xịn</span>
                         </div>
 
@@ -1081,6 +1086,21 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                       {/* Body Content */}
                       <div className="card-body-content-premium">
                         <h3 className="card-title-main-premium">{car.brand.toUpperCase()} {car.model}</h3>
+
+                        {carVoucher && (
+                          <div style={{ margin: '4px 0 6px 0' }}>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '4px',
+                              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                              color: '#ffffff', fontSize: '11px', fontWeight: '800',
+                              padding: '3px 10px', borderRadius: '20px',
+                              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
+                            }}>
+                              🏷️ Mã {carVoucher.code} (-{carVoucher.discount_percent || carVoucher.discountPercent}%)
+                            </span>
+                          </div>
+                        )}
+
                         <p className="card-location-subtext">
                           {isDbCar ? `Quận ${car.location.replace('Quận ', '')}` : car.location}
                         </p>

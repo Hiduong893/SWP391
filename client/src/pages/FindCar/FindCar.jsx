@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Calendar, Clock, SlidersHorizontal, Users, Fuel, Info, Sparkles, Zap, Key, Compass, Car, X, Handshake, Crown, Scan, ArrowUpDown, Globe, Star, MessageSquare, ChevronDown } from 'lucide-react';
+import { MapPin, Calendar, Clock, SlidersHorizontal, Users, Fuel, Info, Sparkles, Zap, Key, Compass, Car, X, Handshake, Crown, Scan, ArrowUpDown, Globe, Star, MessageSquare, ChevronDown, Heart, Scale, Map as MapIcon, Grid } from 'lucide-react';
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
+import { CarMapView } from '../../components/CarMapView';
+import { VehicleCompareModal } from '../../components/VehicleCompareModal';
 
 export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchParams }) => {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [vouchersList, setVouchersList] = useState([]);
   const { showToast } = useToast();
+
+  // New Renter Enhancement States
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'map'
+  const [wishlist, setWishlist] = useState([]); // Array of car IDs
+  const [isWishlistOnly, setIsWishlistOnly] = useState(false);
+  const [compareCars, setCompareCars] = useState([]); // Max 3 selected cars
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
 
   // Search states (Matches search-bar-premium layout)
   const [selectedLocation, setSelectedLocation] = useState('');
@@ -34,6 +43,48 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
 
   // Dropdown UI state
   const [activeDropdown, setActiveDropdown] = useState(null); // null, brand, seats, fuel, transmission, rentalType, sort, model, type, district
+
+  // Fetch Wishlist for logged in user
+  const fetchWishlist = async () => {
+    if (!user) return;
+    try {
+      const data = await api.user.getWishlist();
+      setWishlist(data.wishlist || []);
+    } catch (e) {
+      console.warn('Unable to load wishlist');
+    }
+  };
+
+  const handleToggleWishlist = async (e, carId) => {
+    if (e) e.stopPropagation();
+    if (!user) {
+      showToast('Vui lòng đăng nhập để lưu xe vào danh sách yêu thích!', 'warning');
+      return;
+    }
+    try {
+      const data = await api.user.toggleWishlist(carId);
+      setWishlist(data.wishlist || []);
+      showToast(data.message, 'success');
+    } catch (err) {
+      showToast(err.message || 'Lỗi cập nhật xe yêu thích.', 'error');
+    }
+  };
+
+  const handleToggleCompare = (e, car) => {
+    if (e) e.stopPropagation();
+    setCompareCars(prev => {
+      const exists = prev.some(c => c.id === car.id);
+      if (exists) {
+        return prev.filter(c => c.id !== car.id);
+      }
+      if (prev.length >= 3) {
+        showToast('Bạn chỉ có thể chọn tối đa 3 chiếc xe để so sánh!', 'warning');
+        return prev;
+      }
+      return [...prev, car];
+    });
+  };
+
 
   const fetchCars = async (filters = {}) => {
     setLoading(true);
@@ -97,6 +148,9 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
   useEffect(() => {
     fetchCars();
     fetchActiveVouchers();
+    if (user) {
+      fetchWishlist();
+    }
     
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -119,7 +173,7 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
     setReturnDate(initReturn);
 
     fetchCars({ location: initLocation });
-  }, [initialSearchParams]);
+  }, [initialSearchParams, user]);
 
   const handleSearchSubmit = (e) => {
     if (e) e.preventDefault();
@@ -145,12 +199,13 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
     setRentalType('all');
     setIsSaleOnly(false);
     setIsPremiumOnly(false);
+    setIsWishlistOnly(false);
     setSelectedSort('');
     setSelectedModel('');
     setSelectedType('');
     setSelectedDistrict('');
     fetchCars({ location: '' });
-    showToast('Đã xóa tất cả bộ lọc', 'info');
+    showToast('Đã xóa tất cả bộ lọc.', 'info');
   };
 
   const handleViewCarDetails = async (car) => {
@@ -213,6 +268,11 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
   // Client-side dynamic filtering & sorting logic
   const getFilteredCars = () => {
     let list = [...cars];
+
+    // Filter by Wishlist Only
+    if (isWishlistOnly) {
+      list = list.filter(car => wishlist.some(wId => String(wId) === String(car.id)));
+    }
 
     // 1. Filter by Location
     if (selectedLocation) {
@@ -427,6 +487,21 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
         </button>
 
         <button 
+          className={`pill-item ${isWishlistOnly ? 'active' : ''}`}
+          onClick={() => {
+            if (!user) {
+              showToast('Vui lòng đăng nhập để xem danh sách xe yêu thích!', 'warning');
+              return;
+            }
+            setIsWishlistOnly(!isWishlistOnly);
+            showToast(!isWishlistOnly ? 'Đã lọc danh sách xe yêu thích của bạn.' : 'Hiển thị tất cả xe.', 'info');
+          }}
+        >
+          <Heart size={14} className="pill-icon" style={{ color: isWishlistOnly ? '#ef4444' : '#f43f5e', fill: isWishlistOnly ? '#ef4444' : 'none' }} />
+          <span>Yêu thích ({wishlist.length})</span>
+        </button>
+
+        <button 
           className={`pill-item ${isPremiumOnly ? 'active' : ''}`}
           onClick={() => {
             setIsPremiumOnly(!isPremiumOnly);
@@ -446,7 +521,41 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
         </button>
       </div>
 
-      {/* RENDER CAR GRID */}
+      {/* VIEW MODE SWITCHER & RESULTS COUNT BAR */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 20px 0', padding: '0 20px' }}>
+        <div style={{ fontSize: '15px', color: '#475569', fontWeight: 600 }}>
+          Tìm thấy <strong style={{ color: '#0284c7', fontSize: '17px' }}>{filteredCars.length}</strong> xe phù hợp
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', background: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
+          <button
+            onClick={() => setViewMode('grid')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: 'none', borderRadius: '8px',
+              fontWeight: 700, fontSize: '13px', cursor: 'pointer',
+              background: viewMode === 'grid' ? '#ffffff' : 'transparent',
+              color: viewMode === 'grid' ? '#0284c7' : '#64748b',
+              boxShadow: viewMode === 'grid' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none'
+            }}
+          >
+            <Grid size={16} /> Danh sách
+          </button>
+          <button
+            onClick={() => setViewMode('map')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: 'none', borderRadius: '8px',
+              fontWeight: 700, fontSize: '13px', cursor: 'pointer',
+              background: viewMode === 'map' ? '#ffffff' : 'transparent',
+              color: viewMode === 'map' ? '#0284c7' : '#64748b',
+              boxShadow: viewMode === 'map' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none'
+            }}
+          >
+            <MapIcon size={16} /> Bản đồ
+          </button>
+        </div>
+      </div>
+
+      {/* RENDER CAR GRID OR MAP */}
       {loading ? (
         <div className="find-car-loading">Đang tải danh sách toàn bộ xe...</div>
       ) : filteredCars.length === 0 ? (
@@ -457,6 +566,10 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
             Xem tất cả xe
           </button>
         </div>
+      ) : viewMode === 'map' ? (
+        <div style={{ padding: '0 20px 40px 20px' }}>
+          <CarMapView cars={filteredCars} onRentCarClick={handleRentCar} user={user} />
+        </div>
       ) : (
         <div className="find-car-grid-container">
           <div className="find-cars-grid">
@@ -465,21 +578,45 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
               const dayPriceActual = Math.round(car.pricePerDay / 1000) + 'K';
               const mockDistance = (1.5 + (parseInt(car.id) % 3) * 1.2).toFixed(1);
               const carVoucher = getMatchingVoucherForCar(car);
+              const isFav = wishlist.some(wId => String(wId) === String(car.id));
+              const isCompared = compareCars.some(c => c.id === car.id);
 
               return (
-                <div key={car.id} className="find-car-card">
+                <div key={car.id} className="find-car-card" style={{ position: 'relative' }}>
                   {/* Image container */}
                   <div className="find-card-image-box" onClick={() => handleViewCarDetails(car)}>
                     <img src={car.image} alt={car.model} className="find-card-img" />
                     
-                    {/* Badge Sale / Voucher */}
-                    {carVoucher && (
-                      <div className="find-card-badge-top">
-                        <span className="find-badge-sale" style={{ background: '#00bfa5', color: '#ffffff', fontWeight: 800 }}>
-                          🏷️ Mã {carVoucher.code} (-{carVoucher.discount_percent || carVoucher.discountPercent}%)
-                        </span>
-                      </div>
-                    )}
+                    {/* Wishlist Heart Button */}
+                    <button
+                      onClick={(e) => handleToggleWishlist(e, car.id)}
+                      title={isFav ? "Xóa khỏi danh sách yêu thích" : "Thêm vào yêu thích"}
+                      style={{
+                        position: 'absolute', top: 10, right: 10, zIndex: 5,
+                        background: isFav ? '#ef4444' : 'rgba(15, 23, 42, 0.65)',
+                        border: 'none', borderRadius: '50%', width: 34, height: 34,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                      }}
+                    >
+                      <Heart size={18} style={{ color: '#ffffff', fill: isFav ? '#ffffff' : 'none' }} />
+                    </button>
+
+                    {/* Compare Selection Checkbox */}
+                    <button
+                      onClick={(e) => handleToggleCompare(e, car)}
+                      title="Chọn để so sánh xe"
+                      style={{
+                        position: 'absolute', top: 10, left: 10, zIndex: 5,
+                        background: isCompared ? '#2563eb' : 'rgba(15, 23, 42, 0.65)',
+                        color: '#ffffff', border: 'none', borderRadius: '8px', padding: '4px 8px',
+                        fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px',
+                        cursor: 'pointer', transition: 'all 0.2s'
+                      }}
+                    >
+                      <Scale size={13} />
+                      {isCompared ? 'Đã chọn' : '+ So sánh'}
+                    </button>
 
                     {/* Badge Nhận xe */}
                     <div className="find-card-badge-bottom">
@@ -497,6 +634,20 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
                       {car.brand.toUpperCase()} {car.model}
                     </h3>
                     
+                    {carVoucher && (
+                      <div style={{ margin: '4px 0 6px 0' }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          color: '#ffffff', fontSize: '11px', fontWeight: '800',
+                          padding: '3px 10px', borderRadius: '20px',
+                          boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
+                        }}>
+                          🏷️ Mã {carVoucher.code} (-{carVoucher.discount_percent || carVoucher.discountPercent}%)
+                        </span>
+                      </div>
+                    )}
+
                     <p className="find-car-location">
                       Quận {car.location.replace('Quận ', '')}
                     </p>
@@ -517,6 +668,7 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
                     </div>
 
                     {/* Specs Row */}
+
                     <div className="find-car-specs-row">
                       <div className="spec-item" title="Số chỗ">
                         <Users size={12} style={{ color: '#009698' }} />
@@ -858,6 +1010,60 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
             </div>
           </div>
         </div>
+      )}
+
+      {/* --- FLOATING COMPARE DOCK BAR --- */}
+      {compareCars.length > 0 && (
+        <div style={{
+          position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+          background: 'linear-gradient(135deg, #0f172a, #1e293b)', color: '#ffffff',
+          borderRadius: '20px', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '16px',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)',
+          zIndex: 9000, animation: 'slideUp 0.3s ease-out'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Scale size={20} style={{ color: '#38bdf8' }} />
+            <span style={{ fontWeight: 700, fontSize: '14px' }}>
+              Đã chọn <strong style={{ color: '#38bdf8' }}>{compareCars.length}/3</strong> xe để so sánh
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {compareCars.map(c => (
+              <span key={c.id} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: 600 }}>
+                {c.brand} {c.model}
+              </span>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', marginLeft: '12px' }}>
+            <button
+              onClick={() => setCompareCars([])}
+              style={{ background: 'transparent', border: '1px solid #475569', color: '#94a3b8', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}
+            >
+              Xóa tất cả
+            </button>
+            <button
+              onClick={() => setIsCompareModalOpen(true)}
+              style={{
+                background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#ffffff',
+                border: 'none', borderRadius: '10px', padding: '6px 18px', fontWeight: 700, fontSize: '13px',
+                cursor: 'pointer', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.4)'
+              }}
+            >
+              So sánh ngay ➔
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* --- VEHICLE COMPARE MODAL --- */}
+      {isCompareModalOpen && (
+        <VehicleCompareModal
+          cars={compareCars}
+          onClose={() => setIsCompareModalOpen(false)}
+          onRentCarClick={handleRentCar}
+        />
       )}
     </div>
   );
