@@ -148,21 +148,12 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, s
               )}
 
               {user.role !== 'owner' && (
-                <>
-                  <button
-                    className={`nav-item ${currentTab === 'my-trips' ? 'active' : ''}`}
-                    onClick={() => setCurrentTab('my-trips')}
-                  >
-                    <span>Chuyến đi</span>
-                  </button>
-                  <button
-                    className="nav-item"
-                    onClick={() => setCurrentTab('my-trips')}
-                    title="Gửi yêu cầu hỗ trợ & Chat với CSKH"
-                  >
-                    <span>Hỗ trợ CSKH</span>
-                  </button>
-                </>
+                <button
+                  className={`nav-item ${currentTab === 'my-trips' ? 'active' : ''}`}
+                  onClick={() => setCurrentTab('my-trips')}
+                >
+                  <span>Chuyến đi</span>
+                </button>
               )}
 
               {(user.role === 'admin' || user.role === 'cskh') && (

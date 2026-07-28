@@ -20,6 +20,7 @@ import { OwnerDashboard } from './pages/OwnerDashboard/OwnerDashboard';
 import { BookingModal } from './components/BookingModal';
 import { SimulatedInbox } from './components/SimulatedInbox';
 import { ChatbotWidget } from './components/ChatbotWidget';
+import { CSKHSupportWidget } from './components/CSKHSupportWidget';
 import { Blog } from './pages/Blog/Blog';
 import { BlogDetail } from './pages/Blog/BlogDetail';
 import { Recruitment } from './pages/Recruitment/Recruitment';
@@ -424,8 +425,9 @@ function App() {
         />
       )}
 
-      {/* --- AI SUPPORT CHATBOT WIDGET --- */}
+      {/* --- FLOATING CHAT WIDGETS --- */}
       <ChatbotWidget user={user} setCurrentTab={setCurrentTab} />
+      <CSKHSupportWidget user={user} setCurrentTab={setCurrentTab} />
     </>
   );
 }
