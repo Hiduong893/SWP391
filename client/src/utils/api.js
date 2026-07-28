@@ -34,6 +34,9 @@ const request = async (url, options = {}, retries = 4, delay = 1000) => {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+        }
         throw new Error(data.message || 'Đã xảy ra lỗi không xác định.');
       }
 
@@ -171,6 +174,16 @@ export const api = {
     registerOwner: () =>
       request('/user/register-owner', {
         method: 'POST'
+      }),
+
+    getWishlist: () =>
+      request('/user/wishlist', {
+        method: 'GET'
+      }),
+
+    toggleWishlist: (carId) =>
+      request(`/user/wishlist/toggle/${carId}`, {
+        method: 'POST'
       })
   },
   
@@ -226,6 +239,30 @@ export const api = {
       request(`/bookings/${id}/incident`, {
         method: 'POST',
         body: JSON.stringify({ description, image })
+      }),
+
+    saveInspection: (id, inspectionData) =>
+      request(`/bookings/${id}/inspection`, {
+        method: 'POST',
+        body: JSON.stringify(inspectionData)
+      }),
+
+    requestExtension: (id, extensionData) =>
+      request(`/bookings/${id}/request-extension`, {
+        method: 'POST',
+        body: JSON.stringify(extensionData)
+      }),
+
+    respondExtension: (id, action) =>
+      request(`/bookings/${id}/respond-extension`, {
+        method: 'PUT',
+        body: JSON.stringify({ action })
+      }),
+
+    analyzeInspection: (id, inspectionData) =>
+      request(`/bookings/${id}/ai-analyze-inspection`, {
+        method: 'POST',
+        body: JSON.stringify(inspectionData || {})
       })
   },
 
