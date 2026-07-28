@@ -53,6 +53,8 @@ export const mapBookingRow = async (p, row) => {
     handoverDocs: row.handover_docs ? JSON.parse(row.handover_docs) : { pickup: null, return: null },
     issueReport: row.issue_report ? JSON.parse(row.issue_report) : null,
     contractDetails: row.contract_details ? JSON.parse(row.contract_details) : null,
+    inspectionCheckin: row.inspection_checkin || null,
+    inspectionCheckout: row.inspection_checkout || null,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString()
   };
 };

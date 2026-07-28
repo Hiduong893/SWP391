@@ -220,7 +220,36 @@ export const getPool = async () => {
         BEGIN
             ALTER TABLE HandoverImage ALTER COLUMN image_url NVARCHAR(MAX) NOT NULL;
         END
+
+        -- Create Wishlist table if missing
+        IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Wishlist')
+        BEGIN
+            CREATE TABLE Wishlist (
+                wishlist_id INT IDENTITY(1,1) PRIMARY KEY,
+                user_id INT NOT NULL,
+                vehicle_id INT NOT NULL,
+                created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+                CONSTRAINT FK_Wishlist_User FOREIGN KEY (user_id) REFERENCES [User](user_id),
+                CONSTRAINT FK_Wishlist_Vehicle FOREIGN KEY (vehicle_id) REFERENCES Vehicle(vehicle_id)
+            );
+            CREATE UNIQUE INDEX UQ_Wishlist_User_Vehicle ON Wishlist(user_id, vehicle_id);
+        END
+
+        -- Add inspection_checkin, inspection_checkout, extension_request columns to Booking if missing
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Booking') AND name = 'inspection_checkin')
+        BEGIN
+            ALTER TABLE Booking ADD inspection_checkin NVARCHAR(MAX) NULL;
+        END
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Booking') AND name = 'inspection_checkout')
+        BEGIN
+            ALTER TABLE Booking ADD inspection_checkout NVARCHAR(MAX) NULL;
+        END
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Booking') AND name = 'extension_request')
+        BEGIN
+            ALTER TABLE Booking ADD extension_request NVARCHAR(MAX) NULL;
+        END
       `);
+      
 
       // Ensure stored procedure is created or updated with support for DepositRefund and auto-wallet creation
       await pool.request().query(`
