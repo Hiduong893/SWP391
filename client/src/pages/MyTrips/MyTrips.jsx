@@ -821,17 +821,31 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
               {/* Direct access to Photo & AI Inspection */}
               {(() => {
                 const trip = activeHandoverTrip.trip;
+                const isPickup = activeHandoverTrip.type === 'pickup';
                 let parsedInspection = null;
                 try {
-                  const raw = activeHandoverTrip.type === 'return' ? trip.inspectionCheckout : trip.inspectionCheckin;
+                  const raw = isPickup ? trip.inspectionCheckin : trip.inspectionCheckout;
                   if (raw) parsedInspection = typeof raw === 'string' ? JSON.parse(raw) : raw;
                 } catch (e) {}
 
                 const hasData = Boolean(parsedInspection && ((parsedInspection.photos && parsedInspection.photos.length > 0) || parsedInspection.aiReport));
                 const aiReport = parsedInspection?.aiReport || null;
-                const compensationAmt = Number(aiReport?.suggestedCompensation) || 0;
-                const detectedList = Array.isArray(aiReport?.detectedIssues) ? aiReport.detectedIssues : (Array.isArray(aiReport?.issues) ? aiReport.issues : []);
-                const hasNewDamages = Boolean(aiReport && (compensationAmt > 0 || detectedList.some(i => i && i.isNew)));
+                const rawCompensationAmt = Number(aiReport?.suggestedCompensation) || 0;
+                
+                // Compare checkin vs checkout damage to calculate net NEW damage
+                let checkinCompensation = 0;
+                try {
+                  const rawIn = trip.inspectionCheckin;
+                  if (rawIn) {
+                    const parsedIn = typeof rawIn === 'string' ? JSON.parse(rawIn) : rawIn;
+                    checkinCompensation = Number(parsedIn?.aiReport?.suggestedCompensation) || 0;
+                  }
+                } catch (e) {}
+
+                // For pickup (check-in): compensation for Renter is 0 (it's baseline record).
+                // For return (check-out): compensation is only net new damage = max(0, checkout - checkin).
+                const netCompensation = isPickup ? 0 : Math.max(0, rawCompensationAmt - checkinCompensation);
+                const hasNewDamages = !isPickup && netCompensation > 0;
 
                 return (
                   <div>
@@ -890,10 +904,22 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                           <span>✦ Tình trạng AI: {aiReport.overallCondition || 'Đã thẩm định'}</span>
                           <span style={{ color: '#7c3aed', fontWeight: 800 }}>Score: {aiReport.healthScore || 90}/100</span>
                         </div>
-                        {compensationAmt > 0 && (
-                          <div style={{ color: '#dc2626', fontWeight: 800, fontSize: '12px', marginTop: '4px' }}>
-                            ⚠️ Đền bù đề xuất: {compensationAmt.toLocaleString('vi-VN')} đ
-                          </div>
+                        {isPickup ? (
+                          rawCompensationAmt > 0 && (
+                            <div style={{ color: '#0284c7', fontWeight: 800, fontSize: '12px', marginTop: '4px' }}>
+                              🛡️ Ghi nhận hư hỏng sẵn có từ trước: {rawCompensationAmt.toLocaleString('vi-VN')} đ (Bằng chứng bảo vệ Renter - Không phải bồi thường)
+                            </div>
+                          )
+                        ) : (
+                          netCompensation > 0 ? (
+                            <div style={{ color: '#dc2626', fontWeight: 800, fontSize: '12px', marginTop: '4px' }}>
+                              ⚠️ Đề xuất đền bù cho vết hư hỏng MỚI phát sinh: {netCompensation.toLocaleString('vi-VN')} đ
+                            </div>
+                          ) : (
+                            <div style={{ color: '#16a34a', fontWeight: 800, fontSize: '12px', marginTop: '4px' }}>
+                              ✓ Xe không phát sinh vết hư hỏng mới so với lúc nhận (Đền bù: 0đ)
+                            </div>
+                          )
                         )}
                       </div>
                     )}
@@ -907,12 +933,14 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                           required
                         />
                         <span>
-                          {hasNewDamages ? (
+                          {isPickup ? (
+                            'Xác nhận đối chiếu & ghi nhận hiện trạng hư hỏng sẵn có của xe trước khi nhận (Không tính phí bồi thường)'
+                          ) : hasNewDamages ? (
                             <span style={{ color: '#dc2626', fontWeight: 700 }}>
-                              Xác nhận đối chiếu hiện trạng & ghi nhận báo cáo hư hỏng từ AI {aiReport.suggestedCompensation > 0 ? `(Đề xuất đền bù ${aiReport.suggestedCompensation.toLocaleString('vi-VN')}đ)` : ''}
+                              Xác nhận đối chiếu hư hỏng MỚI phát sinh & đề xuất bồi thường {netCompensation.toLocaleString('vi-VN')}đ
                             </span>
                           ) : (
-                            'Xác nhận không phát sinh vết trầy xước/va quẹt mới'
+                            'Xác nhận xe không phát sinh vết trầy xước/hư hỏng mới so với lúc nhận'
                           )}
                         </span>
                       </label>

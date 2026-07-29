@@ -1724,10 +1724,29 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
 
         {/* Step 3: Success Screen */}
         {step === 3 && (
-          <div className="booking-modal-body text-center">
-            <CheckCircle2 className="success-lottie-icon text-success mb-2" size={60} style={{ display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
-            <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#10b981', marginBottom: '8px' }}>Thuê Xe Thành Công!</h2>
-            <p className="subtitle mt-1" style={{ color: '#64748b', fontSize: '13.5px' }}>Hợp đồng thuê xe điện tử của bạn đã được xác thực ký số thành công.</p>
+          <div className="booking-modal-body text-center" style={{ padding: '24px 20px 20px 20px' }}>
+            {/* Glowing Emerald Animated Badge */}
+            <div style={{
+              width: '76px',
+              height: '76px',
+              margin: '0 auto 14px auto',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ffffff',
+              boxShadow: '0 10px 28px rgba(16, 185, 129, 0.35)'
+            }}>
+              <CheckCircle2 size={44} color="#ffffff" strokeWidth={2.5} />
+            </div>
+
+            <h2 style={{ fontSize: '23px', fontWeight: 800, color: '#065f46', marginBottom: '6px', letterSpacing: '-0.3px' }}>
+              Thuê Xe Thành Công! 🎉
+            </h2>
+            <p className="subtitle" style={{ color: '#64748b', fontSize: '13.5px', maxWidth: '420px', margin: '0 auto 16px auto', lineHeight: 1.5 }}>
+              Hợp đồng thuê xe điện tử của bạn đã được khởi tạo & xác thực ký số E-Sign thành công.
+            </p>
 
             {/* Premium Printable Bill Receipt */}
             <div className="printable-receipt-card mt-4" style={{ padding: '24px 20px', marginTop: '16px' }}>

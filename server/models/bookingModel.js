@@ -131,20 +131,19 @@ export const bookingModel = {
     const isOwnerCar = carRes.recordset.length > 0 && carRes.recordset[0].role_name === 'CarOwner';
 
     const status = isOwnerCar ? 'Pending' : 'Approved';
-    const rentalPriceForOwner = parseInt(bookingData.rentalPriceForOwner || bookingData.totalPrice);
-    const totalPrice = parseInt(bookingData.totalPrice);
+    const rentalPriceForOwner = parseInt(bookingData.rentalPriceForOwner || bookingData.totalPrice) || 0;
+    const totalPrice = parseInt(bookingData.totalPrice) || 0;
     const deposit = 0;
     const initialPlatformFee = totalPrice > rentalPriceForOwner ? totalPrice - rentalPriceForOwner : 0;
 
-    // Check wallet balance if paymentMethod is wallet
-    // When using wallet: must deduct ONLY reservation fee = 500,000 VND
-    const walletTotalAmount = Math.round(totalPrice * 0.3); 
+    // Cọc giữ chỗ online = đúng 30% tổng phí giao dịch
+    const reservationFee30Pct = Math.round(totalPrice * 0.3); 
     if (bookingData.paymentMethod === 'wallet') {
       const walletRes = await p.request()
         .input('userId', sql.Int, renterId)
         .query('SELECT balance FROM Wallet WHERE user_id = @userId');
-      if (walletRes.recordset.length === 0 || Number(walletRes.recordset[0].balance) < walletTotalAmount) {
-        throw new Error(`Số dư ví không đủ. Cần tối thiểu ${walletTotalAmount.toLocaleString('vi-VN')}đ (phí giữ chỗ).`);
+      if (walletRes.recordset.length === 0 || Number(walletRes.recordset[0].balance) < reservationFee30Pct) {
+        throw new Error(`Số dư ví không đủ. Cần tối thiểu ${reservationFee30Pct.toLocaleString('vi-VN')}đ (phí giữ chỗ 30%).`);
       }
     }
 
@@ -182,22 +181,22 @@ export const bookingModel = {
     // Update car status
     await p.request().input('vehicleId', sql.Int, vehicleId).query('UPDATE Vehicle SET status = \'Rented\' WHERE vehicle_id = @vehicleId');
 
-    // If wallet payment, process wallet transaction (deduct ONLY reservation fee: 500,000 VND)
+    // If wallet payment, process wallet transaction (deduct 30% reservation fee)
     if (bookingData.paymentMethod === 'wallet') {
       await p.request()
         .input('userId', sql.Int, renterId)
         .input('bookingId', sql.Int, bookingId)
-        .input('amount', sql.Decimal(18, 2), walletTotalAmount)
+        .input('amount', sql.Decimal(18, 2), reservationFee30Pct)
         .input('txnType', sql.NVarChar, 'BookingPayment')
         .input('description', sql.NVarChar, `Thanh toán phí giữ chỗ đặt xe #${bookingId}`)
         .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
     }
 
-    // Create Payment row (representing the online payment of 500,000 VND reservation fee)
+    // Create Payment row (representing 30% reservation fee online payment)
     const initialStatus = bookingData.paymentMethod === 'vnpay' ? 'Pending' : 'Success';
     const hasPaidAt = bookingData.paymentMethod === 'vnpay' ? null : new Date();
 
-    const paymentAmount = walletTotalAmount > 0 ? walletTotalAmount : Math.max(100000, Math.round(totalPrice * 0.3));
+    const paymentAmount = reservationFee30Pct > 0 ? reservationFee30Pct : Math.round(totalPrice * 0.3);
     const payRequest = p.request()
       .input('bookingId', sql.Int, bookingId)
       .input('payerId', sql.Int, renterId)

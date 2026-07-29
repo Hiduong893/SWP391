@@ -598,5 +598,19 @@ export const api = {
       body: JSON.stringify({ customTerms })
     }),
     getTopics: () => request('/contracts/custom-term-topics'),
+  },
+
+  support: {
+    createDispute: (disputeData) =>
+      request('/support/disputes', {
+        method: 'POST',
+        body: JSON.stringify(disputeData)
+      }),
+    getTickets: () => request('/support/tickets'),
+    createTicket: (ticketData) =>
+      request('/support/tickets', {
+        method: 'POST',
+        body: JSON.stringify(ticketData)
+      })
   }
 };

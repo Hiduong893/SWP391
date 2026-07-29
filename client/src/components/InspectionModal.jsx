@@ -227,7 +227,9 @@ export const InspectionModal = ({ booking, user, onClose, onInspectionUpdated })
       await api.bookings.saveInspection(booking.id, payload);
 
       // 2. Submit dispute to Admin
-      const description = `[Báo cáo sự cố từ Biên Bản AI]: ${aiReport?.aiAssessment || notes || 'Phát hiện va chạm/hư hỏng phương tiện khi bàn giao trả xe.'} ${aiReport?.suggestedCompensation ? 'Chi phí đền bù đề xuất: ' + aiReport.suggestedCompensation.toLocaleString('vi-VN') + 'đ' : 'Cần giám định lại mẫu xe'}`;
+      const descriptionText = notes?.trim() || aiReport?.carMismatchWarning || aiReport?.aiAssessment || 'Chủ xe giao sai mẫu xe hoặc phương tiện phát sinh sự cố khi bàn giao.';
+      const compensationText = aiReport?.suggestedCompensation ? ` (Đề xuất đền bù: ${aiReport.suggestedCompensation.toLocaleString('vi-VN')}đ)` : '';
+      const description = `[Báo cáo sự cố khiếu nại bàn giao xe]: ${descriptionText}${compensationText}`;
       await api.support.createDispute({ bookingId: booking.id, description });
 
       showToast('Đã lưu biên bản & chuyển hồ sơ khiếu nại tới Admin ViVuCar xử lý!', 'success');
