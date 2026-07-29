@@ -14,11 +14,11 @@ const config = {
   server: process.env.DB_SERVER || 'noom',
   database: process.env.DB_DATABASE || 'CarRentalPlatform',
   options: {
-    encrypt: false, // Set to false for local development
-    trustServerCertificate: process.env.DB_TRUST_SERVER_CERTIFICATE === 'true' || true,
+    encrypt: process.env.DB_ENCRYPT === 'true',
+    trustServerCertificate: true,
   },
-  connectionTimeout: 15000,
-  requestTimeout: 15000,
+  connectionTimeout: 3000,
+  requestTimeout: 5000,
 };
 
 let poolPromise = null;

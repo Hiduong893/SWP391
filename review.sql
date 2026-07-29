@@ -5,12 +5,29 @@
 -- - Đã có sẵn các user: owner_id = 1, và các renter_id = 2, 3, 4.
 -- ==============================================================================
 
-USE CarRentalPlatform;
-GO
-
 BEGIN TRANSACTION;
 
 BEGIN TRY
+    -- 0. ĐẢM BẢO CÓ SẴN CÁC USER MẪU (DÙNG CHO CHỦ XE VÀ NGƯỜI THUÊ)
+    IF NOT EXISTS (SELECT * FROM [User] WHERE user_id = 1)
+    BEGIN
+        SET IDENTITY_INSERT [User] ON;
+        INSERT INTO [User] (user_id, email, full_name, google_id, is_active, is_email_verified) 
+        VALUES (1, 'owner@vivucar.vn', N'Chủ Xe Mẫu', 'mock_g1', 1, 1);
+        SET IDENTITY_INSERT [User] OFF;
+    END
+
+    IF NOT EXISTS (SELECT * FROM [User] WHERE user_id = 2)
+    BEGIN
+        SET IDENTITY_INSERT [User] ON;
+        INSERT INTO [User] (user_id, email, full_name, google_id, is_active, is_email_verified) 
+        VALUES 
+        (2, 'renter1@vivucar.vn', N'Nguyễn Văn A', 'mock_g2', 1, 1),
+        (3, 'renter2@vivucar.vn', N'Trần Thị B', 'mock_g3', 1, 1),
+        (4, 'renter3@vivucar.vn', N'Lê Văn C', 'mock_g4', 1, 1);
+        SET IDENTITY_INSERT [User] OFF;
+    END
+
     -- Khai báo các biến cần thiết
     DECLARE @current_vehicle_id INT = 3;
     DECLARE @owner_id INT = 1; -- ID của chủ xe (owner@vivucar.vn)
@@ -42,8 +59,10 @@ BEGIN TRY
         FROM Vehicle 
         WHERE vehicle_id = @current_vehicle_id;
 
-        -- Chọn một người thuê ngẫu nhiên (renter_id từ 2, 3, 4)
-        SET @renter_id = (@current_vehicle_id % 3) + 2; 
+        -- Lấy người dùng thực tế từ bảng User để đảm bảo không bị lỗi khóa ngoại
+        SELECT TOP 1 @owner_id = user_id FROM [User];
+        SELECT TOP 1 @renter_id = user_id FROM [User] WHERE user_id <> @owner_id;
+        IF @renter_id IS NULL SET @renter_id = @owner_id; 
 
         -- Tạo ngày thuê ngẫu nhiên trong quá khứ
         SET @days_rented = (@current_vehicle_id % 5) + 2; -- Thuê từ 2 đến 6 ngày

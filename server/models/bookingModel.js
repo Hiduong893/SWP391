@@ -197,10 +197,11 @@ export const bookingModel = {
     const initialStatus = bookingData.paymentMethod === 'vnpay' ? 'Pending' : 'Success';
     const hasPaidAt = bookingData.paymentMethod === 'vnpay' ? null : new Date();
 
+    const paymentAmount = walletTotalAmount > 0 ? walletTotalAmount : Math.max(100000, Math.round(totalPrice * 0.3));
     const payRequest = p.request()
       .input('bookingId', sql.Int, bookingId)
       .input('payerId', sql.Int, renterId)
-      .input('amount', sql.Decimal(18, 2), deposit)
+      .input('amount', sql.Decimal(18, 2), paymentAmount)
       .input('method', sql.NVarChar, bookingData.paymentMethod || 'bank_transfer')
       .input('status', sql.NVarChar, initialStatus)
       .input('paidAt', sql.DateTime2, hasPaidAt);

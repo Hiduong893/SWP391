@@ -71,6 +71,11 @@ function App() {
     const token = localStorage.getItem('token');
     let currentUser = null;
 
+    // Safety timeout to guarantee app loads within 2 seconds even during cold start
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 2000);
+
     if (token) {
       try {
         const data = await api.user.getProfile();
@@ -91,9 +96,10 @@ function App() {
       setSystemConfig(config);
     } catch (err) {
       console.error('Failed to fetch system config', err);
+    } finally {
+      clearTimeout(safetyTimer);
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   useEffect(() => {
