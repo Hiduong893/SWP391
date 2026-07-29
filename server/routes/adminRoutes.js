@@ -285,33 +285,25 @@ router.put('/api/admin/bookings/:id/refund-deposit', auth, cskhOrAdminAuth, asyn
     await db.bookings.update(id, { depositStatus: status });
 
     if (status === 'refunded') {
-      if (booking.paymentMethod === 'wallet') {
-        // Cộng 500.000đ tiền giữ chỗ vào ví người dùng qua stored procedure (an toàn, atomic)
-        const p = await getPool();
-        const refundAmount = Math.round(booking.totalPrice * 0.3);
-        const userId = parseInt(booking.userId);
-        const bookingIdInt = parseInt(id);
+      const p = await getPool();
+      const refundAmount = Math.round(booking.totalPrice * 0.3);
+      const userId = parseInt(booking.userId);
+      const bookingIdInt = parseInt(id);
 
-        await p.request()
-          .input('userId', sql.Int, userId)
-          .input('bookingId', sql.Int, bookingIdInt)
-          .input('amount', sql.Decimal(18, 2), refundAmount)
-          .input('txnType', sql.NVarChar, 'DepositRefund')
-          .input('description', sql.NVarChar, `Hoàn trả tiền phí giữ chỗ cho đặt xe #${id}`)
-          .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+      await p.request()
+        .input('userId', sql.Int, userId)
+        .input('bookingId', sql.Int, bookingIdInt)
+        .input('amount', sql.Decimal(18, 2), refundAmount)
+        .input('txnType', sql.NVarChar, 'DepositRefund')
+        .input('description', sql.NVarChar, `Hoàn trả 30% tiền cọc giữ chỗ chuyến đi #${id} vào Ví ViVuCar`)
+        .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
 
-        console.log(`Deposit refunded to wallet: ${refundAmount} VND to userId=${userId} for bookingId=${id}`);
-      } else {
-        console.log(`Deposit marked as refunded offline/vnpay: bookingId=${id}`);
-      }
+      console.log(`Deposit refunded to wallet: ${refundAmount} VND to userId=${userId} for bookingId=${id}`);
     }
-
 
     res.json({
       message: status === 'refunded'
-        ? (booking.paymentMethod === 'wallet'
-          ? 'Đã duyệt hoàn trả phí giữ chỗ thành công! Tiền đã được cộng vào ví của người dùng.'
-          : 'Đã duyệt hoàn phí giữ chỗ! Do đơn đặt xe này thanh toán ngoại tuyến/VNPAY, tiền cọc sẽ do chủ xe hoàn trả trực tiếp.')
+        ? 'Đã duyệt hoàn trả phí giữ chỗ thành công! Tiền cọc đã được cộng trực tiếp vào Ví ViVuCar của khách hàng.'
         : 'Đã giữ lại tiền giữ chỗ do phát sinh các thiệt hại vật chất đối với xe.'
     });
   } catch (error) {
