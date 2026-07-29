@@ -668,12 +668,14 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, marginBottom: 14 }}>
                 <div>
-                  <div style={{ fontSize: '11px', color: '#92400e', fontWeight: 600 }}>Phí giữ chỗ đã nộp ({(cancelPreview.preview.depositAmount || 0).toLocaleString('vi-VN')}đ)</div>
+                  <div style={{ fontSize: '11px', color: '#92400e', fontWeight: 600 }}>Phí giữ chỗ đã nộp ({formatCurrency(cancelPreview.preview.depositAmount || Math.round(cancelPreview.trip.totalPrice * 0.3))})</div>
                   <div style={{ fontSize: '12px', color: '#78716c', marginTop: 2 }}>Hoàn trả {cancelPreview.preview.refundPercent}% = </div>
                 </div>
-                <div style={{ fontSize: '20px', fontWeight: 900, color: cancelPreview.preview.refundAmount > 0 ? '#059669' : '#dc2626' }}>
+                <div style={{ fontSize: '20px', fontWeight: 900, color: (cancelPreview.preview.refundAmount > 0 || cancelPreview.preview.isPendingOwner) ? '#059669' : '#dc2626' }}>
                   {cancelPreview.preview.refundAmount > 0
-                    ? `+${cancelPreview.preview.refundAmount.toLocaleString('vi-VN')}đ`
+                    ? `+${formatCurrency(cancelPreview.preview.refundAmount)}`
+                    : cancelPreview.preview.isPendingOwner
+                    ? `+${formatCurrency(cancelPreview.preview.depositAmount || Math.round(cancelPreview.trip.totalPrice * 0.3))}`
                     : '0đ (Không hoàn)'}
                 </div>
               </div>

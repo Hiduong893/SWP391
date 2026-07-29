@@ -46,8 +46,10 @@ export const renterActionService = {
       return { canCancel: false, message: `Kh\u00f4ng th\u1ec3 h\u1ee7y chuy\u1ebfn \u0111i \u1edf tr\u1ea1ng th\u00e1i: ${booking.status}.` };
     }
 
-    // Actual reservation fee stored in DB (deposit_amount column stores 30% paid)
-    const depositAmount = Number(booking.deposit_amount) || 0;
+    // Actual 30% reservation deposit fee (uses deposit_amount if populated, otherwise calculates 30% of total_amount)
+    const depositAmount = Number(booking.deposit_amount) > 0
+      ? Number(booking.deposit_amount)
+      : Math.round(Number(booking.total_amount) * 0.3);
 
     // If owner hasn't approved yet (status = 'Pending'), allow free cancellation with full refund
     if (booking.status === 'Pending') {
@@ -107,7 +109,9 @@ export const renterActionService = {
       throw new Error('H\u00e0nh tr\u00ecnh \u0111\u00e3 k\u1ebft th\u00fac, kh\u00f4ng th\u1ec3 h\u1ee7y.');
     }
 
-    const depositAmount = Number(booking.deposit_amount) || 0;
+    const depositAmount = Number(booking.deposit_amount) > 0
+      ? Number(booking.deposit_amount)
+      : Math.round(Number(booking.total_amount) * 0.3);
 
     let refundPercent, refundAmount, policyLabel;
 
