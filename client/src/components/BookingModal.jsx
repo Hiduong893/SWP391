@@ -533,10 +533,13 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
     setLoading(true);
     
     try {
-      // Giả lập xử lý thanh toán qua cổng trong 1.5 giây
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      showToast(`Thanh toán phí giữ chỗ ${formatCurrency(reservationFee)} thành công!`, 'success');
+      if (paymentChoice === 'vietqr') {
+        showToast(`Đã ghi nhận thông tin chuyển khoản VietQR ${formatCurrency(reservationFee)}. Tiến hành xác thực FaceID & Hợp đồng.`, 'success');
+      } else if (paymentChoice === 'vnpay') {
+        showToast(`Thanh toán thành công qua cổng VNPAY Sandbox! Đã xác nhận phí giữ chỗ ${formatCurrency(reservationFee)}.`, 'success');
+      } else {
+        showToast(`Thanh toán phí giữ chỗ ${formatCurrency(reservationFee)} bằng Ví ViVuCar thành công!`, 'success');
+      }
       
       if (paymentChoice === 'wallet') {
         const newBalance = walletBalance - reservationFee;
@@ -1382,9 +1385,9 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                 {paymentChoice === 'wallet' ? (
                   `Xác nhận trừ ${formatCurrency(reservationFee)} từ Ví`
                 ) : paymentChoice === 'vnpay' ? (
-                  'Thanh toán qua VNPAY (Giả lập)'
+                  `Thanh toán ${formatCurrency(reservationFee)} qua VNPAY`
                 ) : (
-                  'Xác nhận đã chuyển khoản 500k'
+                  `Xác nhận đã chuyển khoản ${formatCurrency(reservationFee)}`
                 )}
               </button>
             </div>
