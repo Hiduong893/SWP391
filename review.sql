@@ -59,8 +59,10 @@ BEGIN TRY
         FROM Vehicle 
         WHERE vehicle_id = @current_vehicle_id;
 
-        -- Chọn một người thuê ngẫu nhiên (renter_id từ 2, 3, 4)
-        SET @renter_id = (@current_vehicle_id % 3) + 2; 
+        -- Lấy người dùng thực tế từ bảng User để đảm bảo không bị lỗi khóa ngoại
+        SELECT TOP 1 @owner_id = user_id FROM [User];
+        SELECT TOP 1 @renter_id = user_id FROM [User] WHERE user_id <> @owner_id;
+        IF @renter_id IS NULL SET @renter_id = @owner_id; 
 
         -- Tạo ngày thuê ngẫu nhiên trong quá khứ
         SET @days_rented = (@current_vehicle_id % 5) + 2; -- Thuê từ 2 đến 6 ngày
