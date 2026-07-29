@@ -55,6 +55,7 @@ export const mapBookingRow = async (p, row) => {
     contractDetails: row.contract_details ? JSON.parse(row.contract_details) : null,
     inspectionCheckin: row.inspection_checkin || null,
     inspectionCheckout: row.inspection_checkout || null,
+    extensionRequest: row.extension_request ? (typeof row.extension_request === 'string' ? JSON.parse(row.extension_request) : row.extension_request) : null,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString()
   };
 };
