@@ -224,7 +224,7 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
         ext = typeof b.extensionRequest === 'string' ? JSON.parse(b.extensionRequest) : b.extensionRequest;
       }
     } catch (e) {}
-    return ext && ext.status === 'pending';
+    return ext && (ext.status === 'pending' || ext.status === 'PENDING') && b.status !== 'completed' && b.status !== 'cancelled' && b.status !== 'rejected';
   });
 
   return (

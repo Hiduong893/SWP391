@@ -410,7 +410,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                   </div>
 
                   {/* Extension Breakdown Display */}
-                  {trip.extensionRequest && (
+                  {trip.extensionRequest && trip.status !== 'completed' && trip.status !== 'cancelled' && trip.status !== 'rejected' && (
                     <div style={{
                       background: trip.extensionRequest.status === 'PAID' ? 'rgba(16,185,129,0.1)' : trip.extensionRequest.status === 'APPROVED_PENDING_PAYMENT' ? 'rgba(59,130,246,0.15)' : 'rgba(245,158,11,0.1)',
                       border: '1px solid ' + (trip.extensionRequest.status === 'PAID' ? 'rgba(16,185,129,0.4)' : trip.extensionRequest.status === 'APPROVED_PENDING_PAYMENT' ? 'rgba(59,130,246,0.5)' : 'rgba(245,158,11,0.3)'),
