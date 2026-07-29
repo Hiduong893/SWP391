@@ -99,13 +99,19 @@ const getCarCoords = (car, index) => {
       baseCoords = [21.0285, 105.8542];
     } else if (loc.toLowerCase().includes('đà nẵng') || loc.toLowerCase().includes('da nang')) {
       baseCoords = [16.0544, 108.2022];
+    } else if (loc.toLowerCase().includes('đà lạt') || loc.toLowerCase().includes('da lat')) {
+      baseCoords = [11.9404, 108.4583];
     } else {
       baseCoords = [10.7769, 106.7009];
     }
   }
 
-  const latOffset = (((index * 13) % 11) - 5) * 0.0035;
-  const lngOffset = (((index * 17) % 13) - 6) * 0.0035;
+  // Golden ratio spiral distribution for balanced, realistic metro-wide car dispersion (1.2km - 6km)
+  const angle = (index * 137.5) * (Math.PI / 180);
+  const radius = 0.012 + (index % 6) * 0.0075;
+
+  const latOffset = Math.sin(angle) * radius;
+  const lngOffset = Math.cos(angle) * radius * 1.15;
   return [baseCoords[0] + latOffset, baseCoords[1] + lngOffset];
 };
 
