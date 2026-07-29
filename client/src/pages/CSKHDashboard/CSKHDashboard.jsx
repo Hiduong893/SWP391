@@ -84,10 +84,12 @@ export const CSKHDashboard = ({ setCurrentTab }) => {
   /* ---- Computed counts for badges ---- */
   const pendingKycUsers = usersList.filter(u => u.licenseStatus === 'pending' || u.cccdStatus === 'pending' || u.cccdBackStatus === 'pending' || u.faceStatus === 'pending');
   const pendingKyc      = pendingKycUsers.length;
-  const pendingPayment  = bookingsList.filter(b =>
-    (b.paymentMethod === 'vietqr' && b.depositStatus === 'pending') ||
-    (b.depositStatus === 'paid' && (b.status === 'completed' || b.status === 'cancelled'))
-  ).length;
+  const pendingPayment  = bookingsList.filter(b => {
+    const pm = String(b.paymentMethod || '').toLowerCase();
+    const isQrOrBank = pm === 'vietqr' || pm === 'bank_transfer' || pm === 'qr' || pm.includes('qr') || pm.includes('bank');
+    return (isQrOrBank && b.depositStatus === 'pending') ||
+      (b.depositStatus === 'paid' && (b.status === 'completed' || b.status === 'cancelled'));
+  }).length;
   const openTickets      = ticketsList.filter(t => t.status === 'open').length;
   const activeIncidents  = incidentsList.filter(i => i.incident?.status === 'pending').length;
   const openDisputes     = disputesList.filter(d => d.status === 'open' || d.status === 'pending').length;
