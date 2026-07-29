@@ -1,48 +1,7 @@
 import React, { useState } from 'react';
 import { DollarSign, Car, Users, CreditCard, Filter, TrendingUp, ShieldCheck, ArrowUpRight, Sparkles, FileText, Activity, AlertTriangle, CheckCircle2, Database, HardDrive, MessageSquare, Clock, Award, ChevronRight, UserCheck, UserPlus, Calendar as CalendarIcon, X } from 'lucide-react';
 import { DatePickerVi } from '../../components/DatePickerVi';
-import { DateRangePicker, createStaticRanges } from 'react-date-range';
-import { subDays, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
-import 'react-date-range/dist/styles.css';
-import 'react-date-range/dist/theme/default.css';
 
-const viStaticRanges = createStaticRanges([
-  {
-    label: 'Hôm nay',
-    range: () => ({
-      startDate: new Date(),
-      endDate: new Date(),
-    }),
-  },
-  {
-    label: 'Hôm qua',
-    range: () => ({
-      startDate: subDays(new Date(), 1),
-      endDate: subDays(new Date(), 1),
-    }),
-  },
-  {
-    label: '7 ngày qua',
-    range: () => ({
-      startDate: subDays(new Date(), 6),
-      endDate: new Date(),
-    }),
-  },
-  {
-    label: '30 ngày qua',
-    range: () => ({
-      startDate: subDays(new Date(), 29),
-      endDate: new Date(),
-    }),
-  },
-  {
-    label: 'Tháng này',
-    range: () => ({
-      startDate: startOfMonth(new Date()),
-      endDate: endOfMonth(new Date()),
-    }),
-  }
-]);
 
 export const OverviewTab = ({
   stats = { totalUsers: 0, totalCars: 0, totalBookings: 0, totalRevenue: 0 },
