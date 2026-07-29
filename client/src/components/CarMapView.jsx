@@ -2,30 +2,70 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Navigation, Star, Car as CarIcon, ShieldCheck, Zap, Layers, MapPin, Search, Maximize2, Fuel, Compass } from 'lucide-react';
 
 const LOCATION_COORDINATES = {
+  // TP. Hồ Chí Minh
   'Quận 1': [10.7756, 106.7004],
   'Quận 2': [10.7872, 106.7496],
   'Quận 3': [10.7825, 106.6853],
   'Quận 4': [10.7578, 106.7012],
   'Quận 5': [10.7542, 106.6631],
+  'Quận 6': [10.7481, 106.6353],
   'Quận 7': [10.7332, 106.7196],
+  'Quận 8': [10.7242, 106.6286],
+  'Quận 9': [10.8428, 106.8286],
   'Quận 10': [10.7725, 106.6675],
+  'Quận 11': [10.7628, 106.6508],
+  'Quận 12': [10.8672, 106.6414],
   'Bình Thạnh': [10.8105, 106.7091],
   'Tân Bình': [10.8015, 106.6578],
   'Gò Vấp': [10.8383, 106.6660],
   'Thủ Đức': [10.8494, 106.7727],
   'Phú Nhuận': [10.7992, 106.6803],
+  'Tân Phú': [10.7901, 106.6280],
+  'Bình Tân': [10.7656, 106.6022],
+  'Hóc Môn': [10.8842, 106.5919],
+  'Củ Chi': [11.0067, 106.5139],
+  'Bình Chánh': [10.6875, 106.5947],
+  'Nhà Bè': [10.6558, 106.7328],
   'TP. Hồ Chí Minh': [10.7769, 106.7009],
   'Hồ Chí Minh': [10.7769, 106.7009],
+  'Sài Gòn': [10.7769, 106.7009],
+  'HCM': [10.7769, 106.7009],
+
+  // Hà Nội
   'Hà Nội': [21.0285, 105.8542],
+  'Ha Noi': [21.0285, 105.8542],
   'Hoàn Kiếm': [21.0285, 105.8542],
   'Ba Đình': [21.0341, 105.8194],
   'Cầu Giấy': [21.0362, 105.7906],
   'Thanh Xuân': [20.9934, 105.8078],
   'Đống Đa': [21.0125, 105.8281],
+  'Hai Bà Trưng': [21.0089, 105.8550],
+  'Tây Hồ': [21.0682, 105.8219],
+  'Long Biên': [21.0368, 105.8906],
+  'Nam Từ Liêm': [21.0162, 105.7647],
+  'Bắc Từ Liêm': [21.0706, 105.7533],
+  'Hà Đông': [20.9719, 105.7774],
+  'Hoàng Mai': [20.9772, 105.8450],
+
+  // Đà Nẵng
   'Đà Nẵng': [16.0544, 108.2022],
+  'Da Nang': [16.0544, 108.2022],
   'Hải Châu': [16.0602, 108.2208],
   'Sơn Trà': [16.0841, 108.2435],
-  'Ngũ Hành Sơn': [16.0270, 108.2505]
+  'Ngũ Hành Sơn': [16.0270, 108.2505],
+  'Thanh Khê': [16.0617, 108.1884],
+  'Liên Chiểu': [16.0961, 108.1472],
+  'Cẩm Lệ': [16.0125, 108.1969],
+
+  // Đà Lạt
+  'Đà Lạt': [11.9404, 108.4583],
+  'Da Lat': [11.9404, 108.4583],
+
+  // Bình Dương
+  'Bình Dương': [11.0006, 106.6558],
+  'Thủ Dầu Một': [11.0006, 106.6558],
+  'Dĩ An': [10.9069, 106.7725],
+  'Thuận An': [10.9306, 106.7028]
 };
 
 const TILE_LAYERS = {
@@ -45,12 +85,22 @@ const TILE_LAYERS = {
 
 const getCarCoords = (car, index) => {
   const loc = (car.location || '').trim();
-  let baseCoords = [10.7769, 106.7009];
+  let baseCoords = null;
 
   for (const [key, coords] of Object.entries(LOCATION_COORDINATES)) {
     if (loc.toLowerCase().includes(key.toLowerCase())) {
       baseCoords = coords;
       break;
+    }
+  }
+
+  if (!baseCoords) {
+    if (loc.toLowerCase().includes('hà nội') || loc.toLowerCase().includes('ha noi')) {
+      baseCoords = [21.0285, 105.8542];
+    } else if (loc.toLowerCase().includes('đà nẵng') || loc.toLowerCase().includes('da nang')) {
+      baseCoords = [16.0544, 108.2022];
+    } else {
+      baseCoords = [10.7769, 106.7009];
     }
   }
 
@@ -105,7 +155,7 @@ export const CarMapView = ({ cars = [], onRentCarClick, user }) => {
 
     if (selectedRegion === 'hanoi') return loc.includes('hà nội') || loc.includes('ha noi');
     if (selectedRegion === 'danang') return loc.includes('đà nẵng') || loc.includes('da nang');
-    if (selectedRegion === 'hcm') return loc.includes('hồ chí minh') || loc.includes('hcm') || loc.includes('quận') || loc.includes('thủ đức');
+    if (selectedRegion === 'hcm') return loc.includes('hồ chí minh') || loc.includes('hcm') || loc.includes('quận') || loc.includes('thủ đức') || loc.includes('sài gòn');
     return true;
   });
 
@@ -191,10 +241,16 @@ export const CarMapView = ({ cars = [], onRentCarClick, user }) => {
       markersRef.current[car.id] = marker;
     });
 
-    if (filteredCars.length > 0 && selectedCar) {
-      const idx = filteredCars.findIndex(c => c.id === selectedCar.id);
-      if (idx >= 0) {
-        const targetCoords = getCarCoords(selectedCar, idx);
+    if (filteredCars.length > 0) {
+      let currentCar = selectedCar;
+      if (!selectedCar || !filteredCars.some(c => c.id === selectedCar.id)) {
+        currentCar = filteredCars[0];
+        setSelectedCar(currentCar);
+      }
+
+      if (currentCar) {
+        const idx = filteredCars.findIndex(c => c.id === currentCar.id);
+        const targetCoords = getCarCoords(currentCar, idx >= 0 ? idx : 0);
         map.flyTo(targetCoords, 13, { duration: 0.8 });
       }
     }
@@ -202,12 +258,30 @@ export const CarMapView = ({ cars = [], onRentCarClick, user }) => {
 
   const handleRegionChange = (region) => {
     setSelectedRegion(region);
-    if (!mapInstanceRef.current) return;
 
-    const map = mapInstanceRef.current;
-    if (region === 'hanoi') map.flyTo([21.0285, 105.8542], 12, { duration: 1 });
-    else if (region === 'danang') map.flyTo([16.0544, 108.2022], 12, { duration: 1 });
-    else if (region === 'hcm' || region === 'all') map.flyTo([10.7769, 106.7009], 12, { duration: 1 });
+    const newFiltered = cars.filter(c => {
+      const loc = (c.location || '').toLowerCase();
+      if (region === 'hanoi') return loc.includes('hà nội') || loc.includes('ha noi');
+      if (region === 'danang') return loc.includes('đà nẵng') || loc.includes('da nang');
+      if (region === 'hcm') return loc.includes('hồ chí minh') || loc.includes('hcm') || loc.includes('quận') || loc.includes('thủ đức') || loc.includes('sài gòn');
+      return true;
+    });
+
+    const firstCar = newFiltered[0] || null;
+    setSelectedCar(firstCar);
+
+    if (mapInstanceRef.current) {
+      const map = mapInstanceRef.current;
+      if (firstCar) {
+        const idx = newFiltered.findIndex(c => c.id === firstCar.id);
+        const coords = getCarCoords(firstCar, idx >= 0 ? idx : 0);
+        map.flyTo(coords, 13, { duration: 1 });
+      } else {
+        if (region === 'hanoi') map.flyTo([21.0285, 105.8542], 12, { duration: 1 });
+        else if (region === 'danang') map.flyTo([16.0544, 108.2022], 12, { duration: 1 });
+        else map.flyTo([10.7769, 106.7009], 12, { duration: 1 });
+      }
+    }
   };
 
   return (
