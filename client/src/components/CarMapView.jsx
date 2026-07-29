@@ -202,7 +202,7 @@ export const CarMapView = ({ cars = [], onRentCarClick, user }) => {
     }).addTo(map);
   }, [mapStyle]);
 
-  // 4. Render Markers
+  // 4. Render Markers (ONCE per filteredCars change)
   useEffect(() => {
     if (!leafletLoaded || !mapInstanceRef.current) return;
 
@@ -219,7 +219,7 @@ export const CarMapView = ({ cars = [], onRentCarClick, user }) => {
       const priceK = Math.round((car.pricePerDay || 0) / 1000) + 'K';
 
       const customHtml = `
-        <div class="leaflet-custom-marker ${isSelected ? 'marker-selected' : ''}">
+        <div id="marker-car-${car.id}" class="leaflet-custom-marker ${isSelected ? 'marker-selected' : ''}">
           <div class="marker-pill">
             <span class="marker-icon">🚗</span>
             <span class="marker-car-title">${carName}</span>
@@ -241,7 +241,6 @@ export const CarMapView = ({ cars = [], onRentCarClick, user }) => {
 
       marker.on('click', () => {
         setSelectedCar(car);
-        map.flyTo(coords, 14, { duration: 0.8 });
       });
 
       markersRef.current[car.id] = marker;
@@ -253,6 +252,28 @@ export const CarMapView = ({ cars = [], onRentCarClick, user }) => {
       }
     }
   }, [leafletLoaded, filteredCars]);
+
+  // 5. Highlight & Fly To Selected Marker
+  useEffect(() => {
+    if (!selectedCar) return;
+
+    filteredCars.forEach(car => {
+      const el = document.getElementById(`marker-car-${car.id}`);
+      if (el) {
+        if (car.id === selectedCar.id) {
+          el.classList.add('marker-selected');
+        } else {
+          el.classList.remove('marker-selected');
+        }
+      }
+    });
+
+    const activeMarker = markersRef.current[selectedCar.id];
+    if (activeMarker && mapInstanceRef.current) {
+      const latLng = activeMarker.getLatLng();
+      mapInstanceRef.current.flyTo([latLng.lat, latLng.lng], 14, { duration: 0.8 });
+    }
+  }, [selectedCar, filteredCars]);
 
   const handleRegionChange = (region) => {
     setSelectedRegion(region);
@@ -712,10 +733,6 @@ export const CarMapView = ({ cars = [], onRentCarClick, user }) => {
                   key={car.id}
                   onClick={() => {
                     setSelectedCar(car);
-                    if (mapInstanceRef.current) {
-                      const coords = getCarCoords(car, idx);
-                      mapInstanceRef.current.flyTo(coords, 14, { duration: 0.8 });
-                    }
                   }}
                   style={{
                     display: 'flex',
