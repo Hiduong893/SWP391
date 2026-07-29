@@ -84,29 +84,27 @@ const TILE_LAYERS = {
 };
 
 const getCarCoords = (car, index) => {
-  const loc = (car.location || '').trim();
-  let baseCoords = null;
+  const loc = (car.location || '').trim().toLowerCase();
 
+  // 1. Strict City Base Coordinates
+  const isHanoi = loc.includes('hà nội') || loc.includes('ha noi');
+  const isDanang = loc.includes('đà nẵng') || loc.includes('da nang');
+  const isDalat = loc.includes('đà lạt') || loc.includes('da lat');
+
+  let baseCoords = [10.7769, 106.7009]; // Default HCM
+  if (isHanoi) baseCoords = [21.0285, 105.8542];
+  else if (isDanang) baseCoords = [16.0544, 108.2022];
+  else if (isDalat) baseCoords = [11.9404, 108.4583];
+
+  // 2. Specific District Match Override
   for (const [key, coords] of Object.entries(LOCATION_COORDINATES)) {
-    if (loc.toLowerCase().includes(key.toLowerCase())) {
+    if (loc.includes(key.toLowerCase())) {
       baseCoords = coords;
       break;
     }
   }
 
-  if (!baseCoords) {
-    if (loc.toLowerCase().includes('hà nội') || loc.toLowerCase().includes('ha noi')) {
-      baseCoords = [21.0285, 105.8542];
-    } else if (loc.toLowerCase().includes('đà nẵng') || loc.toLowerCase().includes('da nang')) {
-      baseCoords = [16.0544, 108.2022];
-    } else if (loc.toLowerCase().includes('đà lạt') || loc.toLowerCase().includes('da lat')) {
-      baseCoords = [11.9404, 108.4583];
-    } else {
-      baseCoords = [10.7769, 106.7009];
-    }
-  }
-
-  // Gentle, balanced distribution around district center (300m - 1.5km) so pins are always in view
+  // 3. Gentle, balanced distribution around district center (300m - 1.5km)
   const angle = (index * 137.5) * (Math.PI / 180);
   const radius = 0.003 + (index % 5) * 0.0025;
 
