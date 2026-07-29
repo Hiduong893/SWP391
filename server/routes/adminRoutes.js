@@ -268,6 +268,65 @@ router.put('/api/admin/disputes/:id/resolve', auth, cskhOrAdminAuth, async (req,
   }
 });
 
+// 5b. Resolve Traffic Violation Dispute (Phạt nguội)
+router.put('/api/admin/disputes/:id/resolve-violation', auth, cskhOrAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params; // disputeId
+    const { resolution, resolutionDetails } = req.body; // resolution: 'confirmed' or 'rejected'
+
+    if (!resolution || (resolution !== 'confirmed' && resolution !== 'rejected')) {
+      return res.status(400).json({ message: 'Vui lòng chọn hướng giải quyết: "confirmed" (xác nhận) hoặc "rejected" (từ chối).' });
+    }
+
+    const dispute = await db.disputes.findOne({ id });
+    if (!dispute) return res.status(404).json({ message: 'Không tìm thấy báo cáo phạt nguội này.' });
+
+    if (dispute.type !== 'traffic_violation') {
+      return res.status(400).json({ message: 'Đây không phải là một báo cáo phạt nguội.' });
+    }
+
+    let messageForRenter = '';
+    let messageForOwner = '';
+
+    if (resolution === 'confirmed') {
+      // Update dispute status
+      await db.disputes.update(id, {
+        status: 'resolved',
+        resolutionDetails: `CSKH xác nhận phạt nguội. Lý do: ${resolutionDetails || 'Chủ xe cung cấp bằng chứng hợp lệ.'}`
+      });
+
+      // Add surcharge to the contract
+      const contract = await contractModel.findByBookingId(dispute.bookingId);
+      if (contract) {
+        await contractModel.addSurcharge(dispute.bookingId, dispute.amount, `Phạt nguội: ${dispute.description}`, req.user.id);
+      }
+
+      // Prepare notifications
+      messageForRenter = `CSKH đã xác nhận một khoản phạt nguội trị giá ${dispute.amount.toLocaleString('vi-VN')}đ cho chuyến đi #${dispute.bookingId} của bạn. Khoản phí này sẽ được khấu trừ theo quy định trong hợp đồng. Chi tiết: ${resolutionDetails}`;
+      messageForOwner = `CSKH đã xác nhận báo cáo phạt nguội của bạn cho chuyến đi #${dispute.bookingId}. Khoản tiền phạt sẽ được xử lý theo quy trình của ViVuCar.`;
+
+    } else { // resolution === 'rejected'
+      // Update dispute status
+      await db.disputes.update(id, {
+        status: 'rejected',
+        resolutionDetails: `CSKH từ chối phạt nguội. Lý do: ${resolutionDetails || 'Bằng chứng không đủ thuyết phục.'}`
+      });
+
+      // Prepare notifications
+      messageForRenter = `Yêu cầu phạt nguội cho chuyến đi #${dispute.bookingId} của bạn đã được CSKH xem xét và từ chối. Bạn không cần thanh toán khoản này.`;
+      messageForOwner = `Báo cáo phạt nguội của bạn cho chuyến đi #${dispute.bookingId} đã bị từ chối. Lý do: ${resolutionDetails || 'Bằng chứng không đủ thuyết phục.'}`;
+    }
+
+    // Send notifications to renter and owner
+    await notificationService.createNotification(dispute.renterId, 'Cập nhật về khoản phạt nguội', messageForRenter, 'DisputeUpdate', id, 'Dispute');
+    await notificationService.createNotification(dispute.ownerId, 'Cập nhật về báo cáo phạt nguội', messageForOwner, 'DisputeUpdate', id, 'Dispute');
+
+    res.json({ message: `Đã giải quyết báo cáo phạt nguội thành công (Trạng thái: ${resolution}).` });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi khi giải quyết báo cáo phạt nguội.' });
+  }
+});
+
 // 6. Deposit Refund Trigger
 router.put('/api/admin/bookings/:id/refund-deposit', auth, cskhOrAdminAuth, async (req, res) => {
   try {

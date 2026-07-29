@@ -112,6 +112,10 @@ VALUES
 -- BMW
 (@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'BMW'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Sedan'), N'320i Sport Line', '30K-888.88', 2024, N'Xanh Dương', 5, 2000000.00, 20000000.00, N'Hà Nội', 'Available', 1, N'Tự động', N'Xăng'),
 (@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'BMW'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'SUV'), N'X5 xDrive40i', '51L-222.22', 2023, N'Đen', 7, 3500000.00, 20000000.00, N'TP. Hồ Chí Minh', 'Available', 1, N'Tự động', N'Xăng');
+((SELECT brand_id FROM Brand WHERE brand_name = N'BMW'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'SUV'), N'X5 xDrive40i', '51L-222.22', 2023, N'Đen', 7, 3500000.00, 20000000.00, N'TP. Hồ Chí Minh', 'Available', 1, N'Tự động', N'Xăng'),
+
+-- XE TEST PHẠT NGUỘI (Owner ID = 5)
+(5, (SELECT brand_id FROM Brand WHERE brand_name = N'Kia'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Crossover'), N'Seltos 1.4 Turbo Premium', '99A-987.65', 2023, N'Vàng Cát', 5, 900000.00, 10000000.00, N'Hà Nội', 'Available', 1, N'Tự động', N'Xăng');
 
 
 -- 4. Chèn đường dẫn ảnh tương ứng cho các xe vừa khởi tạo
@@ -173,5 +177,9 @@ VALUES
 -- BMW
 ((SELECT vehicle_id FROM Vehicle WHERE license_plate = '30K-888.88'), 'https://autopro8.mediacdn.vn/134505113543774208/2024/7/31/bmw-320i-2024-sport-line-13-17224283764591872066808.jpg', 1, 0),
 ((SELECT vehicle_id FROM Vehicle WHERE license_plate = '51L-222.22'), 'https://drive.gianhangvn.com/image/o4ewvc6-2537248j32655.jpg', 1, 0);
+((SELECT vehicle_id FROM Vehicle WHERE license_plate = '51L-222.22'), 'https://drive.gianhangvn.com/image/o4ewvc6-2537248j32655.jpg', 1, 0),
+
+-- ẢNH XE TEST PHẠT NGUỘI
+((SELECT vehicle_id FROM Vehicle WHERE license_plate = '99A-987.65'), 'https://cdn.xetot.com/xetot/news/2021/04/23/giam-gia-kia-seltos-1-1619171731.jpg', 1, 0);
 
 PRINT 'Vehicles database seed successfully!';
