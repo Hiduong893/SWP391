@@ -5,9 +5,6 @@
 -- - Đã có sẵn các user: owner_id = 1, và các renter_id = 2, 3, 4.
 -- ==============================================================================
 
-USE CarRentalPlatform;
-GO
-
 BEGIN TRANSACTION;
 
 BEGIN TRY
