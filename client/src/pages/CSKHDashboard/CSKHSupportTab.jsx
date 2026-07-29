@@ -173,7 +173,19 @@ export const CSKHSupportTab = ({
                       {selectedTicket.userName} · {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString('vi-VN') : ''}
                     </div>
                   </div>
-                  {selectedTicket.reply && (
+
+                  {/* Render all multi-turn replies from CSKH / User */}
+                  {Array.isArray(selectedTicket.replies) && selectedTicket.replies.map((r, idx) => (
+                    <div key={idx} className={`cskh-msg ${r.senderRole === 'cskh' || r.senderRole === 'admin' || r.senderRole === 'staff' || r.senderId !== selectedTicket.userId ? 'cskh-msg-user' : ''}`}>
+                      <div className="cskh-msg-bubble">{r.message}</div>
+                      <div className="cskh-msg-time">
+                        {r.senderName || 'CSKH ViVuCar'} · {r.sentAt ? new Date(r.sentAt).toLocaleString('vi-VN') : 'Vừa xong'}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Fallback for single legacy reply string */}
+                  {(!selectedTicket.replies || selectedTicket.replies.length === 0) && selectedTicket.reply && (
                     <div className="cskh-msg cskh-msg-user">
                       <div className="cskh-msg-bubble">{selectedTicket.reply}</div>
                       <div className="cskh-msg-time">CSKH đã phản hồi</div>

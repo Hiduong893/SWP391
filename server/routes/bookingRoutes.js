@@ -157,6 +157,11 @@ router.put('/api/bookings/:id/handover', auth, async (req, res) => {
     const booking = await db.bookings.findOne({ id });
     if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
 
+    // Strict validation: Only allow pickup handover if owner/admin has approved (confirmed status)
+    if (type === 'pickup' && booking.status !== 'confirmed') {
+      return res.status(400).json({ message: 'Chủ xe chưa phê duyệt đơn đặt xe này. Không thể thực hiện bàn giao nhận xe.' });
+    }
+
     const updatedHandover = {
       ...(booking.handoverDocs || { pickup: null, return: null })
     };

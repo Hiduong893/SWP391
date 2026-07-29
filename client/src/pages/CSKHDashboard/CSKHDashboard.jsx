@@ -120,7 +120,7 @@ export const CSKHDashboard = ({ setCurrentTab }) => {
   };
 
   const handleConfirmVietqr = async (bookingId) => {
-    if (!window.confirm('Bạn xác nhận đã nhận được 500.000đ chuyển khoản VietQR cho booking này?')) return;
+    if (!window.confirm('Bạn xác nhận đã nhận được tiền cọc giữ chỗ (30% tổng đơn) chuyển khoản VietQR cho booking này?')) return;
     setActionLoading(true);
     try {
       const data = await api.admin.confirmVietqr(bookingId);
@@ -132,7 +132,7 @@ export const CSKHDashboard = ({ setCurrentTab }) => {
 
   const handleRefundDeposit = async (bookingId, refund) => {
     const msg = refund
-      ? 'Xác nhận HOÀN LẠI 5.000.000đ tiền cọc vào ví khách?'
+      ? 'Xác nhận HOÀN LẠI cọc giữ chỗ (30% tổng đơn) vào ví cho khách hàng?'
       : 'Xác nhận GIỮ LẠI tiền cọc (khách vi phạm điều khoản)?';
     if (!window.confirm(msg)) return;
     setActionLoading(true);
@@ -280,15 +280,6 @@ export const CSKHDashboard = ({ setCurrentTab }) => {
             );
           })}
 
-          <div className="cskh-nav-section" style={{ marginTop: 12 }}>Điều hướng</div>
-          <button className="cskh-nav-btn" onClick={() => setCurrentTab && setCurrentTab('rent-car')}>
-            <Car size={17} />
-            <span>Trang chủ</span>
-          </button>
-          <button className="cskh-nav-btn" onClick={() => setCurrentTab && setCurrentTab('profile')}>
-            <Bell size={17} />
-            <span>Hồ sơ cá nhân</span>
-          </button>
         </nav>
 
         {/* Footer */}

@@ -146,13 +146,21 @@ router.put('/api/owner/bookings/:id/approve', auth, async (req, res) => {
     const newStatus = approved ? 'confirmed' : 'cancelled';
     await db.bookings.update(id, { status: newStatus });
 
-    // Nếu phê duyệt → tự động ký hợp đồng phía chủ xe
+    // Nếu phê duyệt → tự động ký hợp đồng phía chủ xe (đảm bảo phía người thuê đã ký trước/đồng thời)
     if (approved) {
       try {
         const ownerIp = req.ip || req.connection?.remoteAddress || '127.0.0.1';
+        
+        // 1. Đảm bảo phía Người thuê đã được ký (do Renter đã ký tay & tích đồng ý ở BookingModal)
+        const existingContract = await contractModel.findByBookingId(id);
+        if (existingContract && !existingContract.renterSignedAt) {
+          await contractModel.renterSign(id, booking.userId, '127.0.0.1');
+        }
+
+        // 2. Ký hợp đồng phía Chủ xe
         await contractModel.ownerSign(id, req.user.id, ownerIp);
       } catch (signErr) {
-        console.warn('Auto owner-sign warning:', signErr.message);
+        console.warn('Auto contract sign warning:', signErr.message);
       }
     }
 

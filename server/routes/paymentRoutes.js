@@ -140,8 +140,7 @@ router.get('/api/payments/vnpay/return', async (req, res) => {
       if (responseCode === '00' && transactionStatus === '00') {
         if (booking && booking.depositStatus !== 'paid') {
           const car = await db.cars.findOne({ id: booking.carId });
-          const isOwnerCar = car && car.ownerId !== null;
-          const targetBookingStatus = isOwnerCar ? 'Pending' : 'Approved';
+          const targetBookingStatus = 'Pending';
 
           await db.payments.confirmVnpayPayment({
             bookingId,
@@ -254,8 +253,7 @@ router.get('/api/payments/vnpay/ipn', async (req, res) => {
     // 5. Update Status based on Transaction Results (00 & 00 represents Success)
     if (responseCode === '00' && transactionStatus === '00') {
       const car = await db.cars.findOne({ id: booking.carId });
-      const isOwnerCar = car && car.ownerId !== null;
-      const targetBookingStatus = isOwnerCar ? 'Pending' : 'Approved';
+      const targetBookingStatus = 'Pending';
 
       await db.payments.confirmVnpayPayment({
         bookingId,

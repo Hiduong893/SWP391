@@ -20,6 +20,7 @@ import { OwnerDashboard } from './pages/OwnerDashboard/OwnerDashboard';
 import { BookingModal } from './components/BookingModal';
 import { SimulatedInbox } from './components/SimulatedInbox';
 import { ChatbotWidget } from './components/ChatbotWidget';
+import { CSKHSupportWidget } from './components/CSKHSupportWidget';
 import { Blog } from './pages/Blog/Blog';
 import { BlogDetail } from './pages/Blog/BlogDetail';
 import { Recruitment } from './pages/Recruitment/Recruitment';
@@ -432,6 +433,12 @@ function App() {
 
       {/* --- AI SUPPORT CHATBOT WIDGET --- */}
       <ChatbotWidget user={user} setCurrentTab={setCurrentTab} />
+
+      {/* --- LIVE CSKH HUMAN SUPPORT WIDGET (24/7 STAFF CHAT) --- */}
+      {/* Chỉ hiển thị cho Renter — ẩn với tài khoản CSKH/Admin/Owner/Staff */}
+      {(!user || !['cskh', 'admin', 'owner', 'staff'].includes(user.role)) && (
+        <CSKHSupportWidget user={user} setCurrentTab={setCurrentTab} />
+      )}
     </>
   );
 }

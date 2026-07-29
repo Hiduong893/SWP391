@@ -103,7 +103,7 @@ export const CSKHPaymentTab = ({
                           onClick={() => handleConfirmVietqr(b.id)}
                           disabled={actionLoading}
                         >
-                          <CheckCircle size={13} /> Đã nhận 500k
+                          <CheckCircle size={13} /> Duyệt cọc 30%
                         </button>
                       </div>
                     </td>
@@ -120,7 +120,7 @@ export const CSKHPaymentTab = ({
         <div className="cskh-card-header">
           <h4 className="cskh-card-title">
             <CheckCircle size={15} color="#10b981" />
-            Chuyến đi hoàn tất — Cần quyết định cọc bảo đảm (5.000.000đ)
+            Chuyến đi hoàn tất — Cần quyết định cọc giữ chỗ (30% tổng đơn)
           </h4>
           {needsRefund.length > 0 && (
             <span className="cskh-badge cskh-badge-green">{needsRefund.length} chờ xử lý</span>
@@ -141,7 +141,7 @@ export const CSKHPaymentTab = ({
                   <th>Khách hàng</th>
                   <th>Xe thuê</th>
                   <th>Tổng tiền thuê</th>
-                  <th>Cọc bảo đảm</th>
+                  <th>Cọc giữ chỗ (30%)</th>
                   <th>Trạng thái chuyến</th>
                   <th style={{ textAlign: 'center' }}>Quyết định cọc</th>
                 </tr>
@@ -157,7 +157,9 @@ export const CSKHPaymentTab = ({
                     </td>
                     <td style={{ fontWeight: 600 }}>{b.carName}</td>
                     <td style={{ color: '#818cf8', fontWeight: 600 }}>{formatCurrency(b.totalPrice)}</td>
-                    <td style={{ color: '#f59e0b', fontWeight: 700 }}>5.000.000đ</td>
+                    <td style={{ color: '#f59e0b', fontWeight: 700 }}>
+                      {formatCurrency(b.depositAmount && b.depositAmount > 0 ? b.depositAmount : Math.round(b.totalPrice * 0.3))}
+                    </td>
                     <td>
                       <span className={`cskh-badge ${b.status === 'completed' ? 'cskh-badge-green' : 'cskh-badge-red'}`}>
                         {b.status === 'completed' ? 'Hoàn tất' : 'Đã hủy'}

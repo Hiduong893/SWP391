@@ -130,7 +130,8 @@ export const bookingModel = {
       `);
     const isOwnerCar = carRes.recordset.length > 0 && carRes.recordset[0].role_name === 'CarOwner';
 
-    const status = isOwnerCar ? 'Pending' : 'Approved';
+    // Tất cả các đơn thuê xe mới tạo đều bắt đầu ở trạng thái Pending (Chờ chủ xe / Admin duyệt)
+    const status = 'Pending';
     const rentalPriceForOwner = parseInt(bookingData.rentalPriceForOwner || bookingData.totalPrice) || 0;
     const totalPrice = parseInt(bookingData.totalPrice) || 0;
     const deposit = 0;

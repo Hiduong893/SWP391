@@ -150,6 +150,7 @@ router.post('/api/admin/support/tickets/:id/reply', auth, cskhOrAdminAuth, async
 
     await db.support_tickets.update(id, {
       replies,
+      reply: replyText,
       status: 'replied'
     });
 
