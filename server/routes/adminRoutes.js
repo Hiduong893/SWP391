@@ -335,15 +335,27 @@ router.put('/api/admin/bookings/:id/confirm-vietqr', auth, cskhOrAdminAuth, asyn
       return res.status(400).json({ message: 'Đơn đặt xe này đã được xác nhận thanh toán rồi.' });
     }
 
-    // Cập nhật trạng thái thanh toán cọc và booking
+    // Cập nhật trạng thái thanh toán cọc và giữ booking ở dạng Pending chờ Chủ xe duyệt
     await db.bookings.update(id, {
       depositStatus: 'paid',
       payment_status: 'paid',
-      status: 'Approved',
+      status: 'Pending',
     });
 
+    const car = await db.cars.findOne({ id: booking.carId });
+    if (car && car.ownerId) {
+      await notificationService.createNotification(
+        car.ownerId,
+        'Yêu cầu đặt xe mới (Đã cọc VietQR)',
+        `CSKH đã xác nhận nhận khoản cọc VietQR cho đơn thuê xe ${car.brand} ${car.model} (#${id}). Vui lòng phê duyệt chuyến đi.`,
+        'BookingUpdate',
+        id,
+        'Booking'
+      );
+    }
+
     res.json({
-      message: `Đã xác nhận nhận được phí giữ chỗ VietQR cho đơn đặt xe #${id}. Booking đã được duyệt!`,
+      message: `Đã xác nhận nhận được phí giữ chỗ VietQR cho đơn đặt xe #${id}. Đã chuyển tới Chủ xe phê duyệt!`,
     });
   } catch (error) {
     console.error('Lỗi xác nhận VietQR:', error);

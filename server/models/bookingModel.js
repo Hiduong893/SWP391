@@ -194,7 +194,9 @@ export const bookingModel = {
     }
 
     // Create Payment row (representing 30% reservation fee online payment)
-    const initialStatus = bookingData.paymentMethod === 'vnpay' ? 'Pending' : 'Success';
+    const initialStatus = (bookingData.paymentMethod === 'vietqr' || bookingData.paymentMethod === 'vnpay' || bookingData.paymentMethod === 'bank_transfer')
+      ? 'Pending'
+      : 'Success';
     const hasPaidAt = bookingData.paymentMethod === 'vnpay' ? null : new Date();
 
     const paymentAmount = reservationFee30Pct > 0 ? reservationFee30Pct : Math.round(totalPrice * 0.3);

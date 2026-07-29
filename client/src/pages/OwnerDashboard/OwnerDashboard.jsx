@@ -174,7 +174,7 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
-  const pendingBookings = ownerBookings.filter(b => b.status === 'pending_owner' || b.status === 'pending');
+  const pendingBookings = ownerBookings.filter(b => (b.status === 'pending_owner' || b.status === 'pending') && b.depositStatus === 'paid');
 
   return (
     <div className="owner-dashboard-page" style={{ width: '100%', maxWidth: '1000px', margin: '0 auto', padding: '20px 0' }}>
