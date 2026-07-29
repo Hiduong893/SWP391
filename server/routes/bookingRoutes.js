@@ -217,7 +217,7 @@ router.put('/api/bookings/:id/handover', auth, async (req, res) => {
             .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
             
           // Cộng tiền vào ví Admin (Lợi nhuận sàn 10%)
-          const adminRes = await pool.request().query("SELECT TOP 1 u.user_id FROM Users u JOIN UserRole ur ON u.user_id = ur.user_id JOIN Role r ON ur.role_id = r.role_id WHERE r.role_name = 'Admin'");
+          const adminRes = await pool.request().query("SELECT TOP 1 u.user_id FROM [User] u JOIN UserRole ur ON u.user_id = ur.user_id JOIN Role r ON ur.role_id = r.role_id WHERE r.role_name = 'Admin'");
           if (adminRes.recordset.length > 0) {
             const adminId = adminRes.recordset[0].user_id;
             await pool.request()
