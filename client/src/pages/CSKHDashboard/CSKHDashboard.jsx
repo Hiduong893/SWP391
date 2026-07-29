@@ -86,8 +86,8 @@ export const CSKHDashboard = ({ setCurrentTab }) => {
   const pendingKyc      = pendingKycUsers.length;
   const pendingPayment  = bookingsList.filter(b => {
     const pm = String(b.paymentMethod || '').toLowerCase();
-    const isQrOrBank = pm === 'vietqr' || pm === 'bank_transfer' || pm === 'qr' || pm.includes('qr') || pm.includes('bank');
-    return (isQrOrBank && b.depositStatus === 'pending') ||
+    const isQr = pm === 'vietqr' || pm === 'qr' || pm === 'bank_transfer';
+    return (isQr && b.depositStatus === 'pending') ||
       (b.depositStatus === 'paid' && (b.status === 'completed' || b.status === 'cancelled'));
   }).length;
   const openTickets      = ticketsList.filter(t => t.status === 'open').length;

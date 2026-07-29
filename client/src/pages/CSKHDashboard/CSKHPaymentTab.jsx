@@ -35,14 +35,14 @@ export const CSKHPaymentTab = ({
   handleConfirmVietqr,
   actionLoading,
 }) => {
-  const isQrOrBank = (m) => {
+  const isQr = (m) => {
     const pm = String(m || '').toLowerCase();
-    return pm === 'vietqr' || pm === 'bank_transfer' || pm === 'qr' || pm.includes('qr') || pm.includes('bank');
+    return pm === 'vietqr' || pm === 'qr' || pm === 'bank_transfer';
   };
 
-  const pendingVietqr = filteredBookings.filter(b => isQrOrBank(b.paymentMethod) && b.depositStatus === 'pending');
+  const pendingVietqr = filteredBookings.filter(b => isQr(b.paymentMethod) && b.depositStatus === 'pending');
   const needsRefund   = filteredBookings.filter(b => b.depositStatus === 'paid' && (b.status === 'completed' || b.status === 'cancelled'));
-  const others        = filteredBookings.filter(b => !(isQrOrBank(b.paymentMethod) && b.depositStatus === 'pending') && !(b.depositStatus === 'paid' && (b.status === 'completed' || b.status === 'cancelled')));
+  const others        = filteredBookings.filter(b => !(isQr(b.paymentMethod) && b.depositStatus === 'pending') && !(b.depositStatus === 'paid' && (b.status === 'completed' || b.status === 'cancelled')));
 
   return (
     <div className="cskh-fade">

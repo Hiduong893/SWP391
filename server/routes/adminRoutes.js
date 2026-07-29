@@ -320,8 +320,9 @@ router.put('/api/admin/bookings/:id/confirm-vietqr', auth, cskhOrAdminAuth, asyn
     const booking = await db.bookings.findOne({ id });
     if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
 
-    if (booking.paymentMethod !== 'vietqr') {
-      return res.status(400).json({ message: 'Đơn đặt xe này không sử dụng phương thức VietQR.' });
+    const pm = String(booking.paymentMethod || '').toLowerCase();
+    if (pm !== 'vietqr' && pm !== 'bank_transfer' && pm !== 'qr') {
+      return res.status(400).json({ message: 'Đơn đặt xe này không sử dụng phương thức Chuyển khoản VietQR.' });
     }
     if (booking.depositStatus === 'paid') {
       return res.status(400).json({ message: 'Đơn đặt xe này đã được xác nhận thanh toán rồi.' });
