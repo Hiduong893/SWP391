@@ -1,10 +1,10 @@
 import { sql, getPool } from '../config/db.js';
 
 export const mapCarRow = (row) => {
-  const statusMap = { 
-    'Available': 'available', 
-    'Rented': 'rented', 
-    'Pending': 'pending_moderation', 
+  const statusMap = {
+    'Available': 'available',
+    'Rented': 'rented',
+    'Pending': 'pending_moderation',
     'Rejected': 'rejected',
     'Inactive': 'inactive',
     'Maintenance': 'maintenance'
@@ -235,10 +235,10 @@ export const carModel = {
       request.input('fuel', sql.NVarChar, updateData.fuel);
     }
     if (updateData.status !== undefined) {
-      const dbStatusMap = { 
-        'available': 'Available', 
-        'rented': 'Rented', 
-        'pending_moderation': 'Pending', 
+      const dbStatusMap = {
+        'available': 'Available',
+        'rented': 'Rented',
+        'pending_moderation': 'Pending',
         'rejected': 'Rejected',
         'inactive': 'Inactive',
         'maintenance': 'Maintenance'
@@ -282,12 +282,12 @@ export const carModel = {
   delete: async (id) => {
     const p = await getPool();
     const vehicleId = parseInt(id);
-    
+
     // Check if bookings exist
     const bookingRes = await p.request().input('vehicleId', sql.Int, vehicleId)
       .query('SELECT COUNT(*) as cnt FROM Booking WHERE vehicle_id = @vehicleId');
     const hasBookings = bookingRes.recordset[0].cnt > 0;
-    
+
     if (hasBookings) {
       // Soft delete by setting is_active = 0
       await p.request().input('vehicleId', sql.Int, vehicleId)
