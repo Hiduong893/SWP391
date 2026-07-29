@@ -1,9 +1,10 @@
 -- ==============================================================================
--- SCRIPT TẠO GIAO DỊCH VÀ ĐÁNH GIÁ MẪU CHO CÁC XE CÒN LẠI (ID 3 ĐẾN 33)
--- Giả định:
--- - Đã có sẵn các xe từ ID 1 đến 33.
--- - Đã có sẵn các user: owner_id = 1, và các renter_id = 2, 3, 4.
+-- SCRIPT TẠO GIAO DỊCH VÀ ĐÁNH GIÁ MẪU CHO CÁC XE TRONG DATABASE
+-- (Bản cập nhật sử dụng Cursor để tương thích với các ID xe thay đổi)
 -- ==============================================================================
+
+USE CarRentalPlatform;
+GO
 
 BEGIN TRANSACTION;
 
@@ -29,13 +30,15 @@ BEGIN TRY
     END
 
     -- Khai báo các biến cần thiết
-    DECLARE @current_vehicle_id INT = 3;
-    DECLARE @owner_id INT = 1; -- ID của chủ xe (owner@vivucar.vn)
+    DECLARE @current_vehicle_id INT;
+    DECLARE @owner_id INT = 1; -- ID của chủ xe
     DECLARE @renter_id INT;
     DECLARE @new_booking_id INT;
 
     DECLARE @daily_price DECIMAL(18,2);
     DECLARE @deposit_amount DECIMAL(18,2);
+    DECLARE @category_id INT;
+    
     DECLARE @rental_price DECIMAL(18,2);
     DECLARE @total_amount DECIMAL(18,2);
 
@@ -47,17 +50,23 @@ BEGIN TRY
     DECLARE @rating_owner INT;
     DECLARE @comment NVARCHAR(2000);
 
-    -- Vòng lặp để xử lý từ xe ID 3 đến 33
-    WHILE @current_vehicle_id <= 33
+    DECLARE @suv_cat INT = (SELECT category_id FROM VehicleCategory WHERE category_name = 'SUV');
+    DECLARE @sedan_cat INT = (SELECT category_id FROM VehicleCategory WHERE category_name = 'Sedan');
+    DECLARE @mpv_cat INT = (SELECT category_id FROM VehicleCategory WHERE category_name = 'MPV');
+
+    -- Sử dụng Cursor để lặp qua tất cả các xe (bỏ qua 2 xe đầu tiên để test trạng thái không có lịch)
+    DECLARE vehicle_cursor CURSOR FOR 
+    SELECT vehicle_id, daily_price, deposit_amount, category_id
+    FROM Vehicle
+    ORDER BY vehicle_id
+    OFFSET 2 ROWS;
+
+    OPEN vehicle_cursor;
+    FETCH NEXT FROM vehicle_cursor INTO @current_vehicle_id, @daily_price, @deposit_amount, @category_id;
+
+    WHILE @@FETCH_STATUS = 0
     BEGIN
         -- 1. TẠO GIAO DỊCH (BOOKING) ĐÃ HOÀN THÀNH
-
-        -- Lấy thông tin giá của xe hiện tại
-        SELECT 
-            @daily_price = daily_price, 
-            @deposit_amount = deposit_amount 
-        FROM Vehicle 
-        WHERE vehicle_id = @current_vehicle_id;
 
         -- Lấy người dùng thực tế từ bảng User để đảm bảo không bị lỗi khóa ngoại
         SELECT TOP 1 @owner_id = user_id FROM [User];
@@ -66,7 +75,7 @@ BEGIN TRY
 
         -- Tạo ngày thuê ngẫu nhiên trong quá khứ
         SET @days_rented = (@current_vehicle_id % 5) + 2; -- Thuê từ 2 đến 6 ngày
-        SET @start_date = DATEADD(DAY, -(@current_vehicle_id * 5), GETDATE());
+        SET @start_date = DATEADD(DAY, -((@current_vehicle_id % 30) * 5), GETDATE());
         SET @end_date = DATEADD(DAY, @days_rented, @start_date);
 
         -- Tính toán chi phí
@@ -87,29 +96,38 @@ BEGIN TRY
         SET @rating_owner = 4 + ((@current_vehicle_id + 1) % 2); -- Rating 4 hoặc 5
 
         -- Chọn comment dựa trên loại xe
-        SELECT @comment = 
+        SET @comment = 
             CASE 
-                WHEN category_id = (SELECT category_id FROM VehicleCategory WHERE category_name = 'SUV') THEN N'Xe SUV gầm cao, đi đường trường rất thích. Nội thất rộng rãi, sạch sẽ. Chủ xe nhiệt tình.'
-                WHEN category_id = (SELECT category_id FROM VehicleCategory WHERE category_name = 'Sedan') THEN N'Xe sedan nhỏ gọn, tiết kiệm xăng, phù hợp đi trong thành phố. Thủ tục nhanh gọn, sẽ thuê lại.'
-                WHEN category_id = (SELECT category_id FROM VehicleCategory WHERE category_name = 'MPV') THEN N'Xe 7 chỗ rộng rãi, phù hợp cho cả gia đình đi du lịch. Xe được bảo dưỡng tốt, chạy rất êm.'
+                WHEN @category_id = @suv_cat THEN N'Xe SUV gầm cao, đi đường trường rất thích. Nội thất rộng rãi, sạch sẽ. Chủ xe nhiệt tình.'
+                WHEN @category_id = @sedan_cat THEN N'Xe sedan nhỏ gọn, tiết kiệm xăng, phù hợp đi trong thành phố. Thủ tục nhanh gọn, sẽ thuê lại.'
+                WHEN @category_id = @mpv_cat THEN N'Xe 7 chỗ rộng rãi, phù hợp cho cả gia đình đi du lịch. Xe được bảo dưỡng tốt, chạy rất êm.'
                 ELSE N'Trải nghiệm thuê xe tuyệt vời! Xe mới, sạch sẽ và được trang bị đầy đủ tiện nghi. Rất đáng tiền.'
-            END
-        FROM Vehicle WHERE vehicle_id = @current_vehicle_id;
+            END;
 
         -- Chèn vào bảng Review
         INSERT INTO Review (booking_id, reviewer_id, vehicle_id, owner_id, rating_vehicle, rating_owner, comment, created_at, updated_at)
         VALUES (@new_booking_id, @renter_id, @current_vehicle_id, @owner_id, @rating_vehicle, @rating_owner, @comment, GETDATE(), GETDATE());
 
-        -- Chuyển sang xe tiếp theo
-        SET @current_vehicle_id = @current_vehicle_id + 1;
+        -- Lấy xe tiếp theo
+        FETCH NEXT FROM vehicle_cursor INTO @current_vehicle_id, @daily_price, @deposit_amount, @category_id;
     END;
+
+    CLOSE vehicle_cursor;
+    DEALLOCATE vehicle_cursor;
 
     -- Nếu mọi thứ thành công, commit transaction
     COMMIT TRANSACTION;
-    PRINT 'Đã thêm thành công giao dịch và đánh giá cho 31 xe còn lại!';
+    PRINT 'Đã thêm thành công giao dịch và đánh giá cho tất cả xe!';
 
 END TRY
 BEGIN CATCH
+    -- Đóng cursor nếu đang lỗi
+    IF CURSOR_STATUS('global', 'vehicle_cursor') >= -1
+    BEGIN
+        CLOSE vehicle_cursor;
+        DEALLOCATE vehicle_cursor;
+    END
+
     -- Nếu có lỗi, rollback tất cả thay đổi
     IF @@TRANCOUNT > 0
         ROLLBACK TRANSACTION;

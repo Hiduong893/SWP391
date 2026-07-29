@@ -71,15 +71,47 @@ font-family: 'Inter', sans-serif;
 
 /* Sidebar Panel Styles */
 .admin-sidebar {
-  width: 250px;
+  width: 88px;
   background: var(--admin-sidebar-bg);
   border-right: 1px solid var(--admin-sidebar-border, var(--admin-border-color));
   display: flex;
   flex-direction: column;
   height: 100vh;
-  padding: 24px 16px;
+  padding: 24px 14px;
   flex-shrink: 0;
-  transition: all 0.3s ease;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.admin-sidebar:hover {
+  width: 250px;
+}
+
+.admin-sidebar:not(:hover) .brand-text-box,
+.admin-sidebar:not(:hover) .menu-item > span,
+.admin-sidebar:not(:hover) .badge-count,
+.admin-sidebar:not(:hover) .sidebar-profile .profile-text-box {
+  opacity: 0;
+  visibility: hidden;
+  width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.admin-sidebar .menu-item > svg {
+  flex-shrink: 0;
+}
+
+.admin-sidebar:hover .brand-text-box,
+.admin-sidebar:hover .menu-item > span,
+.admin-sidebar:hover .badge-count,
+.admin-sidebar:hover .sidebar-profile .profile-text-box {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0.1s;
 }
 
 .sidebar-brand {
@@ -206,7 +238,7 @@ font-family: 'Inter', sans-serif;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 10px;
   margin-bottom: 12px;
   background: var(--admin-profile-bg);
   border-radius: 8px;
@@ -2801,4 +2833,72 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
   transform: scale(1.15);
   filter: opacity(1);
+}
+
+/* --- CUSTOM REACT-DATE-RANGE STYLES --- */
+.date-range-popup-container .rdrCalendarWrapper {
+  color: #0f172a;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  background-color: transparent;
+}
+.date-range-popup-container .rdrDefinedRangesWrapper {
+  border-right: 1px solid #e2e8f0;
+  width: 180px;
+}
+.date-range-popup-container .rdrStaticRange {
+  border-bottom: none;
+  background: transparent;
+}
+.date-range-popup-container .rdrStaticRange:hover .rdrStaticRangeLabel,
+.date-range-popup-container .rdrStaticRange:focus .rdrStaticRangeLabel {
+  background: #f1f5f9;
+}
+.date-range-popup-container .rdrStaticRangeLabel {
+  padding: 12px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #475569;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  margin: 4px 8px;
+}
+.date-range-popup-container .rdrStaticRangeSelected .rdrStaticRangeLabel {
+  color: #2563eb;
+  background: #eff6ff;
+  font-weight: 700;
+}
+.date-range-popup-container .rdrDayNumber span {
+  color: #0f172a;
+  font-weight: 600;
+}
+.date-range-popup-container .rdrDayPassive .rdrDayNumber span {
+  color: #cbd5e1;
+}
+.date-range-popup-container .rdrDayToday .rdrDayNumber span:after {
+  background: #2563eb;
+}
+.date-range-popup-container .rdrInRange {
+  background: #eff6ff;
+  color: #2563eb;
+}
+.date-range-popup-container .rdrStartEdge,
+.date-range-popup-container .rdrEndEdge {
+  background: #2563eb;
+  color: #ffffff;
+}
+.date-range-popup-container .rdrDayHovered {
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+}
+.date-range-popup-container .rdrStartEdge + .rdrDayNumber span,
+.date-range-popup-container .rdrEndEdge + .rdrDayNumber span {
+  color: #fff !important;
+}
+.date-range-popup-container .rdrMonthAndYearPickers select {
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-weight: 700;
+  color: #0f172a;
+}
+.date-range-popup-container .rdrMonth {
+  width: 320px;
 }

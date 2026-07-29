@@ -1,3 +1,6 @@
+USE CarRentalPlatform;
+GO
+
 -- Thêm cột transmission và fuel nếu chưa tồn tại trong bảng Vehicle
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Vehicle') AND name = 'transmission')
 BEGIN
@@ -17,9 +20,9 @@ BEGIN
     INSERT INTO Brand (brand_name, is_active) VALUES (N'MG', 1);
 END;
 
--- 2. Tự động tìm user_id đại diện cho Chủ xe cho thuê (owner@bonboncar.vn) để gán xe
+-- 2. Tự động tìm user_id đại diện cho Chủ xe cho thuê (owner@vivucar.vn) để gán xe
 DECLARE @owner_id INT;
-SELECT TOP 1 @owner_id = user_id FROM [User] WHERE email = 'owner@bonboncar.vn';
+SELECT TOP 1 @owner_id = user_id FROM [User] WHERE email = 'owner@vivucar.vn';
 IF @owner_id IS NULL
 BEGIN
     SELECT TOP 1 @owner_id = user_id FROM [User] WHERE email = 'owner@vivucar.vn';
@@ -33,16 +36,29 @@ END;
 IF @owner_id IS NULL
 BEGIN
     INSERT INTO [User] (email, full_name, is_active, is_email_verified)
-    VALUES ('owner@bonboncar.vn', N'Chủ Xe ViVuCar', 1, 1);
+    VALUES ('owner@vivucar.vn', N'Chủ Xe ViVuCar', 1, 1);
     SET @owner_id = SCOPE_IDENTITY();
     
     INSERT INTO UserRole (user_id, role_id)
     SELECT @owner_id, role_id FROM Role WHERE role_name = 'CarOwner';
 END;
 
--- Xóa dữ liệu cũ nếu muốn làm sạch trước khi chạy (tùy chọn - đã comment)
- --DELETE FROM VehicleImage;
--- DELETE FROM Vehicle;
+-- Xóa dữ liệu cũ một cách triệt để (Xóa các bảng có khóa ngoại trỏ tới Vehicle trước)
+DELETE FROM HandoverImage;
+DELETE FROM Review;
+DELETE FROM Payment;
+DELETE FROM WalletTransaction;
+DELETE FROM BookingHandover;
+DELETE FROM IncidentImage;
+DELETE FROM Incident;
+DELETE FROM ComplaintEvidence;
+DELETE FROM Complaint;
+DELETE FROM RentalContract;
+DELETE FROM Booking;
+DELETE FROM VehicleFeature;
+DELETE FROM VehicleDocument;
+DELETE FROM VehicleImage;
+DELETE FROM Vehicle;
 
 -- 3. Chèn 33 xe với các hãng xe theo yêu cầu
 INSERT INTO Vehicle (
@@ -108,8 +124,7 @@ VALUES
 
 -- BMW
 (@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'BMW'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Sedan'), N'320i Sport Line', '30K-888.88', 2024, N'Xanh Dương', 5, 2000000.00, 20000000.00, N'Hà Nội', 'Available', 1, N'Tự động', N'Xăng'),
-(@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'BMW'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'SUV'), N'X5 xDrive40i', '51L-222.22', 2023, N'Đen', 7, 3500000.00, 20000000.00, N'TP. Hồ Chí Minh', 'Available', 1, N'Tự động', N'Xăng');
-((SELECT brand_id FROM Brand WHERE brand_name = N'BMW'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'SUV'), N'X5 xDrive40i', '51L-222.22', 2023, N'Đen', 7, 3500000.00, 20000000.00, N'TP. Hồ Chí Minh', 'Available', 1, N'Tự động', N'Xăng'),
+(@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'BMW'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'SUV'), N'X5 xDrive40i', '51L-222.22', 2023, N'Đen', 7, 3500000.00, 20000000.00, N'TP. Hồ Chí Minh', 'Available', 1, N'Tự động', N'Xăng'),
 
 -- XE TEST PHẠT NGUỘI (Owner ID = 5)
 (5, (SELECT brand_id FROM Brand WHERE brand_name = N'Kia'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Crossover'), N'Seltos 1.4 Turbo Premium', '99A-987.65', 2023, N'Vàng Cát', 5, 900000.00, 10000000.00, N'Hà Nội', 'Available', 1, N'Tự động', N'Xăng');
@@ -173,7 +188,6 @@ VALUES
 
 -- BMW
 ((SELECT vehicle_id FROM Vehicle WHERE license_plate = '30K-888.88'), 'https://autopro8.mediacdn.vn/134505113543774208/2024/7/31/bmw-320i-2024-sport-line-13-17224283764591872066808.jpg', 1, 0),
-((SELECT vehicle_id FROM Vehicle WHERE license_plate = '51L-222.22'), 'https://drive.gianhangvn.com/image/o4ewvc6-2537248j32655.jpg', 1, 0);
 ((SELECT vehicle_id FROM Vehicle WHERE license_plate = '51L-222.22'), 'https://drive.gianhangvn.com/image/o4ewvc6-2537248j32655.jpg', 1, 0),
 
 -- ẢNH XE TEST PHẠT NGUỘI

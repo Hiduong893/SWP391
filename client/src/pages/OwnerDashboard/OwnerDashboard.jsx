@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, FileWarning, ReceiptText } from 'lucide-react';
-
-import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, Camera, Sparkles } from 'lucide-react';
+import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, FileWarning, ReceiptText, Camera, Sparkles } from 'lucide-react';
 
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
@@ -559,20 +557,6 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                                       </button>
                                   </>
                               )}
-
-                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                              {b.status !== 'rejected' && b.status !== 'cancelled' && (
-                                <button 
-                                  type="button"
-                                  className="btn btn-secondary"
-                                  style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
-                                  onClick={() => setSelectedBookingForContract(b.id)}
-                                >
-                                  <FileText size={12} /> Chi tiết HĐ
-                                </button>
-                              )}
-
-
                             </div>
                           </td>
                         </tr>
@@ -880,6 +864,7 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                     </form>
                 </div>
             </div>
+        )}
 
         {/* Photo Inspection & AI Damage Report Modal for Owner */}
         {activeInspectionBooking && (

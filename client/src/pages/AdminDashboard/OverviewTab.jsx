@@ -1,6 +1,48 @@
 import React, { useState } from 'react';
-import { DollarSign, Car, Users, CreditCard, Filter, TrendingUp, ShieldCheck, ArrowUpRight, Sparkles, FileText, Activity, AlertTriangle, CheckCircle2, Database, HardDrive, MessageSquare, Clock, Award, ChevronRight, UserCheck, UserPlus } from 'lucide-react';
+import { DollarSign, Car, Users, CreditCard, Filter, TrendingUp, ShieldCheck, ArrowUpRight, Sparkles, FileText, Activity, AlertTriangle, CheckCircle2, Database, HardDrive, MessageSquare, Clock, Award, ChevronRight, UserCheck, UserPlus, Calendar as CalendarIcon, X } from 'lucide-react';
 import { DatePickerVi } from '../../components/DatePickerVi';
+import { DateRangePicker, createStaticRanges } from 'react-date-range';
+import { subDays, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
+
+const viStaticRanges = createStaticRanges([
+  {
+    label: 'Hôm nay',
+    range: () => ({
+      startDate: new Date(),
+      endDate: new Date(),
+    }),
+  },
+  {
+    label: 'Hôm qua',
+    range: () => ({
+      startDate: subDays(new Date(), 1),
+      endDate: subDays(new Date(), 1),
+    }),
+  },
+  {
+    label: '7 ngày qua',
+    range: () => ({
+      startDate: subDays(new Date(), 6),
+      endDate: new Date(),
+    }),
+  },
+  {
+    label: '30 ngày qua',
+    range: () => ({
+      startDate: subDays(new Date(), 29),
+      endDate: new Date(),
+    }),
+  },
+  {
+    label: 'Tháng này',
+    range: () => ({
+      startDate: startOfMonth(new Date()),
+      endDate: endOfMonth(new Date()),
+    }),
+  }
+]);
 
 export const OverviewTab = ({
   stats = { totalUsers: 0, totalCars: 0, totalBookings: 0, totalRevenue: 0 },
@@ -21,6 +63,14 @@ export const OverviewTab = ({
   const [activePreset, setActivePreset] = useState('all');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [dateRange, setDateRange] = useState([
+    {
+      startDate: new Date(),
+      endDate: new Date(),
+      key: 'selection'
+    }
+  ]);
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [hoveredY, setHoveredY] = useState(null);
   const [revenueViewMode, setRevenueViewMode] = useState('30days'); // '30days' | '12months'
@@ -83,7 +133,7 @@ export const OverviewTab = ({
                 foundDay.revenue += Number(b.totalPrice || b.total_amount || b.amount || 0);
               }
             }
-          } catch (e) {}
+          } catch (e) { }
         }
       });
     }
@@ -97,8 +147,8 @@ export const OverviewTab = ({
       let runningSum = 0;
       // Tạo trọng số phân bổ (weights) cho 30 ngày (trend tăng dần + gợn sóng)
       const weights = dateList.map((d, i) => {
-        const trend = (i / 30) * 2.5; 
-        const seasonality = Math.sin((i / 30) * Math.PI * 4) * 0.8; 
+        const trend = (i / 30) * 2.5;
+        const seasonality = Math.sin((i / 30) * Math.PI * 4) * 0.8;
         // Thay vì dùng Math.random() làm biểu đồ giật liên tục mỗi lần hover (re-render),
         // dùng một công thức cố định để tạo độ nhiễu ổn định (deterministic noise)
         const pseudoRandom = ((i * 137) % 100) / 100;
@@ -107,7 +157,7 @@ export const OverviewTab = ({
         runningSum += weight;
         return weight;
       });
-      
+
       // Áp dụng trọng số để phân bổ lại tổng doanh thu
       dateList.forEach((d, i) => {
         d.revenue = Math.round((weights[i] / runningSum) * totalRev);
@@ -119,7 +169,7 @@ export const OverviewTab = ({
     const baseUsers = Math.max(0, totalCurrentUsers - 25);
     dateList.forEach((d, i) => {
       const progress = i / 29;
-      const curve = Math.pow(progress, 1.2); 
+      const curve = Math.pow(progress, 1.2);
       d.users = Math.round(baseUsers + curve * (totalCurrentUsers - baseUsers));
     });
 
@@ -135,11 +185,11 @@ export const OverviewTab = ({
   const activeUsers = is30DaysMode
     ? dailyRevenue30Days.map(d => d.users)
     : Array.from({ length: 12 }, (_, i) => {
-        const progress = i / 11;
-        const totUsr = stats.totalUsers || usersList?.length || 50;
-        const bUsr = Math.max(0, totUsr - 40);
-        return Math.round(bUsr + Math.pow(progress, 1.2) * (totUsr - bUsr));
-      });
+      const progress = i / 11;
+      const totUsr = stats.totalUsers || usersList?.length || 50;
+      const bUsr = Math.max(0, totUsr - 40);
+      return Math.round(bUsr + Math.pow(progress, 1.2) * (totUsr - bUsr));
+    });
 
   const activeLabels = is30DaysMode
     ? dailyRevenue30Days.map(d => d.displayLabel)
@@ -152,13 +202,13 @@ export const OverviewTab = ({
   const toY = (rev) => 265 - Math.round((rev / maxRev) * 230);
   const toYUser = (u) => 265 - Math.round((u / maxUsers) * 230);
 
-  const points = activeRevenues.map((rev, i) => ({ 
-    x: toX(i), 
-    y: toY(rev), 
+  const points = activeRevenues.map((rev, i) => ({
+    x: toX(i),
+    y: toY(rev),
     userY: toYUser(activeUsers[i]),
-    label: activeLabels[i], 
+    label: activeLabels[i],
     rev,
-    users: activeUsers[i] 
+    users: activeUsers[i]
   }));
 
   // Smooth Cubic Bezier Curve Generator
@@ -435,187 +485,47 @@ export const OverviewTab = ({
           padding: '12px 18px',
           borderRadius: '16px',
           border: '1px solid #e2e8f0',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.03)'
+          boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+          position: 'relative'
         }}
       >
-        {/* Left: Quick Presets */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Filter size={16} style={{ color: '#2563eb' }} />
             <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#0f172a' }}>Bộ lọc báo cáo:</span>
           </div>
 
           <button
             type="button"
-            onClick={() => {
-              setActivePreset('all');
-              setFromDate('');
-              setToDate('');
-              if (onFilterRevenue) onFilterRevenue({});
-            }}
+            onClick={() => setShowDatePicker(!showDatePicker)}
             style={{
-              padding: '6px 14px', borderRadius: '20px', fontSize: '12.5px', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-              background: activePreset === 'all' ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#f1f5f9',
-              color: activePreset === 'all' ? '#ffffff' : '#475569',
-              boxShadow: activePreset === 'all' ? '0 2px 8px rgba(37,99,235,0.3)' : 'none'
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontFamily: "'Outfit', 'Inter', -apple-system, sans-serif",
+              padding: '8px 16px',
+              fontSize: '13.5px',
+              fontWeight: 600,
+              color: '#0f172a',
+              borderRadius: '10px',
+              border: '1.5px solid #cbd5e1',
+              background: '#ffffff',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              minWidth: '220px',
+              justifyContent: 'center'
             }}
           >
-            Tất cả
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              const today = getTodayStr();
-              setActivePreset('today');
-              setFromDate(today);
-              setToDate(today);
-              if (onFilterRevenue) onFilterRevenue({ date: today });
-            }}
-            style={{
-              padding: '6px 14px', borderRadius: '20px', fontSize: '12.5px', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-              background: activePreset === 'today' ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#f1f5f9',
-              color: activePreset === 'today' ? '#ffffff' : '#475569',
-              boxShadow: activePreset === 'today' ? '0 2px 8px rgba(37,99,235,0.3)' : 'none'
-            }}
-          >
-            Hôm nay
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              const yest = getYesterdayStr();
-              setActivePreset('yesterday');
-              setFromDate(yest);
-              setToDate(yest);
-              if (onFilterRevenue) onFilterRevenue({ date: yest });
-            }}
-            style={{
-              padding: '6px 14px', borderRadius: '20px', fontSize: '12.5px', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-              background: activePreset === 'yesterday' ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#f1f5f9',
-              color: activePreset === 'yesterday' ? '#ffffff' : '#475569',
-              boxShadow: activePreset === 'yesterday' ? '0 2px 8px rgba(37,99,235,0.3)' : 'none'
-            }}
-          >
-            Hôm qua
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              const start = getDaysAgoStr(7);
-              const end = getTodayStr();
-              setActivePreset('7days');
-              setFromDate(start);
-              setToDate(end);
-              if (onFilterRevenue) onFilterRevenue({ startDate: start, endDate: end });
-            }}
-            style={{
-              padding: '6px 14px', borderRadius: '20px', fontSize: '12.5px', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-              background: activePreset === '7days' ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#f1f5f9',
-              color: activePreset === '7days' ? '#ffffff' : '#475569',
-              boxShadow: activePreset === '7days' ? '0 2px 8px rgba(37,99,235,0.3)' : 'none'
-            }}
-          >
-            7 ngày qua
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              const m = getThisMonthStr();
-              setActivePreset('thisMonth');
-              setFromDate('');
-              setToDate('');
-              if (onFilterRevenue) onFilterRevenue({ month: m });
-            }}
-            style={{
-              padding: '6px 14px', borderRadius: '20px', fontSize: '12.5px', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-              background: activePreset === 'thisMonth' ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#f1f5f9',
-              color: activePreset === 'thisMonth' ? '#ffffff' : '#475569',
-              boxShadow: activePreset === 'thisMonth' ? '0 2px 8px rgba(37,99,235,0.3)' : 'none'
-            }}
-          >
-            Tháng này
+            <CalendarIcon size={16} color="#64748b" />
+            {dateRange[0].startDate && dateRange[0].endDate ? (
+              isSameDay(dateRange[0].startDate, dateRange[0].endDate)
+                ? dateRange[0].startDate.toLocaleDateString('vi-VN')
+                : `${dateRange[0].startDate.toLocaleDateString('vi-VN')} - ${dateRange[0].endDate.toLocaleDateString('vi-VN')}`
+            ) : 'Chọn khoảng thời gian'}
           </button>
         </div>
 
-        {/* Right: Date Range Selector */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <DatePickerVi
-            value={fromDate}
-            onChange={(val) => {
-              setFromDate(val);
-              setActivePreset('custom');
-            }}
-            style={{
-              fontFamily: "'Outfit', 'Inter', -apple-system, sans-serif",
-              padding: '6px 12px',
-              fontSize: '13px',
-              fontWeight: 700,
-              color: '#0f172a',
-              borderRadius: '10px',
-              border: '1.5px solid #cbd5e1',
-              outline: 'none',
-              background: '#ffffff',
-              height: '36px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-            }}
-          />
-          <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 700, fontFamily: "'Outfit', 'Inter', sans-serif" }}>đến</span>
-          <DatePickerVi
-            value={toDate}
-            onChange={(val) => {
-              setToDate(val);
-              setActivePreset('custom');
-            }}
-            style={{
-              fontFamily: "'Outfit', 'Inter', -apple-system, sans-serif",
-              padding: '6px 12px',
-              fontSize: '13px',
-              fontWeight: 700,
-              color: '#0f172a',
-              borderRadius: '10px',
-              border: '1.5px solid #cbd5e1',
-              outline: 'none',
-              background: '#ffffff',
-              height: '36px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              setActivePreset('custom');
-              if (!fromDate && !toDate) return;
-              if (fromDate && !toDate) {
-                if (onFilterRevenue) onFilterRevenue({ date: fromDate });
-              } else if (!fromDate && toDate) {
-                if (onFilterRevenue) onFilterRevenue({ date: toDate });
-              } else if (fromDate === toDate) {
-                if (onFilterRevenue) onFilterRevenue({ date: fromDate });
-              } else {
-                if (onFilterRevenue) onFilterRevenue({ startDate: fromDate, endDate: toDate });
-              }
-            }}
-            style={{
-              fontFamily: "'Outfit', 'Inter', sans-serif",
-              padding: '7px 20px',
-              background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '10px',
-              fontSize: '13px',
-              fontWeight: 800,
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(37,99,235,0.3)',
-              letterSpacing: '0.2px'
-            }}
-          >
-            Lọc ngay
-          </button>
-
           <button
             type="button"
             onClick={() => {
@@ -624,7 +534,7 @@ export const OverviewTab = ({
             }}
             style={{
               fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-              padding: '7px 18px',
+              padding: '8px 18px',
               background: 'linear-gradient(135deg, #10b981, #059669)',
               color: '#ffffff',
               border: 'none',
@@ -633,13 +543,73 @@ export const OverviewTab = ({
               fontWeight: 800,
               cursor: 'pointer',
               boxShadow: '0 4px 12px rgba(16,185,129,0.3)',
-              letterSpacing: '0.2px',
-              marginLeft: '8px'
+              letterSpacing: '0.2px'
             }}
           >
             📊 Xuất File Excel (.csv)
           </button>
         </div>
+
+        {/* DATE RANGE PICKER POPUP */}
+        {showDatePicker && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '65px',
+              left: '110px',
+              zIndex: 9999,
+              background: '#fff',
+              borderRadius: '16px',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
+              border: '1px solid #e2e8f0',
+              overflow: 'hidden'
+            }}
+            className="date-range-popup-container"
+          >
+            <DateRangePicker
+              onChange={item => setDateRange([item.selection])}
+              showSelectionPreview={true}
+              moveRangeOnFirstSelection={false}
+              months={2}
+              ranges={dateRange}
+              direction="horizontal"
+              staticRanges={viStaticRanges}
+              inputRanges={[]}
+            />
+            <div style={{ padding: '14px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '10px', background: '#f8fafc' }}>
+              <button
+                onClick={() => setShowDatePicker(false)}
+                style={{ padding: '7px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', color: '#475569', transition: 'all 0.2s' }}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => {
+                  setShowDatePicker(false);
+                  const start = dateRange[0].startDate;
+                  const end = dateRange[0].endDate;
+                  if (start && end) {
+                    // Xử lý múi giờ địa phương đúng cách
+                    const fromStr = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+                    const toStr = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+                    setFromDate(fromStr);
+                    setToDate(toStr);
+                    if (onFilterRevenue) {
+                      if (fromStr === toStr) {
+                        onFilterRevenue({ date: fromStr });
+                      } else {
+                        onFilterRevenue({ startDate: fromStr, endDate: toStr });
+                      }
+                    }
+                  }
+                }}
+                style={{ padding: '7px 22px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', color: '#fff', boxShadow: '0 4px 12px rgba(37,99,235,0.3)', transition: 'all 0.2s' }}
+              >
+                Áp dụng
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
         {/* CARD 1: TỔNG DOANH THU -> Chuyển sang Tab Tài chính & Giao dịch */}
@@ -1015,30 +985,30 @@ export const OverviewTab = ({
                         {/* Floating Price Card Tooltip */}
                         <g transform={`translate(${Math.min(480, Math.max(80, toX(hoveredIndex)))}, ${Math.max(65, anchorY - 50)})`}>
                           <rect
-                      x="-85"
-                      y="-42"
-                      width="170"
-                      height="64"
-                      rx="12"
-                      fill="#0f172a"
-                      opacity="0.94"
-                      style={{ filter: 'drop-shadow(0 10px 20px rgba(15,23,42,0.3))' }}
-                    />
-                    <polygon
-                      points="-6,22 6,22 0,28"
-                      fill="#0f172a"
-                      opacity="0.94"
-                    />
-                    <text x="0" y="-24" textAnchor="middle" fill="#94a3b8" fontSize="10.5" fontWeight="600" fontFamily="'Outfit', sans-serif">
-                      📅 {is30DaysMode ? `Ngày ${points[hoveredIndex].label}` : `Tháng ${hoveredIndex + 1}/${new Date().getFullYear()}`}
-                    </text>
-                    <text x="0" y="-4" textAnchor="middle" fill="#34d399" fontSize="13" fontWeight="800" fontFamily="'Outfit', sans-serif">
-                      💰 {Number(points[hoveredIndex].rev || 0).toLocaleString('vi-VN')} đ
-                    </text>
-                    <text x="0" y="14" textAnchor="middle" fill="#60a5fa" fontSize="11" fontWeight="700" fontFamily="'Outfit', sans-serif">
-                      👥 {points[hoveredIndex].users} thành viên
-                    </text>
-                  </g>
+                            x="-85"
+                            y="-42"
+                            width="170"
+                            height="64"
+                            rx="12"
+                            fill="#0f172a"
+                            opacity="0.94"
+                            style={{ filter: 'drop-shadow(0 10px 20px rgba(15,23,42,0.3))' }}
+                          />
+                          <polygon
+                            points="-6,22 6,22 0,28"
+                            fill="#0f172a"
+                            opacity="0.94"
+                          />
+                          <text x="0" y="-24" textAnchor="middle" fill="#94a3b8" fontSize="10.5" fontWeight="600" fontFamily="'Outfit', sans-serif">
+                            📅 {is30DaysMode ? `Ngày ${points[hoveredIndex].label}` : `Tháng ${hoveredIndex + 1}/${new Date().getFullYear()}`}
+                          </text>
+                          <text x="0" y="-4" textAnchor="middle" fill="#34d399" fontSize="13" fontWeight="800" fontFamily="'Outfit', sans-serif">
+                            💰 {Number(points[hoveredIndex].rev || 0).toLocaleString('vi-VN')} đ
+                          </text>
+                          <text x="0" y="14" textAnchor="middle" fill="#60a5fa" fontSize="11" fontWeight="700" fontFamily="'Outfit', sans-serif">
+                            👥 {points[hoveredIndex].users} thành viên
+                          </text>
+                        </g>
                       </>
                     );
                   })()}

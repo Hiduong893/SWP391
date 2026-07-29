@@ -588,3 +588,63 @@ Hãy trả về kết quả dưới định dạng JSON duy nhất khớp với 
     };
   }
 }
+
+export async function analyzeCarInspectionWithAI(checkinImgs, checkoutImgs, notes, expectedCarModel) {
+  if (!openai) {
+    return {
+      hasDamage: false,
+      damageDescription: "Không thể phân tích bằng AI (Chưa cấu hình API Key). Hệ thống ghi nhận biên bản tạm thời.",
+      estimatedCost: 0,
+      confidenceScore: 0
+    };
+  }
+
+  try {
+    const prompt = `Bạn là chuyên gia giám định bảo hiểm ô tô AI. 
+Nhiệm vụ: Phân tích so sánh tình trạng xe ${expectedCarModel} lúc giao xe (Check-in) và lúc trả xe (Check-out) để phát hiện hư hỏng mới.
+Ghi chú của người dùng: ${notes}
+
+Trích xuất kết quả dưới dạng JSON:
+{
+  "hasDamage": boolean,
+  "damageDescription": string (Liệt kê chi tiết các vết xước/móp méo mới xuất hiện. Nếu không có thì ghi "Không phát hiện hư hỏng mới"),
+  "estimatedCost": number (ước tính chi phí sửa chữa VND, 0 nếu không hư hỏng),
+  "confidenceScore": number (0-100)
+}`;
+
+    const contentArray = [{ type: 'text', text: prompt }];
+
+    const allImages = [...(checkinImgs || []), ...(checkoutImgs || [])];
+    for (const imgBase64 of allImages) {
+      const formattedUrl = formatImageForOpenAI(imgBase64);
+      if (formattedUrl) {
+        contentArray.push({
+          type: 'image_url',
+          image_url: { url: formattedUrl }
+        });
+      }
+    }
+
+    const response = await openai.chat.completions.create({
+      model: CLAUDE_MODEL,
+      messages: [{ role: 'user', content: contentArray }],
+      response_format: { type: "json_object" }
+    });
+
+    const textResponse = response.choices[0].message.content;
+    let jsonStr = textResponse.trim();
+    if (jsonStr.startsWith('\`\`\`json')) jsonStr = jsonStr.substring(7);
+    else if (jsonStr.startsWith('\`\`\`')) jsonStr = jsonStr.substring(3);
+    if (jsonStr.endsWith('\`\`\`')) jsonStr = jsonStr.substring(0, jsonStr.length - 3);
+
+    return JSON.parse(jsonStr.trim());
+  } catch (error) {
+    console.error('Error in analyzeCarInspectionWithAI:', error.message);
+    return {
+      hasDamage: false,
+      damageDescription: "Phân tích AI thất bại do lỗi kết nối: " + error.message,
+      estimatedCost: 0,
+      confidenceScore: 0
+    };
+  }
+}
