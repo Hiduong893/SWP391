@@ -97,10 +97,10 @@ router.get('/api/owner/cars', auth, async (req, res) => {
 router.get('/api/owner/stats', auth, async (req, res) => {
   try {
     const myCars = await db.cars.findMany({ ownerId: req.user.id });
-    const carIds = myCars.map(c => c.id);
+    const carIds = myCars.map(c => String(c.id));
 
     const allBookings = await db.bookings.findMany();
-    const myBookings = allBookings.filter(b => carIds.includes(b.carId));
+    const myBookings = allBookings.filter(b => carIds.includes(String(b.carId)));
 
     const detailedBookings = await Promise.all(myBookings.map(async (booking) => {
       const user = await db.users.findOne({ id: booking.userId }) || { name: 'Khách hàng ẩn' };
