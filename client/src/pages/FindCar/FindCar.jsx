@@ -96,7 +96,10 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
   const fetchCars = async (filters = {}) => {
     setLoading(true);
     try {
-      const data = await api.cars.getCars(filters);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Fetch timeout')), 2500)
+      );
+      const data = await Promise.race([api.cars.getCars(filters), timeoutPromise]);
       if (Array.isArray(data) && data.length > 0) {
         setCars(data);
       } else {

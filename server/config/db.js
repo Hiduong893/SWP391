@@ -17,8 +17,8 @@ const config = {
     encrypt: process.env.DB_ENCRYPT === 'true',
     trustServerCertificate: true,
   },
-  connectionTimeout: 30000,
-  requestTimeout: 30000,
+  connectionTimeout: 3000,
+  requestTimeout: 5000,
 };
 
 let poolPromise = null;
