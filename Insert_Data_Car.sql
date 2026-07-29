@@ -1,6 +1,3 @@
-USE CarRentalPlatform;
-GO
-
 -- Thêm cột transmission và fuel nếu chưa tồn tại trong bảng Vehicle
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Vehicle') AND name = 'transmission')
 BEGIN

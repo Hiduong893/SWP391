@@ -28,11 +28,22 @@ export const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'Người dùng không tồn tại hoặc đã bị xóa.' });
     }
 
-    // Attach user to request object (excluding password for security)
     const { password, ...safeUser } = user;
     req.user = safeUser;
     next();
   } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ 
+        message: 'Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.',
+        code: 'TOKEN_EXPIRED'
+      });
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ 
+        message: 'Token không hợp lệ.',
+        code: 'INVALID_TOKEN'
+      });
+    }
     console.error('Auth middleware error:', error);
     return res.status(401).json({ message: 'Phiên làm việc hết hạn hoặc token không hợp lệ.' });
   }

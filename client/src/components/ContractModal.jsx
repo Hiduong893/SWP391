@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, CheckCircle2, Clock, AlertCircle, ChevronDown, ChevronUp, Pen, Download, Printer, Shield, Building2, User, Car, Calendar, MapPin, Plus, Trash2, FileText, Info } from 'lucide-react';
+import { X, CheckCircle2, Clock, AlertCircle, ChevronDown, ChevronUp, Pen, Download, Printer, Shield, Building2, User, Car, Calendar, MapPin, Plus, Trash2, FileText, Info, Camera, Sparkles, AlertTriangle, Edit3, ExternalLink } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from './Toast';
+import { InspectionModal } from './InspectionModal';
 
 /* ─── Inject styles once ─── */
 const inject = () => {
@@ -179,6 +180,7 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
   const [editingTerms, setEditingTerms] = useState([]); // [{topicId, content}]
   const [savingTerms, setSavingTerms] = useState(false);
   const [showOwnerEditor, setShowOwnerEditor] = useState(false);
+  const [showInspectionModal, setShowInspectionModal] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => { inject(); load(); loadTopics(); }, [bookingId]);
@@ -204,9 +206,7 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
 
   const loadTopics = async () => {
     try {
-      const topics = await fetch('/api/contracts/custom-term-topics', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      }).then(r => r.json());
+      const topics = await api.get('/contracts/custom-term-topics');
       if (Array.isArray(topics) && topics.length > 0) setAvailableTopics(topics);
     } catch { /* use fallback */ }
   };
@@ -231,17 +231,8 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
   const handleSaveOwnerTerms = async () => {
     setSavingTerms(true);
     try {
-      const res = await fetch(`/api/contracts/booking/${bookingId}/owner-terms`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({ customTerms: editingTerms }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message);
-      showToast(json.message, 'success');
+      const res = await api.put(`/contracts/booking/${bookingId}/owner-terms`, { customTerms: editingTerms });
+      showToast(res?.message || 'Đã lưu điều khoản bổ sung thành công.', 'success');
       setShowOwnerEditor(false);
       load(); // Reload contract
     } catch (e) {
@@ -630,68 +621,321 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
               )
             )}
 
-            {/* Chủ xe: không ký thủ công — ký tự động khi phê duyệt booking */}
-            {isCarOwner && (
-              isOwnerSigned ? (
-                <div className="cm2-signed-ok">
-                  <CheckCircle2 size={18} />
-                  <span>Bạn đã xác nhận hợp đồng khi phê duyệt yêu cầu thuê xe. Chữ ký có hiệu lực pháp lý.</span>
-                </div>
-              ) : contract.status !== 'Cancelled' && (
-                <div style={{ display:'flex', alignItems:'center', gap:'8px', color:'#1e40af', fontSize:'13px', fontWeight:600, padding:'14px 16px', background:'#dbeafe', border:'1.5px solid #93c5fd', borderRadius:'10px' }}>
-                  <Clock size={16} />
-                  <span>Hợp đồng sẽ được ký tự động khi bạn <strong>Phê duyệt</strong> yêu cầu thuê xe trong trang Quản lý.</span>
-                </div>
-              )
-            )}
+            {/* Section 5: PHỤ LỤC BIÊN BẢN BÀN GIAO XE & THẤM ĐỊNH AI */}
+            {(() => {
+              let parsedCheckin = null;
+              if (booking?.inspectionCheckin) {
+                try {
+                  parsedCheckin = typeof booking.inspectionCheckin === 'string'
+                    ? JSON.parse(booking.inspectionCheckin)
+                    : booking.inspectionCheckin;
+                } catch (e) {}
+              }
 
-            {/* Section 6: Double Seals Stamp visual */}
-            <div className="cm2-seal-area">
-              
-              {/* Renter Seal */}
-              <div className="cm2-seal-party">
-                <div className="cm2-seal-label">BÊN B (Người thuê xe)</div>
-                <div className={`cm2-seal-circle ${isRenterSigned ? 'seal-signed' : 'seal-unsigned'}`}>
-                  {isRenterSigned ? (
-                    <>
-                      <span>ĐÃ KÝ</span>
-                      <span style={{ fontSize: '7px', marginTop: '2px', opacity: 0.8 }}>E-SIGN SECURED</span>
-                    </>
+              let parsedCheckout = null;
+              if (booking?.inspectionCheckout) {
+                try {
+                  parsedCheckout = typeof booking.inspectionCheckout === 'string'
+                    ? JSON.parse(booking.inspectionCheckout)
+                    : booking.inspectionCheckout;
+                } catch (e) {}
+              }
+
+              const checkinPhotos = (booking?.checkinPhotos && booking.checkinPhotos.length > 0)
+                ? booking.checkinPhotos
+                : (parsedCheckin?.photos || []);
+
+              const checkoutPhotos = (booking?.checkoutPhotos && booking.checkoutPhotos.length > 0)
+                ? booking.checkoutPhotos
+                : (parsedCheckout?.photos || []);
+
+              let aiReport = null;
+              if (booking?.inspectionReport) {
+                try {
+                  aiReport = typeof booking.inspectionReport === 'string'
+                    ? JSON.parse(booking.inspectionReport)
+                    : booking.inspectionReport;
+                } catch (e) {}
+              }
+              if (!aiReport && parsedCheckout?.aiReport) {
+                aiReport = parsedCheckout.aiReport;
+              }
+              if (!aiReport && parsedCheckin?.aiReport) {
+                aiReport = parsedCheckin.aiReport;
+              }
+
+              return (
+                <div className="cm2-section" style={{ borderTop: '2px dashed #cbd5e1', paddingTop: '24px', marginTop: '24px' }}>
+                  <div style={{ marginBottom: '14px' }}>
+                    <h3 className="cm2-sec-title" style={{ color: '#1e293b', fontSize: '15px', fontWeight: 800 }}>
+                      PHỤ LỤC BIÊN BẢN BÀN GIAO XE & THẨM ĐỊNH AI
+                    </h3>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                      Biên bản kiểm tra hiện trạng xe & Báo cáo phát hiện hư hỏng tự động bằng công nghệ Gemini Vision AI
+                    </p>
+                  </div>
+
+                  {aiReport ? (
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', color: '#fff', fontSize: '11px', fontWeight: 800, padding: '3px 10px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Sparkles size={12} /> Gemini Vision AI Verified
+                          </span>
+                          {aiReport.carMatch !== false ? (
+                            <span style={{ color: '#16a34a', fontSize: '11.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <CheckCircle2 size={13} /> Khớp nhận dạng xe 100% {aiReport.detectedCarModel ? `(${aiReport.detectedCarModel})` : ''}
+                            </span>
+                          ) : (
+                            <span style={{ color: '#dc2626', fontSize: '11.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <AlertTriangle size={13} /> Cảnh báo khác biệt mẫu xe: {aiReport.detectedCarModel}
+                            </span>
+                          )}
+                        </div>
+                        {aiReport.confidenceScore && (
+                          <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>
+                            Độ tin cậy: {Math.round(aiReport.confidenceScore * 100)}%
+                          </span>
+                        )}
+                      </div>
+
+                      {aiReport.overallCondition && (
+                        <div style={{ background: '#f3e8ff', border: '1px solid #d8b4fe', borderRadius: '10px', padding: '10px 14px', marginBottom: '12px', fontSize: '13px', color: '#581c87', lineHeight: 1.5 }}>
+                          <strong>Tình trạng chung: </strong>{aiReport.overallCondition}
+                        </div>
+                      )}
+
+                      {(aiReport.aiAssessment || aiReport.summary) && (
+                        <p style={{ fontSize: '12.5px', color: '#475569', margin: '0 0 14px 0', lineHeight: 1.6, fontWeight: 500 }}>
+                          {aiReport.aiAssessment || aiReport.summary}
+                        </p>
+                      )}
+
+                      {(() => {
+                        const issuesList = aiReport.detectedIssues || aiReport.issues || [];
+                        if (issuesList.length === 0) {
+                          return (
+                            <div style={{ color: '#16a34a', fontSize: '13px', fontWeight: 600, padding: '8px 0' }}>
+                              ✓ Không phát hiện vết trầy xước hay đền bù hư hỏng nào.
+                            </div>
+                          );
+                        }
+                        return (
+                          <div style={{ overflowX: 'auto', marginTop: '10px' }}>
+                            <h5 style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: 800, color: '#334155', textTransform: 'uppercase' }}>
+                              📋 Bảng Kê Chi Tiết Vết Trầy Xước / Biến Dạng Phát Hiện:
+                            </h5>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'left' }}>
+                              <thead>
+                                <tr style={{ background: '#e2e8f0', color: '#334155' }}>
+                                  <th style={{ padding: '8px 12px', borderRadius: '6px 0 0 6px' }}>STT</th>
+                                  <th style={{ padding: '8px 12px' }}>Vị trí & Mô tả hư hỏng</th>
+                                  <th style={{ padding: '8px 12px' }}>Mức độ</th>
+                                  <th style={{ padding: '8px 12px' }}>Trạng thái</th>
+                                  <th style={{ padding: '8px 12px', textAlign: 'right', borderRadius: '0 6px 6px 0' }}>Chi phí đền bù đề xuất</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {issuesList.map((issue, idx) => (
+                                  <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', background: issue.isNew ? '#fef2f2' : '#ffffff' }}>
+                                    <td style={{ padding: '8px 12px', fontWeight: 700 }}>#{idx + 1}</td>
+                                    <td style={{ padding: '8px 12px', fontWeight: 600, color: '#0f172a' }}>
+                                      📍 {issue.part || issue.description || 'Vị trí'}: {issue.type || ''}
+                                    </td>
+                                    <td style={{ padding: '8px 12px', color: '#475569' }}>
+                                      {issue.severity || 'Nhẹ'}
+                                    </td>
+                                    <td style={{ padding: '8px 12px' }}>
+                                      <span style={{
+                                        fontSize: '11px',
+                                        fontWeight: 700,
+                                        color: issue.isNew ? '#dc2626' : '#64748b',
+                                        background: issue.isNew ? '#fee2e2' : '#f1f5f9',
+                                        padding: '2px 8px',
+                                        borderRadius: '4px'
+                                      }}>
+                                        {issue.isNew ? '⚠️ Phát sinh MỚI' : '✓ Vết cũ sẵn có'}
+                                      </span>
+                                    </td>
+                                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 800, color: Number(issue?.estimatedCost) > 0 ? '#dc2626' : '#16a34a' }}>
+                                      {Number(issue?.estimatedCost) > 0 ? `${Number(issue.estimatedCost).toLocaleString('vi-VN')} đ` : 'Không tính phí'}
+                                    </td>
+                                  </tr>
+                                ))}
+                                {Number(aiReport?.suggestedCompensation) > 0 && (
+                                  <tr style={{ background: '#fff1f2', borderTop: '2px solid #fecaca' }}>
+                                    <td colSpan={4} style={{ padding: '10px 12px', fontWeight: 800, color: '#be123c', fontSize: '13px' }}>
+                                      TỔNG CHI PHÍ ĐỀN BÙ THIỆT HẠI ĐỀ XUẤT:
+                                    </td>
+                                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 900, color: '#e11d48', fontSize: '15px' }}>
+                                      {Number(aiReport.suggestedCompensation).toLocaleString('vi-VN')} đ
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   ) : (
-                    <span>CHƯA KÝ</span>
+                    <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '12px', padding: '16px', textAlign: 'center', color: '#64748b', fontSize: '13px', marginBottom: '16px' }}>
+                      Chưa có báo cáo thẩm định AI. Bạn có thể bấm nút <strong>Chỉnh sửa / Thẩm định AI</strong> ở góc phải để tải ảnh 4 góc xe và chạy phân tích AI.
+                    </div>
+                  )}
+
+                  {/* Photo Annex Grid */}
+                  <div style={{ marginTop: '16px', marginBottom: '16px' }}>
+                    <h5 style={{ margin: '0 0 10px 0', fontSize: '12px', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>
+                      📷 Bộ Ảnh Bàn Giao Thực Tế Đính Kèm (Check-in & Check-out)
+                    </h5>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px' }}>
+                      {checkinPhotos.map((url, i) => (
+                        <div key={`in-${i}`} style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #cbd5e1', height: '95px', position: 'relative' }}>
+                          <img src={url} alt={`Checkin ${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(37,99,235,0.85)', color: '#fff', fontSize: '9.5px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>
+                            Check-in #{i+1}
+                          </span>
+                        </div>
+                      ))}
+                      {checkoutPhotos.map((url, i) => (
+                        <div key={`out-${i}`} style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #cbd5e1', height: '95px', position: 'relative' }}>
+                          <img src={url} alt={`Checkout ${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(5,150,105,0.85)', color: '#fff', fontSize: '9.5px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>
+                            Check-out #{i+1}
+                          </span>
+                        </div>
+                      ))}
+                      {checkinPhotos.length === 0 && checkoutPhotos.length === 0 && (
+                        <div style={{ gridColumn: '1 / -1', padding: '12px', background: '#f8fafc', color: '#94a3b8', fontSize: '12px', textAlign: 'center', borderRadius: '8px' }}>
+                          Chưa có hình ảnh bàn giao nào được tải lên.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Section 6: CON DẤU & CHỮ KÝ ĐIỆN TỬ (BÊN A & BÊN B) */}
+            <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '2px dashed #cbd5e1' }}>
+              <h3 className="cm2-sec-title" style={{ color: '#1e293b', fontSize: '15px', fontWeight: 800, marginBottom: '14px' }}>
+                CON DẤU & CHỮ KÝ ĐIỆN TỬ (BÊN A & BÊN B)
+              </h3>
+
+              {/* Người thuê: hiển thị trạng thái đã ký hoặc form ký */}
+              {isRenter && (
+                isRenterSigned ? (
+                  <div className="cm2-signed-ok">
+                    <CheckCircle2 size={18} />
+                    <span>Bạn đã ký hợp đồng điện tử khi hoàn tất đặt xe. Chữ ký có hiệu lực pháp lý cho toàn bộ nội dung hợp đồng và phụ lục đính kèm.</span>
+                  </div>
+                ) : contract.status !== 'Cancelled' && (
+                  <div className="cm2-sign-wrap" style={{ marginBottom: '16px' }}>
+                    <div className="cm2-sign-title">
+                      <Pen size={16} /> Ký Điện Tử Hợp Đồng (Bên B - Người Thuê)
+                    </div>
+                    <label className="cm2-sign-check">
+                      <input
+                        type="checkbox"
+                        checked={agreed}
+                        onChange={(e) => setAgreed(e.target.checked)}
+                      />
+                      <span>
+                        Tôi ({renter?.name || user?.name || 'Bên B'}) xác nhận đã đọc kỹ, hiểu rõ và đồng ý với toàn bộ nội dung hợp đồng điện tử này cùng các điều khoản bổ sung & phụ lục đính kèm.
+                      </span>
+                    </label>
+                    <button
+                      className="cm2-sign-btn"
+                      disabled={!agreed || signing}
+                      onClick={handleSign}
+                    >
+                      {signing ? 'Đang ghi nhận chữ ký E-Sign...' : '✍️ Xác Nhận Ký Điện Tử Hợp Đồng'}
+                    </button>
+                  </div>
+                )
+              )}
+
+              {/* Chủ xe: hiển thị trạng thái đã ký hoặc form ký */}
+              {isCarOwner && (
+                isOwnerSigned ? (
+                  <div className="cm2-signed-ok">
+                    <CheckCircle2 size={18} />
+                    <span>Bạn đã xác nhận ký hợp đồng điện tử. Chữ ký có hiệu lực pháp lý cho toàn bộ nội dung hợp đồng và phụ lục đính kèm.</span>
+                  </div>
+                ) : contract.status !== 'Cancelled' && (
+                  <div className="cm2-sign-wrap" style={{ marginBottom: '16px', background: 'linear-gradient(135deg, #fff7ed, #fef3c7)', border: '2px solid #f59e0b' }}>
+                    <div className="cm2-sign-title" style={{ color: '#b45309' }}>
+                      <Pen size={16} /> Ký Điện Tử Hợp Đồng (Bên A - Chủ Xe)
+                    </div>
+                    <label className="cm2-sign-check">
+                      <input
+                        type="checkbox"
+                        checked={agreed}
+                        onChange={(e) => setAgreed(e.target.checked)}
+                      />
+                      <span style={{ color: '#78350f' }}>
+                        Tôi ({owner?.name || user?.name || 'Bên A'}) xác nhận phê duyệt bàn giao phương tiện và ký điện tử chấp thuận toàn bộ điều khoản hợp đồng thuê xe này.
+                      </span>
+                    </label>
+                    <button
+                      className="cm2-sign-btn"
+                      style={{ background: 'linear-gradient(135deg, #d97706, #f59e0b)' }}
+                      disabled={!agreed || signing}
+                      onClick={handleSign}
+                    >
+                      {signing ? 'Đang ghi nhận chữ ký E-Sign...' : '✍️ Xác Nhận Ký Điện Tử Hợp Đồng (Bên A)'}
+                    </button>
+                  </div>
+                )
+              )}
+
+              {/* Double Seals Stamp visual */}
+              <div className="cm2-seal-area" style={{ marginTop: '16px' }}>
+                {/* Renter Seal */}
+                <div className="cm2-seal-party">
+                  <div className="cm2-seal-label">BÊN B (Người thuê xe)</div>
+                  <div className={`cm2-seal-circle ${isRenterSigned ? 'seal-signed' : 'seal-unsigned'}`}>
+                    {isRenterSigned ? (
+                      <>
+                        <span>ĐÃ KÝ</span>
+                        <span style={{ fontSize: '7px', marginTop: '2px', opacity: 0.8 }}>E-SIGN SECURED</span>
+                      </>
+                    ) : (
+                      <span>CHƯA KÝ</span>
+                    )}
+                  </div>
+                  <div className="cm2-seal-name">{renter?.name || '—'}</div>
+                  {isRenterSigned && (
+                    <div className="cm2-seal-date">
+                      Ký lúc: {fmtDt(contract.renterSignedAt)}
+                      <br />IP: {contract.renterIp}
+                    </div>
                   )}
                 </div>
-                <div className="cm2-seal-name">{renter?.name || '—'}</div>
-                {isRenterSigned && (
-                  <div className="cm2-seal-date">
-                    Ký lúc: {fmtDt(contract.renterSignedAt)}
-                    <br />IP: {contract.renterIp}
-                  </div>
-                )}
-              </div>
 
-              {/* Owner Seal */}
-              <div className="cm2-seal-party">
-                <div className="cm2-seal-label">BÊN A (Chủ xe)</div>
-                <div className={`cm2-seal-circle ${isOwnerSigned ? 'seal-signed' : 'seal-unsigned'}`}>
-                  {isOwnerSigned ? (
-                    <>
-                      <span>ĐÃ KÝ</span>
-                      <span style={{ fontSize: '7px', marginTop: '2px', opacity: 0.8 }}>E-SIGN SECURED</span>
-                    </>
-                  ) : (
-                    <span>CHƯA KÝ</span>
+                {/* Owner Seal */}
+                <div className="cm2-seal-party">
+                  <div className="cm2-seal-label">BÊN A (Chủ xe)</div>
+                  <div className={`cm2-seal-circle ${isOwnerSigned ? 'seal-signed' : 'seal-unsigned'}`}>
+                    {isOwnerSigned ? (
+                      <>
+                        <span>ĐÃ KÝ</span>
+                        <span style={{ fontSize: '7px', marginTop: '2px', opacity: 0.8 }}>E-SIGN SECURED</span>
+                      </>
+                    ) : (
+                      <span>CHƯA KÝ</span>
+                    )}
+                  </div>
+                  <div className="cm2-seal-name">{owner?.name || 'Hệ thống ViVuCar'}</div>
+                  {isOwnerSigned && (
+                    <div className="cm2-seal-date">
+                      Ký lúc: {fmtDt(contract.ownerSignedAt)}
+                      <br />IP: {contract.ownerIp}
+                    </div>
                   )}
                 </div>
-                <div className="cm2-seal-name">{owner?.name || 'Hệ thống ViVuCar'}</div>
-                {isOwnerSigned && (
-                  <div className="cm2-seal-date">
-                    Ký lúc: {fmtDt(contract.ownerSignedAt)}
-                    <br />IP: {contract.ownerIp}
-                  </div>
-                )}
               </div>
-
             </div>
 
           </div>
@@ -704,6 +948,22 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
 
         </div>
       </div>
+
+      {showInspectionModal && (
+        <InspectionModal
+          booking={booking}
+          user={user}
+          onClose={() => setShowInspectionModal(false)}
+          onInspectionUpdated={() => {
+            setShowInspectionModal(false);
+            load();
+          }}
+          onSaved={() => {
+            setShowInspectionModal(false);
+            load();
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -2,7 +2,7 @@ import express from 'express';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
 import { notificationService } from '../services/notificationService.js';
-import { compareFacesWithAI, compareFaceWithDocument } from '../utils/aiHelper.js';
+import { compareFacesWithAI, compareFaceWithDocument, analyzeCarInspectionWithAI } from '../utils/aiHelper.js';
 import { contractModel } from '../models/contractModel.js';
 import { sql, getPool } from '../config/db.js';
 
@@ -373,8 +373,226 @@ router.put('/api/bookings/:id/handover', auth, async (req, res) => {
   }
 });
 
+// 18. Save Check-in / Check-out Inspection Details with Photos & ODO
+router.post('/api/bookings/:id/inspection', auth, async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const { inspectionType, photos, checkinPhotos, checkoutPhotos, odo, fuelLevel, notes, aiReport } = req.body;
 
+    const booking = await db.bookings.findOne({ id: bookingId });
+    if (!booking) return res.status(404).json({ message: 'Chuyến đi không tồn tại.' });
 
+    const p = await getPool();
 
+    const checkinList = checkinPhotos || (inspectionType === 'checkin' ? photos : null);
+    const checkoutList = checkoutPhotos || (inspectionType === 'checkout' ? photos : null);
+
+    if (checkinList && Array.isArray(checkinList) && checkinList.length > 0) {
+      const checkinData = JSON.stringify({
+        submittedBy: req.user.id,
+        submittedAt: new Date().toISOString(),
+        photos: checkinList,
+        odo: odo || null,
+        fuelLevel: fuelLevel || null,
+        notes: notes || '',
+        aiReport: aiReport || null
+      });
+      await p.request()
+        .input('bookingId', sql.Int, bookingId)
+        .input('data', sql.NVarChar, checkinData)
+        .query(`UPDATE Booking SET inspection_checkin = @data WHERE booking_id = @bookingId`);
+    }
+
+    if ((checkoutList && Array.isArray(checkoutList) && checkoutList.length > 0) || aiReport) {
+      const checkoutData = JSON.stringify({
+        submittedBy: req.user.id,
+        submittedAt: new Date().toISOString(),
+        photos: checkoutList || [],
+        odo: odo || null,
+        fuelLevel: fuelLevel || null,
+        notes: notes || '',
+        aiReport: aiReport || null
+      });
+      await p.request()
+        .input('bookingId', sql.Int, bookingId)
+        .input('data', sql.NVarChar, checkoutData)
+        .query(`UPDATE Booking SET inspection_checkout = @data WHERE booking_id = @bookingId`);
+    }
+
+    // Create notification
+    const car = await db.cars.findOne({ id: booking.carId });
+    const targetUserId = req.user.id === booking.userId ? car?.ownerId : booking.userId;
+    if (targetUserId) {
+      await notificationService.createNotification(
+        targetUserId,
+        `Cập nhật biên bản bàn giao xe`,
+        `Biên bản kiểm tra hình ảnh xe cho chuyến đi #${bookingId} đã được cập nhật.`,
+        'BookingUpdate',
+        bookingId,
+        'Booking'
+      );
+    }
+
+    res.json({ message: `Cập nhật biên bản kiểm tra xe thành công!` });
+  } catch (error) {
+    console.error('Error saving inspection:', error);
+    res.status(500).json({ message: 'Lỗi cập nhật biên bản hình ảnh xe.' });
+  }
+});
+
+// 19. Request Trip Extension (Yêu cầu gia hạn chuyến đi)
+router.post('/api/bookings/:id/request-extension', auth, async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const { newReturnDate, extraDays, extraPrice } = req.body;
+
+    if (!newReturnDate || !extraDays || extraDays <= 0) {
+      return res.status(400).json({ message: 'Vui lòng chọn ngày trả xe gia hạn hợp lệ.' });
+    }
+
+    const booking = await db.bookings.findOne({ id: bookingId });
+    if (!booking) return res.status(404).json({ message: 'Chuyến đi không tồn tại.' });
+    if (booking.userId !== req.user.id) return res.status(403).json({ message: 'Bạn không có quyền thực hiện trên chuyến đi này.' });
+
+    const extensionData = JSON.stringify({
+      requestedReturnDate: newReturnDate,
+      extraDays,
+      extraPrice: extraPrice || 0,
+      status: 'pending',
+      requestedAt: new Date().toISOString()
+    });
+
+    const p = await getPool();
+    await p.request()
+      .input('bookingId', sql.Int, bookingId)
+      .input('data', sql.NVarChar, extensionData)
+      .query('UPDATE Booking SET extension_request = @data WHERE booking_id = @bookingId');
+
+    const car = await db.cars.findOne({ id: booking.carId });
+    if (car && car.ownerId) {
+      await notificationService.createNotification(
+        car.ownerId,
+        'Yêu cầu Gia hạn Chuyến đi mới',
+        `Khách hàng xin gia hạn thêm ${extraDays} ngày cho chuyến đi #${bookingId} (Hạn mới: ${newReturnDate}). Vui lòng xem xét phê duyệt.`,
+        'BookingUpdate',
+        bookingId,
+        'Booking'
+      );
+    }
+
+    res.json({ message: 'Đã gửi yêu cầu gia hạn chuyến đi tới Chủ xe thành công!', extension: JSON.parse(extensionData) });
+  } catch (error) {
+    console.error('Error requesting extension:', error);
+    res.status(500).json({ message: 'Lỗi gửi yêu cầu gia hạn chuyến đi.' });
+  }
+});
+
+// 20. Respond to Trip Extension (Duyệt/Từ chối gia hạn chuyến đi)
+router.put('/api/bookings/:id/respond-extension', auth, async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const { action } = req.body; // 'approve' | 'reject'
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ message: 'Hành động không hợp lệ.' });
+    }
+
+    const booking = await db.bookings.findOne({ id: bookingId });
+    if (!booking) return res.status(404).json({ message: 'Chuyến đi không tồn tại.' });
+
+    const p = await getPool();
+    const currentRes = await p.request()
+      .input('bookingId', sql.Int, bookingId)
+      .query('SELECT extension_request, return_date, total_price FROM Booking WHERE booking_id = @bookingId');
+
+    if (currentRes.recordset.length === 0 || !currentRes.recordset[0].extension_request) {
+      return res.status(400).json({ message: 'Chuyến đi này hiện không có yêu cầu gia hạn nào.' });
+    }
+
+    const extObj = JSON.parse(currentRes.recordset[0].extension_request);
+    extObj.status = action === 'approve' ? 'approved' : 'rejected';
+    extObj.respondedAt = new Date().toISOString();
+
+    if (action === 'approve') {
+      const newReturnDate = extObj.requestedReturnDate;
+      const newTotalPrice = Number(currentRes.recordset[0].total_price) + Number(extObj.extraPrice || 0);
+
+      await p.request()
+        .input('bookingId', sql.Int, bookingId)
+        .input('newReturnDate', sql.NVarChar, newReturnDate)
+        .input('newTotalPrice', sql.Decimal(18, 2), newTotalPrice)
+        .input('extData', sql.NVarChar, JSON.stringify(extObj))
+        .query('UPDATE Booking SET return_date = @newReturnDate, total_price = @newTotalPrice, extension_request = @extData WHERE booking_id = @bookingId');
+    } else {
+      await p.request()
+        .input('bookingId', sql.Int, bookingId)
+        .input('extData', sql.NVarChar, JSON.stringify(extObj))
+        .query('UPDATE Booking SET extension_request = @extData WHERE booking_id = @bookingId');
+    }
+
+    await notificationService.createNotification(
+      booking.userId,
+      action === 'approve' ? 'Yêu cầu gia hạn ĐƯỢC CHẤP NHẬN' : 'Yêu cầu gia hạn BỊ TỪ CHỐI',
+      action === 'approve'
+        ? `Yêu cầu gia hạn cho chuyến đi #${bookingId} đã được duyệt! Ngày trả xe mới: ${extObj.requestedReturnDate}.`
+        : `Chủ xe không thể đồng ý gia hạn cho chuyến đi #${bookingId}. Vui lòng trả xe đúng hạn ban đầu.`,
+      'BookingUpdate',
+      bookingId,
+      'Booking'
+    );
+
+    res.json({
+      message: action === 'approve' ? 'Đã chấp nhận gia hạn chuyến đi thành công!' : 'Đã từ chối yêu cầu gia hạn.',
+      extension: extObj
+    });
+  } catch (error) {
+    console.error('Error responding extension:', error);
+    res.status(500).json({ message: 'Lỗi xử lý phản hồi gia hạn.' });
+  }
+});
+
+// 21. AI Inspection Vision Analysis (Phân tích thiệt hại phương tiện bằng Gemini Vision AI)
+router.post('/api/bookings/:id/ai-analyze-inspection', auth, async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const { checkinPhotos, checkoutPhotos, notes } = req.body;
+
+    const booking = await db.bookings.findOne({ id: bookingId });
+    if (!booking) return res.status(404).json({ message: 'Chuyến đi không tồn tại.' });
+
+    let checkinImgs = checkinPhotos || [];
+    let checkoutImgs = checkoutPhotos || [];
+
+    // Fallback to stored inspection docs if not provided in body
+    if (checkinImgs.length === 0 && booking.inspectionCheckin) {
+      try {
+        const c = typeof booking.inspectionCheckin === 'string' ? JSON.parse(booking.inspectionCheckin) : booking.inspectionCheckin;
+        checkinImgs = c.photos || [];
+      } catch (e) {}
+    }
+
+    if (checkoutImgs.length === 0 && booking.inspectionCheckout) {
+      try {
+        const c = typeof booking.inspectionCheckout === 'string' ? JSON.parse(booking.inspectionCheckout) : booking.inspectionCheckout;
+        checkoutImgs = c.photos || [];
+      } catch (e) {}
+    }
+
+    // Fetch booking car info for model verification
+    let expectedCarModel = booking.carName || '';
+    if (booking.carId) {
+      const car = await db.cars.findOne({ id: booking.carId });
+      if (car) expectedCarModel = `${car.brand} ${car.model}`;
+    }
+
+    const aiReport = await analyzeCarInspectionWithAI(checkinImgs, checkoutImgs, notes || '', expectedCarModel);
+    res.json({ message: 'Phân tích hình ảnh bằng AI thành công!', report: aiReport });
+  } catch (error) {
+    console.error('Error analyzing inspection with AI:', error);
+    res.status(500).json({ message: 'Lỗi phân tích hình ảnh bằng AI.' });
+  }
+});
 
 export default router;
+
+

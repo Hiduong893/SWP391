@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, MapPin, DollarSign, RefreshCw, XCircle, ShieldCheck, Compass, Info, FileText, AlertTriangle, Star, ShieldAlert, Award, Upload, MessageSquare, PhoneCall, Send, HelpCircle } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, RefreshCw, XCircle, ShieldCheck, Compass, Info, FileText, AlertTriangle, Star, ShieldAlert, Award, Upload, MessageSquare, PhoneCall, Send, HelpCircle, Camera, Clock } from 'lucide-react';
 import { api } from '../../utils/api';
 import { ContractModal } from '../../components/ContractModal';
+import { InspectionModal } from '../../components/InspectionModal';
 import { renterActionApi } from '../../utils/renterActionApi';
 import { useToast } from '../../components/Toast';
 import './MyTrips.css';
@@ -25,6 +26,11 @@ export const MyTrips = ({ user }) => {
   const [activeReviewTrip, setActiveReviewTrip] = useState(null); // trip
   const [activeDisputeTrip, setActiveDisputeTrip] = useState(null); // trip
   const [viewingContractTrip, setViewingContractTrip] = useState(null); // trip
+  const [activeInspectionTrip, setActiveInspectionTrip] = useState(null); // trip
+  const [activeExtensionTrip, setActiveExtensionTrip] = useState(null); // trip
+  const [extensionReturnDate, setExtensionReturnDate] = useState('');
+  const [extensionSubmitting, setExtensionSubmitting] = useState(false);
+
   
   // Form states
   const [handoverChecks, setHandoverChecks] = useState({
@@ -101,6 +107,41 @@ export const MyTrips = ({ user }) => {
       showToast(error.message || 'Lỗi hủy đơn đặt xe.', 'error');
     } finally {
       setCancelConfirmLoading(false);
+    }
+  };
+
+  const handleRequestExtensionSubmit = async (e) => {
+    e.preventDefault();
+    if (!activeExtensionTrip || !extensionReturnDate) return;
+
+    const currentReturn = new Date(activeExtensionTrip.returnDate);
+    const newReturn = new Date(extensionReturnDate);
+
+    if (newReturn <= currentReturn) {
+      showToast('Ngày gia hạn mới phải sau ngày trả xe ban đầu!', 'warning');
+      return;
+    }
+
+    const diffTime = Math.abs(newReturn - currentReturn);
+    const extraDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+    const dailyPrice = activeExtensionTrip.totalPrice / (calculateDays(activeExtensionTrip.pickupDate, activeExtensionTrip.returnDate) || 1);
+    const extraPrice = Math.round(dailyPrice * extraDays);
+
+    setExtensionSubmitting(true);
+    try {
+      const res = await api.bookings.requestExtension(activeExtensionTrip.id, {
+        newReturnDate: extensionReturnDate,
+        extraDays,
+        extraPrice
+      });
+      showToast(res.message, 'success');
+      setActiveExtensionTrip(null);
+      setExtensionReturnDate('');
+      fetchTrips(true);
+    } catch (err) {
+      showToast(err.message || 'Không thể gửi yêu cầu gia hạn.', 'error');
+    } finally {
+      setExtensionSubmitting(false);
     }
   };
 
@@ -381,6 +422,23 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                     </div>
 
                     <div className="trip-actions-buttons-row">
+
+
+                      {/* Request Extension button */}
+                      {['confirmed', 'active'].includes(trip.status) && (
+                        <button
+                          className="btn btn-secondary btn-action-trip"
+                          style={{ borderColor: '#eab308', color: '#fde047' }}
+                          onClick={() => {
+                            setActiveExtensionTrip(trip);
+                            setExtensionReturnDate(trip.returnDate);
+                          }}
+                        >
+                          <Clock size={13} />
+                          ⏳ Xin gia hạn
+                        </button>
+                      )}
+
                       {/* UC18: Ký nhận bàn giao xe */}
                       {trip.status === 'confirmed' && (
                         <button
@@ -760,47 +818,166 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                 <span>Vui lòng kiểm tra thực tế trạng thái chiếc xe cùng chủ xe trước khi ký biên bản bàn giao điện tử này.</span>
               </div>
 
-              <div className="checklist-group">
-                <label className="checkbox-item-custom">
-                  <input
-                    type="checkbox"
-                    checked={handoverChecks.noScratches}
-                    onChange={(e) => setHandoverChecks({ ...handoverChecks, noScratches: e.target.checked })}
-                    required
-                  />
-                  <span>Xác nhận không phát sinh vết trầy xước/va quẹt mới</span>
-                </label>
+              {/* Direct access to Photo & AI Inspection */}
+              {(() => {
+                const trip = activeHandoverTrip.trip;
+                const isPickup = activeHandoverTrip.type === 'pickup';
+                let parsedInspection = null;
+                try {
+                  const raw = isPickup ? trip.inspectionCheckin : trip.inspectionCheckout;
+                  if (raw) parsedInspection = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                } catch (e) {}
 
-                <label className="checkbox-item-custom">
-                  <input
-                    type="checkbox"
-                    checked={handoverChecks.fuelOk}
-                    onChange={(e) => setHandoverChecks({ ...handoverChecks, fuelOk: e.target.checked })}
-                    required
-                  />
-                  <span>Xác nhận mức nhiên liệu/điện chuẩn theo quy định (&gt;50%)</span>
-                </label>
+                const hasData = Boolean(parsedInspection && ((parsedInspection.photos && parsedInspection.photos.length > 0) || parsedInspection.aiReport));
+                const aiReport = parsedInspection?.aiReport || null;
+                const rawCompensationAmt = Number(aiReport?.suggestedCompensation) || 0;
+                
+                // Compare checkin vs checkout damage to calculate net NEW damage
+                let checkinCompensation = 0;
+                try {
+                  const rawIn = trip.inspectionCheckin;
+                  if (rawIn) {
+                    const parsedIn = typeof rawIn === 'string' ? JSON.parse(rawIn) : rawIn;
+                    checkinCompensation = Number(parsedIn?.aiReport?.suggestedCompensation) || 0;
+                  }
+                } catch (e) {}
 
-                <label className="checkbox-item-custom">
-                  <input
-                    type="checkbox"
-                    checked={handoverChecks.cleanCar}
-                    onChange={(e) => setHandoverChecks({ ...handoverChecks, cleanCar: e.target.checked })}
-                    required
-                  />
-                  <span>Xác nhận khoang cabin sạch sẽ, không mùi hôi</span>
-                </label>
+                // For pickup (check-in): compensation for Renter is 0 (it's baseline record).
+                // For return (check-out): compensation is only net new damage = max(0, checkout - checkin).
+                const netCompensation = isPickup ? 0 : Math.max(0, rawCompensationAmt - checkinCompensation);
+                const hasNewDamages = !isPickup && netCompensation > 0;
 
-                <label className="checkbox-item-custom">
-                  <input
-                    type="checkbox"
-                    checked={handoverChecks.tiresOk}
-                    onChange={(e) => setHandoverChecks({ ...handoverChecks, tiresOk: e.target.checked })}
-                    required
-                  />
-                  <span>Kiểm tra áp suất lốp, phanh xe, đèn và còi hoạt động tốt</span>
-                </label>
-              </div>
+                return (
+                  <div>
+                    <div style={{
+                      background: hasData ? '#f0fdf4' : '#f0f9ff',
+                      border: `1px solid ${hasData ? '#bbf7d0' : '#bae6fd'}`,
+                      borderRadius: '12px',
+                      padding: '12px 16px',
+                      marginBottom: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}>
+                      <div>
+                        <span style={{ fontSize: '13px', fontWeight: 800, color: hasData ? '#166534' : '#0369a1', display: 'block' }}>
+                          {hasData ? '✓ Đã Có Biên Bản Hình Ảnh & AI' : '📸 Kiểm Tra & Phân Tích Hình Ảnh Bằng AI'}
+                        </span>
+                        <span style={{ fontSize: '11.5px', color: hasData ? '#15803d' : '#0284c7' }}>
+                          {hasData ? `Đã lưu ${parsedInspection.photos?.length || 0} ảnh & Báo cáo thẩm định Gemini AI.` : 'Chụp/Tải ảnh bàn giao 4 góc xe và chạy Gemini AI Vision.'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveHandoverTrip(null);
+                          setActiveInspectionTrip(trip);
+                        }}
+                        style={{
+                          background: hasData ? 'linear-gradient(135deg, #059669, #047857)' : '#0284c7',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '8px 14px',
+                          fontSize: '12px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          boxShadow: hasData ? '0 2px 8px rgba(5, 150, 105, 0.3)' : '0 2px 8px rgba(2, 132, 199, 0.25)'
+                        }}
+                      >
+                        {hasData ? '✓ Xem Ảnh & AI (Đã Lưu)' : 'Mở Tải Ảnh & AI ➔'}
+                      </button>
+                    </div>
+
+                    {/* Saved AI Report Mini Preview */}
+                    {aiReport && (
+                      <div style={{
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        marginBottom: '16px',
+                        fontSize: '12.5px'
+                      }}>
+                        <div style={{ fontWeight: 800, color: '#0f172a', display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                          <span>✦ Tình trạng AI: {aiReport.overallCondition || 'Đã thẩm định'}</span>
+                          <span style={{ color: '#7c3aed', fontWeight: 800 }}>Score: {aiReport.healthScore || 90}/100</span>
+                        </div>
+                        {isPickup ? (
+                          rawCompensationAmt > 0 && (
+                            <div style={{ color: '#0284c7', fontWeight: 800, fontSize: '12px', marginTop: '4px' }}>
+                              🛡️ Ghi nhận hư hỏng sẵn có từ trước: {rawCompensationAmt.toLocaleString('vi-VN')} đ (Bằng chứng bảo vệ Renter - Không phải bồi thường)
+                            </div>
+                          )
+                        ) : (
+                          netCompensation > 0 ? (
+                            <div style={{ color: '#dc2626', fontWeight: 800, fontSize: '12px', marginTop: '4px' }}>
+                              ⚠️ Đề xuất đền bù cho vết hư hỏng MỚI phát sinh: {netCompensation.toLocaleString('vi-VN')} đ
+                            </div>
+                          ) : (
+                            <div style={{ color: '#16a34a', fontWeight: 800, fontSize: '12px', marginTop: '4px' }}>
+                              ✓ Xe không phát sinh vết hư hỏng mới so với lúc nhận (Đền bù: 0đ)
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
+
+                    <div className="checklist-group">
+                      <label className="checkbox-item-custom">
+                        <input
+                          type="checkbox"
+                          checked={handoverChecks.noScratches}
+                          onChange={(e) => setHandoverChecks({ ...handoverChecks, noScratches: e.target.checked })}
+                          required
+                        />
+                        <span>
+                          {isPickup ? (
+                            'Xác nhận đối chiếu & ghi nhận hiện trạng hư hỏng sẵn có của xe trước khi nhận (Không tính phí bồi thường)'
+                          ) : hasNewDamages ? (
+                            <span style={{ color: '#dc2626', fontWeight: 700 }}>
+                              Xác nhận đối chiếu hư hỏng MỚI phát sinh & đề xuất bồi thường {netCompensation.toLocaleString('vi-VN')}đ
+                            </span>
+                          ) : (
+                            'Xác nhận xe không phát sinh vết trầy xước/hư hỏng mới so với lúc nhận'
+                          )}
+                        </span>
+                      </label>
+
+                      <label className="checkbox-item-custom">
+                        <input
+                          type="checkbox"
+                          checked={handoverChecks.fuelOk}
+                          onChange={(e) => setHandoverChecks({ ...handoverChecks, fuelOk: e.target.checked })}
+                          required
+                        />
+                        <span>Xác nhận mức nhiên liệu/điện chuẩn theo quy định (&gt;50%)</span>
+                      </label>
+
+                      <label className="checkbox-item-custom">
+                        <input
+                          type="checkbox"
+                          checked={handoverChecks.cleanCar}
+                          onChange={(e) => setHandoverChecks({ ...handoverChecks, cleanCar: e.target.checked })}
+                          required
+                        />
+                        <span>Xác nhận khoang cabin sạch sẽ, không mùi hôi</span>
+                      </label>
+
+                      <label className="checkbox-item-custom">
+                        <input
+                          type="checkbox"
+                          checked={handoverChecks.tiresOk}
+                          onChange={(e) => setHandoverChecks({ ...handoverChecks, tiresOk: e.target.checked })}
+                          required
+                        />
+                        <span>Kiểm tra áp suất lốp, phanh xe, đèn và còi hoạt động tốt</span>
+                      </label>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="popup-actions mt-6" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setActiveHandoverTrip(null)}>Bỏ qua</button>
@@ -1179,6 +1356,96 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
           user={user}
           onClose={() => setViewingContractTrip(null)}
         />
+      )}
+
+      {/* --- POPUP 6: BIÊN BẢN HÌNH ẢNH GIAO/NHẬN XE --- */}
+      {activeInspectionTrip && (
+        <InspectionModal
+          booking={activeInspectionTrip}
+          user={user}
+          onClose={() => setActiveInspectionTrip(null)}
+          onInspectionUpdated={() => fetchTrips(true)}
+        />
+      )}
+
+      {/* --- POPUP 7: XIN GIA HẠN CHUYẾN ĐI --- */}
+      {activeExtensionTrip && (
+        <div className="lightbox-overlay" onClick={() => setActiveExtensionTrip(null)}>
+          <div className="lightbox-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px', padding: '24px', borderRadius: '20px' }}>
+            <div className="lightbox-header" style={{ borderBottom: '1px solid #e2e8f0', pb: '12px', marginBottom: '16px' }}>
+              <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                ⏳ Xin Gia Hạn Chuyến Đi
+              </h4>
+              <button className="btn-close-lightbox" onClick={() => setActiveExtensionTrip(null)}><XCircle size={20} /></button>
+            </div>
+
+            <form onSubmit={handleRequestExtensionSubmit}>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', marginBottom: '16px' }}>
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                  Chuyến đi: <strong style={{ color: '#0f172a' }}>{activeExtensionTrip.car?.brand} {activeExtensionTrip.car?.model}</strong>
+                </p>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
+                  Hạn trả ban đầu: <strong style={{ color: '#dc2626' }}>{activeExtensionTrip.returnDate}</strong>
+                </p>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Chọn ngày trả xe mới:
+                </label>
+                <input
+                  type="date"
+                  min={activeExtensionTrip.returnDate}
+                  value={extensionReturnDate}
+                  onChange={(e) => setExtensionReturnDate(e.target.value)}
+                  required
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: 600 }}
+                />
+              </div>
+
+              {extensionReturnDate && extensionReturnDate > activeExtensionTrip.returnDate && (() => {
+                const diffTime = Math.abs(new Date(extensionReturnDate) - new Date(activeExtensionTrip.returnDate));
+                const extraDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+                const dailyPrice = activeExtensionTrip.totalPrice / (calculateDays(activeExtensionTrip.pickupDate, activeExtensionTrip.returnDate) || 1);
+                const extraPrice = Math.round(dailyPrice * extraDays);
+
+                return (
+                  <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px', padding: '14px', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#0369a1', marginBottom: '4px' }}>
+                      <span>Số ngày xin gia hạn thêm:</span>
+                      <strong>+{extraDays} ngày</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 800, color: '#0284c7' }}>
+                      <span>Phụ phí gia hạn tạm tính:</span>
+                      <span>+{formatCurrency(extraPrice)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveExtensionTrip(null)}
+                  style={{ padding: '10px 18px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={extensionSubmitting}
+                  style={{
+                    padding: '10px 22px', borderRadius: '10px', border: 'none',
+                    background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff',
+                    fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+                  }}
+                >
+                  {extensionSubmitting ? 'Đang gửi...' : 'Gửi Yêu Cầu Gia Hạn'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -4,7 +4,7 @@ import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
 import { verifyCCCDQr } from '../utils/qrHelper.js';
 import { verifyKycWithAI } from '../utils/aiHelper.js';
-import { getPool } from '../config/db.js';
+import { getPool, sql } from '../config/db.js';
 
 const router = express.Router();
 
@@ -318,4 +318,64 @@ router.post('/wallet/transaction', auth, async (req, res) => {
   }
 });
 
+// 14. Get User Wishlist (Lấy danh sách xe yêu thích)
+router.get('/wishlist', auth, async (req, res) => {
+  try {
+    const p = await getPool();
+    const result = await p.request()
+      .input('userId', sql.Int, req.user.id)
+      .query('SELECT vehicle_id FROM Wishlist WHERE user_id = @userId');
+    const carIds = result.recordset.map(row => String(row.vehicle_id));
+    res.json({ wishlist: carIds });
+  } catch (error) {
+    console.error('Error fetching wishlist:', error);
+    res.status(500).json({ message: 'Lỗi khi tải danh sách xe yêu thích.' });
+  }
+});
+
+// 15. Toggle Wishlist (Thêm / Xóa xe khỏi yêu thích)
+router.post('/wishlist/toggle/:carId', auth, async (req, res) => {
+  try {
+    const carId = parseInt(req.params.carId);
+    if (!carId) return res.status(400).json({ message: 'Mã xe không hợp lệ.' });
+
+    const p = await getPool();
+    const checkRes = await p.request()
+      .input('userId', sql.Int, req.user.id)
+      .input('carId', sql.Int, carId)
+      .query('SELECT wishlist_id FROM Wishlist WHERE user_id = @userId AND vehicle_id = @carId');
+
+    let isFavorite = false;
+    if (checkRes.recordset.length > 0) {
+      // Remove
+      await p.request()
+        .input('userId', sql.Int, req.user.id)
+        .input('carId', sql.Int, carId)
+        .query('DELETE FROM Wishlist WHERE user_id = @userId AND vehicle_id = @carId');
+      isFavorite = false;
+    } else {
+      // Add
+      await p.request()
+        .input('userId', sql.Int, req.user.id)
+        .input('carId', sql.Int, carId)
+        .query('INSERT INTO Wishlist (user_id, vehicle_id) VALUES (@userId, @carId)');
+      isFavorite = true;
+    }
+
+    const allWishlist = await p.request()
+      .input('userId', sql.Int, req.user.id)
+      .query('SELECT vehicle_id FROM Wishlist WHERE user_id = @userId');
+
+    res.json({
+      message: isFavorite ? 'Đã thêm xe vào danh sách yêu thích!' : 'Đã xóa xe khỏi danh sách yêu thích!',
+      isFavorite,
+      wishlist: allWishlist.recordset.map(r => String(r.vehicle_id))
+    });
+  } catch (error) {
+    console.error('Error toggling wishlist:', error);
+    res.status(500).json({ message: 'Lỗi cập nhật danh sách xe yêu thích.' });
+  }
+});
+
 export default router;
+

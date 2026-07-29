@@ -1,4 +1,6 @@
-const API_BASE = '/api';
+export const API_BASE = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api` 
+  : '/api';
 
 // Helper to make fetch calls with authorization header (with automatic retries for slow backend startup)
 const request = async (url, options = {}, retries = 4, delay = 1000) => {
@@ -35,6 +37,9 @@ const request = async (url, options = {}, retries = 4, delay = 1000) => {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+        }
         throw new Error(data.message || 'Đã xảy ra lỗi không xác định.');
       }
 
@@ -172,6 +177,16 @@ export const api = {
     registerOwner: () =>
       request('/user/register-owner', {
         method: 'POST'
+      }),
+
+    getWishlist: () =>
+      request('/user/wishlist', {
+        method: 'GET'
+      }),
+
+    toggleWishlist: (carId) =>
+      request(`/user/wishlist/toggle/${carId}`, {
+        method: 'POST'
       })
   },
   
@@ -233,6 +248,30 @@ export const api = {
       request(`/bookings/${id}/incident`, {
         method: 'POST',
         body: JSON.stringify({ description, image })
+      }),
+
+    saveInspection: (id, inspectionData) =>
+      request(`/bookings/${id}/inspection`, {
+        method: 'POST',
+        body: JSON.stringify(inspectionData)
+      }),
+
+    requestExtension: (id, extensionData) =>
+      request(`/bookings/${id}/request-extension`, {
+        method: 'POST',
+        body: JSON.stringify(extensionData)
+      }),
+
+    respondExtension: (id, action) =>
+      request(`/bookings/${id}/respond-extension`, {
+        method: 'PUT',
+        body: JSON.stringify({ action })
+      }),
+
+    analyzeInspection: (id, inspectionData) =>
+      request(`/bookings/${id}/ai-analyze-inspection`, {
+        method: 'POST',
+        body: JSON.stringify(inspectionData || {})
       })
   },
 
@@ -573,5 +612,30 @@ export const api = {
   
   vouchers: {
     getActive: () => request('/vouchers/active')
+  },
+
+  contracts: {
+    getByBookingId: (bookingId) => request(`/contracts/booking/${bookingId}`),
+    renterSign: (bookingId) => request(`/contracts/booking/${bookingId}/renter-sign`, { method: 'POST' }),
+    ownerSign: (bookingId) => request(`/contracts/booking/${bookingId}/owner-sign`, { method: 'POST' }),
+    updateOwnerTerms: (bookingId, customTerms) => request(`/contracts/booking/${bookingId}/owner-terms`, {
+      method: 'PUT',
+      body: JSON.stringify({ customTerms })
+    }),
+    getTopics: () => request('/contracts/custom-term-topics'),
+  },
+
+  support: {
+    createDispute: (disputeData) =>
+      request('/support/disputes', {
+        method: 'POST',
+        body: JSON.stringify(disputeData)
+      }),
+    getTickets: () => request('/support/tickets'),
+    createTicket: (ticketData) =>
+      request('/support/tickets', {
+        method: 'POST',
+        body: JSON.stringify(ticketData)
+      })
   }
 };

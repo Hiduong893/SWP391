@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, FileWarning, ReceiptText } from 'lucide-react';
+
+import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, Camera, Sparkles } from 'lucide-react';
+
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
 import { ContractModal } from '../../components/ContractModal';
+import { InspectionModal } from '../../components/InspectionModal';
 import './OwnerDashboard.css';
 
 export const OwnerDashboard = ({ setCurrentTab, user }) => {
@@ -15,6 +19,7 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [myCarsList, setMyCarsList] = useState([]);
   const [selectedBookingForContract, setSelectedBookingForContract] = useState(null);
+  const [activeInspectionBooking, setActiveInspectionBooking] = useState(null);
 
   // Dispute & Traffic Violation Modals State
   const [isGeneralDisputeModalOpen, setIsGeneralDisputeModalOpen] = useState(false);
@@ -68,6 +73,19 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
       fetchOwnerDashboard(true);
     } catch (error) {
       showToast(error.message || 'Lỗi xét duyệt đơn đặt xe.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRespondExtension = async (bookingId, action) => {
+    setActionLoading(true);
+    try {
+      const data = await api.bookings.respondExtension(bookingId, action);
+      showToast(data.message, 'success');
+      fetchOwnerDashboard(true);
+    } catch (error) {
+      showToast(error.message || 'Lỗi xử lý yêu cầu gia hạn.', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -465,6 +483,39 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                           </td>
                           <td style={{ padding: 14, fontSize: '12px', color: 'var(--text-secondary)' }}>
                             <span>{b.pickupDate} ➔ {b.returnDate}</span>
+                            {(() => {
+                              let ext = null;
+                              try {
+                                if (b.extensionRequest) {
+                                  ext = typeof b.extensionRequest === 'string' ? JSON.parse(b.extensionRequest) : b.extensionRequest;
+                                }
+                              } catch (e) {}
+
+                              if (ext && ext.status === 'pending') {
+                                return (
+                                  <div style={{ background: '#fef3c7', border: '1px solid #fde047', borderRadius: '8px', padding: '6px 8px', marginTop: '6px', fontSize: '11px', color: '#92400e' }}>
+                                    <strong>⏳ Xin gia hạn đến {ext.requestedReturnDate} (+{ext.extraDays} ngày)</strong>
+                                    <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                                      <button
+                                        onClick={() => handleRespondExtension(b.id, 'approve')}
+                                        disabled={actionLoading}
+                                        style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}
+                                      >
+                                        Duyệt
+                                      </button>
+                                      <button
+                                        onClick={() => handleRespondExtension(b.id, 'reject')}
+                                        disabled={actionLoading}
+                                        style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}
+                                      >
+                                        Từ chối
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
                           </td>
                           <td style={{ padding: 14, fontSize: '13px', color: 'var(--accent-primary)', fontWeight: 700 }}>{formatCurrency(b.totalPrice)}</td>
                           <td style={{ padding: 14 }}>
@@ -508,6 +559,20 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                                       </button>
                                   </>
                               )}
+
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                              {b.status !== 'rejected' && b.status !== 'cancelled' && (
+                                <button 
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                                  onClick={() => setSelectedBookingForContract(b.id)}
+                                >
+                                  <FileText size={12} /> Chi tiết HĐ
+                                </button>
+                              )}
+
+
                             </div>
                           </td>
                         </tr>
@@ -815,6 +880,16 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                     </form>
                 </div>
             </div>
+
+        {/* Photo Inspection & AI Damage Report Modal for Owner */}
+        {activeInspectionBooking && (
+          <InspectionModal
+            booking={activeInspectionBooking}
+            user={user}
+            onClose={() => setActiveInspectionBooking(null)}
+            onInspectionUpdated={() => fetchOwnerDashboard(true)}
+          />
+
         )}
       </div>
     </div>

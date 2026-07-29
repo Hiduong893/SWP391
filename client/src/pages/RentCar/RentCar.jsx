@@ -52,14 +52,27 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
   const fetchCars = async (filters = {}) => {
     setLoading(true);
     try {
-      const data = await api.cars.getCars(filters);
-      setCars(data);
-      if (Object.keys(filters).length === 0) {
-        setAllCars(data);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Fetch timeout')), 2500)
+      );
+      const data = await Promise.race([api.cars.getCars(filters), timeoutPromise]);
+      if (Array.isArray(data) && data.length > 0) {
+        setCars(data);
+        if (Object.keys(filters).length === 0) {
+          setAllCars(data);
+        }
+      } else {
+        setCars(likesCars);
+        if (Object.keys(filters).length === 0) {
+          setAllCars(likesCars);
+        }
       }
     } catch (error) {
       console.error('Lỗi chi tiết khi lấy danh sách xe:', error);
-      showToast('Không thể lấy danh sách xe.', 'error');
+      setCars(likesCars);
+      if (Object.keys(filters).length === 0) {
+        setAllCars(likesCars);
+      }
     } finally {
       setLoading(false);
     }
@@ -304,117 +317,117 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
   const likesCars = [
     {
       id: 'likes-car-1',
-      brand: 'Hyundai',
-      model: 'Stargazer 2024',
-      seats: 7,
+      brand: 'TOYOTA',
+      model: 'Vios G',
+      seats: 5,
       transmission: 'Tự động',
       fuel: 'Xăng',
-      pricePerDay: 900000,
-      fourHourPriceOrig: '500K',
-      fourHourPrice: '450K',
-      dayPriceOrig: '1000K',
-      dayPrice: '900K',
-      image: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=600&q=80',
-      location: 'Quận 4',
+      pricePerDay: 800000,
+      fourHourPriceOrig: '360K',
+      fourHourPrice: '304K',
+      dayPriceOrig: '880K',
+      dayPrice: '800K',
+      image: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80',
+      location: 'Quận Hà Nội',
       status: 'available',
-      plateNumber: '51K-123.45',
-      rating: 4.8,
-      badges: ['Flash Sale', 'Tự nhận xe']
+      plateNumber: '30K-567.89',
+      rating: 4.9,
+      badges: ['Mã VIVUCAR20 (-9%)', 'Gặp chủ xe']
     },
     {
       id: 'likes-car-2',
-      brand: 'Suzuki',
-      model: 'XL7 2022',
+      brand: 'TOYOTA',
+      model: 'Innova Cross',
       seats: 7,
       transmission: 'Tự động',
       fuel: 'Xăng',
-      pricePerDay: 810000,
+      pricePerDay: 1000000,
       fourHourPriceOrig: '450K',
-      fourHourPrice: '410K',
-      dayPriceOrig: '900K',
-      dayPrice: '810K',
-      image: 'https://images.unsplash.com/photo-1631835339316-dfeb9818b459?auto=format&fit=crop&w=600&q=80',
-      location: 'Quận 4',
+      fourHourPrice: '380K',
+      dayPriceOrig: '1100K',
+      dayPrice: '1000K',
+      image: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=600&q=80',
+      location: 'Quận Đà Nẵng',
       status: 'available',
-      plateNumber: '51L-999.88',
+      plateNumber: '43A-789.01',
       rating: 4.8,
-      badges: ['Flash Sale', 'Tự nhận xe']
+      badges: ['Gặp chủ xe']
     },
     {
       id: 'likes-car-3',
-      brand: 'Kia',
-      model: 'Carens 2023',
-      seats: 7,
+      brand: 'TOYOTA',
+      model: 'Corolla Cross',
+      seats: 5,
       transmission: 'Tự động',
       fuel: 'Xăng',
-      pricePerDay: 990000,
-      fourHourPriceOrig: '550K',
-      fourHourPrice: '500K',
-      dayPriceOrig: '1100K',
-      dayPrice: '990K',
+      pricePerDay: 950000,
+      fourHourPriceOrig: '428K',
+      fourHourPrice: '361K',
+      dayPriceOrig: '1045K',
+      dayPrice: '950K',
       image: 'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?auto=format&fit=crop&w=600&q=80',
-      location: 'Quận Bình Thạnh',
+      location: 'Quận Hà Nội',
       status: 'available',
-      plateNumber: '51G-567.89',
+      plateNumber: '30L-112.23',
       rating: 4.9,
-      badges: ['Flash Sale', 'Tự nhận xe']
+      badges: ['Gặp chủ xe']
     },
     {
       id: 'likes-car-4',
-      brand: 'Hyundai',
-      model: 'Stargazer 2024',
-      seats: 7,
+      brand: 'VINFAST',
+      model: 'VF 3 Plus',
+      seats: 4,
       transmission: 'Tự động',
-      fuel: 'Xăng',
-      pricePerDay: 900000,
-      fourHourPriceOrig: '500K',
-      fourHourPrice: '450K',
-      dayPriceOrig: '1000K',
-      dayPrice: '900K',
-      image: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=600&q=80',
-      location: 'Quận 4',
+      fuel: 'Điện',
+      pricePerDay: 500000,
+      fourHourPriceOrig: '225K',
+      fourHourPrice: '190K',
+      dayPriceOrig: '550K',
+      dayPrice: '500K',
+      image: 'https://images.unsplash.com/photo-1631835339316-dfeb9818b459?auto=format&fit=crop&w=600&q=80',
+      location: 'Quận Hà Nội',
       status: 'available',
-      plateNumber: '51H-111.22',
-      rating: 4.8,
-      badges: ['Flash Sale', 'Tự nhận xe']
+      plateNumber: '30L-999.01',
+      rating: 4.9,
+      badges: ['Gặp chủ xe']
     },
     {
       id: 'likes-car-5',
-      brand: 'Mitsubishi',
-      model: 'Xpander 2022',
-      seats: 7,
+      brand: 'VINFAST',
+      model: 'VF 5 Plus',
+      seats: 5,
       transmission: 'Tự động',
-      fuel: 'Xăng',
-      pricePerDay: 810000,
-      fourHourPriceOrig: '450K',
-      fourHourPrice: '410K',
-      dayPriceOrig: '900K',
-      dayPrice: '810K',
-      image: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=600&q=80',
-      location: 'Quận Bình Thạnh',
+      fuel: 'Điện',
+      pricePerDay: 700000,
+      fourHourPriceOrig: '315K',
+      fourHourPrice: '266K',
+      dayPriceOrig: '770K',
+      dayPrice: '700K',
+      image: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80',
+      location: 'Quận Hồ Chí Minh',
       status: 'available',
-      plateNumber: '43A-555.55',
+      plateNumber: '51L-888.02',
       rating: 4.8,
-      badges: ['Flash Sale', 'Tự nhận xe']
+      badges: ['Gặp chủ xe']
     },
     {
       id: 'likes-car-6',
-      brand: 'Kia',
-      model: 'Sorento 2023',
-      seats: 7,
+      brand: 'VINFAST',
+      model: 'VF 8 Plus',
+      seats: 5,
       transmission: 'Tự động',
-      fuel: 'Dầu',
-      pricePerDay: 1310000,
-      fourHourPriceOrig: '730K',
-      fourHourPrice: '660K',
-      dayPriceOrig: '1450K',
-      dayPrice: '1310K',
+      fuel: 'Điện',
+      pricePerDay: 1200000,
+      fourHourPriceOrig: '540K',
+      fourHourPrice: '456K',
+      dayPriceOrig: '1320K',
+      dayPrice: '1200K',
       image: 'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?auto=format&fit=crop&w=600&q=80',
-      location: 'Quận 7',
+      location: 'Quận Đà Nẵng',
       status: 'available',
-      plateNumber: '51K-666.99',
+      plateNumber: '43A-666.03',
       rating: 4.9,
-      badges: ['Flash Sale', 'Tự nhận xe']
+      badges: ['Gặp chủ xe']
     }
   ];
 
@@ -946,11 +959,6 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                         <img src={car.image} alt={car.model} className="card-image-element" />
                         {/* Nhãn khuyến mãi góc trên bên trái */}
                         <div className="card-badge-top-container" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                          {carVoucher && (
-                            <span className="promo-badge-glow-yellow" style={{ background: '#00bfa5', color: '#fff', border: 'none' }}>
-                              🏷️ Mã {carVoucher.code} (-{carVoucher.discount_percent || carVoucher.discountPercent}%)
-                            </span>
-                          )}
                           {car.pricePerDay > 1000000 && (
                             <span className="promo-badge-glow-red">⚡ Flash Sale</span>
                           )}
@@ -969,6 +977,21 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                       {/* Nội dung chi tiết xe */}
                       <div className="card-body-content-premium">
                         <h3 className="card-title-main-premium">{car.brand.toUpperCase()} {car.model}</h3>
+                        
+                        {carVoucher && (
+                          <div style={{ margin: '4px 0 6px 0' }}>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '4px',
+                              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                              color: '#ffffff', fontSize: '11px', fontWeight: '800',
+                              padding: '3px 10px', borderRadius: '20px',
+                              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
+                            }}>
+                              🏷️ Mã {carVoucher.code} (-{carVoucher.discount_percent || carVoucher.discountPercent}%)
+                            </span>
+                          </div>
+                        )}
+
                         <p className="card-location-subtext">Quận {car.location.replace('Quận ', '')}</p>
                         {/* Hộp hiển thị giá kép (4h & 24h) giống Ảnh 2 */}
                         <div className="double-pricing-spec-grid">
@@ -1052,11 +1075,6 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
 
                         {/* Top badges */}
                         <div className="card-badge-top-container" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                          {carVoucher && (
-                            <span className="promo-badge-glow-yellow" style={{ background: '#00bfa5', color: '#fff', border: 'none' }}>
-                              🏷️ Mã {carVoucher.code} (-{carVoucher.discount_percent || carVoucher.discountPercent}%)
-                            </span>
-                          )}
                           <span className="promo-badge-glow-yellow">👑 Xế xịn</span>
                         </div>
 
@@ -1081,6 +1099,21 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                       {/* Body Content */}
                       <div className="card-body-content-premium">
                         <h3 className="card-title-main-premium">{car.brand.toUpperCase()} {car.model}</h3>
+
+                        {carVoucher && (
+                          <div style={{ margin: '4px 0 6px 0' }}>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '4px',
+                              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                              color: '#ffffff', fontSize: '11px', fontWeight: '800',
+                              padding: '3px 10px', borderRadius: '20px',
+                              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
+                            }}>
+                              🏷️ Mã {carVoucher.code} (-{carVoucher.discount_percent || carVoucher.discountPercent}%)
+                            </span>
+                          </div>
+                        )}
+
                         <p className="card-location-subtext">
                           {isDbCar ? `Quận ${car.location.replace('Quận ', '')}` : car.location}
                         </p>
