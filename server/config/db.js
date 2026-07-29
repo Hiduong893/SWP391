@@ -255,25 +255,6 @@ export const getPool = async () => {
             ALTER TABLE Booking DROP CONSTRAINT CHK_Booking_Status;
             ALTER TABLE Booking ADD CONSTRAINT CHK_Booking_Status CHECK (status IN ('Pending', 'Approved', 'Active', 'ReturnPendingOwner', 'Completed', 'Cancelled', 'Rejected', 'Disputed'));
         END
-
-        -- Create BookingExtension table if not exists
-        IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'BookingExtension')
-        BEGIN
-            CREATE TABLE BookingExtension (
-                extension_id INT IDENTITY(1,1) PRIMARY KEY,
-                booking_id INT NOT NULL,
-                extra_hours INT DEFAULT 0,
-                extra_days INT DEFAULT 0,
-                old_end_time DATETIME2 NOT NULL,
-                new_end_time DATETIME2 NOT NULL,
-                extension_fee DECIMAL(18,2) NOT NULL,
-                status NVARCHAR(50) NOT NULL DEFAULT 'PENDING',
-                payment_method NVARCHAR(50) NULL,
-                created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
-                updated_at DATETIME2 NOT NULL DEFAULT GETDATE(),
-                CONSTRAINT FK_BookingExtension_Booking FOREIGN KEY (booking_id) REFERENCES Booking(booking_id)
-            );
-        END
       `);
       
 
