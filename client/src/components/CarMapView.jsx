@@ -106,9 +106,9 @@ const getCarCoords = (car, index) => {
     }
   }
 
-  // Golden ratio spiral distribution for balanced, realistic metro-wide car dispersion (1.2km - 6km)
+  // Gentle, balanced distribution around district center (300m - 1.5km) so pins are always in view
   const angle = (index * 137.5) * (Math.PI / 180);
-  const radius = 0.012 + (index % 6) * 0.0075;
+  const radius = 0.003 + (index % 5) * 0.0025;
 
   const latOffset = Math.sin(angle) * radius;
   const lngOffset = Math.cos(angle) * radius * 1.15;
@@ -248,19 +248,11 @@ export const CarMapView = ({ cars = [], onRentCarClick, user }) => {
     });
 
     if (filteredCars.length > 0) {
-      let currentCar = selectedCar;
       if (!selectedCar || !filteredCars.some(c => c.id === selectedCar.id)) {
-        currentCar = filteredCars[0];
-        setSelectedCar(currentCar);
-      }
-
-      if (currentCar) {
-        const idx = filteredCars.findIndex(c => c.id === currentCar.id);
-        const targetCoords = getCarCoords(currentCar, idx >= 0 ? idx : 0);
-        map.flyTo(targetCoords, 13, { duration: 0.8 });
+        setSelectedCar(filteredCars[0]);
       }
     }
-  }, [leafletLoaded, filteredCars, selectedCar]);
+  }, [leafletLoaded, filteredCars]);
 
   const handleRegionChange = (region) => {
     setSelectedRegion(region);
@@ -278,15 +270,9 @@ export const CarMapView = ({ cars = [], onRentCarClick, user }) => {
 
     if (mapInstanceRef.current) {
       const map = mapInstanceRef.current;
-      if (firstCar) {
-        const idx = newFiltered.findIndex(c => c.id === firstCar.id);
-        const coords = getCarCoords(firstCar, idx >= 0 ? idx : 0);
-        map.flyTo(coords, 13, { duration: 1 });
-      } else {
-        if (region === 'hanoi') map.flyTo([21.0285, 105.8542], 12, { duration: 1 });
-        else if (region === 'danang') map.flyTo([16.0544, 108.2022], 12, { duration: 1 });
-        else map.flyTo([10.7769, 106.7009], 12, { duration: 1 });
-      }
+      if (region === 'hanoi') map.flyTo([21.0285, 105.8542], 12, { duration: 1 });
+      else if (region === 'danang') map.flyTo([16.0544, 108.2022], 12, { duration: 1 });
+      else map.flyTo([10.7769, 106.7009], 12, { duration: 1 });
     }
   };
 
