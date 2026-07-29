@@ -16,6 +16,7 @@ const request = async (url, options = {}, retries = 4, delay = 1000) => {
   for (let i = 0; i <= retries; i++) {
     try {
       const response = await fetch(`${API_BASE}${url}`, {
+        cache: 'no-store',
         ...options,
         headers
       });
@@ -212,6 +213,12 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(bookingData)
       }),
+
+    verifyFaceForBooking: (scannedFace) =>
+      request('/bookings/verify-face', {
+        method: 'POST',
+        body: JSON.stringify({ scannedFace })
+      }),
       
     createVnpayUrl: (bookingId) =>
       request('/payments/vnpay/create', {
@@ -315,6 +322,24 @@ export const api = {
     deleteCar: (id) =>
       request(`/owner/cars/${id}`, {
         method: 'DELETE'
+      }),
+
+    createDispute: (bookingId, description, amount, evidenceUrls) =>
+      request(`/owner/bookings/${bookingId}/dispute`, {
+        method: 'POST',
+        body: JSON.stringify({ description, amount, evidenceUrls })
+      }),
+
+    reportTrafficViolation: (bookingId, amount, description, ticketImageUrl) =>
+      request(`/bookings/${bookingId}/report-violation`, {
+        method: 'POST',
+        body: JSON.stringify({ amount, description, ticketImageUrl })
+      }),
+
+    reportTrafficViolation: (bookingId, amount, description, ticketImageUrl) =>
+      request(`/bookings/${bookingId}/report-violation`, {
+        method: 'POST',
+        body: JSON.stringify({ amount, description, ticketImageUrl })
       })
   },
 

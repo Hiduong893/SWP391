@@ -18,6 +18,8 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   const [faceScanStep, setFaceScanStep] = useState('idle'); // 'idle' | 'streaming' | 'countdown' | 'captured' | 'verifying'
   const [capturedFace, setCapturedFace] = useState(null);
   const [faceCountdown, setFaceCountdown] = useState(3);
+  const [faceVerificationSkipped, setFaceVerificationSkipped] = useState(false); // true when API error, allows proceed
+  const [faceVerifyResult, setFaceVerifyResult] = useState(null); // { verified, score, reason, apiError }
   const [payingState, setPayingState] = useState('idle'); // 'idle' | 'processing' | 'paid'
 
   // Electronic Contract states
@@ -138,22 +140,34 @@ export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setC
   const handleVerifyFace = async () => {
     if (!capturedFace) return;
     setFaceScanStep('verifying');
+    setFaceVerifyResult(null);
+    setFaceVerificationSkipped(false);
     setLoading(true);
     
     try {
-      // đối khớp qua API
-      if (user.faceImage) {
-        // Nếu có ảnh KYC, chúng ta có thể so sánh. 
-        // Tuy nhiên trong BookingModal để đảm bảo demo siêu mượt, chúng ta giả lập chờ 1.5s
-        await new Promise(resolve => setTimeout(resolve, 1500));
-      } else {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-      }
+      // Gọi API thật: so sánh khuôn mặt với CCCD/Bằng lái xe
+      const result = await api.bookings.verifyFaceForBooking(capturedFace);
+      setFaceVerifyResult(result);
       
-      showToast('Xác thực khuôn mặt sinh trắc học khớp 99.8%!', 'success');
-      setStep('contract');
+      if (result.verified) {
+        // Xác thực thành công
+        showToast(`Xác thực khuôn mặt thành công! Độ khớp: ${result.score}%`, 'success');
+        setStep('contract');
+      } else if (result.apiError || result.allowProceed) {
+        // API lỗi nhưng cho phép tiếp tục — CSKH sẽ duyệt thủ công
+        setFaceVerificationSkipped(true);
+        showToast('⚠️ Hệ thống AI gặp sự cố. Đơn đặt xe sẽ được CSKH duyệt thủ công.', 'warning');
+        setFaceScanStep('captured');
+      } else {
+        // Khuôn mặt không khớp
+        showToast(`Xác thực thất bại: ${result.reason || 'Khuôn mặt không khớp với CCCD/Bằng lái xe.'}`, 'error');
+        setFaceScanStep('captured');
+      }
     } catch (err) {
-      showToast('Khuôn mặt không khớp với hồ sơ KYC. Vui lòng quét lại.', 'error');
+      // Lỗi kết nối hoàn toàn — cho phép tiếp tục với CSKH duyệt
+      setFaceVerificationSkipped(true);
+      setFaceVerifyResult({ verified: false, apiError: true, reason: err.message });
+      showToast('⚠️ Không thể kết nối hệ thống xác thực. Đơn đặt xe sẽ được CSKH duyệt thủ công.', 'warning');
       setFaceScanStep('captured');
     } finally {
       setLoading(false);
@@ -600,7 +614,8 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
         paymentMethod: paymentChoice,
         scannedFace: capturedFace || null,
         contractSignature: signatureDataUrl,
-        agreementChecked: true
+        agreementChecked: true,
+        faceVerificationSkipped: faceVerificationSkipped || false
       };
 
       const newBooking = await api.bookings.create(bookingData);
@@ -1398,7 +1413,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
               Xác Thực Biometric FaceID
             </h4>
             <p style={{ fontSize: '13.5px', color: '#475569', marginBottom: '20px', lineHeight: 1.6 }}>
-              Vui lòng giữ đầu thẳng và đặt khuôn mặt ở giữa vòng tròn xanh lớn để chụp ảnh đối khớp sinh trắc học với ảnh FaceID gốc của bạn.
+              Vui lòng giữ đầu thẳng và đặt khuôn mặt ở giữa vòng tròn xanh. AI sẽ đối chiếu khuôn mặt của bạn với ảnh trên <strong>CCCD / Bằng lái xe</strong> đã tải lên.
             </p>
 
             <div style={{ position: 'relative', width: '300px', height: '300px', margin: '0 auto 24px auto' }}>
@@ -1482,7 +1497,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                       borderRadius: '50%',
                       animation: 'spin 1s linear infinite'
                     }}></div>
-                    <span style={{ fontSize: '13px', fontWeight: 600 }}>Đang so khớp bằng AI...</span>
+                    <span style={{ fontSize: '13px', fontWeight: 600 }}>Đang đối chiếu với CCCD/Bằng lái...</span>
                   </div>
                 )}
               </div>
@@ -1548,8 +1563,80 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
             </div>
 
             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontSize: '12.5px', color: '#64748b', textAlign: 'left', lineHeight: 1.5 }}>
-              💡 <strong>Lưu ý đối chiếu:</strong> Bạn có thể bật Camera hoặc Tải ảnh khuôn mặt từ máy tính/điện thoại. Nếu máy không có camera, bạn có thể chọn Bỏ qua để chuyển tới bước ký hợp đồng.
+              💡 <strong>Lưu ý:</strong> AI sẽ tự động đối chiếu khuôn mặt bạn quét với ảnh trên CCCD/Bằng lái xe đã tải lên ở Hồ sơ cá nhân. Nếu máy không có camera, bạn có thể tải ảnh selfie từ thiết bị.
             </div>
+
+            {/* API Error Warning — Allow proceed with CSKH review */}
+            {faceVerificationSkipped && (
+              <div style={{
+                background: 'linear-gradient(135deg, #fef3c7, #fff7ed)',
+                border: '2px solid #f59e0b',
+                borderRadius: '12px',
+                padding: '14px 18px',
+                fontSize: '13px',
+                color: '#92400e',
+                textAlign: 'left',
+                lineHeight: 1.6,
+                marginTop: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <AlertTriangle size={18} style={{ color: '#d97706', flexShrink: 0 }} />
+                  <strong style={{ color: '#b45309' }}>Hệ thống AI xác thực tạm thời gặp sự cố</strong>
+                </div>
+                <span>
+                  {faceVerifyResult?.reason || 'Không thể kết nối hệ thống AI.'} Bạn vẫn có thể tiếp tục đặt xe — đơn hàng sẽ được <strong>CSKH duyệt thủ công</strong>.
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    stopFaceScanStream();
+                    setStep('contract');
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                    border: 'none',
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    alignSelf: 'flex-start',
+                    marginTop: '4px'
+                  }}
+                >
+                  ⚠️ Tiếp tục đặt xe (Chờ CSKH duyệt) ➔
+                </button>
+              </div>
+            )}
+
+            {/* Face verification failed — show result */}
+            {faceVerifyResult && !faceVerifyResult.verified && !faceVerifyResult.apiError && (
+              <div style={{
+                background: '#fef2f2',
+                border: '2px solid #fca5a5',
+                borderRadius: '12px',
+                padding: '14px 18px',
+                fontSize: '13px',
+                color: '#991b1b',
+                textAlign: 'left',
+                lineHeight: 1.6,
+                marginTop: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <AlertTriangle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
+                <span>
+                  <strong>Khuôn mặt không khớp:</strong> {faceVerifyResult.reason || 'Vui lòng quét lại khuôn mặt chính chủ.'}
+                  {faceVerifyResult.score > 0 && ` (Độ khớp: ${faceVerifyResult.score}%)`}
+                </span>
+              </div>
+            )}
 
             {/* Step Footer Action */}
             <div className="booking-modal-footer mt-6" style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between' }}>
@@ -1572,8 +1659,9 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                   setStep('contract');
                 }}
                 style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', border: 'none' }}
+                disabled={!faceVerificationSkipped && !capturedFace}
               >
-                Ký hợp đồng điện tử ➔
+                {faceVerificationSkipped ? 'Tiếp tục ký hợp đồng (CSKH duyệt) ➔' : 'Bỏ qua ➔'}
               </button>
             </div>
           </div>

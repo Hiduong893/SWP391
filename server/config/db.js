@@ -351,7 +351,7 @@ const seedDb = async (p) => {
   if (userCount.recordset[0].count === 0) {
     const users = [
       {
-        email: 'admin@bonboncar.vn',
+        email: 'admin@vivucar.vn',
         password: '$2a$10$EaOh051/nmcvKXf4BHtNYe8qPdQOH2mORz9avGJJIi4RVgRkbKuWi', // admin
         name: 'Hệ Thống Admin',
         role: 'admin',
@@ -359,7 +359,7 @@ const seedDb = async (p) => {
         bank: { bankName: 'MBBank', accountNumber: '1903456789012' }
       },
       {
-        email: 'admin2@bonboncar.vn',
+        email: 'admin2@vivucar.vn',
         password: '$2a$10$INmJjkJg8ilvvQCAFdeGU.tQh8SLMYS1qSlsLyeNV7GEKHlKuxqB2', // admin
         name: 'Admin Hồ Văn Dương',
         role: 'admin',
@@ -367,7 +367,7 @@ const seedDb = async (p) => {
         bank: { bankName: 'MBBank', accountNumber: '9999999999999' }
       },
       {
-        email: 'cskh@bonboncar.vn',
+        email: 'cskh@vivucar.vn',
         password: '$2a$10$o0ZbPrvV.3bkL4/nq48BRehg0WMd71SnSdwjfwpqLVs7ntM2UxC1i', // cskh
         name: 'CSKH Minh Anh',
         role: 'cskh',
@@ -375,7 +375,7 @@ const seedDb = async (p) => {
         bank: null
       },
       {
-        email: 'owner@bonboncar.vn',
+        email: 'owner@vivucar.vn',
         password: '$2a$10$VsF1EacSxQz.x8OZfpwMGu6HPtvVpO9Nub/b7s.YemqgpIJ2Jo9uu', // owner
         name: 'Chủ Xe Lê Mạnh',
         role: 'owner',
@@ -383,7 +383,7 @@ const seedDb = async (p) => {
         bank: { bankName: 'Vietcombank', accountNumber: '0071001234567' }
       },
       {
-        email: 'renter@bonboncar.vn',
+        email: 'renter@vivucar.vn',
         password: '$2a$10$dByHmiioWlLgijdz7OowMe.BuX5KMRb3YyHChFgf3dblHIBbJqiq2', // renter
         name: 'Khách Thuê Quang Huy',
         role: 'renter',
@@ -535,9 +535,9 @@ const seedDb = async (p) => {
         categoryId = catRes.recordset[0].category_id;
       }
 
-      // Insert Vehicle (seeded as owner@bonboncar.vn)
+      // Insert Vehicle (seeded as owner@vivucar.vn)
       let ownerId = null;
-      let ownerRes = await p.request().query("SELECT user_id FROM [User] WHERE email = 'owner@bonboncar.vn'");
+      let ownerRes = await p.request().query("SELECT user_id FROM [User] WHERE email = 'owner@vivucar.vn'");
       if (ownerRes.recordset.length > 0) {
         ownerId = ownerRes.recordset[0].user_id;
       } else {

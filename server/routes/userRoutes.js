@@ -103,9 +103,11 @@ router.put('/kyc', auth, async (req, res) => {
     let licenseStatus = user.licenseStatus;
     let cccdStatus = user.cccdStatus || (user.kycDocuments?.cccd ? 'verified' : undefined);
     let cccdBackStatus = user.cccdBackStatus || (user.kycDocuments?.cccdBack ? 'verified' : undefined);
-    let faceStatus = user.faceStatus || (user.kycDocuments?.faceImage ? 'verified' : undefined);
-    if (faceImage) {
-      faceStatus = 'verified';
+    let faceStatus = user.faceStatus || undefined;
+    if (faceImage && faceImage !== user.kycDocuments?.faceImage) {
+      // Option A: Face registration is optional, no auto-verify.
+      // Real verification happens at booking time against CCCD/License.
+      faceStatus = 'pending';
     }
     let kycRejectionReason = user.kycRejectionReason;
 
@@ -160,7 +162,7 @@ router.put('/kyc', auth, async (req, res) => {
     } else {
       res.json({
         message: faceImage
-          ? 'Xác thực khuôn mặt KYC của bạn thành công!'
+          ? 'Đã lưu ảnh khuôn mặt. Khuôn mặt sẽ được đối chiếu tự động với CCCD/Bằng lái khi bạn đặt xe.'
           : 'Hồ sơ KYC của bạn đã được xác minh thành công bằng AI!',
         user: sanitizeUser(updatedUser)
       });

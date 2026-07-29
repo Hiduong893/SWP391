@@ -179,7 +179,7 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
       showToast('Đang tải ảnh khuôn mặt lên hệ thống KYC...', 'info');
       const data = await api.user.uploadKyc(null, null, null, null, capturedFace);
       onUpdateUser(data.user);
-      showToast('Tải ảnh và xác minh khuôn mặt KYC thành công!', 'success');
+      showToast('Đã lưu ảnh khuôn mặt. Khuôn mặt sẽ được đối chiếu tự động với CCCD khi bạn đặt xe.', 'success');
       setShowFaceScanner(false);
       setCapturedFace(null);
       setFaceScanStep('idle');
@@ -755,7 +755,7 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
 
                 {/* 4. Xác thực khuôn mặt */}
                 <div className="kyc-item-box">
-                  <span className="kyc-label">XÁC MINH KHUÔN MẶT</span>
+                  <span className="kyc-label">KHUÔN MẶT (Tùy chọn)</span>
                   {user.faceImage ? (
                     <div style={{ marginTop: 4 }}>
                       {user.faceStatus === 'verified' ? (

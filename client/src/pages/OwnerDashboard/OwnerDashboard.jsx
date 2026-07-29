@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, Camera, Sparkles } from 'lucide-react';
+import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, FileWarning, ReceiptText, Camera, Sparkles } from 'lucide-react';
+
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
 import { ContractModal } from '../../components/ContractModal';
@@ -17,6 +18,19 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
   const [myCarsList, setMyCarsList] = useState([]);
   const [selectedBookingForContract, setSelectedBookingForContract] = useState(null);
   const [activeInspectionBooking, setActiveInspectionBooking] = useState(null);
+
+  // Dispute & Traffic Violation Modals State
+  const [isGeneralDisputeModalOpen, setIsGeneralDisputeModalOpen] = useState(false);
+  const [selectedBookingForDispute, setSelectedBookingForDispute] = useState(null);
+  const [generalDisputeDetails, setGeneralDisputeDetails] = useState({ description: '', amount: '' });
+  const [generalDisputeEvidenceImage, setGeneralDisputeEvidenceImage] = useState('');
+  const [generalDisputeImageLoading, setGeneralDisputeImageLoading] = useState(false);
+
+  const [isTrafficViolationModalOpen, setIsTrafficViolationModalOpen] = useState(false);
+  const [selectedBookingForTrafficViolation, setSelectedBookingForTrafficViolation] = useState(null);
+  const [trafficViolationDetails, setTrafficViolationDetails] = useState({ amount: '', description: '' });
+  const [trafficViolationTicketImage, setTrafficViolationTicketImage] = useState('');
+  const [trafficViolationImageLoading, setTrafficViolationImageLoading] = useState(false);
 
   // Edit Car Form State
   const [editingCar, setEditingCar] = useState(null);
@@ -172,6 +186,93 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  };
+
+  // Generic Image Upload Handler
+  const handleImageUpload = (e, setImage, setLoading, toastMessage) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Vui lòng chỉ chọn tệp hình ảnh.', 'warning');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Kích thước ảnh phải nhỏ hơn 5MB.', 'warning');
+      return;
+    }
+
+    setLoading(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImage(reader.result);
+      setLoading(false);
+      showToast(toastMessage, 'success');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // General Dispute Functions
+  const openGeneralDisputeModal = (booking) => {
+    setSelectedBookingForDispute(booking);
+    setGeneralDisputeDetails({ description: '', amount: '' });
+    setGeneralDisputeEvidenceImage('');
+    setIsGeneralDisputeModalOpen(true);
+  };
+
+  const handleGeneralDisputeSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedBookingForDispute || !generalDisputeDetails.description) {
+      showToast('Vui lòng nhập mô tả khiếu nại.', 'warning');
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const evidenceUrls = generalDisputeEvidenceImage ? [generalDisputeEvidenceImage] : [];
+      const data = await api.owner.createDispute(
+        selectedBookingForDispute.id,
+        generalDisputeDetails.description,
+        generalDisputeDetails.amount,
+        evidenceUrls
+      );
+      showToast(data.message, 'success');
+      setIsGeneralDisputeModalOpen(false);
+      fetchOwnerDashboard(true); // Refresh data
+    } catch (error) {
+      showToast(error.message || 'Lỗi khi gửi khiếu nại.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Traffic Violation Functions
+  const openTrafficViolationModal = (booking) => {
+    setSelectedBookingForTrafficViolation(booking);
+    setTrafficViolationDetails({ amount: '', description: '' });
+    setTrafficViolationTicketImage('');
+    setIsTrafficViolationModalOpen(true);
+  };
+
+  const handleTrafficViolationSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedBookingForTrafficViolation || !trafficViolationDetails.amount || !trafficViolationDetails.description) {
+      showToast('Vui lòng nhập đầy đủ số tiền phạt và mô tả.', 'warning');
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const data = await api.owner.reportTrafficViolation(selectedBookingForTrafficViolation.id, trafficViolationDetails.amount, trafficViolationDetails.description, trafficViolationTicketImage);
+      showToast(data.message, 'success');
+      setIsTrafficViolationModalOpen(false);
+      fetchOwnerDashboard(true); // Refresh data
+    } catch (error) {
+      showToast(error.message || 'Lỗi khi báo cáo phạt nguội.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const pendingBookings = ownerBookings.filter(b => b.status === 'pending_owner');
@@ -365,6 +466,7 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                         <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Doanh Thu</th>
                         <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Trạng Thái</th>
                         <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Hợp đồng</th>
+                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Hành động</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -420,18 +522,41 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                             </span>
                           </td>
                           <td style={{ padding: 14 }}>
-                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                              {b.status !== 'rejected' && b.status !== 'cancelled' && (
-                                <button 
-                                  type="button"
-                                  className="btn btn-secondary"
-                                  style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
-                                  onClick={() => setSelectedBookingForContract(b.id)}
-                                >
-                                  <FileText size={12} /> Chi tiết HĐ
-                                </button>
+                            {b.status !== 'rejected' && b.status !== 'cancelled' && (
+                              <button 
+                                type="button"
+                                className="btn btn-secondary"
+                                style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                                onClick={() => setSelectedBookingForContract(b.id)}
+                              >
+                                <FileText size={12} /> Chi tiết HĐ
+                              </button>                            )}
+                          </td>
+                          <td style={{ padding: 14 }}>
+                            <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                              {/* NEW: Dispute and Traffic Violation buttons */}
+                              {b.status === 'completed' && (
+                                  <>
+                                      <button
+                                          type="button"
+                                          className="btn btn-secondary"
+                                          style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                                          onClick={() => openGeneralDisputeModal(b)}
+                                          disabled={actionLoading}
+                                      >
+                                          <FileWarning size={12} /> Khiếu nại
+                                      </button>
+                                      <button
+                                          type="button"
+                                          className="btn btn-secondary"
+                                          style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                                          onClick={() => openTrafficViolationModal(b)}
+                                          disabled={actionLoading}
+                                      >
+                                          <ReceiptText size={12} /> Phạt nguội
+                                      </button>
+                                  </>
                               )}
-
                             </div>
                           </td>
                         </tr>
@@ -614,6 +739,133 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
           />
         )}
 
+        {/* General Dispute Modal */}
+        {isGeneralDisputeModalOpen && (
+            <div className="owner-modal-overlay">
+                <div className="owner-modal-card glassmorphism">
+                    <div className="owner-modal-header">
+                        <h4>Tạo Khiếu nại chung cho chuyến đi #{selectedBookingForDispute?.id}</h4>
+                        <button className="owner-modal-close" onClick={() => setIsGeneralDisputeModalOpen(false)}>✕</button>
+                    </div>
+                    <form onSubmit={handleGeneralDisputeSubmit} className="list-car-form">
+                        <div className="form-group">
+                            <label className="form-label">Mô tả chi tiết khiếu nại *</label>
+                            <textarea
+                                placeholder="Ví dụ: Khách làm xước xe bên phải, trả xe muộn 2 tiếng, xe bị bẩn nặng..."
+                                className="form-input"
+                                value={generalDisputeDetails.description}
+                                onChange={(e) => setGeneralDisputeDetails({ ...generalDisputeDetails, description: e.target.value })}
+                                rows="4"
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Số tiền yêu cầu bồi thường (VND)</label>
+                            <div className="input-container">
+                                <DollarSign className="input-icon" size={16} />
+                                <input
+                                    type="number"
+                                    placeholder="Vd: 500000"
+                                    className="form-input"
+                                    value={generalDisputeDetails.amount}
+                                    onChange={(e) => setGeneralDisputeDetails({ ...generalDisputeDetails, amount: e.target.value })}
+                                    min="0"
+                                />
+                            </div>
+                        </div>
+                        <div className="form-group" style={{ marginTop: 12 }}>
+                            <label className="form-label">Ảnh bằng chứng (nếu có)</label>
+                            <div className="car-photo-upload-zone">
+                                {generalDisputeEvidenceImage ? (
+                                    <div className="uploaded-car-preview">
+                                        <img src={generalDisputeEvidenceImage} alt="Dispute Evidence Preview" />
+                                        <button type="button" className="btn-remove-photo" onClick={() => setGeneralDisputeEvidenceImage('')}>✕ Xóa ảnh</button>
+                                    </div>
+                                ) : (
+                                    <label className="photo-upload-label">
+                                        <Upload className="upload-photo-icon" size={24} />
+                                        <span>{generalDisputeImageLoading ? 'Đang tải...' : 'Chọn ảnh bằng chứng'}</span>
+                                        <p>Ảnh chụp rõ ràng, dưới 5MB</p>
+                                        <input type="file" onChange={(e) => handleImageUpload(e, setGeneralDisputeEvidenceImage, setGeneralDisputeImageLoading, 'Tải ảnh bằng chứng lên thành công!')} accept="image/*" style={{ display: 'none' }} disabled={generalDisputeImageLoading} />
+                                    </label>
+                                )}
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+                            <button type="button" className="btn btn-secondary" onClick={() => setIsGeneralDisputeModalOpen(false)}>Hủy bỏ</button>
+                            <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={actionLoading || generalDisputeImageLoading}>
+                                {actionLoading ? 'Đang gửi...' : 'Gửi khiếu nại'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        )}
+
+        {/* Traffic Violation Modal */}
+        {isTrafficViolationModalOpen && (
+            <div className="owner-modal-overlay">
+                <div className="owner-modal-card glassmorphism">
+                    <div className="owner-modal-header">
+                        <h4>Báo cáo Phạt nguội cho chuyến đi #{selectedBookingForTrafficViolation?.id}</h4>
+                        <button className="owner-modal-close" onClick={() => setIsTrafficViolationModalOpen(false)}>✕</button>
+                    </div>
+                    <form onSubmit={handleTrafficViolationSubmit} className="list-car-form">
+                        <div className="form-group">
+                            <label className="form-label">Số tiền phạt (VND) *</label>
+                            <div className="input-container">
+                                <DollarSign className="input-icon" size={16} />
+                                <input
+                                    type="number"
+                                    placeholder="Vd: 1500000"
+                                    className="form-input"
+                                    value={trafficViolationDetails.amount}
+                                    onChange={(e) => setTrafficViolationDetails({ ...trafficViolationDetails, amount: e.target.value })}
+                                    min="1000"
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Mô tả chi tiết phạt nguội *</label>
+                            <textarea
+                                placeholder="Ví dụ: Xe bị phạt quá tốc độ tại cao tốc Pháp Vân - Cầu Giẽ, biển số 30A-123.45, ngày 10/06/2026..."
+                                className="form-input"
+                                value={trafficViolationDetails.description}
+                                onChange={(e) => setTrafficViolationDetails({ ...trafficViolationDetails, description: e.target.value })}
+                                rows="3"
+                                required
+                            />
+                        </div>
+                        <div className="form-group" style={{ marginTop: 12 }}>
+                            <label className="form-label">Ảnh phiếu phạt nguội *</label>
+                            <div className="car-photo-upload-zone">
+                                {trafficViolationTicketImage ? (
+                                    <div className="uploaded-car-preview">
+                                        <img src={trafficViolationTicketImage} alt="Traffic Violation Ticket Preview" />
+                                        <button type="button" className="btn-remove-photo" onClick={() => setTrafficViolationTicketImage('')}>✕ Xóa ảnh</button>
+                                    </div>
+                                ) : (
+                                    <label className="photo-upload-label">
+                                        <Upload className="upload-photo-icon" size={24} />
+                                        <span>{trafficViolationImageLoading ? 'Đang tải...' : 'Chọn ảnh phiếu phạt nguội'}</span>
+                                        <p>Ảnh chụp rõ ràng, dưới 5MB</p>
+                                        <input type="file" onChange={(e) => handleImageUpload(e, setTrafficViolationTicketImage, setTrafficViolationImageLoading, 'Tải ảnh phiếu phạt nguội lên thành công!')} accept="image/*" style={{ display: 'none' }} disabled={trafficViolationImageLoading} />
+                                    </label>
+                                )}
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+                            <button type="button" className="btn btn-secondary" onClick={() => setIsTrafficViolationModalOpen(false)}>Hủy bỏ</button>
+                            <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={actionLoading || trafficViolationImageLoading}>
+                                {actionLoading ? 'Đang gửi...' : 'Gửi báo cáo phạt nguội'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        )}
+
         {/* Photo Inspection & AI Damage Report Modal for Owner */}
         {activeInspectionBooking && (
           <InspectionModal
@@ -622,6 +874,7 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
             onClose={() => setActiveInspectionBooking(null)}
             onInspectionUpdated={() => fetchOwnerDashboard(true)}
           />
+
         )}
       </div>
     </div>
