@@ -420,7 +420,7 @@ router.post('/api/bookings/:id/inspection', auth, async (req, res) => {
   }
 });
 
-// 19. Request Trip Extension (Yêu cầu gia hạn chuyến đi)
+// 19. Request Trip Extension (Yêu cầu gia hạn chuyến đi với kiểm tra trùng lịch)
 router.post('/api/bookings/:id/request-extension', auth, async (req, res) => {
   try {
     const bookingId = parseInt(req.params.id);
@@ -432,17 +432,35 @@ router.post('/api/bookings/:id/request-extension', auth, async (req, res) => {
 
     const booking = await db.bookings.findOne({ id: bookingId });
     if (!booking) return res.status(404).json({ message: 'Chuyến đi không tồn tại.' });
-    if (booking.userId !== req.user.id) return res.status(403).json({ message: 'Bạn không có quyền thực hiện trên chuyến đi này.' });
+    if (String(booking.userId) !== String(req.user.id)) return res.status(403).json({ message: 'Bạn không có quyền thực hiện trên chuyến đi này.' });
+
+    const p = await getPool();
+
+    // 1. Conflict Check: Ensure car has no overlapping future bookings
+    const conflictRes = await p.request()
+      .input('vehicleId', sql.Int, booking.carId)
+      .input('bookingId', sql.Int, bookingId)
+      .input('newReturnDate', sql.NVarChar, newReturnDate)
+      .query(`
+        SELECT booking_id FROM Booking 
+        WHERE vehicle_id = @vehicleId 
+          AND booking_id <> @bookingId 
+          AND status IN ('Pending', 'Approved', 'Active', 'Confirmed') 
+          AND start_datetime < @newReturnDate AND end_datetime > GETDATE()
+      `);
+
+    if (conflictRes.recordset.length > 0) {
+      return res.status(400).json({ message: 'Xe đã có lịch đặt tiếp theo trong khoảng thời gian này, không thể gia hạn.' });
+    }
 
     const extensionData = JSON.stringify({
       requestedReturnDate: newReturnDate,
       extraDays,
-      extraPrice: extraPrice || 0,
+      extraPrice: Number(extraPrice || 0),
       status: 'pending',
       requestedAt: new Date().toISOString()
     });
 
-    const p = await getPool();
     await p.request()
       .input('bookingId', sql.Int, bookingId)
       .input('data', sql.NVarChar, extensionData)
@@ -467,7 +485,7 @@ router.post('/api/bookings/:id/request-extension', auth, async (req, res) => {
   }
 });
 
-// 20. Respond to Trip Extension (Duyệt/Từ chối gia hạn chuyến đi)
+// 20. Respond to Trip Extension (Chủ xe duyệt/từ chối gia hạn)
 router.put('/api/bookings/:id/respond-extension', auth, async (req, res) => {
   try {
     const bookingId = parseInt(req.params.id);
@@ -490,31 +508,19 @@ router.put('/api/bookings/:id/respond-extension', auth, async (req, res) => {
     }
 
     const extObj = JSON.parse(currentRes.recordset[0].extension_request);
-    extObj.status = action === 'approve' ? 'approved' : 'rejected';
+    extObj.status = action === 'approve' ? 'APPROVED_PENDING_PAYMENT' : 'REJECTED';
     extObj.respondedAt = new Date().toISOString();
 
-    if (action === 'approve') {
-      const newReturnDate = extObj.requestedReturnDate;
-      const newTotalPrice = Number(currentRes.recordset[0].total_amount) + Number(extObj.extraPrice || 0);
-
-      await p.request()
-        .input('bookingId', sql.Int, bookingId)
-        .input('newReturnDate', sql.NVarChar, newReturnDate)
-        .input('newTotalPrice', sql.Decimal(18, 2), newTotalPrice)
-        .input('extData', sql.NVarChar, JSON.stringify(extObj))
-        .query('UPDATE Booking SET end_datetime = @newReturnDate, total_amount = @newTotalPrice, extension_request = @extData WHERE booking_id = @bookingId');
-    } else {
-      await p.request()
-        .input('bookingId', sql.Int, bookingId)
-        .input('extData', sql.NVarChar, JSON.stringify(extObj))
-        .query('UPDATE Booking SET extension_request = @extData WHERE booking_id = @bookingId');
-    }
+    await p.request()
+      .input('bookingId', sql.Int, bookingId)
+      .input('extData', sql.NVarChar, JSON.stringify(extObj))
+      .query('UPDATE Booking SET extension_request = @extData WHERE booking_id = @bookingId');
 
     await notificationService.createNotification(
       booking.userId,
-      action === 'approve' ? 'Yêu cầu gia hạn ĐƯỢC CHẤP NHẬN' : 'Yêu cầu gia hạn BỊ TỪ CHỐI',
+      action === 'approve' ? 'Yêu cầu gia hạn ĐƯỢC CHẤP NHẬN - CẦN THANH TOÁN' : 'Yêu cầu gia hạn BỊ TỪ CHỐI',
       action === 'approve'
-        ? `Yêu cầu gia hạn cho chuyến đi #${bookingId} đã được duyệt! Ngày trả xe mới: ${extObj.requestedReturnDate}.`
+        ? `Chủ xe đã duyệt yêu cầu gia hạn cho chuyến đi #${bookingId}! Vui lòng hoàn tất thanh toán phí gia hạn ${Number(extObj.extraPrice || 0).toLocaleString('vi-VN')}đ.`
         : `Chủ xe không thể đồng ý gia hạn cho chuyến đi #${bookingId}. Vui lòng trả xe đúng hạn ban đầu.`,
       'BookingUpdate',
       bookingId,
@@ -522,12 +528,93 @@ router.put('/api/bookings/:id/respond-extension', auth, async (req, res) => {
     );
 
     res.json({
-      message: action === 'approve' ? 'Đã chấp nhận gia hạn chuyến đi thành công!' : 'Đã từ chối yêu cầu gia hạn.',
+      message: action === 'approve' ? 'Đã chấp nhận gia hạn! Yêu cầu khách hàng thanh toán phí gia hạn.' : 'Đã từ chối yêu cầu gia hạn.',
       extension: extObj
     });
   } catch (error) {
     console.error('Error responding extension:', error);
     res.status(500).json({ message: 'Lỗi xử lý phản hồi gia hạn.' });
+  }
+});
+
+// 20b. Pay Trip Extension Fee (Khách hàng thanh toán phí gia hạn trực tuyến)
+router.post('/api/bookings/:id/pay-extension', auth, async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const { paymentMethod } = req.body; // 'wallet' | 'vietqr'
+
+    const booking = await db.bookings.findOne({ id: bookingId });
+    if (!booking) return res.status(404).json({ message: 'Chuyến đi không tồn tại.' });
+
+    const p = await getPool();
+    const currentRes = await p.request()
+      .input('bookingId', sql.Int, bookingId)
+      .query('SELECT extension_request, end_datetime, total_amount FROM Booking WHERE booking_id = @bookingId');
+
+    if (currentRes.recordset.length === 0 || !currentRes.recordset[0].extension_request) {
+      return res.status(400).json({ message: 'Chuyến đi này hiện không có yêu cầu gia hạn nào.' });
+    }
+
+    const extObj = JSON.parse(currentRes.recordset[0].extension_request);
+    if (extObj.status !== 'APPROVED_PENDING_PAYMENT' && extObj.status !== 'approved') {
+      return res.status(400).json({ message: 'Yêu cầu gia hạn chưa được duyệt hoặc đã hoàn tất thanh toán.' });
+    }
+
+    const extraPrice = Number(extObj.extraPrice || 0);
+
+    // If wallet payment, process transaction via Stored Procedure
+    if (paymentMethod === 'wallet' && extraPrice > 0) {
+      await p.request()
+        .input('userId', sql.Int, req.user.id)
+        .input('bookingId', sql.Int, bookingId)
+        .input('amount', sql.Decimal(18, 2), extraPrice)
+        .input('txnType', sql.NVarChar, 'TripExtension')
+        .input('description', sql.NVarChar, `Thanh toán phí gia hạn +${extObj.extraDays} ngày cho chuyến đi #${bookingId}`)
+        .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+    }
+
+    extObj.status = 'PAID';
+    extObj.paidAt = new Date().toISOString();
+    extObj.paymentMethod = paymentMethod || 'wallet';
+
+    const newReturnDate = extObj.requestedReturnDate;
+    const newTotalPrice = Number(currentRes.recordset[0].total_amount) + extraPrice;
+
+    await p.request()
+      .input('bookingId', sql.Int, bookingId)
+      .input('newReturnDate', sql.NVarChar, newReturnDate)
+      .input('newTotalPrice', sql.Decimal(18, 2), newTotalPrice)
+      .input('extData', sql.NVarChar, JSON.stringify(extObj))
+      .query('UPDATE Booking SET end_datetime = @newReturnDate, total_amount = @newTotalPrice, extension_request = @extData WHERE booking_id = @bookingId');
+
+    const car = await db.cars.findOne({ id: booking.carId });
+    if (car && car.ownerId) {
+      await notificationService.createNotification(
+        car.ownerId,
+        'Gia hạn chuyến đi THÀNH CÔNG',
+        `Khách hàng đã thanh toán phí gia hạn ${extraPrice.toLocaleString('vi-VN')}đ cho chuyến đi #${bookingId}. Ngày trả xe mới: ${newReturnDate}.`,
+        'BookingUpdate',
+        bookingId,
+        'Booking'
+      );
+    }
+
+    await notificationService.createNotification(
+      booking.userId,
+      'Gia hạn chuyến đi THÀNH CÔNG',
+      `Bạn đã thanh toán phí gia hạn ${extraPrice.toLocaleString('vi-VN')}đ thành công! Hạn trả xe mới của chuyến đi #${bookingId} là: ${newReturnDate}.`,
+      'BookingUpdate',
+      bookingId,
+      'Booking'
+    );
+
+    res.json({
+      message: 'Thanh toán phí gia hạn thành công! Ngày trả xe mới đã được cập nhật.',
+      extension: extObj
+    });
+  } catch (error) {
+    console.error('Error paying extension:', error);
+    res.status(500).json({ message: error.message || 'Lỗi thanh toán phí gia hạn.' });
   }
 });
 

@@ -405,8 +405,9 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                                 style={{ width: 'auto', padding: '6px 14px', fontSize: '12px', background: '#16a34a', borderColor: '#16a34a', color: '#fff', fontWeight: 700 }}
                                 onClick={() => handleRespondExtension(b.id, 'approve')}
                                 disabled={actionLoading}
+                                title="Cho phép Khách thanh toán phí gia hạn"
                               >
-                                ✓ Đồng ý gia hạn
+                                ✓ Duyệt (Yêu cầu Khách thanh toán)
                               </button>
                               <button 
                                 className="btn btn-secondary"

@@ -248,6 +248,12 @@ export const api = {
         body: JSON.stringify({ description, incidentType, requestedDeduction })
       }),
 
+    payExtension: (id, paymentMethod) =>
+      request(`/bookings/${id}/pay-extension`, {
+        method: 'POST',
+        body: JSON.stringify({ paymentMethod })
+      }),
+
     reportIncident: (id, description, image) =>
       request(`/bookings/${id}/incident`, {
         method: 'POST',

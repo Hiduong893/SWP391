@@ -30,6 +30,8 @@ export const MyTrips = ({ user }) => {
   const [activeExtensionTrip, setActiveExtensionTrip] = useState(null); // trip
   const [extensionReturnDate, setExtensionReturnDate] = useState('');
   const [extensionSubmitting, setExtensionSubmitting] = useState(false);
+  const [payingExtensionTrip, setPayingExtensionTrip] = useState(null);
+  const [extPaymentLoading, setExtPaymentLoading] = useState(false);
 
   
   // Form states
@@ -409,16 +411,40 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
 
                   {/* Extension Breakdown Display */}
                   {trip.extensionRequest && (
-                    <div style={{ background: trip.extensionRequest.status === 'approved' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)', border: '1px solid ' + (trip.extensionRequest.status === 'approved' ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'), borderRadius: '8px', padding: '8px 12px', marginTop: '10px', fontSize: '12px' }}>
-                      <span style={{ color: trip.extensionRequest.status === 'approved' ? '#34d399' : '#fbbf24', fontWeight: 'bold' }}>
-                        {trip.extensionRequest.status === 'approved' ? '✓ Đã duyệt gia hạn thêm ' : '⏳ Đang chờ duyệt gia hạn thêm '}
-                        {trip.extensionRequest.extraDays} ngày (+{formatCurrency(trip.extensionRequest.extraPrice)})
-                      </span>
-                      <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                        {trip.extensionRequest.status === 'approved' 
-                          ? '👉 Số tiền gia hạn này sẽ được thanh toán trực tiếp cho Chủ xe khi trả xe.'
-                          : '👉 Đang chờ Chủ xe xác nhận yêu cầu gia hạn.'}
-                      </span>
+                    <div style={{
+                      background: trip.extensionRequest.status === 'PAID' ? 'rgba(16,185,129,0.1)' : trip.extensionRequest.status === 'APPROVED_PENDING_PAYMENT' ? 'rgba(59,130,246,0.15)' : 'rgba(245,158,11,0.1)',
+                      border: '1px solid ' + (trip.extensionRequest.status === 'PAID' ? 'rgba(16,185,129,0.4)' : trip.extensionRequest.status === 'APPROVED_PENDING_PAYMENT' ? 'rgba(59,130,246,0.5)' : 'rgba(245,158,11,0.3)'),
+                      borderRadius: '12px',
+                      padding: '12px 14px',
+                      marginTop: '12px',
+                      fontSize: '12px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <div>
+                          <span style={{ color: trip.extensionRequest.status === 'PAID' ? '#34d399' : trip.extensionRequest.status === 'APPROVED_PENDING_PAYMENT' ? '#60a5fa' : '#fbbf24', fontWeight: 'bold', fontSize: '13px' }}>
+                            {trip.extensionRequest.status === 'PAID' ? '✓ Đã hoàn tất gia hạn thêm ' : trip.extensionRequest.status === 'APPROVED_PENDING_PAYMENT' ? '🎉 Chủ xe đã duyệt! Cần thanh toán gia hạn ' : '⏳ Đang chờ Chủ xe duyệt gia hạn '}
+                            {trip.extensionRequest.extraDays} ngày (+{formatCurrency(trip.extensionRequest.extraPrice)})
+                          </span>
+                          <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginTop: '3px' }}>
+                            {trip.extensionRequest.status === 'PAID'
+                              ? `Hạn trả xe mới: ${trip.returnDate} (Đã thanh toán phí gia hạn).`
+                              : trip.extensionRequest.status === 'APPROVED_PENDING_PAYMENT'
+                              ? 'Vui lòng hoàn tất thanh toán phí gia hạn để chính thức kích hoạt hạn trả xe mới!'
+                              : 'Yêu cầu đang được Chủ xe xem xét.'}
+                          </span>
+                        </div>
+
+                        {trip.extensionRequest.status === 'APPROVED_PENDING_PAYMENT' && (
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            style={{ background: '#2563eb', borderColor: '#2563eb', color: '#fff', fontSize: '12px', fontWeight: '700', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer' }}
+                            onClick={() => setPayingExtensionTrip(trip)}
+                          >
+                            💳 Thanh toán {formatCurrency(trip.extensionRequest.extraPrice)}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -1467,6 +1493,77 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Extension Payment Modal */}
+      {payingExtensionTrip && (
+        <div className="cm2-overlay" onClick={() => setPayingExtensionTrip(null)}>
+          <div className="cm2-wrap" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px', borderRadius: '16px', padding: '24px', background: '#fff', textAlign: 'left' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1e293b' }}>💳 Thanh Toán Phí Gia Hạn Chuyến Đi</h4>
+              <button style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#64748b' }} onClick={() => setPayingExtensionTrip(null)}>✕</button>
+            </div>
+
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748b', marginBottom: '6px' }}>
+                <span>Mã chuyến đi:</span>
+                <strong>#{payingExtensionTrip.id}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748b', marginBottom: '6px' }}>
+                <span>Số ngày gia hạn thêm:</span>
+                <strong>+{payingExtensionTrip.extensionRequest?.extraDays} ngày</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748b', marginBottom: '6px' }}>
+                <span>Hạn trả xe mới:</span>
+                <strong>{payingExtensionTrip.extensionRequest?.requestedReturnDate}</strong>
+              </div>
+              <hr style={{ margin: '10px 0', borderColor: '#e2e8f0' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 800, color: '#2563eb' }}>
+                <span>Tổng phí gia hạn:</span>
+                <span>{formatCurrency(payingExtensionTrip.extensionRequest?.extraPrice)}</span>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '12px' }}>Chọn phương thức thanh toán:</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+              <button
+                type="button"
+                style={{
+                  padding: '14px', borderRadius: '12px', border: '2px solid #6366f1', background: 'rgba(99, 102, 241, 0.08)',
+                  color: '#4f46e5', fontWeight: 700, fontSize: '13px', cursor: 'pointer', textAlign: 'center'
+                }}
+                disabled={extPaymentLoading}
+                onClick={() => handlePayExtension(payingExtensionTrip.id, 'wallet')}
+              >
+                Ví ViVuCar
+                <span style={{ display: 'block', fontSize: '10px', color: '#6366f1', fontWeight: 'normal', marginTop: '2px' }}>Trừ trực tiếp số dư ví</span>
+              </button>
+
+              <button
+                type="button"
+                style={{
+                  padding: '14px', borderRadius: '12px', border: '2px solid #10b981', background: 'rgba(16, 185, 129, 0.08)',
+                  color: '#059669', fontWeight: 700, fontSize: '13px', cursor: 'pointer', textAlign: 'center'
+                }}
+                disabled={extPaymentLoading}
+                onClick={() => handlePayExtension(payingExtensionTrip.id, 'vietqr')}
+              >
+                Mã VietQR
+                <span style={{ display: 'block', fontSize: '10px', color: '#10b981', fontWeight: 'normal', marginTop: '2px' }}>Quét QR chuyển khoản</span>
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setPayingExtensionTrip(null)}
+                style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', color: '#64748b', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}
