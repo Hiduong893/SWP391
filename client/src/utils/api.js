@@ -123,10 +123,10 @@ export const api = {
         method: 'GET'
       }),
       
-    editProfile: (name, bio) => 
+    editProfile: (name, bio, phone) => 
       request('/user/profile/edit', {
         method: 'PUT',
-        body: JSON.stringify({ name, bio })
+        body: JSON.stringify({ name, bio, phone })
       }),
       
     updateAvatar: (avatar) => 

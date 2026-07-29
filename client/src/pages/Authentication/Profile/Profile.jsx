@@ -1,17 +1,83 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Mail, Calendar, FileText, Camera, Edit2, Check, X, Upload, Link, CheckCircle, ZoomIn, RotateCw, Move, ShieldCheck, CreditCard, DollarSign, ArrowDownLeft, ArrowUpRight, ShieldAlert, Key } from 'lucide-react';
+import { User, Mail, Calendar, FileText, Camera, Edit2, Check, X, Upload, Link, CheckCircle, ZoomIn, RotateCw, Move, ShieldCheck, CreditCard, DollarSign, ArrowDownLeft, ArrowUpRight, ShieldAlert, Key, Phone, ChevronDown } from 'lucide-react';
 import { api } from '../../../utils/api';
 import { useToast } from '../../../components/Toast';
 import './Profile.css';
+
+const COUNTRY_CODES = [
+  { code: '+84', flag: '🇻🇳', iso: 'vn', name: 'Việt Nam', minLen: 9, maxLen: 10, hint: 'Nhập đủ 10 số (ví dụ: 0383539328)' },
+  { code: '+1', flag: '🇺🇸', iso: 'us', name: 'Mỹ / Canada', minLen: 10, maxLen: 10, hint: 'Đủ 10 chữ số' },
+  { code: '+81', flag: '🇯🇵', iso: 'jp', name: 'Nhật Bản', minLen: 9, maxLen: 11, hint: '10 - 11 chữ số' },
+  { code: '+82', flag: '🇰🇷', iso: 'kr', name: 'Hàn Quốc', minLen: 9, maxLen: 11, hint: '10 - 11 chữ số' },
+  { code: '+86', flag: '🇨🇳', iso: 'cn', name: 'Trung Quốc', minLen: 11, maxLen: 11, hint: 'Đủ 11 chữ số' },
+  { code: '+44', flag: '🇬🇧', iso: 'gb', name: 'Vương quốc Anh', minLen: 9, maxLen: 11, hint: '10 - 11 chữ số' },
+  { code: '+61', flag: '🇦🇺', iso: 'au', name: 'Úc', minLen: 9, maxLen: 10, hint: '9 - 10 chữ số' },
+  { code: '+33', flag: '🇫🇷', iso: 'fr', name: 'Pháp', minLen: 9, maxLen: 10, hint: 'Đủ 10 chữ số' },
+  { code: '+49', flag: '🇩🇪', iso: 'de', name: 'Đức', minLen: 9, maxLen: 11, hint: '10 - 11 chữ số' },
+  { code: '+65', flag: '🇸🇬', iso: 'sg', name: 'Singapore', minLen: 8, maxLen: 8, hint: 'Đủ 8 chữ số' },
+  { code: '+66', flag: '🇹🇭', iso: 'th', name: 'Thái Lan', minLen: 8, maxLen: 10, hint: '9 - 10 chữ số' },
+  { code: '+60', flag: '🇲🇾', iso: 'my', name: 'Malaysia', minLen: 8, maxLen: 10, hint: '9 - 10 chữ số' },
+  { code: '+62', flag: '🇮🇩', iso: 'id', name: 'Indonesia', minLen: 9, maxLen: 12, hint: '10 - 12 chữ số' },
+  { code: '+63', flag: '🇵🇭', iso: 'ph', name: 'Philippines', minLen: 9, maxLen: 11, hint: '10 - 11 chữ số' },
+  { code: '+91', flag: '🇮🇳', iso: 'in', name: 'Ấn Độ', minLen: 10, maxLen: 10, hint: 'Đủ 10 chữ số' },
+  { code: '+886', flag: '🇹🇼', iso: 'tw', name: 'Đài Loan', minLen: 8, maxLen: 10, hint: '9 - 10 chữ số' },
+  { code: '+852', flag: '🇭🇰', iso: 'hk', name: 'Hồng Kông', minLen: 8, maxLen: 8, hint: 'Đủ 8 chữ số' },
+  { code: '+7', flag: '🇷🇺', iso: 'ru', name: 'Nga', minLen: 10, maxLen: 10, hint: 'Đủ 10 chữ số' }
+];
+
+const parsePhone = (rawPhone) => {
+  if (!rawPhone) return { countryCode: '+84', number: '' };
+  const trimmed = rawPhone.trim();
+  const matchedCountry = COUNTRY_CODES.find(c => trimmed.startsWith(c.code));
+  if (matchedCountry) {
+    let numPart = trimmed.slice(matchedCountry.code.length).trim().replace(/\D/g, '');
+    if (matchedCountry.code === '+84' && numPart.length === 9 && !numPart.startsWith('0')) {
+      numPart = '0' + numPart;
+    }
+    return { countryCode: matchedCountry.code, number: numPart };
+  }
+  let digitsOnly = trimmed.replace(/\D/g, '');
+  if (digitsOnly.length === 9 && !digitsOnly.startsWith('0')) {
+    digitsOnly = '0' + digitsOnly;
+  }
+  return { countryCode: '+84', number: digitsOnly };
+};
 
 export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user.name);
   const [bio, setBio] = useState(user.bio || '');
+  const initialPhone = parsePhone(user.phone);
+  const [phoneCountryCode, setPhoneCountryCode] = useState(initialPhone.countryCode);
+  const [phoneNumber, setPhoneNumber] = useState(initialPhone.number);
   const [loading, setLoading] = useState(false);
   const [licenseUploading, setLicenseUploading] = useState(false);
   const [cccdFrontUploading, setCccdFrontUploading] = useState(false);
   const [cccdBackUploading, setCccdBackUploading] = useState(false);
+
+  useEffect(() => {
+    setName(user.name);
+    setBio(user.bio || '');
+    const p = parsePhone(user.phone);
+    setPhoneCountryCode(p.countryCode);
+    setPhoneNumber(p.number);
+  }, [user]);
+
+  const currentSelectedCountry = COUNTRY_CODES.find(c => c.code === phoneCountryCode) || COUNTRY_CODES[0];
+
+  // Custom Country Dropdown state & click outside listener
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
+  const countryDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target)) {
+        setIsCountryDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Face Verification States
   const [showFaceScanner, setShowFaceScanner] = useState(false);
@@ -279,9 +345,28 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
       return;
     }
 
+    let cleanNumber = phoneNumber ? phoneNumber.replace(/\D/g, '').replace(/^0+/, '') : '';
+
+    if (cleanNumber) {
+      const selectedCountry = COUNTRY_CODES.find(c => c.code === phoneCountryCode) || COUNTRY_CODES[0];
+
+      if (selectedCountry.code === '+84') {
+        if (cleanNumber.length !== 9) {
+          showToast('Số điện thoại không hợp lệ. Vui lòng thử lại!', 'warning');
+          return;
+        }
+      } else {
+        if (cleanNumber.length < selectedCountry.minLen || cleanNumber.length > selectedCountry.maxLen) {
+          showToast('Số điện thoại không hợp lệ. Vui lòng thử lại!', 'warning');
+          return;
+        }
+      }
+    }
+
     setLoading(true);
     try {
-      const data = await api.user.editProfile(name, bio);
+      const fullPhone = cleanNumber ? `${phoneCountryCode} ${cleanNumber}` : '';
+      const data = await api.user.editProfile(name, bio, fullPhone);
       onUpdateUser(data.user);
       setIsEditing(false);
       showToast(data.message, 'success');
@@ -506,6 +591,43 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
             </div>
 
             <div className="info-row">
+              <Phone size={18} className="info-icon text-muted" />
+              <div className="info-data">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="info-label">Số điện thoại</span>
+                  {user.phone && (
+                    <span className="badge-verified" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.12)', color: '#059669', padding: '1px 8px', borderRadius: 99, fontWeight: 700 }}>
+                      Đã duyệt ✓
+                    </span>
+                  )}
+                </div>
+                {user.phone ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                    {(() => {
+                      const parsed = parsePhone(user.phone);
+                      const country = COUNTRY_CODES.find(c => c.code === parsed.countryCode) || COUNTRY_CODES[0];
+                      const cleanNum = parsed.number.replace(/^0+/, '');
+                      const displayValue = cleanNum ? `${parsed.countryCode} ${cleanNum}` : user.phone;
+                      return (
+                        <>
+                          <img
+                            src={`https://flagcdn.com/w40/${country.iso}.png`}
+                            alt={country.name}
+                            title={country.name}
+                            style={{ width: '22px', height: '15px', borderRadius: '2px', objectFit: 'cover', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}
+                          />
+                          <span className="info-value">{displayValue}</span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <span className="info-value">Chưa cập nhật số điện thoại.</span>
+                )}
+              </div>
+            </div>
+
+            <div className="info-row">
               <FileText size={18} className="info-icon text-muted" />
               <div className="info-data">
                 <span className="info-label">Tiểu sử (Bio)</span>
@@ -700,6 +822,121 @@ export const Profile = ({ user, onUpdateUser, setCurrentTab }) => {
               <div className="input-container">
                 <User className="input-icon" size={18} />
                 <input type="text" className="form-input" value={name} onChange={(e) => setName(e.target.value)} required />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Số điện thoại</label>
+              <div className="phone-input-row" style={{ display: 'flex', gap: '10px' }}>
+                <div 
+                  ref={countryDropdownRef} 
+                  className="country-select-custom-wrapper" 
+                  style={{ width: '155px', flexShrink: 0, position: 'relative' }}
+                >
+                  <button
+                    type="button"
+                    className="form-input country-select-btn"
+                    onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '6px',
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid var(--border-color, rgba(255, 255, 255, 0.12))',
+                      borderRadius: '8px',
+                      color: 'var(--text-primary)',
+                      height: '100%'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <img
+                        src={`https://flagcdn.com/w40/${currentSelectedCountry.iso}.png`}
+                        alt={currentSelectedCountry.name}
+                        style={{ width: '22px', height: '15px', borderRadius: '2px', objectFit: 'cover', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', flexShrink: 0 }}
+                      />
+                      <span style={{ fontSize: '13.5px', fontWeight: 600 }}>{currentSelectedCountry.code}</span>
+                    </div>
+                    <ChevronDown size={14} style={{ color: 'var(--text-muted)', transform: isCountryDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', flexShrink: 0 }} />
+                  </button>
+
+                  {isCountryDropdownOpen && (
+                    <div 
+                      className="country-dropdown-menu"
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 4px)',
+                        left: 0,
+                        width: '260px',
+                        maxHeight: '240px',
+                        overflowY: 'auto',
+                        background: '#0f172a',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        borderRadius: '10px',
+                        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)',
+                        zIndex: 999,
+                        padding: '6px'
+                      }}
+                    >
+                      {COUNTRY_CODES.map((c) => (
+                        <div
+                          key={c.code}
+                          onClick={() => {
+                            setPhoneCountryCode(c.code);
+                            setIsCountryDropdownOpen(false);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            background: c.code === phoneCountryCode ? 'rgba(0, 150, 152, 0.2)' : 'transparent',
+                            color: c.code === phoneCountryCode ? 'var(--accent-primary)' : '#e2e8f0',
+                            fontSize: '13px',
+                            fontWeight: c.code === phoneCountryCode ? 700 : 500,
+                            transition: 'all 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (c.code !== phoneCountryCode) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (c.code !== phoneCountryCode) e.currentTarget.style.background = 'transparent';
+                          }}
+                        >
+                          <img
+                            src={`https://flagcdn.com/w40/${c.iso}.png`}
+                            alt={c.name}
+                            style={{ width: '22px', height: '15px', borderRadius: '2px', objectFit: 'cover', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', flexShrink: 0 }}
+                          />
+                          <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {c.code} ({c.name})
+                          </span>
+                          {c.code === phoneCountryCode && <Check size={14} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="input-container" style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <Phone className="input-icon" size={18} style={{ position: 'absolute', left: '14px', zIndex: 2, pointerEvents: 'none' }} />
+                  <input
+                    type="tel"
+                    className="form-input"
+                    placeholder="Nhập số điện thoại..."
+                    value={phoneNumber}
+                    maxLength={currentSelectedCountry.maxLen || 12}
+                    style={{ paddingLeft: '42px' }}
+                    onChange={(e) => {
+                      const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, currentSelectedCountry.maxLen || 12);
+                      setPhoneNumber(digitsOnly);
+                    }}
+                  />
+                </div>
               </div>
             </div>
 

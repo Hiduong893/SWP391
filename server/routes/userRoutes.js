@@ -22,10 +22,10 @@ router.get('/profile', auth, (req, res) => {
 // 8. Edit Profile (Chỉnh sửa thông tin)
 router.put('/profile/edit', auth, async (req, res) => {
   try {
-    const { name, bio } = req.body;
+    const { name, bio, phone } = req.body;
     if (!name) return res.status(400).json({ message: 'Họ tên không được để trống.' });
 
-    const updatedUser = await db.users.update(req.user.id, { name, bio });
+    const updatedUser = await db.users.update(req.user.id, { name, bio, phone });
     res.json({ message: 'Cập nhật thông tin thành công!', user: sanitizeUser(updatedUser) });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi cập nhật profile.' });

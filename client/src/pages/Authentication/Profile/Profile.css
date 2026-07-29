@@ -995,3 +995,58 @@
   font-weight: 800 !important;
   display: inline-block !important;
 }
+
+/* Phone Country Select & Input Styling */
+.phone-input-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.phone-country-select {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-md, 8px);
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.phone-country-select:focus {
+  border-color: var(--accent-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 150, 152, 0.15);
+}
+
+.phone-country-select option {
+  background-color: #1e293b;
+  color: #ffffff;
+  padding: 8px;
+}
+
+/* Profile Edit Form Input Positioning */
+.profile-edit-form .input-container {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.profile-edit-form .input-container .input-icon {
+  position: absolute !important;
+  left: 14px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  color: var(--text-muted) !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+}
+
+.profile-edit-form .form-input {
+  padding-left: 42px !important;
+}
+
+.profile-edit-form .country-select-btn {
+  padding-left: 12px !important;
+}

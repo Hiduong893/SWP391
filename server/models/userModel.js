@@ -220,6 +220,10 @@ export const userModel = {
       userUpdates.push('bio = @bio');
       userRequest.input('bio', sql.NVarChar, updateData.bio);
     }
+    if (updateData.phone !== undefined) {
+      userUpdates.push('phone = @phone');
+      userRequest.input('phone', sql.NVarChar, updateData.phone);
+    }
     if (updateData.isEmailVerified !== undefined) {
       userUpdates.push('is_email_verified = @isEmailVerified');
       userRequest.input('isEmailVerified', sql.Bit, updateData.isEmailVerified ? 1 : 0);
