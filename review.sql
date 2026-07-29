@@ -8,6 +8,26 @@
 BEGIN TRANSACTION;
 
 BEGIN TRY
+    -- 0. ĐẢM BẢO CÓ SẴN CÁC USER MẪU (DÙNG CHO CHỦ XE VÀ NGƯỜI THUÊ)
+    IF NOT EXISTS (SELECT * FROM [User] WHERE user_id = 1)
+    BEGIN
+        SET IDENTITY_INSERT [User] ON;
+        INSERT INTO [User] (user_id, email, full_name, is_active, is_email_verified) 
+        VALUES (1, 'owner@vivucar.vn', N'Chủ Xe Mẫu', 1, 1);
+        SET IDENTITY_INSERT [User] OFF;
+    END
+
+    IF NOT EXISTS (SELECT * FROM [User] WHERE user_id = 2)
+    BEGIN
+        SET IDENTITY_INSERT [User] ON;
+        INSERT INTO [User] (user_id, email, full_name, is_active, is_email_verified) 
+        VALUES 
+        (2, 'renter1@vivucar.vn', N'Nguyễn Văn A', 1, 1),
+        (3, 'renter2@vivucar.vn', N'Trần Thị B', 1, 1),
+        (4, 'renter3@vivucar.vn', N'Lê Văn C', 1, 1);
+        SET IDENTITY_INSERT [User] OFF;
+    END
+
     -- Khai báo các biến cần thiết
     DECLARE @current_vehicle_id INT = 3;
     DECLARE @owner_id INT = 1; -- ID của chủ xe (owner@vivucar.vn)
