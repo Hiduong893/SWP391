@@ -355,7 +355,11 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
       ) : (
         <div className="trips-list">
           {trips.map((trip) => {
-            const car = trip.car;
+            const car = trip.car || {
+              brand: 'ViVuCar',
+              model: 'Phương tiện',
+              image: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80'
+            };
             const days = calculateDays(trip.pickupDate, trip.returnDate);
             const isCancellable = (trip.status === 'confirmed' || trip.status === 'pending_owner') && new Date(trip.pickupDate) > new Date();
 
@@ -417,7 +421,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                   {/* Actions Area */}
                   <div className="trip-card-footer">
                     <div className="booking-date-sub">
-                      <span>Mã vé: <strong>{trip.id.slice(0, 8).toUpperCase()}</strong></span>
+                      <span>Mã vé: <strong>{String(trip.id || '').slice(0, 8).toUpperCase()}</strong></span>
                       <span className="ml-2">• {new Date(trip.createdAt).toLocaleDateString('vi-VN')}</span>
                     </div>
 
