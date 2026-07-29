@@ -159,12 +159,15 @@ export const CarMapView = ({ cars = [], onRentCarClick, user }) => {
     filteredCars.forEach((car, idx) => {
       const coords = getCarCoords(car, idx);
       const isSelected = selectedCar?.id === car.id;
+      const carName = `${car.brand || ''} ${car.model || ''}`.trim() || car.name || 'Xe cho thuê';
       const priceK = Math.round((car.pricePerDay || 0) / 1000) + 'K';
 
       const customHtml = `
         <div class="leaflet-custom-marker ${isSelected ? 'marker-selected' : ''}">
           <div class="marker-pill">
             <span class="marker-icon">🚗</span>
+            <span class="marker-car-title">${carName}</span>
+            <span class="marker-dot">•</span>
             <span class="marker-price">${priceK}/ngày</span>
           </div>
           <div class="marker-arrow"></div>
@@ -174,8 +177,8 @@ export const CarMapView = ({ cars = [], onRentCarClick, user }) => {
       const customIcon = L.divIcon({
         className: 'leaflet-car-div-icon',
         html: customHtml,
-        iconSize: [95, 36],
-        iconAnchor: [47, 36]
+        iconSize: [180, 38],
+        iconAnchor: [90, 38]
       });
 
       const marker = L.marker(coords, { icon: customIcon }).addTo(map);
@@ -242,23 +245,45 @@ export const CarMapView = ({ cars = [], onRentCarClick, user }) => {
           .leaflet-custom-marker .marker-pill {
             background: #ffffff;
             color: #0f172a;
-            padding: 6px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 12.5px;
+            font-size: 12px;
             font-weight: 800;
             border: 2px solid #2563eb;
             box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
             white-space: nowrap;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
+          }
+          .leaflet-custom-marker .marker-car-title {
+            font-weight: 800;
+            color: #0f172a;
+            max-width: 110px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .leaflet-custom-marker .marker-dot {
+            color: #94a3b8;
+            font-size: 11px;
+          }
+          .leaflet-custom-marker .marker-price {
+            color: #2563eb;
+            font-weight: 900;
           }
           .leaflet-custom-marker.marker-selected .marker-pill {
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #38bdf8;
+            color: #ffffff;
             border: 2px solid #38bdf8;
             box-shadow: 0 10px 30px rgba(15, 23, 42, 0.5);
             transform: scale(1.08);
+          }
+          .leaflet-custom-marker.marker-selected .marker-car-title {
+            color: #ffffff;
+          }
+          .leaflet-custom-marker.marker-selected .marker-price {
+            color: #38bdf8;
           }
           .leaflet-custom-marker .marker-arrow {
             width: 0;
