@@ -314,6 +314,8 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
         return <span className="trip-badge badge-confirmed">Đã cọc - Chờ nhận xe</span>;
       case 'active':
         return <span className="trip-badge badge-active">Đang thuê (Hành trình)</span>;
+      case 'return_pending_owner':
+        return <span className="trip-badge badge-pending" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)' }}>Đã nộp biên bản trả xe (Chờ chủ xe xác nhận)</span>;
       case 'completed':
         return <span className="trip-badge badge-completed">Đã hoàn thành</span>;
       case 'cancelled':

@@ -18,6 +18,8 @@ export const mapBookingRow = async (p, row) => {
     mappedStatus = 'confirmed';
   } else if (row.status === 'Active') {
     mappedStatus = 'active';
+  } else if (row.status === 'ReturnPendingOwner') {
+    mappedStatus = 'return_pending_owner';
   } else if (row.status === 'Completed') {
     mappedStatus = 'completed';
   } else if (row.status === 'Cancelled') {
@@ -228,6 +230,7 @@ export const bookingModel = {
         'pending': 'Pending',
         'confirmed': 'Approved',
         'active': 'Active',
+        'return_pending_owner': 'ReturnPendingOwner',
         'completed': 'Completed',
         'cancelled': 'Cancelled',
         'rejected': 'Rejected'

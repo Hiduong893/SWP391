@@ -176,7 +176,15 @@ router.put('/api/bookings/:id/handover', auth, async (req, res) => {
     if (type === 'pickup') {
       nextStatus = 'active';
     } else if (type === 'return') {
-      nextStatus = 'completed';
+      nextStatus = 'return_pending_owner';
+      // Automatically attach default pickup document if pickup step was skipped
+      if (!updatedHandover.pickup) {
+        updatedHandover.pickup = {
+          checklist: ['noScratches', 'fuelOk', 'cleanCar', 'tiresOk'],
+          signature: 'auto_implicit_pickup',
+          timestamp: new Date().toISOString()
+        };
+      }
     }
 
     await db.bookings.update(id, {
@@ -187,60 +195,161 @@ router.put('/api/bookings/:id/handover', auth, async (req, res) => {
     const car = await db.cars.findOne({ id: booking.carId });
     if (car && car.ownerId) {
       const typeText = type === 'pickup' ? 'nhận xe (pickup)' : 'trả xe (return)';
-      const statusText = type === 'pickup' ? 'bắt đầu hành trình' : 'hoàn thành chuyến đi';
+      const statusText = type === 'pickup' ? 'bắt đầu hành trình' : 'đã nộp biên bản trả xe (chờ chủ xe xác nhận)';
       await notificationService.createNotification(
         car.ownerId,
-        type === 'pickup' ? 'Biên bản nhận xe đã ký' : 'Biên bản trả xe đã ký',
-        `Khách hàng đã ký biên bản bàn giao ${typeText} cho xe ${car.brand} ${car.model} (#${id}) và ${statusText}.`,
+        type === 'pickup' ? 'Biên bản nhận xe đã ký' : 'Biên bản trả xe cần xác nhận',
+        `Khách hàng đã ký biên bản bàn giao ${typeText} cho xe ${car.brand} ${car.model} (#${id}) và ${statusText}. Vui lòng kiểm tra xe thực tế và bấm 'Xác nhận nhận lại xe'.`,
         'BookingUpdate',
         id,
         'Booking'
       );
-
-      // Tự động phân bổ doanh thu khi chuyến đi hoàn thành (Trả xe)
-      if (type === 'return') {
-        try {
-          const pool = await getPool();
-          // Khách hàng đã trả 70% trực tiếp cho Chủ xe lúc nhận xe.
-          // Tổng doanh thu Chủ xe được hưởng là 90%. 
-          // Do đó, Admin chỉ cần thanh toán nốt 20% (90% - 70%) từ phần cọc 30% đang giữ.
-          const ownerPayout = booking.totalPrice * 0.2; 
-          const adminProfit = booking.totalPrice * 0.1;
-          
-          // Cộng phần tiền còn thiếu vào ví Chủ xe (20%)
-          await pool.request()
-            .input('userId', sql.Int, car.ownerId)
-            .input('bookingId', sql.Int, id)
-            .input('amount', sql.Decimal(18,2), ownerPayout)
-            .input('txnType', sql.VarChar, 'Revenue')
-            .input('description', sql.NVarChar, `Thanh toán 20% cọc còn lại chuyến đi #${id} (Đã nhận 70% tiền mặt)`)
-            .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
-            
-          // Cộng tiền vào ví Admin (Lợi nhuận sàn 10%)
-          const adminRes = await pool.request().query("SELECT TOP 1 u.user_id FROM [User] u JOIN UserRole ur ON u.user_id = ur.user_id JOIN Role r ON ur.role_id = r.role_id WHERE r.role_name = 'Admin'");
-          if (adminRes.recordset.length > 0) {
-            const adminId = adminRes.recordset[0].user_id;
-            await pool.request()
-              .input('userId', sql.Int, adminId)
-              .input('bookingId', sql.Int, id)
-              .input('amount', sql.Decimal(18,2), adminProfit)
-              .input('txnType', sql.VarChar, 'Commission')
-              .input('description', sql.NVarChar, `Lợi nhuận sàn 10% từ chuyến đi #${id}`)
-              .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
-          }
-        } catch (err) {
-          console.error('Lỗi tự động đối soát chuyển tiền ví:', err);
-        }
-      }
     }
 
-    res.json({
-      message: type === 'pickup'
-        ? 'Ký biên bản bàn giao nhận xe thành công! Hành trình thuê xe bắt đầu.'
-        : 'Ký biên bản trả xe thành công! Bạn có thể gửi đánh giá cho chủ xe.'
-    });
+    res.json({ message: type === 'return' ? 'Đã gửi biên bản trả xe! Vui lòng chờ Chủ xe kiểm tra và xác nhận nhận lại xe.' : 'Bàn giao nhận xe thành công! Chúc bạn có chuyến đi an toàn.', booking: await db.bookings.findOne({ id }) });
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi ký biên bản bàn giao.' });
+    console.error('Error signing handover docs:', error);
+    res.status(500).json({ message: error.message || 'Lỗi ký biên bản bàn giao.' });
+  }
+});
+
+// 15b. Car Owner Confirms Vehicle Return (Chủ xe xác nhận đã nhận lại xe & Hoàn tất chuyến đi)
+router.put('/api/bookings/:id/owner-confirm-return', auth, async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const booking = await db.bookings.findOne({ id: bookingId });
+    if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
+
+    const car = await db.cars.findOne({ id: booking.carId });
+    if (!car) return res.status(404).json({ message: 'Xe không tồn tại.' });
+
+    if (String(car.ownerId) !== String(req.user.id) && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Bạn không có quyền xác nhận nhận lại xe cho đơn này.' });
+    }
+
+    if (booking.status !== 'return_pending_owner' && booking.status !== 'active') {
+      return res.status(400).json({ message: 'Đơn đặt xe này chưa ở trạng thái nộp biên bản trả xe.' });
+    }
+
+    await db.bookings.update(bookingId, {
+      status: 'completed'
+    });
+
+    try {
+      const pool = await getPool();
+      const ownerPayout = booking.totalPrice * 0.2;
+      const adminProfit = booking.totalPrice * 0.1;
+
+      await pool.request()
+        .input('userId', sql.Int, car.ownerId)
+        .input('bookingId', sql.Int, bookingId)
+        .input('amount', sql.Decimal(18,2), ownerPayout)
+        .input('txnType', sql.VarChar, 'Revenue')
+        .input('description', sql.NVarChar, `Thanh toán 20% cọc còn lại chuyến đi #${bookingId} (Đã nhận 70% tiền mặt)`)
+        .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+
+      const adminRes = await pool.request().query("SELECT TOP 1 u.user_id FROM [User] u JOIN UserRole ur ON u.user_id = ur.user_id JOIN Role r ON ur.role_id = r.role_id WHERE r.role_name = 'Admin'");
+      if (adminRes.recordset.length > 0) {
+        const adminId = adminRes.recordset[0].user_id;
+        await pool.request()
+          .input('userId', sql.Int, adminId)
+          .input('bookingId', sql.Int, bookingId)
+          .input('amount', sql.Decimal(18,2), adminProfit)
+          .input('txnType', sql.VarChar, 'PlatformFee')
+          .input('description', sql.NVarChar, `Phí hoa hồng sàn 10% cho chuyến đi #${bookingId}`)
+          .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+      }
+    } catch (e) {
+      console.error('Lỗi phân bổ doanh thu khi chủ xe xác nhận trả xe:', e);
+    }
+
+    const depositAmount30Pct = Math.round(booking.totalPrice * 0.3);
+    const ownerUser = await db.users.findOne({ id: car.ownerId });
+    const ownerName = ownerUser ? ownerUser.name : 'Chủ xe';
+
+    await notificationService.notifyCSKH(
+      'Chủ xe đã nhận lại xe an toàn - Cần duyệt hoàn cọc 30%',
+      `Chủ xe ${ownerName} đã kiểm tra và xác nhận nhận lại xe ${car.brand} ${car.model} (#${bookingId}) an toàn không hư hại. Khoản cọc 30% (${depositAmount30Pct.toLocaleString('vi-VN')}đ) đã sẵn sàng để CSKH duyệt hoàn cọc cho khách.`,
+      'DepositRefund',
+      bookingId,
+      'Booking'
+    );
+
+    await notificationService.createNotification(
+      booking.userId,
+      'Chủ xe đã xác nhận nhận lại xe',
+      `Chủ xe đã kiểm tra và xác nhận nhận lại xe ${car.brand} ${car.model} (#${bookingId}) an toàn. Chuyến đi đã chính thức hoàn thành!`,
+      'BookingUpdate',
+      bookingId,
+      'Booking'
+    );
+
+    res.json({ message: 'Xác nhận nhận lại xe thành công! Đã gửi thông báo cho CSKH đối soát hoàn cọc.' });
+  } catch (error) {
+    console.error('Lỗi xác nhận nhận lại xe:', error);
+    res.status(500).json({ message: 'Lỗi xác nhận nhận lại xe.' });
+  }
+});
+
+// 15c. Car Owner Reports Incident / Dispute Upon Return (Chủ xe báo cáo sự cố/hỏng hóc khi nhận lại xe)
+router.post('/api/bookings/:id/owner-report-dispute', auth, async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const { description, incidentType, requestedDeduction } = req.body;
+
+    if (!description) {
+      return res.status(400).json({ message: 'Vui lòng điền mô tả sự cố / hư hỏng phát sinh.' });
+    }
+
+    const booking = await db.bookings.findOne({ id: bookingId });
+    if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
+
+    const car = await db.cars.findOne({ id: booking.carId });
+    if (!car) return res.status(404).json({ message: 'Xe không tồn tại.' });
+
+    if (String(car.ownerId) !== String(req.user.id) && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Bạn không có quyền báo cáo sự cố cho đơn đặt xe này.' });
+    }
+
+    const issueObj = {
+      reporter: 'owner',
+      description,
+      incidentType: incidentType || 'damage',
+      requestedDeduction: Number(requestedDeduction) || 0,
+      reportedAt: new Date().toISOString(),
+      status: 'pending_cskh'
+    };
+
+    const p = await getPool();
+    await p.request()
+      .input('bookingId', sql.Int, bookingId)
+      .input('issueData', sql.NVarChar, JSON.stringify(issueObj))
+      .query("UPDATE Booking SET status = 'Disputed', issue_report = @issueData WHERE booking_id = @bookingId");
+
+    const ownerUser = await db.users.findOne({ id: car.ownerId });
+    const ownerName = ownerUser ? ownerUser.name : 'Chủ xe';
+
+    await notificationService.notifyCSKH(
+      '⚠️ KHIẾU NẠI TRẢ XE TỪ CHỦ XE (CẦN XỬ LÝ)',
+      `Chủ xe ${ownerName} đã báo cáo sự cố/hỏng hóc cho chuyến đi #${bookingId} (${car.brand} ${car.model}). Nội dung: "${description}". Đề xuất cấn trừ cọc: ${Number(requestedDeduction || 0).toLocaleString('vi-VN')}đ. CSKH vui lòng kiểm tra và xử lý giữ/trừ cọc.`,
+      'Dispute',
+      bookingId,
+      'Booking'
+    );
+
+    await notificationService.createNotification(
+      booking.userId,
+      '⚠️ Chủ xe báo cáo sự cố khi nhận lại xe',
+      `Chủ xe ${ownerName} đã báo cáo sự cố cho chuyến đi #${bookingId}: "${description}". Bộ phận CSKH ViVuCar sẽ liên hệ làm rõ trước khi xử lý cọc.`,
+      'BookingUpdate',
+      bookingId,
+      'Booking'
+    );
+
+    res.json({ message: 'Đã gửi báo cáo khiếu nại sự cố tới bộ phận CSKH ViVuCar!' });
+  } catch (error) {
+    console.error('Lỗi báo cáo khiếu nại trả xe:', error);
+    res.status(500).json({ message: 'Lỗi gửi khiếu nại trả xe.' });
   }
 });
 
@@ -374,7 +483,7 @@ router.put('/api/bookings/:id/respond-extension', auth, async (req, res) => {
     const p = await getPool();
     const currentRes = await p.request()
       .input('bookingId', sql.Int, bookingId)
-      .query('SELECT extension_request, return_date, total_price FROM Booking WHERE booking_id = @bookingId');
+      .query('SELECT extension_request, end_datetime, total_amount FROM Booking WHERE booking_id = @bookingId');
 
     if (currentRes.recordset.length === 0 || !currentRes.recordset[0].extension_request) {
       return res.status(400).json({ message: 'Chuyến đi này hiện không có yêu cầu gia hạn nào.' });
@@ -386,14 +495,14 @@ router.put('/api/bookings/:id/respond-extension', auth, async (req, res) => {
 
     if (action === 'approve') {
       const newReturnDate = extObj.requestedReturnDate;
-      const newTotalPrice = Number(currentRes.recordset[0].total_price) + Number(extObj.extraPrice || 0);
+      const newTotalPrice = Number(currentRes.recordset[0].total_amount) + Number(extObj.extraPrice || 0);
 
       await p.request()
         .input('bookingId', sql.Int, bookingId)
         .input('newReturnDate', sql.NVarChar, newReturnDate)
         .input('newTotalPrice', sql.Decimal(18, 2), newTotalPrice)
         .input('extData', sql.NVarChar, JSON.stringify(extObj))
-        .query('UPDATE Booking SET return_date = @newReturnDate, total_price = @newTotalPrice, extension_request = @extData WHERE booking_id = @bookingId');
+        .query('UPDATE Booking SET end_datetime = @newReturnDate, total_amount = @newTotalPrice, extension_request = @extData WHERE booking_id = @bookingId');
     } else {
       await p.request()
         .input('bookingId', sql.Int, bookingId)

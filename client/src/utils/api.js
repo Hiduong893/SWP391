@@ -237,6 +237,17 @@ export const api = {
         body: JSON.stringify({ type, checklist, signature })
       }),
 
+    confirmReturnVehicle: (id) =>
+      request(`/bookings/${id}/owner-confirm-return`, {
+        method: 'PUT'
+      }),
+
+    ownerReportDispute: (id, description, incidentType, requestedDeduction) =>
+      request(`/bookings/${id}/owner-report-dispute`, {
+        method: 'POST',
+        body: JSON.stringify({ description, incidentType, requestedDeduction })
+      }),
+
     reportIncident: (id, description, image) =>
       request(`/bookings/${id}/incident`, {
         method: 'POST',
