@@ -206,9 +206,7 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
 
   const loadTopics = async () => {
     try {
-      const topics = await fetch('/api/contracts/custom-term-topics', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      }).then(r => r.json());
+      const topics = await api.get('/contracts/custom-term-topics');
       if (Array.isArray(topics) && topics.length > 0) setAvailableTopics(topics);
     } catch { /* use fallback */ }
   };
@@ -233,17 +231,8 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
   const handleSaveOwnerTerms = async () => {
     setSavingTerms(true);
     try {
-      const res = await fetch(`/api/contracts/booking/${bookingId}/owner-terms`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({ customTerms: editingTerms }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message);
-      showToast(json.message, 'success');
+      const res = await api.put(`/contracts/booking/${bookingId}/owner-terms`, { customTerms: editingTerms });
+      showToast(res?.message || 'Đã lưu điều khoản bổ sung thành công.', 'success');
       setShowOwnerEditor(false);
       load(); // Reload contract
     } catch (e) {

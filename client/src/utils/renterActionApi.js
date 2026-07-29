@@ -19,7 +19,10 @@
  * =============================================================================
  */
 
-const API_BASE = '/api/renter';
+const BASE_HOST = import.meta.env.VITE_API_URL 
+  ? import.meta.env.VITE_API_URL.replace(/\/$/, '') 
+  : '';
+const API_BASE = `${BASE_HOST}/api/renter`;
 
 /**
  * Internal helper: gọi fetch với Authorization header tự động.
