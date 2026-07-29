@@ -401,11 +401,26 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
                       <div className="trip-meta-item">
                         <Award size={14} className="text-muted" />
                         <span>Trạng thái cọc: <strong style={{ color: trip.depositStatus === 'refunded' ? '#34d399' : '#fbbf24' }}>
-                          {trip.depositStatus === 'paid' ? 'Đã đặt cọc' : trip.depositStatus === 'refunded' ? 'Đã hoàn cọc 100%' : 'Đang xử lý hoàn cọc'} ({formatCurrency(Math.round(trip.totalPrice * 0.3))})
+                          {trip.depositStatus === 'paid' ? 'Đã đặt cọc' : trip.depositStatus === 'refunded' ? 'Đã hoàn cọc 100%' : 'Đang xử lý hoàn cọc'} ({formatCurrency(trip.depositAmount || Math.round((trip.totalPrice - (trip.extensionRequest?.extraPrice || 0)) * 0.3))})
                         </strong></span>
                       </div>
                     )}
                   </div>
+
+                  {/* Extension Breakdown Display */}
+                  {trip.extensionRequest && (
+                    <div style={{ background: trip.extensionRequest.status === 'approved' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)', border: '1px solid ' + (trip.extensionRequest.status === 'approved' ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'), borderRadius: '8px', padding: '8px 12px', marginTop: '10px', fontSize: '12px' }}>
+                      <span style={{ color: trip.extensionRequest.status === 'approved' ? '#34d399' : '#fbbf24', fontWeight: 'bold' }}>
+                        {trip.extensionRequest.status === 'approved' ? '✓ Đã duyệt gia hạn thêm ' : '⏳ Đang chờ duyệt gia hạn thêm '}
+                        {trip.extensionRequest.extraDays} ngày (+{formatCurrency(trip.extensionRequest.extraPrice)})
+                      </span>
+                      <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                        {trip.extensionRequest.status === 'approved' 
+                          ? '👉 Số tiền gia hạn này sẽ được thanh toán trực tiếp cho Chủ xe khi trả xe.'
+                          : '👉 Đang chờ Chủ xe xác nhận yêu cầu gia hạn.'}
+                      </span>
+                    </div>
+                  )}
 
                   {trip.issueReport && (
                     <div className="trip-incident-box mt-2">
