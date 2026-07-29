@@ -1,11 +1,12 @@
-{
+﻿{
   "name": "swp391-auth-server",
   "version": "1.0.0",
   "description": "Express server for Authentication Demo",
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node --watch server.js",
+    "start": "node server.js",
+    "dev": "node --watch server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "dependencies": {
