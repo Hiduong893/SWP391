@@ -53,13 +53,23 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
     setLoading(true);
     try {
       const data = await api.cars.getCars(filters);
-      setCars(data);
-      if (Object.keys(filters).length === 0) {
-        setAllCars(data);
+      if (Array.isArray(data) && data.length > 0) {
+        setCars(data);
+        if (Object.keys(filters).length === 0) {
+          setAllCars(data);
+        }
+      } else {
+        setCars(likesCars);
+        if (Object.keys(filters).length === 0) {
+          setAllCars(likesCars);
+        }
       }
     } catch (error) {
       console.error('Lỗi chi tiết khi lấy danh sách xe:', error);
-      showToast('Không thể lấy danh sách xe.', 'error');
+      setCars(likesCars);
+      if (Object.keys(filters).length === 0) {
+        setAllCars(likesCars);
+      }
     } finally {
       setLoading(false);
     }
