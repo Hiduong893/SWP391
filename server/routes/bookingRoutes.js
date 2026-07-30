@@ -125,17 +125,7 @@ router.post('/api/bookings', auth, async (req, res) => {
   }
 });
 
-// Helper to map frontend mock car IDs to real DB vehicle IDs
-const mapCarId = (rawId) => {
-  const strId = String(rawId || '');
-  if (strId.startsWith('lux-car-')) {
-    return (strId === 'lux-car-1' || strId === 'lux-car-4') ? 31 : 30;
-  }
-  if (strId.startsWith('likes-car-')) {
-    return (strId === 'likes-car-1' || strId === 'likes-car-2') ? 25 : 22;
-  }
-  return parseInt(strId) || 22;
-};
+
 
 // Helper to check for overlapping booking dates in SQL Server
 const checkCarScheduleOverlap = async (pool, vehicleId, pickupDateStr, returnDateStr) => {
@@ -193,10 +183,14 @@ router.post('/api/bookings/group-checkout', auth, async (req, res) => {
     const validatedItems = [];
 
     for (const item of items) {
-      const actualCarId = mapCarId(item.carId);
+      const actualCarId = parseInt(item.carId);
+      if (isNaN(actualCarId)) {
+        return res.status(400).json({ message: `ID xe không hợp lệ: ${item.carId}` });
+      }
+
       let car = await db.cars.findOne({ id: actualCarId });
       if (!car) {
-        car = await db.cars.findOne({ id: 22 }); // fallback car if missing
+        return res.status(400).json({ message: `Xe có ID ${actualCarId} không tồn tại trong hệ thống.` });
       }
 
       // Check date schedule overlap
