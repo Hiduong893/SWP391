@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, FileWarning, ReceiptText, Camera, BadgeCheck } from 'lucide-react';
+import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, FileWarning, ReceiptText, Camera, BadgeCheck, Sparkles, Edit, Trash2, Play, Pause, AlertTriangle } from 'lucide-react';
 
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
 import { ContractModal } from '../../components/ContractModal';
 import { InspectionModal } from '../../components/InspectionModal';
+import { RevenueChartModal } from './components/RevenueChartModal';
+import { PauseVehicleModal } from './components/PauseVehicleModal';
+import { OwnerVehicleTable } from './components/OwnerVehicleTable';
 import './OwnerDashboard.css';
+
+
 
 export const OwnerDashboard = ({ setCurrentTab, user }) => {
   const [activeSubTab, setActiveSubTab] = useState('stats'); // stats, my-cars
@@ -18,6 +23,32 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
   const [myCarsList, setMyCarsList] = useState([]);
   const [selectedBookingForContract, setSelectedBookingForContract] = useState(null);
   const [activeInspectionBooking, setActiveInspectionBooking] = useState(null);
+
+  // Extracted Component States
+  const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
+  const [selectedVehicleForPause, setSelectedVehicleForPause] = useState(null);
+  const [isRevenueChartOpen, setIsRevenueChartOpen] = useState(false);
+
+  // Mock Data for Revenue Chart
+  const mockRevenueData = [
+    { month: 'T1', revenue: 1200000 },
+    { month: 'T2', revenue: 1900000 },
+    { month: 'T3', revenue: 3000000 },
+    { month: 'T4', revenue: 5000000 },
+    { month: 'T5', revenue: 4800000 },
+    { month: 'T6', revenue: totalEarnings > 0 ? totalEarnings : 6200000 }
+  ];
+
+  const openPauseModal = (vehicle) => {
+    setSelectedVehicleForPause(vehicle);
+    setIsPauseModalOpen(true);
+  };
+
+  const confirmPauseVehicle = async () => {
+    if (selectedVehicleForPause) {
+      await handleToggleCarStatus(selectedVehicleForPause.id, 'available');
+    }
+  };
 
   // Dispute & Traffic Violation Modals State
   const [isGeneralDisputeModalOpen, setIsGeneralDisputeModalOpen] = useState(false);
@@ -361,7 +392,7 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
 
       {/* STATS OVERVIEW CARDS */}
       <div className="owner-stats-grid mb-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-        <div className="owner-stat-card-glass">
+        <div className="owner-stat-card-glass" onClick={() => setIsRevenueChartOpen(true)} style={{ cursor: 'pointer' }} title="Xem biểu đồ doanh thu">
           <div>
             <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tổng Thu Nhập</span>
             <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--accent-primary)', marginTop: 4 }}>{formatCurrency(totalEarnings)}</h3>
@@ -696,78 +727,13 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                     Bạn chưa ký gửi chiếc xe nào trên sàn. Hãy nhấn 'Ký gửi xe mới' để đăng ký chiếc xe đầu tiên của bạn!
                   </div>
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-                    {myCarsList.map((car) => (
-                      <div key={car.id} style={{ display: 'flex', gap: 12, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 12, textAlign: 'left' }}>
-                        <img src={car.image} alt={car.model} style={{ width: 100, height: 60, objectFit: 'cover', borderRadius: 6, background: '#050508' }} />
-                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1 }}>
-                          <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                              <strong style={{ fontSize: '10px', color: 'var(--accent-primary)', textTransform: 'uppercase' }}>{car.brand}</strong>
-                              <span className={`car-moderation-badge badge-${car.status}`} style={{ transform: 'scale(0.85)', transformOrigin: 'top right', marginTop: -2 }}>
-                                {car.status === 'pending_moderation' ? 'Chờ kiểm duyệt' : car.status === 'available' ? 'Sẵn sàng' : car.status === 'rented' ? 'Đang cho thuê' : car.status === 'inactive' ? 'Tạm dừng' : 'Từ chối'}
-                              </span>
-                            </div>
-                            <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{car.model}</strong>
-                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: 2 }}>Biển số: {car.plateNumber}</span>
-                          </div>
-                          
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                            <strong style={{ fontSize: '12px', color: 'var(--accent-primary)' }}>{formatCurrency(car.pricePerDay)}/ngày</strong>
-                            
-                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                              {car.status !== 'rented' && (
-                                <button 
-                                  type="button"
-                                  className="owner-booking-status-badge badge-confirmed" 
-                                  style={{ background: 'rgba(0, 150, 152, 0.15)', border: '1px solid rgba(0, 150, 152, 0.3)', color: 'var(--accent-primary)', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
-                                  onClick={() => handleStartEditCar(car)}
-                                >
-                                  Sửa xe
-                                </button>
-                              )}
-                              
-                              {car.status === 'available' && (
-                                <button 
-                                  type="button"
-                                  className="owner-booking-status-badge" 
-                                  style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#fbbf24', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
-                                  onClick={() => handleToggleCarStatus(car.id, car.status)}
-                                  disabled={actionLoading}
-                                >
-                                  Tạm dừng
-                                </button>
-                              )}
-
-                              {car.status === 'inactive' && (
-                                <button 
-                                  type="button"
-                                  className="owner-booking-status-badge" 
-                                  style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
-                                  onClick={() => handleToggleCarStatus(car.id, car.status)}
-                                  disabled={actionLoading}
-                                >
-                                  Cho thuê lại
-                                </button>
-                              )}
-
-                              {car.status !== 'rented' && (
-                                <button 
-                                  type="button"
-                                  className="owner-booking-status-badge" 
-                                  style={{ background: 'rgba(244, 63, 94, 0.15)', border: '1px solid rgba(244, 63, 94, 0.3)', color: '#fda4af', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
-                                  onClick={() => handleDeleteCar(car.id, `${car.brand} ${car.model}`)}
-                                  disabled={actionLoading}
-                                >
-                                  Xóa xe
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <OwnerVehicleTable 
+                    vehicles={myCarsList}
+                    onEdit={handleStartEditCar}
+                    onDelete={handleDeleteCar}
+                    onToggleStatus={handleToggleCarStatus}
+                    onPauseClick={openPauseModal}
+                  />
                 )}
               </div>
             )}
@@ -1041,6 +1007,24 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
             </div>
           </div>
         )}
+
+        {isPauseModalOpen && selectedVehicleForPause && (
+          <PauseVehicleModal 
+            isOpen={isPauseModalOpen} 
+            onClose={() => setIsPauseModalOpen(false)} 
+            vehicle={selectedVehicleForPause} 
+            onConfirm={confirmPauseVehicle} 
+          />
+        )}
+        
+        {isRevenueChartOpen && (
+          <RevenueChartModal 
+            isOpen={isRevenueChartOpen} 
+            onClose={() => setIsRevenueChartOpen(false)} 
+            data={mockRevenueData} 
+          />
+        )}
+
       </div>
     </div>
   );

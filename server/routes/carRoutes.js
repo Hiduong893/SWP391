@@ -1,6 +1,7 @@
 import express from 'express';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
+import { sql, getPool } from '../config/db.js';
 import { notificationService } from '../services/notificationService.js';
 import { contractModel } from '../models/contractModel.js';
 
