@@ -35,11 +35,12 @@
   --cskh-pink:          #ec4899;
   --cskh-pink-dim:      rgba(236, 72, 153, 0.12);
 
-  --sidebar-w:          240px;
+  --sidebar-w:          250px;
+  --sidebar-w-collapsed: 88px;
   --radius-sm:          8px;
   --radius-md:          12px;
   --radius-lg:          16px;
-  --transition:         all 0.2s ease;
+  --transition:         all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
@@ -58,8 +59,8 @@
    SIDEBAR
    ============================== */
 .cskh-sidebar {
-  width: var(--sidebar-w);
-  min-width: var(--sidebar-w);
+  width: var(--sidebar-w-collapsed);
+  min-width: var(--sidebar-w-collapsed);
   background: var(--cskh-surface);
   border-right: 1px solid var(--cskh-border);
   display: flex;
@@ -69,6 +70,39 @@
   flex-shrink: 0;
   position: relative;
   z-index: 10;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.cskh-sidebar:hover {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+}
+
+.cskh-sidebar:not(:hover) .cskh-brand-text,
+.cskh-sidebar:not(:hover) .cskh-nav-btn > span,
+.cskh-sidebar:not(:hover) .cskh-nav-badge,
+.cskh-sidebar:not(:hover) .cskh-nav-section,
+.cskh-sidebar:not(:hover) .cskh-pulse,
+.cskh-sidebar:not(:hover) .cskh-user-card > div:last-child {
+  opacity: 0;
+  visibility: hidden;
+  width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.cskh-sidebar:hover .cskh-brand-text,
+.cskh-sidebar:hover .cskh-nav-btn > span,
+.cskh-sidebar:hover .cskh-nav-badge,
+.cskh-sidebar:hover .cskh-nav-section,
+.cskh-sidebar:hover .cskh-pulse,
+.cskh-sidebar:hover .cskh-user-card > div:last-child {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0.1s;
 }
 
 .cskh-sidebar::before {
@@ -144,8 +178,13 @@
   cursor: pointer;
   width: 100%;
   text-align: left;
-  transition: var(--transition);
+  transition: all 0.2s ease;
   position: relative;
+  overflow: hidden;
+}
+
+.cskh-nav-btn > svg {
+  flex-shrink: 0;
 }
 .cskh-nav-btn:hover {
   background: var(--cskh-surface-2);
@@ -236,9 +275,23 @@
   background: transparent;
   color: var(--cskh-red);
   font-size: 12.5px; font-weight: 500;
-  cursor: pointer; transition: var(--transition);
+  cursor: pointer; transition: all 0.2s ease;
 }
 .cskh-logout-btn:hover { background: var(--cskh-red-dim); }
+
+.cskh-sidebar:not(:hover) .cskh-logout-btn {
+  justify-content: center;
+  padding: 8px 0;
+}
+.cskh-sidebar:not(:hover) .cskh-logout-btn > svg {
+  margin: 0;
+}
+.cskh-sidebar:not(:hover) .cskh-logout-btn {
+  color: transparent;
+}
+.cskh-sidebar:not(:hover) .cskh-logout-btn > svg {
+  color: var(--cskh-red);
+}
 
 /* ==============================
    MAIN CONTENT AREA

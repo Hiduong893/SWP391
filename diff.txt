@@ -1,0 +1,1943 @@
+﻿diff --git a/client/src/pages/OwnerDashboard/OwnerDashboard.jsx b/client/src/pages/OwnerDashboard/OwnerDashboard.jsx
+index ecbc3979..a75dda15 100644
+--- a/client/src/pages/OwnerDashboard/OwnerDashboard.jsx
++++ b/client/src/pages/OwnerDashboard/OwnerDashboard.jsx
+@@ -1,882 +1,1065 @@
+-import React, { useState, useEffect } from 'react';
+-import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, FileWarning, ReceiptText, Camera, Sparkles } from 'lucide-react';
+-
++
+import React, { useState, useEffect } from 'react';
++import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, FileWarning, ReceiptText, Camera, Sparkles, BadgeCheck } from 'lucide-react';
+ import { api } from '../../utils/api';
+ import { useToast } from '../../components/Toast';
+ import { ContractModal } from '../../components/ContractModal';
+ import { InspectionModal } from '../../components/InspectionModal';
+ import './OwnerDashboard.css';
+ 
+-export const OwnerDashboard = ({ setCurrentTab, user }) => {
+-  const [activeSubTab, setActiveSubTab] = useState('stats'); // stats, my-cars
+-  const [loading, setLoading] = useState(false);
+-  const [actionLoading, setActionLoading] = useState(false);
+-
+-  // Stats & Bookings list (UC23)
+-  const [ownerBookings, setOwnerBookings] = useState([]);
+-  const [totalEarnings, setTotalEarnings] = useState(0);
+-  const [myCarsList, setMyCarsList] = useState([]);
+-  const [selectedBookingForContract, setSelectedBookingForContract] = useState(null);
+-  const [activeInspectionBooking, setActiveInspectionBooking] = useState(null);
+-
+-  // Dispute & Traffic Violation Modals State
+-  const [isGeneralDisputeModalOpen, setIsGeneralDisputeModalOpen] = useState(false);
+-  const [selectedBookingForDispute, setSelectedBookingForDispute] = useState(null);
+-  const [generalDisputeDetails, setGeneralDisputeDetails] = useState({ description: '', amount: '' });
+-  const [generalDisputeEvidenceImage, setGeneralDisputeEvidenceImage] = useState('');
+-  const [generalDisputeImageLoading, setGeneralDisputeImageLoading] = useState(false);
+-
+-  const [isTrafficViolationModalOpen, setIsTrafficViolationModalOpen] = useState(false);
+-  const [selectedBookingForTrafficViolation, setSelectedBookingForTrafficViolation] = useState(null);
+-  const [trafficViolationDetails, setTrafficViolationDetails] = useState({ amount: '', description: '' });
+-  const [trafficViolationTicketImage, setTrafficViolationTicketImage] = useState('');
++export const OwnerDashboard = ({ setCurrentTab, user }) => {
++  const [activeSubTab, setActiveSubTab] = useState('stats'); // stats, my-cars
++  const [loading, setLoading] = useState(false);
++  const [actionLoading, setActionLoading] = useState(false);
++
++  // Stats & Bookings list (UC23)
++  const [ownerBookings, setOwnerBookings] = useState([]);
++  const [totalEarnings, setTotalEarnings] = useState(0);
++  const [myCarsList, setMyCarsList] = useState([]);
++  const [selectedBookingForContract, setSelectedBookingForContract] = useState(null);
++  const [activeInspectionBooking, setActiveInspectionBooking] = useState(null);
++
++  // Dispute & Traffic Violation Modals State
++  const [isGeneralDisputeModalOpen, setIsGeneralDisputeModalOpen] = useState(false);
++  const [selectedBookingForDispute, setSelectedBookingForDispute] = useState(null);
++  const [generalDisputeDetails, setGeneralDisputeDetails] = useState({ description: '', amount: '' });
++  const [generalDisputeEvidenceImage, setGeneralDisputeEvidenceImage] = useState('');
++  const [generalDisputeImageLoading, setGeneralDisputeImageLoading] = useState(false);
++
++  const [isTrafficViolationModalOpen, setIsTrafficViolationModalOpen] = useState(false);
++  const [selectedBookingForTrafficViolation, setSelectedBookingForTrafficViolation] = useState(null);
++  const [trafficViolationDetails, setTrafficViolationDetails] = useState({ amount: '', description: '' });
++  const [trafficViolationTicketImage, setTrafficViolationTicketImage] = useState('');
+   const [trafficViolationImageLoading, setTrafficViolationImageLoading] = useState(false);
+-
+-  // Edit Car Form State
+-  const [editingCar, setEditingCar] = useState(null);
+-  const [editPricePerDay, setEditPricePerDay] = useState('');
+-  const [editLocation, setEditLocation] = useState('H├á Nß╗Öi');
+-  const [editCarImage, setEditCarImage] = useState('');
+-  const [editImageLoading, setEditImageLoading] = useState(false);
+-
+-  const { showToast } = useToast();
+-
+-  const fetchOwnerDashboard = async (silent = false) => {
+-    if (!silent) setLoading(true);
+-    try {
+-      // 1. Fetch owner stats & bookings
+-      const statsData = await api.owner.getStats();
+-      setOwnerBookings(statsData.bookings);
+-      setTotalEarnings(statsData.totalEarnings);
+-
+-      // 2. Fetch owner registered cars list
+-      const carsData = await api.owner.getCars();
+-      setMyCarsList(carsData);
+-    } catch (e) {
+-      console.warn("Lß╗ùi tß║úi th├┤ng tin chß╗º xe.");
+-    } finally {
+-      if (!silent) setLoading(false);
+-    }
+-  };
+-
+-  useEffect(() => {
+-    fetchOwnerDashboard();
+-  }, []);
+-
+-  const handleApproveBooking = async (bookingId, approved) => {
+-    setActionLoading(true);
+-    try {
+-      const data = await api.owner.approveBooking(bookingId, approved);
+-      showToast(data.message, 'success');
+-      fetchOwnerDashboard(true);
+-    } catch (error) {
+-      showToast(error.message || 'Lß╗ùi x├⌐t duyß╗çt ─æ╞ín ─æß║╖t xe.', 'error');
+-    } finally {
+-      setActionLoading(false);
+-    }
+-  };
+-
+-  const handleRespondExtension = async (bookingId, action) => {
+-    setActionLoading(true);
+-    try {
+-      const data = await api.bookings.respondExtension(bookingId, action);
+-      showToast(data.message, 'success');
+-      fetchOwnerDashboard(true);
+-    } catch (error) {
+-      showToast(error.message || 'Lß╗ùi xß╗¡ l├╜ y├¬u cß║ºu gia hß║ín.', 'error');
+-    } finally {
+-      setActionLoading(false);
+-    }
+-  };
+-
+-  const handleStartEditCar = (car) => {
+-    setEditingCar(car);
+-    setEditPricePerDay(car.pricePerDay);
+-    setEditLocation(car.location);
+-    setEditCarImage(car.image);
+-  };
+-
+-  const handleEditCarImageUpload = (e) => {
+-    const file = e.target.files[0];
+-    if (!file) return;
+-
+-    if (!file.type.startsWith('image/')) {
+-      showToast('Vui l├▓ng chß╗ë chß╗ìn tß╗çp h├¼nh ß║únh.', 'warning');
+-      return;
+-    }
+-
+-    if (file.size > 5 * 1024 * 1024) {
+-      showToast('K├¡ch th╞░ß╗¢c ß║únh phß║úi nhß╗Å h╞ín 5MB.', 'warning');
+-      return;
+-    }
+-
+-    setEditImageLoading(true);
+-    const reader = new FileReader();
+-    reader.onloadend = () => {
+-      setEditCarImage(reader.result);
+-      setEditImageLoading(false);
+-      showToast('Tß║úi ß║únh mß╗¢i cß╗ºa xe l├¬n th├ánh c├┤ng!', 'success');
+-    };
+-    reader.readAsDataURL(file);
+-  };
+-
+-  const handleSubmitEditCar = async (e) => {
+-    e.preventDefault();
+-
+-    if (!editPricePerDay || !editLocation || !editCarImage) {
+-      showToast('Vui l├▓ng nhß║¡p ─æß║ºy ─æß╗º c├íc th├┤ng tin.', 'warning');
+-      return;
+-    }
+-
+-    setLoading(true);
+-    try {
+-      const updatedData = {
+-        pricePerDay: parseInt(editPricePerDay),
+-        location: editLocation,
+-        image: editCarImage
+-      };
+-
+-      const data = await api.owner.updateCar(editingCar.id, updatedData);
+-      showToast(data.message, 'success');
+-      setEditingCar(null);
+-      fetchOwnerDashboard(true);
+-    } catch (error) {
+-      showToast(error.message || 'Lß╗ùi khi cß║¡p nhß║¡t xe.', 'error');
+-    } finally {
+-      setLoading(false);
+-    }
+-  };
+-
+-  const handleToggleCarStatus = async (carId, currentStatus) => {
+-    const nextStatus = currentStatus === 'available' ? 'inactive' : 'available';
+-    const actionText = nextStatus === 'inactive' ? 'Tß║ím dß╗½ng cho thu├¬' : 'K├¡ch hoß║ít cho thu├¬ lß║íi';
+-    
+-    if (!window.confirm(`Bß║ín c├│ chß║»c chß║»n muß╗æn ${actionText.toLowerCase()} ph╞░╞íng tiß╗çn n├áy?`)) {
+-      return;
+-    }
+-
+-    setActionLoading(true);
+-    try {
+-      const data = await api.owner.updateCar(carId, { status: nextStatus });
+-      showToast(data.message || `${actionText} th├ánh c├┤ng!`, 'success');
+-      fetchOwnerDashboard(true);
+-    } catch (error) {
+-      showToast(error.message || `Lß╗ùi khi ${actionText.toLowerCase()} ph╞░╞íng tiß╗çn.`, 'error');
+-    } finally {
+-      setActionLoading(false);
+-    }
+-  };
+-
+-  const handleDeleteCar = async (carId, modelName) => {
+-    if (!window.confirm(`Bß║ín c├│ chß║»c chß║»n muß╗æn x├│a ph╞░╞íng tiß╗çn "${modelName}"? H├ánh ─æß╗Öng n├áy kh├┤ng thß╗â ho├án t├íc.`)) {
+-      return;
+-    }
+-
+-    setActionLoading(true);
+-    try {
+-      const data = await api.owner.deleteCar(carId);
+-      showToast(data.message || 'X├│a ph╞░╞íng tiß╗çn th├ánh c├┤ng!', 'success');
+-      fetchOwnerDashboard(true);
+-    } catch (error) {
+-      showToast(error.message || 'Lß╗ùi khi x├│a ph╞░╞íng tiß╗çn.', 'error');
+-    } finally {
+-      setActionLoading(false);
+-    }
+-  };
+-
+-  const formatCurrency = (amount) => {
+-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+-  };
+-
+-  // Generic Image Upload Handler
+-  const handleImageUpload = (e, setImage, setLoading, toastMessage) => {
+-    const file = e.target.files[0];
+-    if (!file) return;
+-
+-    if (!file.type.startsWith('image/')) {
+-      showToast('Vui l├▓ng chß╗ë chß╗ìn tß╗çp h├¼nh ß║únh.', 'warning');
+-      return;
+-    }
+-
+-    if (file.size > 5 * 1024 * 1024) {
+-      showToast('K├¡ch th╞░ß╗¢c ß║únh phß║úi nhß╗Å h╞ín 5MB.', 'warning');
+-      return;
+-    }
+-
+-    setLoading(true);
+-    const reader = new FileReader();
+-    reader.onloadend = () => {
+-      setImage(reader.result);
+-      setLoading(false);
+-      showToast(toastMessage, 'success');
+-    };
+-    reader.readAsDataURL(file);
+-  };
+-
+-  // General Dispute Functions
+-  const openGeneralDisputeModal = (booking) => {
+-    setSelectedBookingForDispute(booking);
+-    setGeneralDisputeDetails({ description: '', amount: '' });
+-    setGeneralDisputeEvidenceImage('');
+-    setIsGeneralDisputeModalOpen(true);
+-  };
+-
+-  const handleGeneralDisputeSubmit = async (e) => {
+-    e.preventDefault();
+-    if (!selectedBookingForDispute || !generalDisputeDetails.description) {
+-      showToast('Vui l├▓ng nhß║¡p m├┤ tß║ú khiß║┐u nß║íi.', 'warning');
+-      return;
+-    }
+-
+-    setActionLoading(true);
+-    try {
+-      const evidenceUrls = generalDisputeEvidenceImage ? [generalDisputeEvidenceImage] : [];
+-      const data = await api.owner.createDispute(
+-        selectedBookingForDispute.id,
+-        generalDisputeDetails.description,
+-        generalDisputeDetails.amount,
+-        evidenceUrls
+-      );
+-      showToast(data.message, 'success');
+-      setIsGeneralDisputeModalOpen(false);
+-      fetchOwnerDashboard(true); // Refresh data
+-    } catch (error) {
++  // Owner Dispute State upon Return
++  const [disputeBooking, setDisputeBooking] = useState(null);
++  const [disputeDesc, setDisputeDesc] = useState('');
++  const [requestedDeduction, setRequestedDeduction] = useState('');
++
++  // Edit Car Form State
++  const [editingCar, setEditingCar] = useState(null);
++  const [editPricePerDay, setEditPricePerDay] = useState('');
++  const [editLocation, setEditLocation] = useState('H├á Nß╗Öi');
++  const [editCarImage, setEditCarImage] = useState('');
++  const [editImageLoading, setEditImageLoading] = useState(false);
++
++  const { showToast } = useToast();
++
++  const fetchOwnerDashboard = async (silent = false) => {
++    if (!silent) setLoading(true);
++    try {
++      // 1. Fetch owner stats & bookings
++      const statsData = await api.owner.getStats();
++      setOwnerBookings(statsData.bookings);
++      setTotalEarnings(statsData.totalEarnings);
++
++      // 2. Fetch owner registered cars list
++      const carsData = await api.owner.getCars();
++      setMyCarsList(carsData);
++    } catch (e) {
++      console.warn("Lß╗ùi tß║úi th├┤ng tin chß╗º xe.");
++    } finally {
++      if (!silent) setLoading(false);
++    }
++  };
++
++  useEffect(() => {
++    fetchOwnerDashboard();
++  }, []);
++
++  const handleApproveBooking = async (bookingId, approved) => {
++    setActionLoading(true);
++    try {
++      const data = await api.owner.approveBooking(bookingId, approved);
++      showToast(data.message, 'success');
++      fetchOwnerDashboard(true);
++    } catch (error) {
++      showToast(error.message || 'Lß╗ùi x├⌐t duyß╗çt ─æ╞ín ─æß║╖t xe.', 'error');
++    } finally {
++      setActionLoading(false);
++    }
++  };
++
++  const handleRespondExtension = async (bookingId, action) => {
++    setActionLoading(true);
++    try {
++      const data = await api.bookings.respondExtension(bookingId, action);
++      showToast(data.message, 'success');
++      fetchOwnerDashboard(true);
++    } catch (error) {
++      showToast(error.message || 'Lß╗ùi xß╗¡ l├╜ y├¬u cß║ºu gia hß║ín.', 'error');
++    } finally {
++      setActionLoading(false);
++    }
++  };
++
++  const handleStartEditCar = (car) => {
++    setEditingCar(car);
++    setEditPricePerDay(car.pricePerDay);
++    setEditLocation(car.location);
++    setEditCarImage(car.image);
++  };
++
++  const handleEditCarImageUpload = (e) => {
++    const file = e.target.files[0];
++    if (!file) return;
++
++    if (!file.type.startsWith('image/')) {
++      showToast('Vui l├▓ng chß╗ë chß╗ìn tß╗çp h├¼nh ß║únh.', 'warning');
++      return;
++    }
++
++    if (file.size > 5 * 1024 * 1024) {
++      showToast('K├¡ch th╞░ß╗¢c ß║únh phß║úi nhß╗Å h╞ín 5MB.', 'warning');
++      return;
++    }
++
++    setEditImageLoading(true);
++    const reader = new FileReader();
++    reader.onloadend = () => {
++      setEditCarImage(reader.result);
++      setEditImageLoading(false);
++      showToast('Tß║úi ß║únh mß╗¢i cß╗ºa xe l├¬n th├ánh c├┤ng!', 'success');
++    };
++    reader.readAsDataURL(file);
++  };
++
++  const handleSubmitEditCar = async (e) => {
++    e.preventDefault();
++
++    if (!editPricePerDay || !editLocation || !editCarImage) {
++      showToast('Vui l├▓ng nhß║¡p ─æß║ºy ─æß╗º c├íc th├┤ng tin.', 'warning');
++      return;
++    }
++
++    setLoading(true);
++    try {
++      const updatedData = {
++        pricePerDay: parseInt(editPricePerDay),
++        location: editLocation,
++        image: editCarImage
++      };
++
++      const data = await api.owner.updateCar(editingCar.id, updatedData);
++      showToast(data.message, 'success');
++      setEditingCar(null);
++      fetchOwnerDashboard(true);
++    } catch (error) {
++      showToast(error.message || 'Lß╗ùi khi cß║¡p nhß║¡t xe.', 'error');
++    } finally {
++      setLoading(false);
++    }
++  };
++
++  const handleToggleCarStatus = async (carId, currentStatus) => {
++    const nextStatus = currentStatus === 'available' ? 'inactive' : 'available';
++    const actionText = nextStatus === 'inactive' ? 'Tß║ím dß╗½ng cho thu├¬' : 'K├¡ch hoß║ít cho thu├¬ lß║íi';
++    
++    if (!window.confirm(`Bß║ín c├│ chß║»c chß║»n muß╗æn ${actionText.toLowerCase()} ph╞░╞íng tiß╗çn n├áy?`)) {
++      return;
++    }
++
++    setActionLoading(true);
++    try {
++      const data = await api.owner.updateCar(carId, { status: nextStatus });
++      showToast(data.message || `${actionText} th├ánh c├┤ng!`, 'success');
++      fetchOwnerDashboard(true);
++    } catch (error) {
++      showToast(error.message || `Lß╗ùi khi ${actionText.toLowerCase()} ph╞░╞íng tiß╗çn.`, 'error');
++    } finally {
++      setActionLoading(false);
++    }
++  };
++
++  const handleDeleteCar = async (carId, modelName) => {
++    if (!window.confirm(`Bß║ín c├│ chß║»c chß║»n muß╗æn x├│a ph╞░╞íng tiß╗çn "${modelName}"? H├ánh ─æß╗Öng n├áy kh├┤ng thß╗â ho├án t├íc.`)) {
++      return;
++    }
++
++    setActionLoading(true);
++    try {
++      const data = await api.owner.deleteCar(carId);
++      showToast(data.message || 'X├│a ph╞░╞íng tiß╗çn th├ánh c├┤ng!', 'success');
++      fetchOwnerDashboard(true);
++    } catch (error) {
++      showToast(error.message || 'Lß╗ùi khi x├│a ph╞░╞íng tiß╗çn.', 'error');
++    } finally {
++      setActionLoading(false);
++    }
++  };
++
++  const formatCurrency = (amount) => {
++    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
++  };
++
++  // Generic Image Upload Handler
++  const handleImageUpload = (e, setImage, setLoading, toastMessage) => {
++    const file = e.target.files[0];
++    if (!file) return;
++
++    if (!file.type.startsWith('image/')) {
++      showToast('Vui l├▓ng chß╗ë chß╗ìn tß╗çp h├¼nh ß║únh.', 'warning');
++      return;
++    }
++
++    if (file.size > 5 * 1024 * 1024) {
++      showToast('K├¡ch th╞░ß╗¢c ß║únh phß║úi nhß╗Å h╞ín 5MB.', 'warning');
++      return;
++    }
++
++    setLoading(true);
++    const reader = new FileReader();
++    reader.onloadend = () => {
++      setImage(reader.result);
++      setLoading(false);
++      showToast(toastMessage, 'success');
++    };
++    reader.readAsDataURL(file);
++  };
++
++  // General Dispute Functions
++  const openGeneralDisputeModal = (booking) => {
++    setSelectedBookingForDispute(booking);
++    setGeneralDisputeDetails({ description: '', amount: '' });
++    setGeneralDisputeEvidenceImage('');
++    setIsGeneralDisputeModalOpen(true);
++  };
++
++  const handleGeneralDisputeSubmit = async (e) => {
++    e.preventDefault();
++    if (!selectedBookingForDispute || !generalDisputeDetails.description) {
++      showToast('Vui l├▓ng nhß║¡p m├┤ tß║ú khiß║┐u nß║íi.', 'warning');
++      return;
++    }
++
++    setActionLoading(true);
++    try {
++      const evidenceUrls = generalDisputeEvidenceImage ? [generalDisputeEvidenceImage] : [];
++      const data = await api.owner.createDispute(
++        selectedBookingForDispute.id,
++        generalDisputeDetails.description,
++        generalDisputeDetails.amount,
++        evidenceUrls
++      );
++      showToast(data.message, 'success');
++      setIsGeneralDisputeModalOpen(false);
++      fetchOwnerDashboard(true); // Refresh data
++    } catch (error) {
+       showToast(error.message || 'Lß╗ùi khi gß╗¡i khiß║┐u nß║íi.', 'error');
+-    } finally {
+-      setActionLoading(false);
+-    }
+-  };
+-
+-  // Traffic Violation Functions
+-  const openTrafficViolationModal = (booking) => {
+-    setSelectedBookingForTrafficViolation(booking);
+-    setTrafficViolationDetails({ amount: '', description: '' });
+-    setTrafficViolationTicketImage('');
+-    setIsTrafficViolationModalOpen(true);
+-  };
+-
+-  const handleTrafficViolationSubmit = async (e) => {
+-    e.preventDefault();
+-    if (!selectedBookingForTrafficViolation || !trafficViolationDetails.amount || !trafficViolationDetails.description) {
++  const handleConfirmReturnVehicle = async (bookingId) => {
++    setActionLoading(true);
++    try {
++      const res = await api.bookings.confirmReturnVehicle(bookingId);
++      showToast(res.message, 'success');
++      fetchOwnerDashboard(true);
++    } catch (err) {
++      showToast(err.message || 'Lß╗ùi x├íc nhß║¡n nhß║¡n lß║íi xe.', 'error');
++    } finally {
++      setActionLoading(false);
++    }
++  };
++
++  // Traffic Violation Functions
++  const openTrafficViolationModal = (booking) => {
++    setSelectedBookingForTrafficViolation(booking);
++    setTrafficViolationDetails({ amount: '', description: '' });
++    setTrafficViolationTicketImage('');
++    setIsTrafficViolationModalOpen(true);
++  };
++
++  const handleTrafficViolationSubmit = async (e) => {
++    e.preventDefault();
++    if (!selectedBookingForTrafficViolation || !trafficViolationDetails.amount || !trafficViolationDetails.description) {
+       showToast('Vui l├▓ng nhß║¡p ─æß║ºy ─æß╗º sß╗æ tiß╗ün phß║ít v├á m├┤ tß║ú.', 'warning');
+-      return;
+-    }
+-
+-    setActionLoading(true);
+-    try {
+-      const data = await api.owner.reportTrafficViolation(selectedBookingForTrafficViolation.id, trafficViolationDetails.amount, trafficViolationDetails.description, trafficViolationTicketImage);
+-      showToast(data.message, 'success');
+-      setIsTrafficViolationModalOpen(false);
+-      fetchOwnerDashboard(true); // Refresh data
+-    } catch (error) {
++  const handleOwnerSubmitDispute = async (e) => {
++    e.preventDefault();
++    if (!disputeBooking || !disputeDesc.trim()) {
++      showToast('Vui l├▓ng nhß║¡p m├┤ tß║ú sß╗▒ cß╗æ / h╞░ hß╗Ång ph├ít sinh.', 'warning');
++      return;
++    }
++
++    setActionLoading(true);
++    try {
++      const data = await api.owner.reportTrafficViolation(selectedBookingForTrafficViolation.id, trafficViolationDetails.amount, trafficViolationDetails.description, trafficViolationTicketImage);
++      showToast(data.message, 'success');
++      setIsTrafficViolationModalOpen(false);
++      fetchOwnerDashboard(true); // Refresh data
++    } catch (error) {
+       showToast(error.message || 'Lß╗ùi khi b├ío c├ío phß║ít nguß╗Öi.', 'error');
+-    } finally {
+-      setActionLoading(false);
+-    }
+-  };
+-
+-  const pendingBookings = ownerBookings.filter(b => b.status === 'pending_owner');
+-
+-  return (
+-    <div className="owner-dashboard-page" style={{ width: '100%', maxWidth: '1000px', margin: '0 auto', padding: '20px 0' }}>
+-      
+-      {/* HEADER SECTION */}
+-      <div className="owner-header-bar mb-6" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+-        <div style={{ textAlign: 'left' }}>
+-          <h2 className="title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+-            <Compass className="text-primary animate-pulse" size={26} />
+-            <span>KH├öNG GIAN Hß╗óP T├üC CHß╗ª XE</span>
+-          </h2>
+-          <p style={{ color: '#94a3b8', fontSize: '14.5px', marginTop: 4 }}>
+-            Quß║ún l├╜ ─æß╗Öi xe k├╜ gß╗¡i, ph├¬ duyß╗çt y├¬u cß║ºu ─æß║╖t lß╗ïch tß╗½ kh├ích thu├¬ v├á theo d├╡i sß╗æ d╞░ thu nhß║¡p cß╗ºa bß║ín.
+-          </p>
+-        </div>
+-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+-          <button 
+-            onClick={() => setCurrentTab('list-car')} 
+-            className="btn btn-primary"
+-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#009698', border: 'none', fontSize: '13px', padding: '8px 16px', borderRadius: '8px' }}
+-          >
+-            <PlusCircle size={16} /> K├╜ gß╗¡i xe mß╗¢i
+-          </button>
+-          <button onClick={() => fetchOwnerDashboard()} className="btn-refresh" title="L├ám mß╗¢i">
+-            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+-              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+-            </svg>
+-          </button>
+-        </div>
+-      </div>
+-
+-      {/* STATS OVERVIEW CARDS */}
+-      <div className="owner-stats-grid mb-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+-        <div className="owner-stat-card-glass">
+-          <div>
+-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tß╗òng Thu Nhß║¡p</span>
+-            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--accent-primary)', marginTop: 4 }}>{formatCurrency(totalEarnings)}</h3>
+-          </div>
+-          <div className="owner-stat-icon bg-purple"><DollarSign size={20} /></div>
+-        </div>
+-
+-        <div 
+-          className="owner-stat-card-glass" 
+-          style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
+-          onClick={() => setActiveSubTab('my-cars')}
+-          title="Xem danh s├ích xe cß╗ºa t├┤i"
+-        >
+-          <div>
+-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>─Éß╗Öi Xe Sß╗ƒ Hß╗»u</span>
+-            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>{myCarsList.length} xe</h3>
+-          </div>
+-          <div className="owner-stat-icon bg-blue"><Car size={20} /></div>
+-        </div>
+-
+-        <div 
+-          className="owner-stat-card-glass"
+-          style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
+-          onClick={() => setActiveSubTab('stats')}
+-          title="Xem danh s├ích ─æ╞ín ─æß║╖t lß╗ïch"
+-        >
+-          <div>
+-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Sß╗æ ─É╞ín ─Éß║╖t Lß╗ïch</span>
+-            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>{ownerBookings.length} l╞░ß╗út</h3>
+-          </div>
+-          <div className="owner-stat-icon bg-green"><BarChart3 size={20} /></div>
+-        </div>
+-      </div>
+-
+-      {/* VIEWPORT CONTROLS */}
+-      <div className="owner-viewport-box">
+-        {loading ? (
+-          <div className="owner-loading-box" style={{ padding: 48, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 16, color: 'var(--text-muted)', textAlign: 'center' }}>
+-            ─Éang tß║úi kho dß╗» liß╗çu chß╗º xe...
+-          </div>
+-        ) : (
+-          <>
+-            {/* PENDING BOOKINGS - ALWAYS PERSISTENT AT THE TOP */}
+-            <div className="owner-glass-table-container mb-6" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-shadow)', borderRadius: 16, padding: 20 }}>
+-              <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left' }}>
+-                Y├¬u cß║ºu ─æß║╖t thu├¬ xe chß╗¥ chß╗º xe duyß╗çt
+-              </h4>
+-
+-              {pendingBookings.length === 0 ? (
+-                <div style={{ padding: 24, background: 'var(--bg-primary)', border: '1px dashed var(--border-color)', borderRadius: 12, color: 'var(--text-muted)', textAlign: 'center', fontSize: '13px' }}>
+-                  Kh├┤ng c├│ lß╗ïch thu├¬ xe n├áo ─æang chß╗¥ duyß╗çt. ─Éß╗Öi xe cß╗ºa bß║ín ─æang sß║╡n s├áng ─æ├│n nhß║¡n nhß╗»ng chuyß║┐n ─æi mß╗¢i!
+-                </div>
+-              ) : (
+-                <table className="owner-data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+-                  <thead>
+-                    <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+-                      <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Kh├ích H├áng</th>
+-                      <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Xe Y├¬u Cß║ºu</th>
+-                      <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Thß╗¥i Gian Nhß║¡n/Trß║ú</th>
+-                      <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Doanh Thu</th>
+-                      <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Duyß╗çt ─É╞ín</th>
+-                    </tr>
+-                  </thead>
+-                  <tbody>
+-                    {pendingBookings.map((b) => (
+-                      <tr key={b.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+-                        <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
+-                          <strong>{b.userName}</strong>
+-                          <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{b.userEmail}</span>
+-                        </td>
+-                        <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
+-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+-                            <img src={b.carImage} alt={b.carName} style={{ width: 44, height: 28, objectFit: 'cover', borderRadius: 4 }} />
+-                            <strong>{b.carName}</strong>
+-                          </div>
+-                        </td>
+-                        <td style={{ padding: 14, fontSize: '12px', color: 'var(--text-secondary)' }}>
+-                          <strong>{b.pickupLocation}</strong>
+-                          <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)' }}>{b.pickupDate} Γ₧ö {b.returnDate}</span>
+-                        </td>
+-                        <td style={{ padding: 14, fontSize: '13px', color: 'var(--accent-primary)', fontWeight: 700 }}>{formatCurrency(b.totalPrice)}</td>
+-                        <td style={{ padding: 14 }}>
+-                          <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+-                            <button 
+-                              className="btn btn-primary" 
+-                              style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#34d399' }}
+-                              onClick={() => handleApproveBooking(b.id, true)}
+-                              disabled={actionLoading}
+-                            >
+-                              Ph├¬ duyß╗çt
+-                            </button>
+-                            <button 
+-                              className="btn btn-secondary"
+-                              style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(244,63,94,0.15)', border: '1px solid rgba(244,63,94,0.3)', color: '#fda4af' }}
+-                              onClick={() => handleApproveBooking(b.id, false)}
+-                              disabled={actionLoading}
+-                            >
+-                              Tß╗½ chß╗æi
+-                            </button>
+-                            <button 
+-                              className="btn btn-secondary"
+-                              style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px' }}
+-                              onClick={() => setSelectedBookingForContract(b.id)}
+-                              disabled={actionLoading}
+-                            >
+-                              <FileText size={12} /> Hß╗úp ─æß╗ông
+-                            </button>
+-                          </div>
+-                        </td>
+-                      </tr>
+-                    ))}
+-                  </tbody>
+-                </table>
+-              )}
+-            </div>
+-
+-            {/* SUB-TABS NAVIGATION */}
+-            <div className="owner-sub-nav mb-6" style={{ display: 'flex', gap: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 8 }}>
+-              <button 
+-                className={`owner-nav-btn ${activeSubTab === 'stats' ? 'active' : ''}`}
+-                onClick={() => setActiveSubTab('stats')}
+-              >
+-                <CreditCard size={15} />
+-                <span>Lß╗ïch Sß╗¡ Cho Thu├¬ ({ownerBookings.filter(b => b.status !== 'pending_owner').length})</span>
+-              </button>
+-
+-              <button 
+-                className={`owner-nav-btn ${activeSubTab === 'my-cars' ? 'active' : ''}`}
+-                onClick={() => setActiveSubTab('my-cars')}
+-              >
+-                <Car size={15} />
+-                <span>─Éß╗Öi Xe Cß╗ºa T├┤i ({myCarsList.length})</span>
+-              </button>
+-            </div>
+-
+-            {/* SUB-TAB 1: BOOKINGS HISTORY LOG */}
+-            {activeSubTab === 'stats' && (
+-              <div className="owner-glass-table-container" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-shadow)', borderRadius: 16, padding: 20 }}>
+-                <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left' }}>
+-                  Lß╗ïch sß╗¡ cho thu├¬ & Lß╗ïch tr├¼nh h├ánh tr├¼nh
+-                </h4>
+-                
+-                {ownerBookings.filter(b => b.status !== 'pending_owner').length === 0 ? (
+-                  <div style={{ padding: 32, background: 'var(--bg-primary)', border: '1px dashed var(--border-color)', borderRadius: 12, color: 'var(--text-muted)', textAlign: 'center', fontSize: '13px' }}>
+-                    Ch╞░a c├│ lß╗ïch tr├¼nh cho thu├¬ xe n├áo ho├án th├ánh hoß║╖c ─æ├ú duyß╗çt tr╞░ß╗¢c ─æ├óy.
+-                  </div>
+-                ) : (
+-                  <table className="owner-data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+-                    <thead>
+-                      <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+-                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Kh├ích H├áng</th>
+-                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Ph╞░╞íng Tiß╗çn</th>
+-                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Thß╗¥i Gian</th>
+-                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Doanh Thu</th>
+-                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Trß║íng Th├íi</th>
+-                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Hß╗úp ─æß╗ông</th>
+-                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>H├ánh ─æß╗Öng</th>
+-                      </tr>
+-                    </thead>
+-                    <tbody>
+-                      {ownerBookings.filter(b => b.status !== 'pending_owner').map((b) => (
+-                        <tr key={b.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+-                          <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
+-                            <strong>{b.userName}</strong>
+-                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{b.userEmail}</span>
+-                          </td>
+-                          <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
+-                            <strong>{b.carName}</strong>
+-                          </td>
+-                          <td style={{ padding: 14, fontSize: '12px', color: 'var(--text-secondary)' }}>
+-                            <span>{b.pickupDate} Γ₧ö {b.returnDate}</span>
+-                            {(() => {
+-                              let ext = null;
+-                              try {
+-                                if (b.extensionRequest) {
+-                                  ext = typeof b.extensionRequest === 'string' ? JSON.parse(b.extensionRequest) : b.extensionRequest;
+-                                }
+-                              } catch (e) {}
+-
+-                              if (ext && ext.status === 'pending') {
+-                                return (
+-                                  <div style={{ background: '#fef3c7', border: '1px solid #fde047', borderRadius: '8px', padding: '6px 8px', marginTop: '6px', fontSize: '11px', color: '#92400e' }}>
+-                                    <strong>ΓÅ│ Xin gia hß║ín ─æß║┐n {ext.requestedReturnDate} (+{ext.extraDays} ng├áy)</strong>
+-                                    <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+-                                      <button
+-                                        onClick={() => handleRespondExtension(b.id, 'approve')}
+-                                        disabled={actionLoading}
+-                                        style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}
+-                                      >
+-                                        Duyß╗çt
+-                                      </button>
+-                                      <button
+-                                        onClick={() => handleRespondExtension(b.id, 'reject')}
+-                                        disabled={actionLoading}
+-                                        style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}
+-                                      >
+-                                        Tß╗½ chß╗æi
+-                                      </button>
+-                                    </div>
+-                                  </div>
+-                                );
+-                              }
+-                              return null;
+-                            })()}
+-                          </td>
+-                          <td style={{ padding: 14, fontSize: '13px', color: 'var(--accent-primary)', fontWeight: 700 }}>{formatCurrency(b.totalPrice)}</td>
+-                          <td style={{ padding: 14 }}>
+-                            <span className={`owner-booking-status-badge badge-${b.status}`}>
+-                              {b.status === 'confirmed' ? '─É├ú duyß╗çt' : b.status === 'active' ? '─Éang thu├¬' : b.status === 'completed' ? 'Ho├án th├ánh Γ£ô' : b.status === 'disputed' ? 'Khiß║┐u nß║íi' : '─É├ú hß╗ºy'}
+-                            </span>
+-                          </td>
+-                          <td style={{ padding: 14 }}>
+-                            {b.status !== 'rejected' && b.status !== 'cancelled' && (
+-                              <button 
+-                                type="button"
+-                                className="btn btn-secondary"
+-                                style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+-                                onClick={() => setSelectedBookingForContract(b.id)}
+-                              >
+-                                <FileText size={12} /> Chi tiß║┐t H─É
+-                              </button>                            )}
+-                          </td>
+-                          <td style={{ padding: 14 }}>
+-                            <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+-                              {/* NEW: Dispute and Traffic Violation buttons */}
+-                              {b.status === 'completed' && (
+-                                  <>
+-                                      <button
+-                                          type="button"
+-                                          className="btn btn-secondary"
+-                                          style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+-                                          onClick={() => openGeneralDisputeModal(b)}
+-                                          disabled={actionLoading}
+-                                      >
+-                                          <FileWarning size={12} /> Khiß║┐u nß║íi
+-                                      </button>
+-                                      <button
+-                                          type="button"
+-                                          className="btn btn-secondary"
+-                                          style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+-                                          onClick={() => openTrafficViolationModal(b)}
+-                                          disabled={actionLoading}
+-                                      >
+-                                          <ReceiptText size={12} /> Phß║ít nguß╗Öi
+-                                      </button>
+-                                  </>
+-                              )}
+-                            </div>
+-                          </td>
+-                        </tr>
+-                      ))}
+-                    </tbody>
+-                  </table>
+-                )}
+-              </div>
+-            )}
+-
+-            {/* SUB-TAB 2: MY OWN REGISTERED VEHICLES GRID */}
+-            {activeSubTab === 'my-cars' && (
+-              <div className="owner-glass-table-container" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-shadow)', borderRadius: 16, padding: 20 }}>
+-                <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left' }}>
+-                  Danh s├ích ─æß╗Öi ph╞░╞íng tiß╗çn k├╜ gß╗¡i ─æ├ú ─æ─âng k├╜
+-                </h4>
+-
+-                {myCarsList.length === 0 ? (
+-                  <div style={{ padding: 32, background: 'var(--bg-primary)', border: '1px dashed var(--border-color)', borderRadius: 12, color: 'var(--text-muted)', textAlign: 'center', fontSize: '13px' }}>
+-                    Bß║ín ch╞░a k├╜ gß╗¡i chiß║┐c xe n├áo tr├¬n s├án. H├úy nhß║Ñn 'K├╜ gß╗¡i xe mß╗¢i' ─æß╗â ─æ─âng k├╜ chiß║┐c xe ─æß║ºu ti├¬n cß╗ºa bß║ín!
+-                  </div>
+-                ) : (
+-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+-                    {myCarsList.map((car) => (
+-                      <div key={car.id} style={{ display: 'flex', gap: 12, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 12, textAlign: 'left' }}>
+-                        <img src={car.image} alt={car.model} style={{ width: 100, height: 60, objectFit: 'cover', borderRadius: 6, background: '#050508' }} />
+-                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1 }}>
+-                          <div>
+-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+-                              <strong style={{ fontSize: '10px', color: 'var(--accent-primary)', textTransform: 'uppercase' }}>{car.brand}</strong>
+-                              <span className={`car-moderation-badge badge-${car.status}`} style={{ transform: 'scale(0.85)', transformOrigin: 'top right', marginTop: -2 }}>
+-                                {car.status === 'pending_moderation' ? 'Chß╗¥ kiß╗âm duyß╗çt' : car.status === 'available' ? 'Sß║╡n s├áng' : car.status === 'rented' ? '─Éang cho thu├¬' : car.status === 'inactive' ? 'Tß║ím dß╗½ng' : 'Tß╗½ chß╗æi'}
+-                              </span>
+-                            </div>
+-                            <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{car.model}</strong>
+-                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: 2 }}>Biß╗ân sß╗æ: {car.plateNumber}</span>
+-                          </div>
+-                          
+-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+-                            <strong style={{ fontSize: '12px', color: 'var(--accent-primary)' }}>{formatCurrency(car.pricePerDay)}/ng├áy</strong>
+-                            
+-                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+-                              {car.status !== 'rented' && (
+-                                <button 
+-                                  type="button"
+-                                  className="owner-booking-status-badge badge-confirmed" 
+-                                  style={{ background: 'rgba(0, 150, 152, 0.15)', border: '1px solid rgba(0, 150, 152, 0.3)', color: 'var(--accent-primary)', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
+-                                  onClick={() => handleStartEditCar(car)}
+-                                >
+-                                  Sß╗¡a xe
+-                                </button>
+-                              )}
+-                              
+-                              {car.status === 'available' && (
+-                                <button 
+-                                  type="button"
+-                                  className="owner-booking-status-badge" 
+-                                  style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#fbbf24', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
+-                                  onClick={() => handleToggleCarStatus(car.id, car.status)}
+-                                  disabled={actionLoading}
+-                                >
+-                                  Tß║ím dß╗½ng
+-                                </button>
+-                              )}
+-
+-                              {car.status === 'inactive' && (
+-                                <button 
+-                                  type="button"
+-                                  className="owner-booking-status-badge" 
+-                                  style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
+-                                  onClick={() => handleToggleCarStatus(car.id, car.status)}
+-                                  disabled={actionLoading}
+-                                >
+-                                  Cho thu├¬ lß║íi
+-                                </button>
+-                              )}
+-
+-                              {car.status !== 'rented' && (
+-                                <button 
+-                                  type="button"
+-                                  className="owner-booking-status-badge" 
+-                                  style={{ background: 'rgba(244, 63, 94, 0.15)', border: '1px solid rgba(244, 63, 94, 0.3)', color: '#fda4af', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
+-                                  onClick={() => handleDeleteCar(car.id, `${car.brand} ${car.model}`)}
+-                                  disabled={actionLoading}
+-                                >
+-                                  X├│a xe
+-                                </button>
+-                              )}
+-                            </div>
+-                          </div>
+-                        </div>
+-                      </div>
+-                    ))}
+-                  </div>
+-                )}
+-              </div>
+-            )}
+-          </>
+-        )}
+-
+-        {/* Γ£Å∩╕Å EDIT VEHICLE MODAL POPUP */}
+-        {editingCar && (
+-          <div className="owner-modal-overlay">
+-            <div className="owner-modal-card glassmorphism">
+-              <div className="owner-modal-header">
+-                <h4>Chß╗ënh sß╗¡a ph╞░╞íng tiß╗çn k├╜ gß╗¡i</h4>
+-                <button className="owner-modal-close" onClick={() => setEditingCar(null)}>Γ£ò</button>
+-              </div>
+-              <form onSubmit={handleSubmitEditCar} className="list-car-form">
+-                <div style={{ marginBottom: 16 }}>
+-                  <strong style={{ color: 'var(--text-primary)', fontSize: '13.5px' }}>
+-                    Xe: {editingCar.brand} {editingCar.model} ({editingCar.plateNumber})
+-                  </strong>
+-                </div>
+-
+-                <div className="form-row-grid">
+-                  <div className="form-group">
+-                    <label className="form-label">─É╞ín gi├í thu├¬ / Ng├áy (VND) *</label>
+-                    <div className="input-container">
+-                      <DollarSign className="input-icon" size={16} />
+-                      <input 
+-                        type="number" 
+-                        placeholder="Vd: 800000" 
+-                        className="form-input"
+-                        value={editPricePerDay}
+-                        onChange={(e) => setEditPricePerDay(e.target.value)}
+-                        min="300000"
+-                        max="5000000"
+-                        required
+-                      />
+-                    </div>
+-                  </div>
+-
+-                  <div className="form-group">
+-                    <label className="form-label">Khu vß╗▒c cho thu├¬ *</label>
+-                    <select value={editLocation} onChange={(e) => setEditLocation(e.target.value)} className="form-input" style={{ paddingLeft: '14px' }}>
+-                      <option value="H├á Nß╗Öi">H├á Nß╗Öi</option>
+-                      <option value="TP. Hß╗ô Ch├¡ Minh">TP. Hß╗ô Ch├¡ Minh</option>
+-                      <option value="─É├á Nß║╡ng">─É├á Nß║╡ng</option>
+-                    </select>
+-                  </div>
+-                </div>
+-
+-                <div className="form-group" style={{ marginTop: 12 }}>
+-                  <label className="form-label">H├¼nh ß║únh thß╗▒c tß║┐ mß╗¢i cß╗ºa xe *</label>
+-                  <div className="car-photo-upload-zone">
+-                    {editCarImage ? (
+-                      <div className="uploaded-car-preview">
+-                        <img src={editCarImage} alt="Car Uploaded Preview" />
+-                        <button type="button" className="btn-remove-photo" onClick={() => setEditCarImage('')}>Γ£ò X├│a ß║únh</button>
+-                      </div>
+-                    ) : (
+-                      <label className="photo-upload-label">
+-                        <Upload className="upload-photo-icon" size={24} />
+-                        <span>{editImageLoading ? '─Éang tß║úi...' : 'Chß╗ìn ß║únh thß╗▒c tß║┐ cß╗ºa xe'}</span>
+-                        <p>ß║ónh chß╗Ñp r├╡ mß║╖t tr╞░ß╗¢c, s╞░ß╗¥n xe d╞░ß╗¢i 5MB</p>
+-                        <input type="file" onChange={handleEditCarImageUpload} accept="image/*" style={{ display: 'none' }} disabled={editImageLoading} />
+-                      </label>
+-                    )}
+-                  </div>
+-                </div>
+-
+-                <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+-                  <button type="button" className="btn btn-secondary" onClick={() => setEditingCar(null)}>Hß╗ºy bß╗Å</button>
+-                  <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={loading || editImageLoading}>
+-                    {loading ? '─Éang cß║¡p nhß║¡t...' : 'Cß║¡p nhß║¡t th├┤ng tin'}
+-                  </button>
+-                </div>
+-              </form>
+-            </div>
+-          </div>
+-        )}
+-
+-        {/* Contract Modal Render for Owner */}
+-        {selectedBookingForContract && (
+-          <ContractModal
+-            bookingId={selectedBookingForContract}
+-            user={user}
+-            onClose={() => setSelectedBookingForContract(null)}
+-          />
+-        )}
+-
+-        {/* General Dispute Modal */}
+-        {isGeneralDisputeModalOpen && (
+-            <div className="owner-modal-overlay">
+-                <div className="owner-modal-card glassmorphism">
+-                    <div className="owner-modal-header">
+-                        <h4>Tß║ío Khiß║┐u nß║íi chung cho chuyß║┐n ─æi #{selectedBookingForDispute?.id}</h4>
+-                        <button className="owner-modal-close" onClick={() => setIsGeneralDisputeModalOpen(false)}>Γ£ò</button>
+-                    </div>
+-                    <form onSubmit={handleGeneralDisputeSubmit} className="list-car-form">
+-                        <div className="form-group">
+-                            <label className="form-label">M├┤ tß║ú chi tiß║┐t khiß║┐u nß║íi *</label>
+-                            <textarea
+-                                placeholder="V├¡ dß╗Ñ: Kh├ích l├ám x╞░ß╗¢c xe b├¬n phß║úi, trß║ú xe muß╗Ön 2 tiß║┐ng, xe bß╗ï bß║⌐n nß║╖ng..."
+-                                className="form-input"
+-                                value={generalDisputeDetails.description}
+-                                onChange={(e) => setGeneralDisputeDetails({ ...generalDisputeDetails, description: e.target.value })}
+-                                rows="4"
+-                                required
+-                            />
+-                        </div>
+-                        <div className="form-group">
+-                            <label className="form-label">Sß╗æ tiß╗ün y├¬u cß║ºu bß╗ôi th╞░ß╗¥ng (VND)</label>
+-                            <div className="input-container">
+-                                <DollarSign className="input-icon" size={16} />
+-                                <input
+-                                    type="number"
+-                                    placeholder="Vd: 500000"
+-                                    className="form-input"
+-                                    value={generalDisputeDetails.amount}
+-                                    onChange={(e) => setGeneralDisputeDetails({ ...generalDisputeDetails, amount: e.target.value })}
+-                                    min="0"
+-                                />
+-                            </div>
+-                        </div>
+-                        <div className="form-group" style={{ marginTop: 12 }}>
+-                            <label className="form-label">ß║ónh bß║▒ng chß╗⌐ng (nß║┐u c├│)</label>
+-                            <div className="car-photo-upload-zone">
+-                                {generalDisputeEvidenceImage ? (
+-                                    <div className="uploaded-car-preview">
+-                                        <img src={generalDisputeEvidenceImage} alt="Dispute Evidence Preview" />
+-                                        <button type="button" className="btn-remove-photo" onClick={() => setGeneralDisputeEvidenceImage('')}>Γ£ò X├│a ß║únh</button>
+-                                    </div>
+-                                ) : (
+-                                    <label className="photo-upload-label">
+-                                        <Upload className="upload-photo-icon" size={24} />
+-                                        <span>{generalDisputeImageLoading ? '─Éang tß║úi...' : 'Chß╗ìn ß║únh bß║▒ng chß╗⌐ng'}</span>
+-                                        <p>ß║ónh chß╗Ñp r├╡ r├áng, d╞░ß╗¢i 5MB</p>
+-                                        <input type="file" onChange={(e) => handleImageUpload(e, setGeneralDisputeEvidenceImage, setGeneralDisputeImageLoading, 'Tß║úi ß║únh bß║▒ng chß╗⌐ng l├¬n th├ánh c├┤ng!')} accept="image/*" style={{ display: 'none' }} disabled={generalDisputeImageLoading} />
+-                                    </label>
+-                                )}
+-                            </div>
+-                        </div>
+-                        <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+-                            <button type="button" className="btn btn-secondary" onClick={() => setIsGeneralDisputeModalOpen(false)}>Hß╗ºy bß╗Å</button>
+-                            <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={actionLoading || generalDisputeImageLoading}>
+-                                {actionLoading ? '─Éang gß╗¡i...' : 'Gß╗¡i khiß║┐u nß║íi'}
+-                            </button>
+-                        </div>
+-                    </form>
+-                </div>
+-            </div>
+-        )}
+-
+-        {/* Traffic Violation Modal */}
+-        {isTrafficViolationModalOpen && (
+-            <div className="owner-modal-overlay">
+-                <div className="owner-modal-card glassmorphism">
+-                    <div className="owner-modal-header">
+-                        <h4>B├ío c├ío Phß║ít nguß╗Öi cho chuyß║┐n ─æi #{selectedBookingForTrafficViolation?.id}</h4>
+-                        <button className="owner-modal-close" onClick={() => setIsTrafficViolationModalOpen(false)}>Γ£ò</button>
+-                    </div>
+-                    <form onSubmit={handleTrafficViolationSubmit} className="list-car-form">
+-                        <div className="form-group">
+-                            <label className="form-label">Sß╗æ tiß╗ün phß║ít (VND) *</label>
+-                            <div className="input-container">
+-                                <DollarSign className="input-icon" size={16} />
+-                                <input
+-                                    type="number"
+-                                    placeholder="Vd: 1500000"
+-                                    className="form-input"
+-                                    value={trafficViolationDetails.amount}
+-                                    onChange={(e) => setTrafficViolationDetails({ ...trafficViolationDetails, amount: e.target.value })}
+-                                    min="1000"
+-                                    required
+-                                />
+-                            </div>
+-                        </div>
+-                        <div className="form-group">
+-                            <label className="form-label">M├┤ tß║ú chi tiß║┐t phß║ít nguß╗Öi *</label>
+-                            <textarea
+-                                placeholder="V├¡ dß╗Ñ: Xe bß╗ï phß║ít qu├í tß╗æc ─æß╗Ö tß║íi cao tß╗æc Ph├íp V├ón - Cß║ºu Giß║╜, biß╗ân sß╗æ 30A-123.45, ng├áy 10/06/2026..."
+-                                className="form-input"
+-                                value={trafficViolationDetails.description}
+-                                onChange={(e) => setTrafficViolationDetails({ ...trafficViolationDetails, description: e.target.value })}
+-                                rows="3"
+-                                required
+-                            />
+-                        </div>
+-                        <div className="form-group" style={{ marginTop: 12 }}>
+-                            <label className="form-label">ß║ónh phiß║┐u phß║ít nguß╗Öi *</label>
+-                            <div className="car-photo-upload-zone">
+-                                {trafficViolationTicketImage ? (
+-                                    <div className="uploaded-car-preview">
+-                                        <img src={trafficViolationTicketImage} alt="Traffic Violation Ticket Preview" />
+-                                        <button type="button" className="btn-remove-photo" onClick={() => setTrafficViolationTicketImage('')}>Γ£ò X├│a ß║únh</button>
+-                                    </div>
+-                                ) : (
+-                                    <label className="photo-upload-label">
+-                                        <Upload className="upload-photo-icon" size={24} />
+-                                        <span>{trafficViolationImageLoading ? '─Éang tß║úi...' : 'Chß╗ìn ß║únh phiß║┐u phß║ít nguß╗Öi'}</span>
+-                                        <p>ß║ónh chß╗Ñp r├╡ r├áng, d╞░ß╗¢i 5MB</p>
+-                                        <input type="file" onChange={(e) => handleImageUpload(e, setTrafficViolationTicketImage, setTrafficViolationImageLoading, 'Tß║úi ß║únh phiß║┐u phß║ít nguß╗Öi l├¬n th├ánh c├┤ng!')} accept="image/*" style={{ display: 'none' }} disabled={trafficViolationImageLoading} />
+-                                    </label>
+-                                )}
+-                            </div>
+-                        </div>
+-                        <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+-                            <button type="button" className="btn btn-secondary" onClick={() => setIsTrafficViolationModalOpen(false)}>Hß╗ºy bß╗Å</button>
+-                            <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={actionLoading || trafficViolationImageLoading}>
+-                                {actionLoading ? '─Éang gß╗¡i...' : 'Gß╗¡i b├ío c├ío phß║ít nguß╗Öi'}
+-                            </button>
+-                        </div>
+-                    </form>
+-                </div>
+-            </div>
+-        )}
+-
+-        {/* Photo Inspection & AI Damage Report Modal for Owner */}
+-        {activeInspectionBooking && (
+-          <InspectionModal
+-            booking={activeInspectionBooking}
+-            user={user}
+-            onClose={() => setActiveInspectionBooking(null)}
+-            onInspectionUpdated={() => fetchOwnerDashboard(true)}
+-          />
+-
+-        )}
+-      </div>
+-    </div>
+-  );
+-};
++      const res = await api.bookings.ownerReportDispute(disputeBooking.id, disputeDesc, 'damage', requestedDeduction);
++      showToast(res.message, 'success');
++      setDisputeBooking(null);
++      setDisputeDesc('');
++      setRequestedDeduction('');
++      fetchOwnerDashboard(true);
++    } catch (err) {
++      showToast(err.message || 'Lß╗ùi gß╗¡i khiß║┐u nß║íi.', 'error');
++    } finally {
++      setActionLoading(false);
++    }
++  };
++
++  const pendingBookings = ownerBookings.filter(b => (b.status === 'pending_owner' || b.status === 'pending') && b.depositStatus === 'paid');
++  const returnPendingBookings = ownerBookings.filter(b => b.status === 'return_pending_owner');
++
++  const extensionBookings = ownerBookings.filter(b => {
++    let ext = null;
++    try {
++      if (b.extensionRequest) {
++        ext = typeof b.extensionRequest === 'string' ? JSON.parse(b.extensionRequest) : b.extensionRequest;
++      }
++    } catch (e) {}
++    return ext && (ext.status === 'pending' || ext.status === 'PENDING') && b.status !== 'completed' && b.status !== 'cancelled' && b.status !== 'rejected';
++  });
++
++  return (
++    <div className="owner-dashboard-page" style={{ width: '100%', maxWidth: '1000px', margin: '0 auto', padding: '20px 0' }}>
++      
++      {/* HEADER SECTION */}
++      <div className="owner-header-bar mb-6" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
++        <div style={{ textAlign: 'left' }}>
++          <h2 className="title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
++            <Compass className="text-primary animate-pulse" size={26} />
++            <span>KH├öNG GIAN Hß╗óP T├üC CHß╗ª XE</span>
++          </h2>
++          <p style={{ color: '#94a3b8', fontSize: '14.5px', marginTop: 4 }}>
++            Quß║ún l├╜ ─æß╗Öi xe k├╜ gß╗¡i, ph├¬ duyß╗çt y├¬u cß║ºu ─æß║╖t lß╗ïch tß╗½ kh├ích thu├¬ v├á theo d├╡i sß╗æ d╞░ thu nhß║¡p cß╗ºa bß║ín.
++          </p>
++        </div>
++        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
++          <button 
++            onClick={() => setCurrentTab('list-car')} 
++            className="btn btn-primary"
++            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#009698', border: 'none', fontSize: '13px', padding: '8px 16px', borderRadius: '8px' }}
++          >
++            <PlusCircle size={16} /> K├╜ gß╗¡i xe mß╗¢i
++          </button>
++          <button onClick={() => fetchOwnerDashboard()} className="btn-refresh" title="L├ám mß╗¢i">
++            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
++              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
++            </svg>
++          </button>
++        </div>
++      </div>
++
++      {/* STATS OVERVIEW CARDS */}
++      <div className="owner-stats-grid mb-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
++        <div className="owner-stat-card-glass">
++          <div>
++            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tß╗òng Thu Nhß║¡p</span>
++            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--accent-primary)', marginTop: 4 }}>{formatCurrency(totalEarnings)}</h3>
++          </div>
++          <div className="owner-stat-icon bg-purple"><DollarSign size={20} /></div>
++        </div>
++
++        <div 
++          className="owner-stat-card-glass" 
++          style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
++          onClick={() => setActiveSubTab('my-cars')}
++          title="Xem danh s├ích xe cß╗ºa t├┤i"
++        >
++          <div>
++            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>─Éß╗Öi Xe Sß╗ƒ Hß╗»u</span>
++            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>{myCarsList.length} xe</h3>
++          </div>
++          <div className="owner-stat-icon bg-blue"><Car size={20} /></div>
++        </div>
++
++        <div 
++          className="owner-stat-card-glass"
++          style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
++          onClick={() => setActiveSubTab('stats')}
++          title="Xem danh s├ích ─æ╞ín ─æß║╖t lß╗ïch"
++        >
++          <div>
++            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Sß╗æ ─É╞ín ─Éß║╖t Lß╗ïch</span>
++            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>{ownerBookings.length} l╞░ß╗út</h3>
++          </div>
++          <div className="owner-stat-icon bg-green"><BarChart3 size={20} /></div>
++        </div>
++      </div>
++
++      {/* VIEWPORT CONTROLS */}
++      <div className="owner-viewport-box">
++        {loading ? (
++          <div className="owner-loading-box" style={{ padding: 48, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 16, color: 'var(--text-muted)', textAlign: 'center' }}>
++            ─Éang tß║úi kho dß╗» liß╗çu chß╗º xe...
++          </div>
++        ) : (
++          <>
++            {/* PROMINENT VEHICLE RETURN CONFIRMATION AT THE VERY TOP */}
++            {returnPendingBookings.length > 0 && (
++              <div className="owner-glass-table-container mb-6" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.04) 100%)', border: '1px solid rgba(59, 130, 246, 0.4)', boxShadow: '0 8px 32px rgba(59, 130, 246, 0.15)', borderRadius: 16, padding: 20 }}>
++                <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#3b82f6', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8 }}>
++                  <BadgeCheck size={16} color="#3b82f6" />
++                  <span>Y├¬u cß║ºu x├íc nhß║¡n nhß║¡n lß║íi xe (Kh├ích ─æ├ú nß╗Öp bi├¬n bß║ún trß║ú xe) ({returnPendingBookings.length})</span>
++                </h4>
++                <table className="owner-data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
++                  <thead>
++                    <tr style={{ borderBottom: '1px solid rgba(59, 130, 246, 0.2)' }}>
++                      <th style={{ padding: 12, fontSize: '11px', color: '#60a5fa', textTransform: 'uppercase' }}>Kh├ích H├áng</th>
++                      <th style={{ padding: 12, fontSize: '11px', color: '#60a5fa', textTransform: 'uppercase' }}>Ph╞░╞íng Tiß╗çn</th>
++                      <th style={{ padding: 12, fontSize: '11px', color: '#60a5fa', textTransform: 'uppercase' }}>Thß╗¥i Gian Nhß║¡n/Trß║ú</th>
++                      <th style={{ padding: 12, fontSize: '11px', color: '#60a5fa', textTransform: 'uppercase' }}>Tß╗òng Doanh Thu</th>
++                      <th style={{ padding: 12, fontSize: '11px', color: '#60a5fa', textTransform: 'uppercase', textAlign: 'center' }}>X├íc Nhß║¡n Nhß║¡n Xe</th>
++                    </tr>
++                  </thead>
++                  <tbody>
++                    {returnPendingBookings.map((b) => (
++                      <tr key={b.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
++                        <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
++                          <strong>{b.userName}</strong>
++                          <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{b.userEmail}</span>
++                        </td>
++                        <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
++                          <strong>{b.carName}</strong>
++                        </td>
++                        <td style={{ padding: 14, fontSize: '12px', color: 'var(--text-secondary)' }}>
++                          <span>{b.pickupDate} Γ₧ö {b.returnDate}</span>
++                        </td>
++                        <td style={{ padding: 14, fontSize: '14px', color: '#34d399', fontWeight: 800 }}>{formatCurrency(b.totalPrice)}</td>
++                        <td style={{ padding: 14 }}>
++                          <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
++                            <button 
++                              className="btn btn-primary" 
++                              style={{ width: 'auto', padding: '6px 14px', fontSize: '12px', background: '#16a34a', borderColor: '#16a34a', color: '#fff', fontWeight: 700 }}
++                              onClick={() => handleConfirmReturnVehicle(b.id)}
++                              disabled={actionLoading}
++                            >
++                              Γ£ô X├íc nhß║¡n xe an to├án (B├ío CSKH ho├án cß╗ìc)
++                            </button>
++                            <button 
++                              className="btn btn-secondary" 
++                              style={{ width: 'auto', padding: '6px 14px', fontSize: '12px', background: '#dc2626', borderColor: '#dc2626', color: '#fff', fontWeight: 700 }}
++                              onClick={() => {
++                                setDisputeBooking(b);
++                                setDisputeDesc('');
++                                setRequestedDeduction('');
++                              }}
++                              disabled={actionLoading}
++                            >
++                              ΓÜá∩╕Å B├ío khiß║┐u nß║íi / Va quß║╣t
++                            </button>
++                          </div>
++                        </td>
++                      </tr>
++                    ))}
++                  </tbody>
++                </table>
++              </div>
++            )}
++
++            {/* PROMINENT TRIP EXTENSION REQUESTS AT THE VERY TOP */}
++            {extensionBookings.length > 0 && (
++              <div className="owner-glass-table-container mb-6" style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(251, 191, 36, 0.04) 100%)', border: '1px solid rgba(245, 158, 11, 0.4)', boxShadow: '0 8px 32px rgba(245, 158, 11, 0.15)', borderRadius: 16, padding: 20 }}>
++                <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8 }}>
++                  <Sparkles size={16} color="#f59e0b" />
++                  <span>Y├¬u cß║ºu xin gia hß║ín thß╗¥i gian thu├¬ xe ({extensionBookings.length})</span>
++                </h4>
++                <table className="owner-data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
++                  <thead>
++                    <tr style={{ borderBottom: '1px solid rgba(245, 158, 11, 0.2)' }}>
++                      <th style={{ padding: 12, fontSize: '11px', color: '#fbbf24', textTransform: 'uppercase' }}>Kh├ích H├áng</th>
++                      <th style={{ padding: 12, fontSize: '11px', color: '#fbbf24', textTransform: 'uppercase' }}>Ph╞░╞íng Tiß╗çn</th>
++                      <th style={{ padding: 12, fontSize: '11px', color: '#fbbf24', textTransform: 'uppercase' }}>Thß╗¥i Gian Xin Gia Hß║ín</th>
++                      <th style={{ padding: 12, fontSize: '11px', color: '#fbbf24', textTransform: 'uppercase' }}>Doanh Thu Th├¬m</th>
++                      <th style={{ padding: 12, fontSize: '11px', color: '#fbbf24', textTransform: 'uppercase', textAlign: 'center' }}>Ph├¬ Duyß╗çt Gia Hß║ín</th>
++                    </tr>
++                  </thead>
++                  <tbody>
++                    {extensionBookings.map((b) => {
++                      let ext = typeof b.extensionRequest === 'string' ? JSON.parse(b.extensionRequest) : b.extensionRequest;
++                      return (
++                        <tr key={b.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
++                          <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
++                            <strong>{b.userName}</strong>
++                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{b.userEmail}</span>
++                          </td>
++                          <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
++                            <strong>{b.carName}</strong>
++                          </td>
++                          <td style={{ padding: 14, fontSize: '12px', color: '#f59e0b' }}>
++                            <div>Hß║ín c┼⌐: <span>{b.returnDate}</span></div>
++                            <div>Xin gia hß║ín ─æß║┐n: <strong style={{ color: '#34d399' }}>{ext.requestedReturnDate} (+{ext.extraDays} ng├áy)</strong></div>
++                          </td>
++                          <td style={{ padding: 14, fontSize: '14px', color: '#34d399', fontWeight: 800 }}>+{formatCurrency(ext.extraPrice || 0)}</td>
++                          <td style={{ padding: 14 }}>
++                            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
++                              <button 
++                                className="btn btn-primary" 
++                                style={{ width: 'auto', padding: '6px 14px', fontSize: '12px', background: '#16a34a', borderColor: '#16a34a', color: '#fff', fontWeight: 700 }}
++                                onClick={() => handleRespondExtension(b.id, 'approve')}
++                                disabled={actionLoading}
++                                title="Cho ph├⌐p Kh├ích thanh to├ín ph├¡ gia hß║ín"
++                              >
++                                Γ£ô Duyß╗çt (Y├¬u cß║ºu Kh├ích thanh to├ín)
++                              </button>
++                              <button 
++                                className="btn btn-secondary"
++                                style={{ width: 'auto', padding: '6px 14px', fontSize: '12px', background: '#dc2626', borderColor: '#dc2626', color: '#fff', fontWeight: 700 }}
++                                onClick={() => handleRespondExtension(b.id, 'reject')}
++                                disabled={actionLoading}
++                              >
++                                Γ£ò Tß╗½ chß╗æi gia hß║ín
++                              </button>
++                            </div>
++                          </td>
++                        </tr>
++                      );
++                    })}
++                  </tbody>
++                </table>
++              </div>
++            )}
++
++            {/* PENDING BOOKINGS - ALWAYS PERSISTENT AT THE TOP */}
++            <div className="owner-glass-table-container mb-6" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-shadow)', borderRadius: 16, padding: 20 }}>
++              <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left' }}>
++                Y├¬u cß║ºu ─æß║╖t thu├¬ xe chß╗¥ chß╗º xe duyß╗çt
++              </h4>
++
++              {pendingBookings.length === 0 ? (
++                <div style={{ padding: 24, background: 'var(--bg-primary)', border: '1px dashed var(--border-color)', borderRadius: 12, color: 'var(--text-muted)', textAlign: 'center', fontSize: '13px' }}>
++                  Kh├┤ng c├│ lß╗ïch thu├¬ xe n├áo ─æang chß╗¥ duyß╗çt. ─Éß╗Öi xe cß╗ºa bß║ín ─æang sß║╡n s├áng ─æ├│n nhß║¡n nhß╗»ng chuyß║┐n ─æi mß╗¢i!
++                </div>
++              ) : (
++                <table className="owner-data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
++                  <thead>
++                    <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
++                      <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Kh├ích H├áng</th>
++                      <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Xe Y├¬u Cß║ºu</th>
++                      <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Thß╗¥i Gian Nhß║¡n/Trß║ú</th>
++                      <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Doanh Thu</th>
++                      <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Duyß╗çt ─É╞ín</th>
++                    </tr>
++                  </thead>
++                  <tbody>
++                    {pendingBookings.map((b) => (
++                      <tr key={b.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
++                        <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
++                          <strong>{b.userName}</strong>
++                          <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{b.userEmail}</span>
++                        </td>
++                        <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
++                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
++                            <img src={b.carImage} alt={b.carName} style={{ width: 44, height: 28, objectFit: 'cover', borderRadius: 4 }} />
++                            <strong>{b.carName}</strong>
++                          </div>
++                        </td>
++                        <td style={{ padding: 14, fontSize: '12px', color: 'var(--text-secondary)' }}>
++                          <strong>{b.pickupLocation}</strong>
++                          <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)' }}>{b.pickupDate} Γ₧ö {b.returnDate}</span>
++                        </td>
++                        <td style={{ padding: 14, fontSize: '13px', color: 'var(--accent-primary)', fontWeight: 700 }}>{formatCurrency(b.totalPrice)}</td>
++                        <td style={{ padding: 14 }}>
++                          <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
++                            <button 
++                              className="btn btn-primary" 
++                              style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#34d399' }}
++                              onClick={() => handleApproveBooking(b.id, true)}
++                              disabled={actionLoading}
++                            >
++                              Ph├¬ duyß╗çt
++                            </button>
++                            <button 
++                              className="btn btn-secondary"
++                              style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(244,63,94,0.15)', border: '1px solid rgba(244,63,94,0.3)', color: '#fda4af' }}
++                              onClick={() => handleApproveBooking(b.id, false)}
++                              disabled={actionLoading}
++                            >
++                              Tß╗½ chß╗æi
++                            </button>
++                            <button 
++                              className="btn btn-secondary"
++                              style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px' }}
++                              onClick={() => setSelectedBookingForContract(b.id)}
++                              disabled={actionLoading}
++                            >
++                              <FileText size={12} /> Hß╗úp ─æß╗ông
++                            </button>
++                          </div>
++                        </td>
++                      </tr>
++                    ))}
++                  </tbody>
++                </table>
++              )}
++            </div>
++
++            {/* SUB-TABS NAVIGATION */}
++            <div className="owner-sub-nav mb-6" style={{ display: 'flex', gap: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 8 }}>
++              <button 
++                className={`owner-nav-btn ${activeSubTab === 'stats' ? 'active' : ''}`}
++                onClick={() => setActiveSubTab('stats')}
++              >
++                <CreditCard size={15} />
++                <span>Lß╗ïch Sß╗¡ Cho Thu├¬ ({ownerBookings.filter(b => b.status !== 'pending_owner').length})</span>
++              </button>
++
++              <button 
++                className={`owner-nav-btn ${activeSubTab === 'my-cars' ? 'active' : ''}`}
++                onClick={() => setActiveSubTab('my-cars')}
++              >
++                <Car size={15} />
++                <span>─Éß╗Öi Xe Cß╗ºa T├┤i ({myCarsList.length})</span>
++              </button>
++            </div>
++
++            {/* SUB-TAB 1: BOOKINGS HISTORY LOG */}
++            {activeSubTab === 'stats' && (
++              <div className="owner-glass-table-container" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-shadow)', borderRadius: 16, padding: 20 }}>
++                <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left' }}>
++                  Lß╗ïch sß╗¡ cho thu├¬ & Lß╗ïch tr├¼nh h├ánh tr├¼nh
++                </h4>
++                
++                {ownerBookings.filter(b => b.status !== 'pending_owner').length === 0 ? (
++                  <div style={{ padding: 32, background: 'var(--bg-primary)', border: '1px dashed var(--border-color)', borderRadius: 12, color: 'var(--text-muted)', textAlign: 'center', fontSize: '13px' }}>
++                    Ch╞░a c├│ lß╗ïch tr├¼nh cho thu├¬ xe n├áo ho├án th├ánh hoß║╖c ─æ├ú duyß╗çt tr╞░ß╗¢c ─æ├óy.
++                  </div>
++                ) : (
++                  <table className="owner-data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
++                    <thead>
++                      <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
++                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Kh├ích H├áng</th>
++                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Ph╞░╞íng Tiß╗çn</th>
++                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Thß╗¥i Gian</th>
++                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Doanh Thu</th>
++                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Trß║íng Th├íi</th>
++                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Hß╗úp ─æß╗ông</th>
++                        <th style={{ padding: 12, fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>H├ánh ─æß╗Öng</th>
++                      </tr>
++                    </thead>
++                    <tbody>
++                      {ownerBookings.filter(b => b.status !== 'pending_owner').map((b) => (
++                        <tr key={b.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
++                          <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
++                            <strong>{b.userName}</strong>
++                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{b.userEmail}</span>
++                          </td>
++                          <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
++                            <strong>{b.carName}</strong>
++                          </td>
++                          <td style={{ padding: 14, fontSize: '12px', color: 'var(--text-secondary)' }}>
++                            <span>{b.pickupDate} Γ₧ö {b.returnDate}</span>
++                          </td>
++                          <td style={{ padding: 14, fontSize: '13px', color: 'var(--accent-primary)', fontWeight: 700 }}>{formatCurrency(b.totalPrice)}</td>
++                          <td style={{ padding: 14 }}>
++                            <span className={`owner-booking-status-badge badge-${b.status}`}>
++                              {b.status === 'confirmed' ? '─É├ú duyß╗çt' : b.status === 'active' ? '─Éang thu├¬' : b.status === 'completed' ? 'Ho├án th├ánh Γ£ô' : b.status === 'disputed' ? 'Khiß║┐u nß║íi' : '─É├ú hß╗ºy'}
++                            </span>
++                          </td>
++                          <td style={{ padding: 14 }}>
++                            {b.status !== 'rejected' && b.status !== 'cancelled' && (
++                              <button 
++                                type="button"
++                                className="btn btn-secondary"
++                                style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
++                                onClick={() => setSelectedBookingForContract(b.id)}
++                              >
++                                <FileText size={12} /> Chi tiß║┐t H─É
++                              </button>                            )}
++                          </td>
++                          <td style={{ padding: 14 }}>
++                            <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
++                              {/* NEW: Dispute and Traffic Violation buttons */}
++                              {b.status === 'completed' && (
++                                  <>
++                                      <button
++                                          type="button"
++                                          className="btn btn-secondary"
++                                          style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
++                                          onClick={() => openGeneralDisputeModal(b)}
++                                          disabled={actionLoading}
++                                      >
++                                          <FileWarning size={12} /> Khiß║┐u nß║íi
++                                      </button>
++                                      <button
++                                          type="button"
++                                          className="btn btn-secondary"
++                                          style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
++                                          onClick={() => openTrafficViolationModal(b)}
++                                          disabled={actionLoading}
++                                      >
++                                          <ReceiptText size={12} /> Phß║ít nguß╗Öi
++                                      </button>
++                                  </>
++                              )}
++                            </div>
++                          </td>
++                        </tr>
++                      ))}
++                    </tbody>
++                  </table>
++                )}
++              </div>
++            )}
++
++            {/* SUB-TAB 2: MY OWN REGISTERED VEHICLES GRID */}
++            {activeSubTab === 'my-cars' && (
++              <div className="owner-glass-table-container" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-shadow)', borderRadius: 16, padding: 20 }}>
++                <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left' }}>
++                  Danh s├ích ─æß╗Öi ph╞░╞íng tiß╗çn k├╜ gß╗¡i ─æ├ú ─æ─âng k├╜
++                </h4>
++
++                {myCarsList.length === 0 ? (
++                  <div style={{ padding: 32, background: 'var(--bg-primary)', border: '1px dashed var(--border-color)', borderRadius: 12, color: 'var(--text-muted)', textAlign: 'center', fontSize: '13px' }}>
++                    Bß║ín ch╞░a k├╜ gß╗¡i chiß║┐c xe n├áo tr├¬n s├án. H├úy nhß║Ñn 'K├╜ gß╗¡i xe mß╗¢i' ─æß╗â ─æ─âng k├╜ chiß║┐c xe ─æß║ºu ti├¬n cß╗ºa bß║ín!
++                  </div>
++                ) : (
++                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
++                    {myCarsList.map((car) => (
++                      <div key={car.id} style={{ display: 'flex', gap: 12, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 12, textAlign: 'left' }}>
++                        <img src={car.image} alt={car.model} style={{ width: 100, height: 60, objectFit: 'cover', borderRadius: 6, background: '#050508' }} />
++                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1 }}>
++                          <div>
++                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
++                              <strong style={{ fontSize: '10px', color: 'var(--accent-primary)', textTransform: 'uppercase' }}>{car.brand}</strong>
++                              <span className={`car-moderation-badge badge-${car.status}`} style={{ transform: 'scale(0.85)', transformOrigin: 'top right', marginTop: -2 }}>
++                                {car.status === 'pending_moderation' ? 'Chß╗¥ kiß╗âm duyß╗çt' : car.status === 'available' ? 'Sß║╡n s├áng' : car.status === 'rented' ? '─Éang cho thu├¬' : car.status === 'inactive' ? 'Tß║ím dß╗½ng' : 'Tß╗½ chß╗æi'}
++                              </span>
++                            </div>
++                            <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{car.model}</strong>
++                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: 2 }}>Biß╗ân sß╗æ: {car.plateNumber}</span>
++                          </div>
++                          
++                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
++                            <strong style={{ fontSize: '12px', color: 'var(--accent-primary)' }}>{formatCurrency(car.pricePerDay)}/ng├áy</strong>
++                            
++                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
++                              {car.status !== 'rented' && (
++                                <button 
++                                  type="button"
++                                  className="owner-booking-status-badge badge-confirmed" 
++                                  style={{ background: 'rgba(0, 150, 152, 0.15)', border: '1px solid rgba(0, 150, 152, 0.3)', color: 'var(--accent-primary)', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
++                                  onClick={() => handleStartEditCar(car)}
++                                >
++                                  Sß╗¡a xe
++                                </button>
++                              )}
++                              
++                              {car.status === 'available' && (
++                                <button 
++                                  type="button"
++                                  className="owner-booking-status-badge" 
++                                  style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#fbbf24', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
++                                  onClick={() => handleToggleCarStatus(car.id, car.status)}
++                                  disabled={actionLoading}
++                                >
++                                  Tß║ím dß╗½ng
++                                </button>
++                              )}
++
++                              {car.status === 'inactive' && (
++                                <button 
++                                  type="button"
++                                  className="owner-booking-status-badge" 
++                                  style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
++                                  onClick={() => handleToggleCarStatus(car.id, car.status)}
++                                  disabled={actionLoading}
++                                >
++                                  Cho thu├¬ lß║íi
++                                </button>
++                              )}
++
++                              {car.status !== 'rented' && (
++                                <button 
++                                  type="button"
++                                  className="owner-booking-status-badge" 
++                                  style={{ background: 'rgba(244, 63, 94, 0.15)', border: '1px solid rgba(244, 63, 94, 0.3)', color: '#fda4af', cursor: 'pointer', outline: 'none', padding: '3px 8px', fontSize: '10.5px' }}
++                                  onClick={() => handleDeleteCar(car.id, `${car.brand} ${car.model}`)}
++                                  disabled={actionLoading}
++                                >
++                                  X├│a xe
++                                </button>
++                              )}
++                            </div>
++                          </div>
++                        </div>
++                      </div>
++                    ))}
++                  </div>
++                )}
++              </div>
++            )}
++          </>
++        )}
++
++        {/* Γ£Å∩╕Å EDIT VEHICLE MODAL POPUP */}
++        {editingCar && (
++          <div className="owner-modal-overlay">
++            <div className="owner-modal-card glassmorphism">
++              <div className="owner-modal-header">
++                <h4>Chß╗ënh sß╗¡a ph╞░╞íng tiß╗çn k├╜ gß╗¡i</h4>
++                <button className="owner-modal-close" onClick={() => setEditingCar(null)}>Γ£ò</button>
++              </div>
++              <form onSubmit={handleSubmitEditCar} className="list-car-form">
++                <div style={{ marginBottom: 16 }}>
++                  <strong style={{ color: 'var(--text-primary)', fontSize: '13.5px' }}>
++                    Xe: {editingCar.brand} {editingCar.model} ({editingCar.plateNumber})
++                  </strong>
++                </div>
++
++                <div className="form-row-grid">
++                  <div className="form-group">
++                    <label className="form-label">─É╞ín gi├í thu├¬ / Ng├áy (VND) *</label>
++                    <div className="input-container">
++                      <DollarSign className="input-icon" size={16} />
++                      <input 
++                        type="number" 
++                        placeholder="Vd: 800000" 
++                        className="form-input"
++                        value={editPricePerDay}
++                        onChange={(e) => setEditPricePerDay(e.target.value)}
++                        min="300000"
++                        max="5000000"
++                        required
++                      />
++                    </div>
++                  </div>
++
++                  <div className="form-group">
++                    <label className="form-label">Khu vß╗▒c cho thu├¬ *</label>
++                    <select value={editLocation} onChange={(e) => setEditLocation(e.target.value)} className="form-input" style={{ paddingLeft: '14px' }}>
++                      <option value="H├á Nß╗Öi">H├á Nß╗Öi</option>
++                      <option value="TP. Hß╗ô Ch├¡ Minh">TP. Hß╗ô Ch├¡ Minh</option>
++                      <option value="─É├á Nß║╡ng">─É├á Nß║╡ng</option>
++                    </select>
++                  </div>
++                </div>
++
++                <div className="form-group" style={{ marginTop: 12 }}>
++                  <label className="form-label">H├¼nh ß║únh thß╗▒c tß║┐ mß╗¢i cß╗ºa xe *</label>
++                  <div className="car-photo-upload-zone">
++                    {editCarImage ? (
++                      <div className="uploaded-car-preview">
++                        <img src={editCarImage} alt="Car Uploaded Preview" />
++                        <button type="button" className="btn-remove-photo" onClick={() => setEditCarImage('')}>Γ£ò X├│a ß║únh</button>
++                      </div>
++                    ) : (
++                      <label className="photo-upload-label">
++                        <Upload className="upload-photo-icon" size={24} />
++                        <span>{editImageLoading ? '─Éang tß║úi...' : 'Chß╗ìn ß║únh thß╗▒c tß║┐ cß╗ºa xe'}</span>
++                        <p>ß║ónh chß╗Ñp r├╡ mß║╖t tr╞░ß╗¢c, s╞░ß╗¥n xe d╞░ß╗¢i 5MB</p>
++                        <input type="file" onChange={handleEditCarImageUpload} accept="image/*" style={{ display: 'none' }} disabled={editImageLoading} />
++                      </label>
++                    )}
++                  </div>
++                </div>
++
++                <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
++                  <button type="button" className="btn btn-secondary" onClick={() => setEditingCar(null)}>Hß╗ºy bß╗Å</button>
++                  <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={loading || editImageLoading}>
++                    {loading ? '─Éang cß║¡p nhß║¡t...' : 'Cß║¡p nhß║¡t th├┤ng tin'}
++                  </button>
++                </div>
++              </form>
++            </div>
++          </div>
++        )}
++
++        {/* Contract Modal Render for Owner */}
++        {selectedBookingForContract && (
++          <ContractModal
++            bookingId={selectedBookingForContract}
++            user={user}
++            onClose={() => setSelectedBookingForContract(null)}
++          />
++        )}
++
++        {/* General Dispute Modal */}
++        {isGeneralDisputeModalOpen && (
++            <div className="owner-modal-overlay">
++                <div className="owner-modal-card glassmorphism">
++                    <div className="owner-modal-header">
++                        <h4>Tß║ío Khiß║┐u nß║íi chung cho chuyß║┐n ─æi #{selectedBookingForDispute?.id}</h4>
++                        <button className="owner-modal-close" onClick={() => setIsGeneralDisputeModalOpen(false)}>Γ£ò</button>
++                    </div>
++                    <form onSubmit={handleGeneralDisputeSubmit} className="list-car-form">
++                        <div className="form-group">
++                            <label className="form-label">M├┤ tß║ú chi tiß║┐t khiß║┐u nß║íi *</label>
++                            <textarea
++                                placeholder="V├¡ dß╗Ñ: Kh├ích l├ám x╞░ß╗¢c xe b├¬n phß║úi, trß║ú xe muß╗Ön 2 tiß║┐ng, xe bß╗ï bß║⌐n nß║╖ng..."
++                                className="form-input"
++                                value={generalDisputeDetails.description}
++                                onChange={(e) => setGeneralDisputeDetails({ ...generalDisputeDetails, description: e.target.value })}
++                                rows="4"
++                                required
++                            />
++                        </div>
++                        <div className="form-group">
++                            <label className="form-label">Sß╗æ tiß╗ün y├¬u cß║ºu bß╗ôi th╞░ß╗¥ng (VND)</label>
++                            <div className="input-container">
++                                <DollarSign className="input-icon" size={16} />
++                                <input
++                                    type="number"
++                                    placeholder="Vd: 500000"
++                                    className="form-input"
++                                    value={generalDisputeDetails.amount}
++                                    onChange={(e) => setGeneralDisputeDetails({ ...generalDisputeDetails, amount: e.target.value })}
++                                    min="0"
++                                />
++                            </div>
++                        </div>
++                        <div className="form-group" style={{ marginTop: 12 }}>
++                            <label className="form-label">ß║ónh bß║▒ng chß╗⌐ng (nß║┐u c├│)</label>
++                            <div className="car-photo-upload-zone">
++                                {generalDisputeEvidenceImage ? (
++                                    <div className="uploaded-car-preview">
++                                        <img src={generalDisputeEvidenceImage} alt="Dispute Evidence Preview" />
++                                        <button type="button" className="btn-remove-photo" onClick={() => setGeneralDisputeEvidenceImage('')}>Γ£ò X├│a ß║únh</button>
++                                    </div>
++                                ) : (
++                                    <label className="photo-upload-label">
++                                        <Upload className="upload-photo-icon" size={24} />
++                                        <span>{generalDisputeImageLoading ? '─Éang tß║úi...' : 'Chß╗ìn ß║únh bß║▒ng chß╗⌐ng'}</span>
++                                        <p>ß║ónh chß╗Ñp r├╡ r├áng, d╞░ß╗¢i 5MB</p>
++                                        <input type="file" onChange={(e) => handleImageUpload(e, setGeneralDisputeEvidenceImage, setGeneralDisputeImageLoading, 'Tß║úi ß║únh bß║▒ng chß╗⌐ng l├¬n th├ánh c├┤ng!')} accept="image/*" style={{ display: 'none' }} disabled={generalDisputeImageLoading} />
++                                    </label>
++                                )}
++                            </div>
++                        </div>
++                        <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
++                            <button type="button" className="btn btn-secondary" onClick={() => setIsGeneralDisputeModalOpen(false)}>Hß╗ºy bß╗Å</button>
++                            <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={actionLoading || generalDisputeImageLoading}>
++                                {actionLoading ? '─Éang gß╗¡i...' : 'Gß╗¡i khiß║┐u nß║íi'}
++                            </button>
++                        </div>
++                    </form>
++                </div>
++            </div>
++        )}
++
++        {/* Traffic Violation Modal */}
++        {isTrafficViolationModalOpen && (
++            <div className="owner-modal-overlay">
++                <div className="owner-modal-card glassmorphism">
++                    <div className="owner-modal-header">
++                        <h4>B├ío c├ío Phß║ít nguß╗Öi cho chuyß║┐n ─æi #{selectedBookingForTrafficViolation?.id}</h4>
++                        <button className="owner-modal-close" onClick={() => setIsTrafficViolationModalOpen(false)}>Γ£ò</button>
++                    </div>
++                    <form onSubmit={handleTrafficViolationSubmit} className="list-car-form">
++                        <div className="form-group">
++                            <label className="form-label">Sß╗æ tiß╗ün phß║ít (VND) *</label>
++                            <div className="input-container">
++                                <DollarSign className="input-icon" size={16} />
++                                <input
++                                    type="number"
++                                    placeholder="Vd: 1500000"
++                                    className="form-input"
++                                    value={trafficViolationDetails.amount}
++                                    onChange={(e) => setTrafficViolationDetails({ ...trafficViolationDetails, amount: e.target.value })}
++                                    min="1000"
++                                    required
++                                />
++                            </div>
++                        </div>
++                        <div className="form-group">
++                            <label className="form-label">M├┤ tß║ú chi tiß║┐t phß║ít nguß╗Öi *</label>
++                            <textarea
++                                placeholder="V├¡ dß╗Ñ: Xe bß╗ï phß║ít qu├í tß╗æc ─æß╗Ö tß║íi cao tß╗æc Ph├íp V├ón - Cß║ºu Giß║╜, biß╗ân sß╗æ 30A-123.45, ng├áy 10/06/2026..."
++                                className="form-input"
++                                value={trafficViolationDetails.description}
++                                onChange={(e) => setTrafficViolationDetails({ ...trafficViolationDetails, description: e.target.value })}
++                                rows="3"
++                                required
++                            />
++                        </div>
++                        <div className="form-group" style={{ marginTop: 12 }}>
++                            <label className="form-label">ß║ónh phiß║┐u phß║ít nguß╗Öi *</label>
++                            <div className="car-photo-upload-zone">
++                                {trafficViolationTicketImage ? (
++                                    <div className="uploaded-car-preview">
++                                        <img src={trafficViolationTicketImage} alt="Traffic Violation Ticket Preview" />
++                                        <button type="button" className="btn-remove-photo" onClick={() => setTrafficViolationTicketImage('')}>Γ£ò X├│a ß║únh</button>
++                                    </div>
++                                ) : (
++                                    <label className="photo-upload-label">
++                                        <Upload className="upload-photo-icon" size={24} />
++                                        <span>{trafficViolationImageLoading ? '─Éang tß║úi...' : 'Chß╗ìn ß║únh phiß║┐u phß║ít nguß╗Öi'}</span>
++                                        <p>ß║ónh chß╗Ñp r├╡ r├áng, d╞░ß╗¢i 5MB</p>
++                                        <input type="file" onChange={(e) => handleImageUpload(e, setTrafficViolationTicketImage, setTrafficViolationImageLoading, 'Tß║úi ß║únh phiß║┐u phß║ít nguß╗Öi l├¬n th├ánh c├┤ng!')} accept="image/*" style={{ display: 'none' }} disabled={trafficViolationImageLoading} />
++                                    </label>
++                                )}
++                            </div>
++                        </div>
++                        <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
++                            <button type="button" className="btn btn-secondary" onClick={() => setIsTrafficViolationModalOpen(false)}>Hß╗ºy bß╗Å</button>
++                            <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={actionLoading || trafficViolationImageLoading}>
++                                {actionLoading ? '─Éang gß╗¡i...' : 'Gß╗¡i b├ío c├ío phß║ít nguß╗Öi'}
++                            </button>
++                        </div>
++                    </form>
++                </div>
++            </div>
++        )}
++
++        {/* Photo Inspection & AI Damage Report Modal for Owner */}
++        {activeInspectionBooking && (
++          <InspectionModal
++            booking={activeInspectionBooking}
++            user={user}
++            onClose={() => setActiveInspectionBooking(null)}
++            onInspectionUpdated={() => fetchOwnerDashboard(true)}
++          />
++
++        )}
++
++        {/* Owner Report Dispute Modal upon Vehicle Return */}
++        {disputeBooking && (
++          <div className="cm2-overlay" onClick={() => setDisputeBooking(null)}>
++            <div className="cm2-wrap" onClick={e => e.stopPropagation()} style={{ maxWidth: '520px', borderRadius: '16px' }}>
++              <div className="cm2-toolbar" style={{ background: '#dc2626', color: '#fff', borderRadius: '16px 16px 0 0', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
++                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '15px' }}>
++                  <span>ΓÜá∩╕Å B├ío C├ío Sß╗▒ Cß╗æ / Khiß║┐u Nß║íi Khi Nhß║¡n Lß║íi Xe</span>
++                </div>
++                <button style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }} onClick={() => setDisputeBooking(null)}>
++                  Γ£ò
++                </button>
++              </div>
++              <form onSubmit={handleOwnerSubmitDispute} style={{ padding: '24px', background: '#fff', borderRadius: '0 0 16px 16px', textAlign: 'left' }}>
++                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
++                  Nß║┐u xe bß╗ï va quß║╣t, h╞░ hß╗Ång hoß║╖c thiß║┐u nhi├¬n liß╗çu so vß╗¢i l├║c nhß║¡n, vui l├▓ng ─æiß╗ün th├┤ng tin chi tiß║┐t ─æß╗â chuyß╗ân tß╗¢i bß╗Ö phß║¡n <strong>CSKH ViVuCar ─æß╗æi so├ít giß╗»/trß╗½ cß╗ìc</strong>.
++                </p>
++
++                <div style={{ marginBottom: '16px' }}>
++                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
++                    Chi tiß║┐t vß║┐t trß║ºy x╞░ß╗¢c / h╞░ hß╗Ång ph├ít sinh:
++                  </label>
++                  <textarea
++                    rows={4}
++                    value={disputeDesc}
++                    onChange={e => setDisputeDesc(e.target.value)}
++                    placeholder="V├¡ dß╗Ñ: Xe bß╗ï m├│p nhß║╣ cß╗¡a sau b├¬n phß╗Ñ, thiß║┐u 1/4 nß║Ñc x─âng so vß╗¢i ban ─æß║ºu..."
++                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
++                    required
++                  />
++                </div>
++
++                <div style={{ marginBottom: '20px' }}>
++                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
++                    ─Éß╗ü xuß║Ñt sß╗æ tiß╗ün cß║Ñn trß╗½ khoß║ún cß╗ìc (VN─É):
++                  </label>
++                  <input
++                    type="number"
++                    value={requestedDeduction}
++                    onChange={e => setRequestedDeduction(e.target.value)}
++                    placeholder="V├¡ dß╗Ñ: 500000"
++                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
++                  />
++                </div>
++
++                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
++                  <button type="button" className="btn btn-secondary" onClick={() => setDisputeBooking(null)} disabled={actionLoading}>
++                    Hß╗ºy bß╗Å
++                  </button>
++                  <button type="submit" className="btn btn-primary" style={{ background: '#dc2626', borderColor: '#dc2626', color: '#fff' }} disabled={actionLoading}>
++                    {actionLoading ? '─Éang gß╗¡i...' : 'Gß╗¡i khiß║┐u nß║íi tß╗¢i CSKH'}
++                  </button>
++                </div>
++              </form>
++            </div>
++          </div>
++        )}
++      </div>
++    </div>
++  );
++};

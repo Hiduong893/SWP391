@@ -435,7 +435,7 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
           onClick={() => setActiveDropdown('rentalType')}
         >
           <Handshake size={14} className="pill-icon" />
-          <span>{rentalType === 'all' ? 'Hình thức thuê' : rentalType === 'self' ? 'Tự nhận xe' : 'Gặp chủ xe'}</span>
+          <span>{rentalType === 'all' ? 'Hình thức thuê' : rentalType === 'self' ? 'Giao xe tận nơi' : 'Gặp chủ xe'}</span>
         </button>
 
         <button 
@@ -621,7 +621,7 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
                     {/* Badge Nhận xe */}
                     <div className="find-card-badge-bottom">
                       {!car.ownerId ? (
-                        <span className="find-badge-self">📱 Tự nhận xe</span>
+                        <span className="find-badge-self">🚚 Giao xe tận nơi</span>
                       ) : (
                         <span className="find-badge-owner">🔑 Gặp chủ xe</span>
                       )}
@@ -778,7 +778,7 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
               {activeDropdown === 'rentalType' && (
                 [
                   { value: 'all', label: 'Tất cả hình thức' },
-                  { value: 'self', label: '📱 Tự nhận xe (Vận hành bởi platform)' },
+                  { value: 'self', label: '🚚 Giao xe tận nơi (Vận hành bởi platform)' },
                   { value: 'owner', label: '🔑 Gặp chủ xe (Đối tác cho thuê)' }
                 ].map((r) => (
                   <label key={r.value} className="checkbox-label-pills">

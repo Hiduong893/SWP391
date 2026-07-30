@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
   Headphones, ShieldCheck, CreditCard, MessageSquare,
   Home, LogOut, RefreshCw, Search, X, Sun, Moon,
-  Car, Bell
+  Car, Bell, User
 } from 'lucide-react';
+import { NotificationBell } from '../../components/NotificationBell';
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
 import './CSKHDashboard.css';
@@ -288,7 +289,7 @@ export const CSKHDashboard = ({ setCurrentTab }) => {
             <span>Trang chủ</span>
           </button>
           <button className="cskh-nav-btn" onClick={() => setCurrentTab && setCurrentTab('profile')}>
-            <Bell size={17} />
+            <User size={17} />
             <span>Hồ sơ cá nhân</span>
           </button>
         </nav>
@@ -348,6 +349,9 @@ export const CSKHDashboard = ({ setCurrentTab }) => {
               <RefreshCw size={13} style={{ animation: actionLoading ? 'spin 0.8s linear infinite' : 'none' }} />
               Làm mới
             </button>
+
+            {/* Notification Bell */}
+            <NotificationBell user={cskhUser} setCurrentTab={setCurrentTab} />
 
             {/* Theme toggle */}
             <button

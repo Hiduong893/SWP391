@@ -72,5 +72,37 @@ export const notificationModel = {
     await p.request()
       .input('userId', sql.Int, parseInt(userId))
       .query('UPDATE Notification SET is_read = 1 WHERE user_id = @userId AND is_read = 0');
+  },
+
+  create: async (userId, title, message, type, referenceId = null, referenceType = null) => {
+    const p = await getPool();
+    const req = p.request()
+      .input('userId', sql.Int, parseInt(userId))
+      .input('title', sql.NVarChar, title)
+      .input('message', sql.NVarChar, message)
+      .input('type', sql.VarChar, type)
+      .input('referenceId', sql.Int, referenceId ? parseInt(referenceId) : null)
+      .input('referenceType', sql.VarChar, referenceType)
+      .input('createdAt', sql.DateTime, new Date());
+      
+    await req.query(`
+      INSERT INTO Notification (user_id, title, message, notification_type, reference_id, reference_type, is_read, created_at)
+      VALUES (@userId, @title, @message, @type, @referenceId, @referenceType, 0, @createdAt)
+    `);
+  },
+
+  notifyCSKH: async (title, message, type, referenceId = null, referenceType = null) => {
+    const p = await getPool();
+    const cskhUsers = await p.request().query(`
+      SELECT u.user_id 
+      FROM [User] u 
+      JOIN UserRole ur ON u.user_id = ur.user_id 
+      JOIN Role r ON ur.role_id = r.role_id 
+      WHERE r.role_name = 'CustomerService'
+    `);
+    
+    for (const row of cskhUsers.recordset) {
+      await notificationModel.create(row.user_id, title, message, type, referenceId, referenceType);
+    }
   }
 };

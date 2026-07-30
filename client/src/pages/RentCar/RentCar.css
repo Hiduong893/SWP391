@@ -919,89 +919,262 @@
   transform: translateY(-1px);
 }
 
-/* 3 Easy Steps Banner */
-.rich-section-steps-banner {
-  padding: 40px 24px;
+/* ===== 3 Easy Steps - Redesigned (itaphongvan style) ===== */
+.steps-section-redesigned {
+  background: #faf8f5;
+  height: 300vh;
+  position: relative;
 }
 
-.steps-banner-card-glass {
-  position: relative;
-  background-image: linear-gradient(rgba(15, 23, 42, 0.5), rgba(15, 23, 42, 0.75)), url('https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1200&q=80');
-  background-size: cover;
-  background-position: center;
-  border-radius: 24px;
-  padding: 50px 30px;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+.steps-section-sticky-wrapper {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
-.steps-banner-main-title {
-  font-size: 28px;
-  font-weight: 800;
-  color: #ffffff;
-  margin-bottom: 40px;
-  z-index: 2;
-  position: relative;
+.steps-section-inner {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.steps-main-heading {
+  text-align: center;
+  font-size: 46px;
+  font-weight: 900;
+  color: #1a1a2e;
   font-family: 'Inter', sans-serif;
+  line-height: 1.15;
+  margin-bottom: 64px;
+  letter-spacing: -1.5px;
 }
 
-.steps-grid-items {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 30px;
-  z-index: 2;
+.steps-heading-italic {
+  font-style: italic;
+  color: #009698;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 700;
+}
+
+/* Carousel Container */
+.steps-carousel-container {
   position: relative;
+  overflow: hidden;
 }
 
-.step-card-unit {
+/* Each slide */
+.steps-slide {
+  display: none;
+  animation: stepFadeIn 0.6s ease-out;
+}
+
+.steps-slide.active {
+  display: block;
+}
+
+@keyframes stepFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 3-column layout for each step */
+.steps-slide-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 40px;
+  align-items: center;
+  min-height: 380px;
+}
+
+/* Left: Step label + title */
+.steps-slide-left {
+  text-align: left;
+  padding-left: 12px;
+}
+
+.steps-slide-label {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #009698;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-family: 'Inter', sans-serif;
+  margin-bottom: 12px;
+  position: relative;
+  padding-bottom: 8px;
+}
+
+.steps-slide-label::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 32px;
+  height: 3px;
+  background: #009698;
+  border-radius: 2px;
+}
+
+.steps-slide-title {
+  font-size: 32px;
+  font-weight: 900;
+  color: #0f172a;
+  font-family: 'Inter', sans-serif;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+
+/* Center: Visual / Video */
+.steps-slide-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.steps-slide-visual {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  aspect-ratio: 4 / 3;
+  border-radius: 20px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #e8f5f5 0%, #dceefb 50%, #e8f5f0 100%);
+  box-shadow: 0 20px 60px rgba(0, 150, 152, 0.12), 0 4px 16px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 150, 152, 0.1);
+}
+
+.steps-slide-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.steps-slide-visual-fallback {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: #ffffff;
-  text-align: center;
+  justify-content: center;
+  gap: 14px;
+  background: linear-gradient(135deg, rgba(232, 245, 245, 0.95), rgba(220, 238, 251, 0.95));
 }
 
-.step-icon-round-teal-container {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(8px);
-  border: 2px solid rgba(255, 255, 255, 0.25);
+.steps-slide-play-btn {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+  cursor: pointer;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+.steps-slide-visual-text {
+  font-size: 14px;
+  color: #009698;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.3px;
+}
+
+/* Right: Description */
+.steps-slide-right {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
-  transition: all 0.3s ease;
+  padding-right: 12px;
 }
 
-.step-card-unit:hover .step-icon-round-teal-container {
-  transform: scale(1.05);
-  border-color: #009698;
-  background: rgba(0, 150, 152, 0.15);
-}
-
-.step-icon-inner-box {
-  width: 48px;
-  height: 48px;
-  background: #ffffff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.step-unit-text {
-  font-size: 14.5px;
+.steps-slide-desc {
+  font-size: 15.5px;
+  color: #475569;
+  line-height: 1.75;
   font-weight: 500;
-  color: #ffffff;
-  line-height: 1.5;
-  max-width: 250px;
+  font-family: 'Inter', sans-serif;
 }
 
-.step-number-bold {
-  font-weight: 800;
-  color: #00bfa5;
+/* Navigation dots */
+.steps-dots-nav {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 40px;
+}
+
+.steps-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.steps-dot:hover {
+  border-color: #009698;
+}
+
+.steps-dot.active {
+  background: #009698;
+  border-color: #009698;
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgba(0, 150, 152, 0.3);
+}
+
+/* Responsive for steps section */
+@media (max-width: 900px) {
+  .steps-main-heading {
+    font-size: 32px;
+    margin-bottom: 40px;
+  }
+
+  .steps-slide-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    min-height: auto;
+  }
+
+  .steps-slide-left {
+    text-align: center;
+    padding-left: 0;
+  }
+
+  .steps-slide-label::after {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .steps-slide-title {
+    font-size: 24px;
+  }
+
+  .steps-slide-right {
+    text-align: center;
+    padding-right: 0;
+    justify-content: center;
+  }
+
+  .steps-slide-desc {
+    font-size: 14px;
+  }
 }
 
 /* Customer Reviews Carousel */

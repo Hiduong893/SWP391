@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
+import { NotificationBell } from '../../components/NotificationBell';
 import './AdminDashboard.css';
 
 // Subcomponents
@@ -652,10 +653,7 @@ export const AdminDashboard = ({ setCurrentTab }) => {
           <div className="header-actions">
 
             {/* Notification bell */}
-            <button className="icon-btn notification-btn" title="Thông báo" onClick={() => showToast("Chưa có thông báo hệ thống mới.", "success")}>
-              <Bell size={18} />
-              {(pendingCars.length > 0 || pendingKycUsers.length > 0) && <span className="notification-dot"></span>}
-            </button>
+            <NotificationBell user={adminUser} setCurrentTab={setCurrentTab} />
 
             {/* Theme toggle */}
             <button

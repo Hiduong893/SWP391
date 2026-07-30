@@ -12,6 +12,9 @@ BEGIN
     ALTER TABLE Vehicle ADD fuel NVARCHAR(50) NULL;
 END;
 
+-- Cho phép owner_id để trống (NULL) để hỗ trợ xe Tự nhận xe (không có chủ xe)
+ALTER TABLE Vehicle ALTER COLUMN owner_id INT NULL;
+
 GO
 
 -- 1. Thêm Hãng Xe MG nếu chưa tồn tại
@@ -70,20 +73,20 @@ INSERT INTO Vehicle (
 )
 VALUES
 -- Toyota
-(@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'Toyota'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Sedan'), N'Vios G', '30K-567.89', 2023, N'Trắng', 5, 800000.00, 10000000.00, N'Hà Nội', 'Available', 1, N'Tự động', N'Xăng'),
-(@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'Toyota'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'SUV'), N'Fortuner Legender', '51K-234.56', 2022, N'Đen', 7, 1300000.00, 15000000.00, N'TP. Hồ Chí Minh', 'Available', 1, N'Tự động', N'Dầu'),
-(@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'Toyota'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'MPV'), N'Innova Cross', '43A-789.01', 2023, N'Bạc', 7, 1000000.00, 15000000.00, N'Đà Nẵng', 'Available', 1, N'Tự động', N'Xăng'),
-(@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'Toyota'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Crossover'), N'Corolla Cross', '30L-112.23', 2024, N'Đỏ', 5, 950000.00, 10000000.00, N'Hà Nội', 'Available', 1, N'Tự động', N'Xăng'),
+(NULL, (SELECT brand_id FROM Brand WHERE brand_name = N'Toyota'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Sedan'), N'Vios G', '30K-567.89', 2023, N'Trắng', 5, 800000.00, 10000000.00, N'Hà Nội', 'Available', 1, N'Tự động', N'Xăng'),
+(NULL, (SELECT brand_id FROM Brand WHERE brand_name = N'Toyota'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'SUV'), N'Fortuner Legender', '51K-234.56', 2022, N'Đen', 7, 1300000.00, 15000000.00, N'TP. Hồ Chí Minh', 'Available', 1, N'Tự động', N'Dầu'),
+(NULL, (SELECT brand_id FROM Brand WHERE brand_name = N'Toyota'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'MPV'), N'Innova Cross', '43A-789.01', 2023, N'Bạc', 7, 1000000.00, 15000000.00, N'Đà Nẵng', 'Available', 1, N'Tự động', N'Xăng'),
+(NULL, (SELECT brand_id FROM Brand WHERE brand_name = N'Toyota'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Crossover'), N'Corolla Cross', '30L-112.23', 2024, N'Đỏ', 5, 950000.00, 10000000.00, N'Hà Nội', 'Available', 1, N'Tự động', N'Xăng'),
 
 -- VinFast
-(@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'VinFast'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Hatchback'), N'VF 3 Plus', '30L-999.01', 2025, N'Vàng', 4, 500000.00, 5000000.00, N'Hà Nội', 'Available', 1, N'Tự động', N'Điện'),
-(@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'VinFast'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Crossover'), N'VF 5 Plus', '51L-888.02', 2024, N'Xanh Dương', 5, 700000.00, 10000000.00, N'TP. Hồ Chí Minh', 'Available', 1, N'Tự động', N'Điện'),
-(@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'VinFast'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'SUV'), N'VF 8 Plus', '43A-666.03', 2023, N'Xám', 5, 1200000.00, 15000000.00, N'Đà Nẵng', 'Available', 1, N'Tự động', N'Điện'),
-(@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'VinFast'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'SUV'), N'VF 9 Plus', '30K-777.04', 2024, N'Đen', 7, 2200000.00, 20000000.00, N'Hà Nội', 'Available', 1, N'Tự động', N'Điện'),
+(NULL, (SELECT brand_id FROM Brand WHERE brand_name = N'VinFast'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Hatchback'), N'VF 3 Plus', '30L-999.01', 2025, N'Vàng', 4, 500000.00, 5000000.00, N'Hà Nội', 'Available', 1, N'Tự động', N'Điện'),
+(NULL, (SELECT brand_id FROM Brand WHERE brand_name = N'VinFast'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Crossover'), N'VF 5 Plus', '51L-888.02', 2024, N'Xanh Dương', 5, 700000.00, 10000000.00, N'TP. Hồ Chí Minh', 'Available', 1, N'Tự động', N'Điện'),
+(NULL, (SELECT brand_id FROM Brand WHERE brand_name = N'VinFast'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'SUV'), N'VF 8 Plus', '43A-666.03', 2023, N'Xám', 5, 1200000.00, 15000000.00, N'Đà Nẵng', 'Available', 1, N'Tự động', N'Điện'),
+(NULL, (SELECT brand_id FROM Brand WHERE brand_name = N'VinFast'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'SUV'), N'VF 9 Plus', '30K-777.04', 2024, N'Đen', 7, 2200000.00, 20000000.00, N'Hà Nội', 'Available', 1, N'Tự động', N'Điện'),
 
 -- Honda
-(@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'Honda'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Sedan'), N'City RS', '30K-444.11', 2023, N'Đỏ', 5, 800000.00, 10000000.00, N'Hà Nội', 'Available', 1, N'Tự động', N'Xăng'),
-(@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'Honda'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Sedan'), N'Civic RS', '51K-555.22', 2022, N'Trắng', 5, 1000000.00, 15000000.00, N'TP. Hồ Chí Minh', 'Available', 1, N'Tự động', N'Xăng'),
+(NULL, (SELECT brand_id FROM Brand WHERE brand_name = N'Honda'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Sedan'), N'City RS', '30K-444.11', 2023, N'Đỏ', 5, 800000.00, 10000000.00, N'Hà Nội', 'Available', 1, N'Tự động', N'Xăng'),
+(NULL, (SELECT brand_id FROM Brand WHERE brand_name = N'Honda'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Sedan'), N'Civic RS', '51K-555.22', 2022, N'Trắng', 5, 1000000.00, 15000000.00, N'TP. Hồ Chí Minh', 'Available', 1, N'Tự động', N'Xăng'),
 (@owner_id, (SELECT brand_id FROM Brand WHERE brand_name = N'Honda'), (SELECT category_id FROM VehicleCategory WHERE category_name = N'Crossover'), N'CR-V L', '43A-333.33', 2023, N'Đen', 7, 1200000.00, 15000000.00, N'Đà Nẵng', 'Available', 1, N'Tự động', N'Xăng'),
 
 -- Hyundai
@@ -191,6 +194,6 @@ VALUES
 ((SELECT vehicle_id FROM Vehicle WHERE license_plate = '51L-222.22'), 'https://drive.gianhangvn.com/image/o4ewvc6-2537248j32655.jpg', 1, 0),
 
 -- ẢNH XE TEST PHẠT NGUỘI
-((SELECT vehicle_id FROM Vehicle WHERE license_plate = '99A-987.65'), 'https://cdn.xetot.com/xetot/news/2021/04/23/giam-gia-kia-seltos-1-1619171731.jpg', 1, 0);
+((SELECT vehicle_id FROM Vehicle WHERE license_plate = '99A-987.65'), 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=600&q=80', 1, 0);
 
 PRINT 'Vehicles database seed successfully!';

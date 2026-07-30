@@ -73,6 +73,18 @@ router.post('/api/cars', auth, async (req, res) => {
       await db.users.update(req.user.id, { role: 'owner' });
     }
 
+    try {
+      await notificationService.notifyCSKH(
+        'Đăng ký xe mới',
+        `Chủ xe ${req.user.name} vừa đăng ký xe ${brand} ${model} mới. Vui lòng kiểm duyệt giấy tờ xe.`,
+        'CarApproval',
+        newCar.id,
+        'Car'
+      );
+    } catch (e) {
+      console.error('Error notifying CSKH for new car:', e);
+    }
+
     res.status(201).json({
       message: 'Đăng ký xe cho thuê thành công! Xe của bạn đang chờ CSKH/Admin phê duyệt kiểm duyệt chất lượng.',
       car: newCar

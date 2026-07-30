@@ -1,6 +1,22 @@
 import React, { useState } from 'react';
 import { DollarSign, Car, Users, CreditCard, Filter, TrendingUp, ShieldCheck, ArrowUpRight, Sparkles, FileText, Activity, AlertTriangle, CheckCircle2, Database, HardDrive, MessageSquare, Clock, Award, ChevronRight, UserCheck, UserPlus, Calendar as CalendarIcon, X } from 'lucide-react';
-import { DatePickerVi } from '../../components/DatePickerVi';
+import { DateRangePicker, defaultStaticRanges } from 'react-date-range';
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
+
+// Inline isSameDay helper (avoids react-date-range version compat issues)
+const isSameDay = (a, b) => {
+  if (!a || !b) return false;
+  return a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+};
+
+// Vietnamese static range labels
+const viStaticRanges = defaultStaticRanges.map((range, i) => ({
+  ...range,
+  label: ['Hôm nay', 'Hôm qua', 'Tuần này', 'Tuần trước', 'Tháng này', 'Tháng trước'][i] || range.label,
+}));
 
 
 export const OverviewTab = ({

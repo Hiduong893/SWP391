@@ -39,6 +39,42 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
   // Collapsible Policies state
   const [activePolicyIndex, setActivePolicyIndex] = useState(null);
 
+  // 3-step carousel state
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
+
+  const stepsSectionRef = useRef(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!stepsSectionRef.current) return;
+      const { top, height } = stepsSectionRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      
+      if (top <= 0 && top > -height + windowHeight) {
+        const scrollDistance = -top; 
+        const scrollableHeight = height - windowHeight;
+        
+        let progress = scrollDistance / scrollableHeight;
+        if (progress < 0) progress = 0;
+        if (progress > 1) progress = 1;
+        
+        let step = Math.floor(progress * 3);
+        if (step >= 3) step = 2;
+        
+        setActiveStepIndex(step);
+      } else if (top > 0) {
+        setActiveStepIndex(0);
+      } else if (top <= -height + windowHeight) {
+        setActiveStepIndex(2);
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    // Execute once on mount to set initial state
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Kiểm soát các thanh cuộn (Huy)
   const brandScrollRef = useRef(null);
   const likesScrollRef = useRef(null);
@@ -183,6 +219,14 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
       }
     }
   }, [pickupDate, pickupTime, returnDate, returnTime]);
+
+  // Auto-rotate 3-step carousel
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveStepIndex((prev) => (prev + 1) % 3);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const isReturnTimeDisabled = (time) => {
     if (!pickupDate || !pickupTime || !returnDate) return false;
@@ -954,7 +998,7 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                         {/* Nhãn nhận xe ở góc dưới */}
                         <div className="card-badge-bottom-container">
                           {!car.ownerId ? (
-                            <span className="info-badge-deliver">📱 Tự nhận xe</span>
+                            <span className="info-badge-deliver">🚚 Giao xe tận nơi</span>
                           ) : (
                             <span className="info-badge-owner">🔑 Gặp chủ xe</span>
                           )}
@@ -1069,13 +1113,13 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                         <div className="card-badge-bottom-container">
                           {isDbCar ? (
                             !car.ownerId ? (
-                              <span className="info-badge-deliver">📱 Tự nhận xe</span>
+                              <span className="info-badge-deliver">🚚 Giao xe tận nơi</span>
                             ) : (
                               <span className="info-badge-owner">🔑 Gặp chủ xe</span>
                             )
                           ) : (
                             car.id === 'lux-car-1' ? (
-                              <span className="info-badge-deliver">📱 Tự nhận xe</span>
+                              <span className="info-badge-deliver">🚚 Giao xe tận nơi</span>
                             ) : (
                               <span className="info-badge-owner">🔑 Gặp chủ xe</span>
                             )
@@ -1297,67 +1341,106 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
       </section>
 
       {/* ========================================================================= */}
-      {/* 🚀 NEW SECTION 5: 3 BƯỚC ĐẶT XE DỄ DÀNG */}
-      <section className="rich-section-steps-banner">
-        <div className="rich-section-inner">
-          <div className="steps-banner-card-glass">
-            <div className="steps-banner-image-background-overlay"></div>
+      {/* 🚀 NEW SECTION 5: 3 BƯỚC ĐẶT XE DỄ DÀNG - Redesigned like itaphongvan */}
+      <section className="steps-section-redesigned" ref={stepsSectionRef}>
+        <div className="steps-section-sticky-wrapper">
+          <div className="steps-section-inner">
+            <h2 className="steps-main-heading">
+              ĐẶT XE TRONG <span className="steps-heading-italic">3 Bước</span>
+              <br />
+              <span className="steps-heading-italic">Đơn Giản</span>
+            </h2>
 
-            <h2 className="steps-banner-main-title">3 Bước đặt xe dễ dàng</h2>
+            {/* Step Carousel - shows one step at a time based on scroll */}
+            <div className="steps-carousel-container">
+            {[
+              {
+                num: '01',
+                title: 'CHỌN & GIỮ CHỖ',
+                desc: 'Duyệt hàng trăm xe đa dạng tại vivucar.vn, chọn xe phù hợp và giữ chỗ nhanh chóng chỉ trong vài phút.',
+                videoSrc: '/videos/huong-dan-dat-xe.mp4',
+                poster: '/images/video-thumbnail.jpg'
+              },
+              {
+                num: '02',
+                title: 'THỦ TỤC NHANH GỌN',
+                desc: 'Hoàn tất thủ tục đặt xe trực tuyến qua website, xác nhận đơn hàng và thanh toán tiện lợi.',
+                videoSrc: '/videos/huong-dan-dat-xe.mp4',
+                poster: '/images/video-thumbnail.jpg'
+              },
+              {
+                num: '03',
+                title: 'NHẬN XE MỌI NƠI',
+                desc: 'Chủ động nhận xe tại điểm hẹn hoặc giao tận nơi — mọi lúc mọi nơi theo lịch trình của bạn.',
+                videoSrc: '/videos/huong-dan-dat-xe.mp4',
+                poster: '/images/video-thumbnail.jpg'
+              },
+            ].map((step, idx) => (
+              <div
+                key={idx}
+                className={`steps-slide ${activeStepIndex === idx ? 'active' : ''}`}
+              >
+                <div className="steps-slide-layout">
+                  {/* Left: Step label + title */}
+                  <div className="steps-slide-left">
+                    <span className="steps-slide-label">BƯỚC {step.num}</span>
+                    <h3 className="steps-slide-title">{step.title}</h3>
+                  </div>
 
-            <div className="steps-grid-items">
-              {/* Step 1 */}
-              <div className="step-card-unit">
-                <div className="step-icon-round-teal-container">
-                  <div className="step-icon-inner-box">
-                    <svg viewBox="0 0 100 100" width="40" height="40" fill="none" stroke="#009698" strokeWidth="5">
-                      <rect x="20" y="20" width="60" height="45" rx="4" />
-                      <path d="M15 75 L85 75 M35 75 L35 65 M65 75 L65 65" />
-                      <circle cx="50" cy="42" r="10" />
-                    </svg>
+                  {/* Center: Video / Illustration */}
+                  <div className="steps-slide-center">
+                    <div className="steps-slide-visual">
+                      <video
+                        className="steps-slide-video"
+                        src={step.videoSrc}
+                        controls
+                        poster={step.poster}
+                        playsInline
+                      >
+                        Trình duyệt không hỗ trợ video.
+                      </video>
+                      <div className="steps-slide-visual-fallback">
+                        <div className="steps-slide-play-btn">
+                          <svg viewBox="0 0 80 80" width="64" height="64">
+                            <circle cx="40" cy="40" r="38" fill="rgba(0,150,152,0.1)" stroke="#009698" strokeWidth="2.5" />
+                            <polygon points="32,24 60,40 32,56" fill="#009698" />
+                          </svg>
+                        </div>
+                        <p className="steps-slide-visual-text">Video hướng dẫn đặt xe</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Description */}
+                  <div className="steps-slide-right">
+                    <p className="steps-slide-desc">{step.desc}</p>
                   </div>
                 </div>
-                <h4 className="step-unit-text">
-                  <span className="step-number-bold">1. </span>
-                  Chọn và giữ chỗ với hàng trăm xe tại vivucar.vn
-                </h4>
               </div>
+            ))}
 
-              {/* Step 2 */}
-              <div className="step-card-unit">
-                <div className="step-icon-round-teal-container">
-                  <div className="step-icon-inner-box">
-                    <svg viewBox="0 0 100 100" width="40" height="40" fill="none" stroke="#009698" strokeWidth="5">
-                      <rect x="30" y="15" width="40" height="70" rx="10" />
-                      <circle cx="50" cy="75" r="5" fill="#009698" />
-                      <path d="M30 65 L70 65 M40 25 L60 25" />
-                    </svg>
-                  </div>
-                </div>
-                <h4 className="step-unit-text">
-                  <span className="step-number-bold">2. </span>
-                  Thủ tục qua app nhanh gọn
-                </h4>
-              </div>
-
-              {/* Step 3 */}
-              <div className="step-card-unit">
-                <div className="step-icon-round-teal-container">
-                  <div className="step-icon-inner-box">
-                    <svg viewBox="0 0 100 100" width="40" height="40" fill="none" stroke="#009698" strokeWidth="5">
-                      <circle cx="50" cy="50" r="30" />
-                      <path d="M50 20 L50 50 L70 50" strokeLinecap="round" />
-                      <path d="M20 50 L10 50 M90 50 L80 50 M50 20 L50 10 M50 90 L50 80" />
-                    </svg>
-                  </div>
-                </div>
-                <h4 className="step-unit-text">
-                  <span className="step-number-bold">3. </span>
-                  Chủ động nhận xe mọi lúc mọi nơi
-                </h4>
-              </div>
+            {/* Navigation dots */}
+            <div className="steps-dots-nav">
+              {[0, 1, 2].map((idx) => (
+                <button
+                  key={idx}
+                  className={`steps-dot ${activeStepIndex === idx ? 'active' : ''}`}
+                  onClick={() => {
+                    if (!stepsSectionRef.current) return;
+                    const { top } = stepsSectionRef.current.getBoundingClientRect();
+                    const windowHeight = window.innerHeight;
+                    const height = stepsSectionRef.current.offsetHeight;
+                    const scrollableHeight = height - windowHeight;
+                    const targetProgressCentered = (idx + 0.5) / 3;
+                    const targetScroll = window.scrollY + top + (targetProgressCentered * scrollableHeight);
+                    window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+                  }}
+                  aria-label={`Bước ${idx + 1}`}
+                />
+              ))}
             </div>
           </div>
+        </div>
         </div>
       </section>
 

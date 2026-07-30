@@ -37,6 +37,7 @@ function App() {
   const [verificationToken, setVerificationToken] = useState(null);
   const [resetToken, setResetToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pendingNavigation, setPendingNavigation] = useState(null); // Fix race condition: navigate after user state is set
 
   const [authModal, setAuthModal] = useState(null); // 'login', 'register', 'forgot-password'
   const [activeBooking, setActiveBooking] = useState(null);
@@ -177,15 +178,24 @@ function App() {
 
   const handleLoginSuccess = (loggedInUser) => {
     setUser(loggedInUser);
-
+    // Fix: navigate AFTER user state is set via useEffect to avoid race condition
+    // where route guard checks user=null before React re-renders
     if (loggedInUser.role === 'admin') {
-      navigate('/admin-dashboard');
+      setPendingNavigation('/admin-dashboard');
     } else if (loggedInUser.role === 'cskh') {
-      navigate('/cskh-dashboard');
+      setPendingNavigation('/cskh-dashboard');
     } else if (loggedInUser.role === 'owner') {
-      navigate('/owner-dashboard');
+      setPendingNavigation('/owner-dashboard');
     }
   };
+
+  // Execute pending navigation after user state has been committed to React
+  useEffect(() => {
+    if (pendingNavigation && user) {
+      navigate(pendingNavigation);
+      setPendingNavigation(null);
+    }
+  }, [user, pendingNavigation]);
 
   const isMaintenance = systemConfig?.maintenanceMode === 'true' && (!user || user.role !== 'admin');
 
@@ -308,15 +318,19 @@ function App() {
               <Route path="/my%20trips" element={<Navigate to="/my-trips" />} />
 
               <Route path="/admin-dashboard" element={
-                (!user && localStorage.getItem('token')) || (user && (user.role === 'admin' || user.role === 'cskh'))
-                  ? <AdminDashboard setCurrentTab={setCurrentTab} />
-                  : <Navigate to="/" />
+                loading
+                  ? <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}><Loader className="spin text-info" size={48} /></div>
+                  : (user && (user.role === 'admin' || user.role === 'cskh'))
+                    ? <AdminDashboard setCurrentTab={setCurrentTab} />
+                    : <Navigate to="/" />
               } />
 
               <Route path="/cskh-dashboard" element={
-                (!user && localStorage.getItem('token')) || (user && (user.role === 'cskh' || user.role === 'admin'))
-                  ? <CSKHDashboard setCurrentTab={setCurrentTab} />
-                  : <Navigate to="/" />
+                loading
+                  ? <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}><Loader className="spin text-info" size={48} /></div>
+                  : (user && (user.role === 'cskh' || user.role === 'admin'))
+                    ? <CSKHDashboard setCurrentTab={setCurrentTab} />
+                    : <Navigate to="/" />
               } />
 
               <Route path="/verify-email" element={

@@ -5,6 +5,7 @@ import { auth } from '../middleware/auth.js';
 import { verifyCCCDQr } from '../utils/qrHelper.js';
 import { verifyKycWithAI } from '../utils/aiHelper.js';
 import { getPool, sql } from '../config/db.js';
+import { notificationModel } from '../models/notificationModel.js';
 
 const router = express.Router();
 
@@ -153,6 +154,20 @@ router.put('/kyc', auth, async (req, res) => {
       faceStatus,
       kycRejectionReason
     });
+
+    if (licenseStatus === 'pending' || cccdStatus === 'pending' || cccdBackStatus === 'pending') {
+      try {
+        await notificationModel.notifyCSKH(
+          'Yêu cầu duyệt KYC mới',
+          `Người dùng ${updatedUser.name} vừa tải lên giấy tờ KYC mới. Vui lòng kiểm tra và duyệt hồ sơ.`,
+          'KycAlert',
+          updatedUser.id,
+          'User'
+        );
+      } catch (e) {
+        console.error('Error notifying CSKH for KYC:', e);
+      }
+    }
 
     if (kycAttempted && aiResult && !aiResult.verified) {
       res.json({

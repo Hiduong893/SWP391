@@ -2,66 +2,16 @@ import express from 'express';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
 import { notificationService } from '../services/notificationService.js';
-import { compareFacesWithAI, compareFaceWithDocument, analyzeCarInspectionWithAI } from '../utils/aiHelper.js';
+import { compareFacesWithAI, analyzeCarInspectionWithAI } from '../utils/aiHelper.js';
 import { contractModel } from '../models/contractModel.js';
 import { sql, getPool } from '../config/db.js';
 
 const router = express.Router();
 
-// Face verification endpoint — compare live photo with CCCD/License (Option A)
-router.post('/api/bookings/verify-face', auth, async (req, res) => {
-  try {
-    const { scannedFace } = req.body;
-    if (!scannedFace) {
-      return res.status(400).json({ verified: false, reason: 'Thiếu ảnh khuôn mặt.' });
-    }
-
-    const user = await db.users.findOne({ id: req.user.id });
-
-    // Check CCCD/License exists
-    const cccdImage = user.kycDocuments?.cccd || null;
-    const licenseImage = user.kycDocuments?.license || null;
-
-    if (!cccdImage && !licenseImage) {
-      return res.status(400).json({
-        verified: false,
-        reason: 'Tài khoản chưa tải lên ảnh CCCD hoặc Bằng lái xe. Vui lòng cập nhật trong Hồ sơ cá nhân.',
-        apiError: false
-      });
-    }
-
-    console.log('Running AI face-document verification for booking...');
-    const result = await compareFaceWithDocument(
-      { cccd: cccdImage, license: licenseImage },
-      scannedFace
-    );
-
-    console.log('Face-Document verification result:', { verified: result.verified, score: result.score, apiError: result.apiError });
-
-    res.json({
-      verified: result.verified,
-      score: result.score || 0,
-      reason: result.reason || '',
-      apiError: result.apiError || false,
-      allowProceed: result.apiError === true // Allow proceed when API errors (CSKH will review)
-    });
-  } catch (error) {
-    console.error('Face verification endpoint error:', error);
-    // On unexpected error, allow proceed with CSKH fallback
-    res.json({
-      verified: false,
-      score: 0,
-      reason: 'Hệ thống xác thực khuôn mặt tạm thời gặp sự cố. Đơn đặt xe sẽ chờ CSKH duyệt thủ công.',
-      apiError: true,
-      allowProceed: true
-    });
-  }
-});
-
 // 15. POST Booking (Đặt xe & Đặt cọc)
 router.post('/api/bookings', auth, async (req, res) => {
   try {
-    const { carId, pickupDate, returnDate, pickupLocation, totalPrice, rentalPriceForOwner, paymentMethod, scannedFace, contractSignature, agreementChecked, faceVerificationSkipped } = req.body;
+    const { carId, pickupDate, returnDate, pickupLocation, totalPrice, rentalPriceForOwner, paymentMethod, scannedFace, contractSignature, agreementChecked } = req.body;
 
     if (!carId || !pickupDate || !returnDate || !pickupLocation || !totalPrice) {
       return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ thông tin đặt xe.' });
@@ -76,41 +26,18 @@ router.post('/api/bookings', auth, async (req, res) => {
       return res.status(400).json({ message: 'Tài khoản chưa xác thực Bằng lái xe. Vui lòng xác thực trước khi đặt xe.' });
     }
 
-    // Option A: Face verification against CCCD/License (not registered face)
-    // If faceVerificationSkipped is true (API error fallback), allow booking but flag it
-    let faceVerificationStatus = 'not_required';
-
-    if (scannedFace) {
-      if (faceVerificationSkipped) {
-        // API error case: allow booking, mark as pending manual review
-        faceVerificationStatus = 'pending_manual';
-        console.log('Face verification skipped due to API error. Booking will require CSKH manual review.');
-      } else {
-        // Normal case: re-verify on server side
-        const cccdImage = user.kycDocuments?.cccd || null;
-        const licenseImage = user.kycDocuments?.license || null;
-
-        if (cccdImage || licenseImage) {
-          console.log('Running server-side AI face-document verification for booking...');
-          const faceResult = await compareFaceWithDocument(
-            { cccd: cccdImage, license: licenseImage },
-            scannedFace
-          );
-
-          if (faceResult.apiError) {
-            // API error on server side too — allow booking with CSKH flag
-            faceVerificationStatus = 'pending_manual';
-            console.log('Server AI face verification failed (API error). Flagging for CSKH review.');
-          } else if (!faceResult.verified) {
-            return res.status(400).json({
-              message: `Xác thực khuôn mặt thất bại: ${faceResult.reason || 'Khuôn mặt không khớp với ảnh trên CCCD/Bằng lái xe.'}`
-            });
-          } else {
-            faceVerificationStatus = 'verified';
-            console.log('AI Face-Document Verification passed. Score:', faceResult.score);
-          }
-        }
+    // Biometric face verification check if user has registered face in KYC
+    if (user.kycDocuments?.faceImage) {
+      if (!scannedFace) {
+        return res.status(400).json({ message: 'Vui lòng thực hiện quét khuôn mặt sinh trắc học để xác thực đặt xe.' });
       }
+
+      console.log('Running AI face verification for checkout...');
+      const faceResult = await compareFacesWithAI(user.kycDocuments.faceImage, scannedFace);
+      if (!faceResult.verified) {
+        return res.status(400).json({ message: `Xác thực khuôn mặt thất bại: ${faceResult.reason || 'Khuôn mặt không khớp'}` });
+      }
+      console.log('AI Face Verification passed. Score:', faceResult.score);
     }
 
     const booking = await db.bookings.create({
@@ -126,8 +53,7 @@ router.post('/api/bookings', auth, async (req, res) => {
         signature: contractSignature || null,
         signedAt: new Date().toISOString(),
         scannedFace: scannedFace || null,
-        agreementChecked: agreementChecked === true,
-        faceVerificationStatus
+        agreementChecked: agreementChecked === true
       }
     });
 
@@ -169,13 +95,9 @@ router.post('/api/bookings', auth, async (req, res) => {
         }
 
         // 3. Thông báo cho CSKH
-        const cskhMessage = faceVerificationStatus === 'pending_manual'
-          ? `⚠️ [CẦN DUYỆT THỦ CÔNG] Khách hàng ${user.name} đã đặt xe ${car.brand} ${car.model} (Mã: #${booking.id}). Xác thực FaceID tự động bị lỗi — cần CSKH đối chiếu khuôn mặt thủ công.`
-          : `Khách hàng ${user.name} đã đặt xe ${car.brand} ${car.model} (Mã: #${booking.id}).`;
-
         await notificationService.notifyCSKH(
-          faceVerificationStatus === 'pending_manual' ? '⚠️ Đặt xe mới — Cần duyệt FaceID thủ công' : 'Yêu cầu đặt xe mới',
-          cskhMessage,
+          'Yêu cầu đặt xe mới',
+          `Khách hàng ${user.name} đã đặt xe ${car.brand} ${car.model} (Mã: #${booking.id}).`,
           'BookingUpdate',
           booking.id,
           'Booking'
@@ -185,16 +107,11 @@ router.post('/api/bookings', auth, async (req, res) => {
       console.warn('Notification send warning (non-blocking):', notifErr.message);
     }
 
-    const successMessage = faceVerificationStatus === 'pending_manual'
-      ? 'Đặt xe thành công! Lưu ý: Xác thực khuôn mặt đang chờ CSKH duyệt thủ công do hệ thống AI gặp sự cố.'
-      : booking.status === 'pending_owner'
-        ? 'Đặt xe và chuyển cọc thành công! Đang chờ Chủ xe phê duyệt chấp thuận hành trình.'
-        : 'Đặt xe và chuyển cọc thành công! Vé thuê xe của bạn đã được xác nhận.';
-
     res.status(201).json({
-      message: successMessage,
-      booking,
-      faceVerificationStatus
+      message: booking.status === 'pending_owner'
+        ? 'Đặt xe và chuyển cọc thành công! Đang chờ Chủ xe phê duyệt chấp thuận hành trình.'
+        : 'Đặt xe và chuyển cọc thành công! Vé thuê xe của bạn đã được xác nhận.',
+      booking
     });
   } catch (error) {
     console.error('Booking Creation Error:', error);
@@ -225,57 +142,6 @@ router.get('/api/bookings/my-trips', auth, async (req, res) => {
   }
 });
 
-// 17. Owner reports a traffic violation ticket (Phạt nguội)
-router.post('/api/bookings/:id/report-violation', auth, async (req, res) => {
-  try {
-    const { id } = req.params; // bookingId
-    const { amount, description, ticketImageUrl } = req.body;
-
-    if (!amount || !description) {
-      return res.status(400).json({ message: 'Vui lòng cung cấp số tiền phạt và mô tả chi tiết.' });
-    }
-
-    const booking = await db.bookings.findOne({ id });
-    if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
-
-    const car = await db.cars.findOne({ id: booking.carId });
-    // Ensure the person reporting is the owner of the car
-    if (!car || String(car.ownerId) !== String(req.user.id)) {
-      return res.status(403).json({ message: 'Bạn không có quyền báo cáo cho chuyến đi này.' });
-    }
-
-    // Create a dispute/claim of type 'traffic_violation'
-    const newDispute = await db.disputes.create({
-      bookingId: id,
-      renterId: booking.userId,
-      ownerId: req.user.id,
-      type: 'traffic_violation',
-      description: `Chủ xe báo cáo phạt nguội: ${description}`,
-      amount: parseFloat(amount),
-      evidenceUrls: ticketImageUrl ? [ticketImageUrl] : [],
-      status: 'open', // 'open' for admin/cskh review
-    });
-
-    // Notify CSKH
-    await notificationService.notifyCSKH(
-      'Báo cáo phạt nguội mới',
-      `Chủ xe ${req.user.name} vừa báo cáo một phiếu phạt nguội cho chuyến đi #${id}. Vui lòng vào mục "Khiếu nại" để xử lý.`,
-      'DisputeUpdate',
-      newDispute.id,
-      'Dispute'
-    );
-
-    res.status(201).json({
-      message: 'Đã gửi báo cáo phạt nguội thành công. CSKH sẽ xem xét và thông báo đến bạn và người thuê trong thời gian sớm nhất.',
-      dispute: newDispute,
-    });
-
-  } catch (error) {
-    console.error('Error reporting traffic violation:', error);
-    res.status(500).json({ message: 'Lỗi khi gửi báo cáo phạt nguội.' });
-  }
-});
-
 
 
 // 18. Sign Electronic Handover Documents (Biên bản bàn giao Nhận/Trả xe)
@@ -290,6 +156,11 @@ router.put('/api/bookings/:id/handover', auth, async (req, res) => {
 
     const booking = await db.bookings.findOne({ id });
     if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
+
+    // Strict validation: Only allow pickup handover if owner/admin has approved (confirmed status)
+    if (type === 'pickup' && booking.status !== 'confirmed') {
+      return res.status(400).json({ message: 'Chủ xe chưa phê duyệt đơn đặt xe này. Không thể thực hiện bàn giao nhận xe.' });
+    }
 
     const updatedHandover = {
       ...(booking.handoverDocs || { pickup: null, return: null })
@@ -333,45 +204,6 @@ router.put('/api/bookings/:id/handover', auth, async (req, res) => {
         id,
         'Booking'
       );
-<<<<<<< HEAD
-
-      // Tự động phân bổ doanh thu khi chuyến đi hoàn thành (Trả xe)
-      if (type === 'return') {
-        try {
-          const pool = await getPool();
-          // Khách hàng đã trả 70% trực tiếp cho Chủ xe lúc nhận xe.
-          // Tổng doanh thu Chủ xe được hưởng là 90%. 
-          // Do đó, Admin chỉ cần thanh toán nốt 20% (90% - 70%) từ phần cọc 30% đang giữ.
-          const ownerPayout = booking.totalPrice * 0.2; 
-          const adminProfit = booking.totalPrice * 0.1;
-          
-          // Cộng phần tiền còn thiếu vào ví Chủ xe (20%)
-          await pool.request()
-            .input('userId', sql.Int, car.ownerId)
-            .input('bookingId', sql.Int, id)
-            .input('amount', sql.Decimal(18,2), ownerPayout)
-            .input('txnType', sql.VarChar, 'Revenue')
-            .input('description', sql.NVarChar, `Thanh toán 20% cọc còn lại chuyến đi #${id} (Đã nhận 70% tiền mặt)`)
-            .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
-            
-          // Cộng tiền vào ví Admin (Lợi nhuận sàn 10%)
-          const adminRes = await pool.request().query("SELECT TOP 1 u.user_id FROM Users u JOIN UserRole ur ON u.user_id = ur.user_id JOIN Role r ON ur.role_id = r.role_id WHERE r.role_name = 'Admin'");
-          if (adminRes.recordset.length > 0) {
-            const adminId = adminRes.recordset[0].user_id;
-            await pool.request()
-              .input('userId', sql.Int, adminId)
-              .input('bookingId', sql.Int, id)
-              .input('amount', sql.Decimal(18,2), adminProfit)
-              .input('txnType', sql.VarChar, 'Commission')
-              .input('description', sql.NVarChar, `Lợi nhuận sàn 10% từ chuyến đi #${id}`)
-              .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
-          }
-        } catch (err) {
-          console.error('Lỗi tự động đối soát chuyển tiền ví:', err);
-        }
-      }
-=======
->>>>>>> origin/feature/system-audit-and-refund-fixes
     }
 
     res.json({ message: type === 'return' ? 'Đã gửi biên bản trả xe! Vui lòng chờ Chủ xe kiểm tra và xác nhận nhận lại xe.' : 'Bàn giao nhận xe thành công! Chúc bạn có chuyến đi an toàn.', booking: await db.bookings.findOne({ id }) });
