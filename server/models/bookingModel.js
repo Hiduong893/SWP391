@@ -11,9 +11,25 @@ export const mapBookingRow = async (p, row) => {
     `);
   const isOwnerCar = carRes.recordset.length > 0 && carRes.recordset[0].role_name === 'CarOwner';
 
+  const payRes = await p.request().input('bookingId', sql.Int, row.booking_id)
+    .query('SELECT TOP 1 payment_method, status FROM Payment WHERE booking_id = @bookingId ORDER BY created_at DESC');
+  const paymentMethod = payRes.recordset.length > 0 ? payRes.recordset[0].payment_method.toLowerCase() : 'wallet';
+  const rawStatus = payRes.recordset.length > 0 ? payRes.recordset[0].status.toLowerCase() : 'pending';
+  
+  let paymentStatus = rawStatus === 'success' ? 'paid' : rawStatus;
+  if (row.payment_status) {
+    paymentStatus = row.payment_status.toLowerCase();
+  }
+
   let mappedStatus = 'pending';
   if (row.status === 'Pending') {
-    mappedStatus = isOwnerCar ? 'pending_owner' : 'pending';
+    if (paymentStatus === 'pending' && (paymentMethod === 'vietqr' || paymentMethod === 'bank_transfer' || paymentMethod === 'qr')) {
+      mappedStatus = 'pending_cskh';
+    } else {
+      mappedStatus = isOwnerCar ? 'pending_owner' : 'pending';
+    }
+  } else if (row.status === 'PendingCSKH' || row.status === 'Pending_CSKH') {
+    mappedStatus = 'pending_cskh';
   } else if (row.status === 'Approved') {
     mappedStatus = 'confirmed';
   } else if (row.status === 'Active') {
@@ -26,16 +42,6 @@ export const mapBookingRow = async (p, row) => {
     mappedStatus = 'cancelled';
   } else if (row.status === 'Rejected') {
     mappedStatus = 'rejected';
-  }
-
-  const payRes = await p.request().input('bookingId', sql.Int, row.booking_id)
-    .query('SELECT TOP 1 payment_method, status FROM Payment WHERE booking_id = @bookingId ORDER BY created_at DESC');
-  const paymentMethod = payRes.recordset.length > 0 ? payRes.recordset[0].payment_method.toLowerCase() : 'wallet';
-  const rawStatus = payRes.recordset.length > 0 ? payRes.recordset[0].status.toLowerCase() : 'pending';
-  
-  let paymentStatus = rawStatus === 'success' ? 'paid' : rawStatus;
-  if (row.payment_status) {
-    paymentStatus = row.payment_status.toLowerCase();
   }
 
   return {
@@ -81,6 +87,7 @@ export const bookingModel = {
       const dbStatusMap = {
         'pending_owner': 'Pending',
         'pending': 'Pending',
+        'pending_cskh': 'PendingCSKH',
         'confirmed': 'Approved',
         'active': 'Active',
         'completed': 'Completed',
@@ -228,6 +235,7 @@ export const bookingModel = {
       const dbStatusMap = {
         'pending_owner': 'Pending',
         'pending': 'Pending',
+        'pending_cskh': 'PendingCSKH',
         'confirmed': 'Approved',
         'active': 'Active',
         'return_pending_owner': 'ReturnPendingOwner',

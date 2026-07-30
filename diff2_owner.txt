@@ -1,0 +1,158 @@
+﻿diff --git a/client/src/pages/OwnerDashboard/OwnerDashboard.jsx b/client/src/pages/OwnerDashboard/OwnerDashboard.jsx
+index ecbc3979..22561ecb 100644
+--- a/client/src/pages/OwnerDashboard/OwnerDashboard.jsx
++++ b/client/src/pages/OwnerDashboard/OwnerDashboard.jsx
+@@ -1,5 +1,6 @@
+ import React, { useState, useEffect } from 'react';
+-import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, FileWarning, ReceiptText, Camera, Sparkles } from 'lucide-react';
++import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, FileWarning, ReceiptText, Camera, Sparkles, Edit, Trash2, Play, Pause, AlertTriangle } from 'lucide-react';
++import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+ 
+ import { api } from '../../utils/api';
+ import { useToast } from '../../components/Toast';
+@@ -7,6 +8,138 @@ import { ContractModal } from '../../components/ContractModal';
+ import { InspectionModal } from '../../components/InspectionModal';
+ import './OwnerDashboard.css';
+ 
++
++// ====================================================================================
++// INLINE COMPONENT 1: Revenue Chart Modal
++// ====================================================================================
++const RevenueChartModal = ({ isOpen, onClose, data }) => {
++  if (!isOpen) return null;
++
++  const currencyFormatter = (value) => {
++    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}tr`;
++    if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
++    return value;
++  };
++
++  return (
++    <div style={inlineStyles.overlay}>
++      <div style={{...inlineStyles.modal, maxWidth: '800px'}}>
++        <div style={inlineStyles.modalHeader}>
++          <h3 style={inlineStyles.modalTitle}>Biß╗âu ─æß╗ô Doanh thu theo Th├íng - 2026</h3>
++          <button onClick={onClose} style={inlineStyles.closeButton}><X size={20} /></button>
++        </div>
++        <div className="chart-container" style={{ height: '400px' }}>
++          <ResponsiveContainer width="100%" height="100%">
++            <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
++              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
++              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
++              <YAxis tickFormatter={currencyFormatter} tick={{ fontSize: 12 }} />
++              <Tooltip formatter={(value) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)} />
++              <Legend />
++              <Line type="monotone" dataKey="revenue" name="Doanh thu" stroke="#8884d8" strokeWidth={2} activeDot={{ r: 8 }} />
++            </LineChart>
++          </ResponsiveContainer>
++        </div>
++      </div>
++    </div>
++  );
++};
++
++// ====================================================================================
++// INLINE COMPONENT 2: Pause Vehicle Modal
++// ====================================================================================
++const PauseVehicleModal = ({ vehicle, isOpen, onClose, onConfirm }) => {
++  if (!isOpen) return null;
++  const [reason, setReason] = useState('Bß║úo d╞░ß╗íng ─æß╗ïnh kß╗│');
++  const [duration, setDuration] = useState('');
++
++  const handleConfirm = () => {
++    onConfirm();
++    onClose();
++  };
++
++  return (
++    <div style={inlineStyles.overlay}>
++      <div style={{...inlineStyles.modal, maxWidth: '450px'}}>
++        <h3 style={{...inlineStyles.modalTitle, display: 'flex', alignItems: 'center' }}><AlertTriangle size={20} style={{ marginRight: 8, color: '#f59e0b' }} />Tß║ím dß╗½ng cho thu├¬ xe</h3>
++        <p style={inlineStyles.modalText}>Bß║ín sß║»p tß║ím dß╗½ng cho thu├¬ xe <strong>{vehicle.model}</strong>. Vui l├▓ng cung cß║Ñp l├╜ do.</p>
++        <div style={inlineStyles.formGroup}>
++          <label style={inlineStyles.label}>L├╜ do tß║ím dß╗½ng</label>
++          <select value={reason} onChange={(e) => setReason(e.target.value)} style={inlineStyles.input}>
++            <option>Bß║úo d╞░ß╗íng ─æß╗ïnh kß╗│</option> <option>Sß╗¡a chß╗»a h╞░ hß╗Ång</option>
++            <option>Sß╗¡ dß╗Ñng cho mß╗Ñc ─æ├¡ch c├í nh├ón</option> <option>L├╜ do kh├íc</option>
++          </select>
++        </div>
++        <div style={inlineStyles.formGroup}>
++          <label style={inlineStyles.label}>Tß║ím dß╗½ng ─æß║┐n ng├áy (bß╗Å trß╗æng nß║┐u v├┤ hß║ín)</label>
++          <input type="date" value={duration} onChange={(e) => setDuration(e.target.value)} style={inlineStyles.input} />
++        </div>
++        <div style={inlineStyles.modalActions}>
++          <button onClick={onClose} style={{ ...inlineStyles.button, ...inlineStyles.buttonSecondary }}>Hß╗ºy</button>
++          <button onClick={handleConfirm} style={{ ...inlineStyles.button, ...inlineStyles.buttonPrimary }}>X├íc nhß║¡n Tß║ím dß╗½ng</button>
++        </div>
++      </div>
++    </div>
++  );
++};
++
++// ====================================================================================
++// INLINE COMPONENT 3: Owner Vehicle Table
++// ====================================================================================
++const OwnerVehicleTable = ({ vehicles = [], onEdit, onDelete, onToggleStatus, onPauseClick }) => {
++  const StatusBadge = ({ status }) => {
++    const statusMap = {
++      available: { label: 'Sß║╡n s├áng', styles: { background: '#dcfce7', color: '#166534' } },
++      rented: { label: '─Éang thu├¬', styles: { background: '#dbeafe', color: '#1e40af' } },
++      inactive: { label: 'Tß║ím dß╗½ng', styles: { background: '#f1f5f9', color: '#475569' } },
++      pending_moderation: { label: 'Chß╗¥ duyß╗çt', styles: { background: '#fef9c3', color: '#92400e' } },
++      rejected: { label: 'Bß╗ï tß╗½ chß╗æi', styles: { background: '#fee2e2', color: '#991b1b' } },
++    };
++    const { label, styles: badgeStyles } = statusMap[status] || { label: status, styles: {} };
++    return <span style={{ ...inlineStyles.badge, ...badgeStyles }}>{label}</span>;
++  };
++
++  return (
++    <div style={inlineStyles.tableContainer}>
++      <table style={inlineStyles.table}>
++        <thead>
++          <tr>
++            <th style={inlineStyles.th}>Ph╞░╞íng tiß╗çn</th>
++            <th style={inlineStyles.th}>─É╞ín gi├í / ng├áy</th>
++            <th style={inlineStyles.th}>Trß║íng th├íi</th>
++            <th style={inlineStyles.th}>H├ánh ─æß╗Öng</th>
++          </tr>
++        </thead>
++        <tbody>
++          {vehicles.map((vehicle) => (
++            <tr key={vehicle.id}>
++              <td style={inlineStyles.td}>
++                <div style={{ display: 'flex', alignItems: 'center' }}>
++                  <img src={vehicle.image} alt={vehicle.model} style={inlineStyles.vehicleImage} />
++                  <span style={{ fontWeight: '600' }}>{vehicle.brand} {vehicle.model}</span>
++                </div>
++              </td>
++              <td style={{...inlineStyles.td, fontWeight: '600', color: 'var(--accent-primary)'}}>{new Intl.NumberFormat('vi-VN').format(vehicle.pricePerDay)}─æ</td>
++              <td style={inlineStyles.td}><StatusBadge status={vehicle.status} /></td>
++              <td style={inlineStyles.td}>
++                <div style={inlineStyles.actions}>
++                  {vehicle.status === 'available' && (
++                    <button onClick={() => onPauseClick(vehicle)} style={{ ...inlineStyles.actionButton, ...inlineStyles.pauseButton }} title="Tß║ím dß╗½ng cho thu├¬"><Pause size={16} /></button>
++                  )}
++                  {vehicle.status === 'inactive' && (
++                    <button onClick={() => onToggleStatus(vehicle.id, vehicle.status)} style={{ ...inlineStyles.actionButton, ...inlineStyles.playButton }} title="Cho thu├¬ lß║íi"><Play size={16} /></button>
++                  )}
++                  <button onClick={() => onEdit(vehicle)} style={{ ...inlineStyles.actionButton, ...inlineStyles.editButton }} title="Sß╗¡a th├┤ng tin xe"><Edit size={16} /></button>
++                  <button onClick={() => onDelete(vehicle.id, `${vehicle.brand} ${vehicle.model}`)} style={{ ...inlineStyles.actionButton, ...inlineStyles.deleteButton }} title="X├│a xe"><Trash2 size={16} /></button>
++                </div>
++              </td>
++            </tr>
++          ))}
++        </tbody>
++      </table>
++    </div>
++  );
++};
+ export const OwnerDashboard = ({ setCurrentTab, user }) => {
+   const [activeSubTab, setActiveSubTab] = useState('stats'); // stats, my-cars
+   const [loading, setLoading] = useState(false);
+@@ -879,4 +1012,4 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
+       </div>
+     </div>
+   );
+-};
++};
+\ No newline at end of file

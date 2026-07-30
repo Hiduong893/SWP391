@@ -11,7 +11,7 @@ const router = express.Router();
 // 15. POST Booking (Đặt xe & Đặt cọc)
 router.post('/api/bookings', auth, async (req, res) => {
   try {
-    const { carId, pickupDate, returnDate, pickupLocation, totalPrice, rentalPriceForOwner, paymentMethod, scannedFace, contractSignature, agreementChecked } = req.body;
+    const { carId, pickupDate, returnDate, pickupLocation, totalPrice, rentalPriceForOwner, paymentMethod, scannedFace, contractSignature, agreementChecked, faceVerificationSkipped } = req.body;
 
     if (!carId || !pickupDate || !returnDate || !pickupLocation || !totalPrice) {
       return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ thông tin đặt xe.' });
@@ -83,7 +83,7 @@ router.post('/api/bookings', auth, async (req, res) => {
         );
 
         // 2. Thông báo cho Chủ xe (nếu là xe của owner thực sự)
-        if (car.ownerId) {
+        if (car.ownerId && booking.status !== 'pending_cskh') {
           await notificationService.createNotification(
             car.ownerId,
             'Yêu cầu đặt xe mới',

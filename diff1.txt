@@ -1,0 +1,900 @@
+﻿diff --git a/client/src/App.jsx b/client/src/App.jsx
+index 08e6f3ac..759493a7 100644
+--- a/client/src/App.jsx
++++ b/client/src/App.jsx
+@@ -24,6 +24,7 @@ import { CSKHSupportWidget } from './components/CSKHSupportWidget';
+ import { Blog } from './pages/Blog/Blog';
+ import { BlogDetail } from './pages/Blog/BlogDetail';
+ import { Recruitment } from './pages/Recruitment/Recruitment';
++import { CartDrawer } from './components/CartDrawer';
+ 
+ import { api } from './utils/api';
+ import { useToast } from './components/Toast';
+@@ -43,6 +44,22 @@ function App() {
+   const [activeBooking, setActiveBooking] = useState(null);
+   const [searchParams, setSearchParams] = useState(null);
+ 
++  const [isCartOpen, setIsCartOpen] = useState(false);
++  const [cartItems, setCartItems] = useState(() => {
++    try {
++      const saved = localStorage.getItem('vivucar_cart');
++      return saved ? JSON.parse(saved) : [];
++    } catch (e) {
++      return [];
++    }
++  });
++
++  const addToCart = (item) => {
++    const updated = [...cartItems, item];
++    setCartItems(updated);
++    localStorage.setItem('vivucar_cart', JSON.stringify(updated));
++  };
++
+   const [systemConfig, setSystemConfig] = useState(null);
+ 
+   // Parse currentTab from URL path for Navbar highlighting
+@@ -230,6 +247,8 @@ function App() {
+           setCurrentTab={setCurrentTab}
+           authModal={authModal}
+           setAuthModal={setAuthModal}
++          onOpenCart={() => setIsCartOpen(true)}
++          cartCount={cartItems.length}
+         />
+       )}
+ 
+@@ -430,9 +449,25 @@ function App() {
+           onUpdateUser={setUser}
+           onClose={() => setActiveBooking(null)}
+           setCurrentTab={setCurrentTab}
++          onAddToCart={(cartItem) => {
++            addToCart(cartItem);
++            setActiveBooking(null);
++            setIsCartOpen(true);
++          }}
+         />
+       )}
+ 
++      {/* --- MULTI-CAR SHOPPING CART DRAWER --- */}
++      <CartDrawer
++        isOpen={isCartOpen}
++        onClose={() => setIsCartOpen(false)}
++        cartItems={cartItems}
++        setCartItems={setCartItems}
++        onCheckoutSuccess={() => {
++          navigate('/my-trips');
++        }}
++      />
++
+       {/* --- AI SUPPORT CHATBOT WIDGET --- */}
+       <ChatbotWidget user={user} setCurrentTab={setCurrentTab} />
+ 
+diff --git a/client/src/components/BookingModal.jsx b/client/src/components/BookingModal.jsx
+index fcabd150..9c193ed1 100644
+--- a/client/src/components/BookingModal.jsx
++++ b/client/src/components/BookingModal.jsx
+@@ -4,7 +4,7 @@ import { api } from '../utils/api';
+ import { useToast } from './Toast';
+ import { ContractModal } from './ContractModal';
+ 
+-export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setCurrentTab }) => {
++export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setCurrentTab, onAddToCart }) => {
+   const [step, setStep] = useState(1); // 1: Confirmation & License, 2: Payment, 3: Success, 'face_scan': Face Scanner, 'contract': Hß╗úp ─æß╗ông
+   const [loading, setLoading] = useState(false);
+   const [licenseUploading, setLicenseUploading] = useState(false);
+@@ -456,6 +456,7 @@ Hß╗úp ─æß╗ông ─æiß╗çn tß╗¡ n├áy ─æ╞░ß╗úc x├íc thß╗▒c v├á ─æ├│ng dß║Ñu k├╜ sß╗æ b
+   const totalPrice = Math.max(0, basePrice - voucherDiscountAmount + insurancePrice + serviceFee + deliveryFee);
+   const reservationFee = Math.round(totalPrice * 0.3);
+   const totalPayment = totalPrice; // No deposit fee
++
+   // Determine display and submission location with robust fallbacks
+   const isCityOnly = (addr) => {
+     if (!addr) return true;
+@@ -649,7 +650,12 @@ Hß╗úp ─æß╗ông ─æiß╗çn tß╗¡ n├áy ─æ╞░ß╗úc x├íc thß╗▒c v├á ─æ├│ng dß║Ñu k├╜ sß╗æ b
+ 
+   const remainingPayment = totalPrice - reservationFee;
+ 
+-  const vietQrUrl = `https://img.vietqr.io/image/${sysConfig.bankId}-${sysConfig.bankAccountNumber}-compact.png?amount=${reservationFee}&addInfo=${encodeURIComponent(`THUEXE ${car.brand} ${bookingId}`)}&accountName=${encodeURIComponent(sysConfig.bankAccountHolder)}`;
++  let bankCode = (sysConfig?.bankId || 'MB').toUpperCase();
++  if (bankCode === 'MBBANK') bankCode = 'MB';
++  if (bankCode === 'VIETCOMBANK') bankCode = 'VCB';
++  if (bankCode === 'VIETINBANK') bankCode = 'ICB';
++
++  const vietQrUrl = `https://img.vietqr.io/image/${bankCode}-${sysConfig?.bankAccountNumber || '1900533588'}-compact2.png?amount=${reservationFee}&addInfo=${encodeURIComponent(`THUEXE ${car.brand} ${bookingId}`)}&accountName=${encodeURIComponent(sysConfig?.bankAccountHolder || 'VIVUCAR SYSTEM')}`;
+ 
+   return (
+     <>
+@@ -1367,7 +1373,7 @@ Hß╗úp ─æß╗ông ─æiß╗çn tß╗¡ n├áy ─æ╞░ß╗úc x├íc thß╗▒c v├á ─æ├│ng dß║Ñu k├╜ sß╗æ b
+             </div>
+ 
+             {/* Step 2 Footer Action */}
+-            <div className="booking-modal-footer mt-6" style={{ marginTop: '24px' }}>
++            <div className="booking-modal-footer mt-6" style={{ marginTop: '24px', display: 'flex', gap: '12px', justifyContent: 'flex-end', alignItems: 'center' }}>
+               <button 
+                 type="button" 
+                 className="btn btn-secondary" 
+@@ -1376,6 +1382,31 @@ Hß╗úp ─æß╗ông ─æiß╗çn tß╗¡ n├áy ─æ╞░ß╗úc x├íc thß╗▒c v├á ─æ├│ng dß║Ñu k├╜ sß╗æ b
+               >
+                 Quay lß║íi
+               </button>
++
++              <button
++                type="button"
++                className="btn btn-secondary"
++                style={{ background: '#eff6ff', color: '#2563eb', border: '1.5px solid #60a5fa', fontWeight: '700', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer' }}
++                onClick={() => {
++                  if (onAddToCart) {
++                    onAddToCart({
++                      carId: car.id,
++                      carName: `${car.brand} ${car.model}`,
++                      carImage: car.image,
++                      pickupDate: `${pickupDate}T${pickupTime}:00`,
++                      returnDate: `${returnDate}T${returnTime}:00`,
++                      pickupLocation: displayLocation || pickupLocation || car.address || 'B├úi xe Chß╗º xe',
++                      totalPrice: totalPayment,
++                      rentalPrice: Math.round(totalPayment * 0.9),
++                      platformFee: Math.round(totalPayment * 0.1)
++                    });
++                    showToast(`─É├ú th├¬m ${car.brand} ${car.model} v├áo giß╗Å h├áng!`, 'success');
++                  }
++                }}
++              >
++                ≡ƒ¢Æ Th├¬m v├áo giß╗Å xe
++              </button>
++
+               <button
+                 type="button"
+                 className="btn btn-primary"
+diff --git a/client/src/components/CartDrawer.jsx b/client/src/components/CartDrawer.jsx
+new file mode 100644
+index 00000000..7d455b1c
+--- /dev/null
++++ b/client/src/components/CartDrawer.jsx
+@@ -0,0 +1,285 @@
++import React, { useState } from 'react';
++import { ShoppingBag, Trash2, ShieldCheck, ArrowRight, Wallet, QrCode, X } from 'lucide-react';
++import { api } from '../utils/api';
++import { useToast } from './Toast';
++
++export const CartDrawer = ({ isOpen, onClose, cartItems = [], setCartItems, onCheckoutSuccess }) => {
++  const { showToast } = useToast();
++  const [paymentMethod, setPaymentMethod] = useState('wallet');
++  const [loading, setLoading] = useState(false);
++  const [vietqrModalData, setVietqrModalData] = useState(null);
++
++  const formatCurrency = (amount) => {
++    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
++  };
++
++  const removeFromCart = (index) => {
++    const safeCart = Array.isArray(cartItems) ? cartItems : [];
++    const updated = safeCart.filter((_, i) => i !== index);
++    if (setCartItems) setCartItems(updated);
++    localStorage.setItem('vivucar_cart', JSON.stringify(updated));
++    showToast('─É├ú x├│a xe khß╗Åi giß╗Å h├áng.', 'info');
++  };
++
++  const clearCart = () => {
++    if (setCartItems) setCartItems([]);
++    localStorage.removeItem('vivucar_cart');
++  };
++
++  const safeCart = Array.isArray(cartItems) ? cartItems : [];
++  const totalAmount = safeCart.reduce((sum, item) => sum + Number(item?.totalPrice || 0), 0);
++  const depositTotal = Math.round(totalAmount * 0.3);
++
++  const handleGroupCheckout = async () => {
++    if (safeCart.length === 0) {
++      showToast('Giß╗Å h├áng cß╗ºa bß║ín ─æang trß╗æng.', 'error');
++      return;
++    }
++
++    setLoading(true);
++    try {
++      const res = await api.bookings.groupCheckout(safeCart, paymentMethod);
++      showToast(res.message, 'success');
++      clearCart();
++      if (res.vietqr) {
++        setVietqrModalData(res.vietqr);
++      } else {
++        onClose();
++        if (onCheckoutSuccess) onCheckoutSuccess(res.groupId);
++      }
++    } catch (err) {
++      showToast(err.message || 'Lß╗ùi thanh to├ín cß╗ìc giß╗Å h├áng.', 'error');
++    } finally {
++      setLoading(false);
++    }
++  };
++
++  if (!isOpen) return null;
++
++  return (
++    <div className="cm2-overlay" onClick={onClose} style={{ zIndex: 9999 }}>
++      <div 
++        className="cm2-wrap" 
++        onClick={e => e.stopPropagation()} 
++        style={{ 
++          maxWidth: '540px', 
++          width: '100%', 
++          borderRadius: '20px', 
++          padding: '24px', 
++          background: '#fff',
++          textAlign: 'left',
++          boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
++        }}
++      >
++        {/* Header */}
++        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #f1f5f9', paddingBottom: '14px' }}>
++          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
++            <div style={{ background: '#eff6ff', padding: '10px', borderRadius: '12px', color: '#2563eb' }}>
++              <ShoppingBag size={22} />
++            </div>
++            <div>
++              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>Giß╗Å Thu├¬ Xe Cß╗ºa Bß║ín ({cartItems.length})</h3>
++              <span style={{ fontSize: '12px', color: '#64748b' }}>Thanh to├ín 1 lß║ºn 30% cß╗ìc cho tß║Ñt cß║ú xe</span>
++            </div>
++          </div>
++          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
++            {safeCart.length > 0 && (
++              <button 
++                type="button" 
++                onClick={() => { clearCart(); showToast('─É├ú l├ám sß║ích giß╗Å h├áng.', 'info'); }}
++                style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '8px', padding: '5px 10px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
++              >
++                X├│a giß╗Å h├áng
++              </button>
++            )}
++            <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }} onClick={onClose}>
++              <X size={22} />
++            </button>
++          </div>
++        </div>
++
++        {/* Cart Item List */}
++        {cartItems.length === 0 ? (
++          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
++            <ShoppingBag size={48} style={{ opacity: 0.3, marginBottom: '12px' }} />
++            <p style={{ fontSize: '14px', margin: 0 }}>Giß╗Å h├áng ch╞░a c├│ xe n├áo. H├úy chß╗ìn xe bß║ín th├¡ch!</p>
++          </div>
++        ) : (
++          <>
++            <div style={{ maxHeight: '280px', overflowY: 'auto', marginBottom: '20px', paddingRight: '4px' }}>
++              {cartItems.map((item, idx) => (
++                <div 
++                  key={idx} 
++                  style={{ 
++                    display: 'flex', 
++                    gap: '14px', 
++                    alignItems: 'center', 
++                    padding: '12px', 
++                    background: '#f8fafc', 
++                    borderRadius: '14px', 
++                    marginBottom: '10px',
++                    border: '1px solid #e2e8f0'
++                  }}
++                >
++                  <img 
++                    src={item.carImage || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80'} 
++                    alt={item.carName} 
++                    style={{ width: '70px', height: '50px', objectFit: 'cover', borderRadius: '8px' }}
++                  />
++                  <div style={{ flex: 1 }}>
++                    <h5 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>{item.carName}</h5>
++                    <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginTop: '2px' }}>
++                      ≡ƒôà {item.pickupDate ? new Date(item.pickupDate).toLocaleDateString('vi-VN') : ''} Γ₧ö {item.returnDate ? new Date(item.returnDate).toLocaleDateString('vi-VN') : ''}
++                    </span>
++                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#2563eb', marginTop: '2px', display: 'block' }}>
++                      {formatCurrency(item.totalPrice)} (Cß╗ìc 30%: {formatCurrency(Math.round(item.totalPrice * 0.3))})
++                    </span>
++                  </div>
++                  <button 
++                    onClick={() => removeFromCart(idx)} 
++                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '6px' }}
++                    title="X├│a xe n├áy khß╗Åi giß╗Å"
++                  >
++                    <Trash2 size={16} />
++                  </button>
++                </div>
++              ))}
++            </div>
++
++            {/* Total summary */}
++            <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '14px', padding: '16px', marginBottom: '20px' }}>
++              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#0369a1', marginBottom: '6px' }}>
++                <span>Tß╗òng gi├í trß╗ï to├án giß╗Å thu├¬:</span>
++                <strong>{formatCurrency(totalAmount)}</strong>
++              </div>
++              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 800, color: '#0284c7' }}>
++                <span>Tß╗òng tiß╗ün Cß╗îC 30% phß║úi trß║ú:</span>
++                <span>{formatCurrency(depositTotal)}</span>
++              </div>
++            </div>
++
++            {/* Payment options */}
++            <p style={{ fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '10px' }}>Ph╞░╞íng thß╗⌐c thanh to├ín cß╗ìc giß╗Å xe:</p>
++            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
++              <button
++                type="button"
++                style={{
++                  padding: '12px', borderRadius: '12px',
++                  border: paymentMethod === 'wallet' ? '2px solid #2563eb' : '1px solid #cbd5e1',
++                  background: paymentMethod === 'wallet' ? 'rgba(37,99,235,0.08)' : '#fff',
++                  color: paymentMethod === 'wallet' ? '#2563eb' : '#475569',
++                  fontWeight: 700, fontSize: '12px', cursor: 'pointer', textAlign: 'center',
++                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px'
++                }}
++                onClick={() => setPaymentMethod('wallet')}
++              >
++                <Wallet size={18} />
++                V├¡ ViVuCar
++              </button>
++
++              <button
++                type="button"
++                style={{
++                  padding: '12px', borderRadius: '12px',
++                  border: paymentMethod === 'vietqr' ? '2px solid #10b981' : '1px solid #cbd5e1',
++                  background: paymentMethod === 'vietqr' ? 'rgba(16,185,129,0.08)' : '#fff',
++                  color: paymentMethod === 'vietqr' ? '#10b981' : '#475569',
++                  fontWeight: 700, fontSize: '12px', cursor: 'pointer', textAlign: 'center',
++                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px'
++                }}
++                onClick={() => setPaymentMethod('vietqr')}
++              >
++                <QrCode size={18} />
++                M├ú VietQR
++              </button>
++            </div>
++
++            {/* Action buttons */}
++            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
++              <button
++                type="button"
++                onClick={onClose}
++                style={{ padding: '10px 18px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#fff', color: '#64748b', fontWeight: 600, cursor: 'pointer' }}
++              >
++                ─É├│ng
++              </button>
++              <button
++                type="button"
++                disabled={loading}
++                onClick={handleGroupCheckout}
++                style={{
++                  padding: '10px 24px', borderRadius: '10px', border: 'none',
++                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff',
++                  fontWeight: 700, fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 14px rgba(37,99,235,0.3)',
++                  display: 'flex', alignItems: 'center', gap: '8px'
++                }}
++              >
++                {loading ? '─Éang xß╗¡ l├╜...' : `Thanh To├ín Cß╗ìc ${formatCurrency(depositTotal)}`}
++                <ArrowRight size={16} />
++              </button>
++            </div>
++          </>
++        )}
++      </div>
++
++      {/* VietQR Group Deposit Transfer Modal */}
++      {vietqrModalData && (
++        <div className="cm2-overlay" onClick={() => { setVietqrModalData(null); onClose(); if (onCheckoutSuccess) onCheckoutSuccess(); }} style={{ zIndex: 10000 }}>
++          <div className="cm2-wrap text-center" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px', padding: '24px', borderRadius: '20px', background: '#fff', textAlign: 'left' }}>
++            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
++              <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1e293b' }}>≡ƒô▒ Qu├⌐t M├ú VietQR Chuyß╗ân Khoß║ún Cß╗ìc</h4>
++              <button style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#94a3b8' }} onClick={() => { setVietqrModalData(null); onClose(); if (onCheckoutSuccess) onCheckoutSuccess(); }}>Γ£ò</button>
++            </div>
++
++            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', marginBottom: '16px' }}>
++              <img 
++                src={vietqrModalData.qrUrl} 
++                alt="M├ú VietQR Chuyß╗ân khoß║ún cß╗ìc" 
++                style={{ width: '220px', height: '220px', objectFit: 'contain', display: 'block', margin: '0 auto 12px auto', borderRadius: '12px', border: '1px solid #cbd5e1' }}
++              />
++
++              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>
++                <span>Ng├ón h├áng:</span>
++                <strong>{vietqrModalData.bankName}</strong>
++              </div>
++              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>
++                <span>Sß╗æ t├ái khoß║ún:</span>
++                <strong>{vietqrModalData.accountNumber}</strong>
++              </div>
++              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>
++                <span>Chß╗º t├ái khoß║ún:</span>
++                <strong>{vietqrModalData.accountHolder}</strong>
++              </div>
++              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>
++                <span>Nß╗Öi dung chuyß╗ân khoß║ún:</span>
++                <strong style={{ color: '#2563eb', fontFamily: 'monospace' }}>{vietqrModalData.transferContent}</strong>
++              </div>
++              <hr style={{ margin: '8px 0', borderColor: '#cbd5e1' }} />
++              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 800, color: '#059669' }}>
++                <span>Sß╗æ tiß╗ün cß╗ìc 30%:</span>
++                <span>{formatCurrency(vietqrModalData.amount)}</span>
++              </div>
++            </div>
++
++            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '12px', fontSize: '12px', color: '#1e40af', marginBottom: '16px', lineHeight: 1.5, textAlign: 'left' }}>
++              ≡ƒÆí CSKH ViVuCar sß║╜ tß╗▒ ─æß╗Öng kiß╗âm tra sß╗æ d╞░ v├á chuyß╗ân trß║íng th├íi ─æ╞ín sang <strong>─É├ú ─æß║╖t cß╗ìc (Paid)</strong> trong v├▓ng 1-3 ph├║t sau khi nhß║¡n tiß╗ün!
++            </div>
++
++            <button
++              type="button"
++              className="btn btn-primary"
++              style={{ width: '100%', padding: '12px', borderRadius: '12px', background: '#2563eb', border: 'none', color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}
++              onClick={() => {
++                setVietqrModalData(null);
++                onClose();
++                if (onCheckoutSuccess) onCheckoutSuccess();
++              }}
++            >
++              T├┤i ─É├ú Chuyß╗ân Khoß║ún Xong
++            </button>
++          </div>
++        </div>
++      )}
++    </div>
++  );
++};
+diff --git a/client/src/components/Navbar.jsx b/client/src/components/Navbar.jsx
+index 754f5579..4448dc29 100644
+--- a/client/src/components/Navbar.jsx
++++ b/client/src/components/Navbar.jsx
+@@ -1,9 +1,9 @@
+ import React, { useState, useEffect, useRef } from 'react';
+-import { ShieldCheck, LogOut, User, Key, Car, PlusCircle, Compass, BookOpen, Briefcase, Bell } from 'lucide-react';
++import { ShieldCheck, LogOut, User, Key, Car, PlusCircle, Compass, BookOpen, Briefcase, Bell, ShoppingBag } from 'lucide-react';
+ import { useToast } from './Toast';
+ import { api } from '../utils/api';
+ 
+-export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, setAuthModal }) => {
++export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, setAuthModal, onOpenCart, cartCount }) => {
+   const { showToast } = useToast();
+ 
+   const [notifications, setNotifications] = useState([]);
+@@ -172,6 +172,17 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, s
+ 
+           {user ? (
+             <div className="nav-user-area">
++              {/* Cart Drawer Trigger */}
++              <button
++                className="nav-notification-btn"
++                onClick={onOpenCart}
++                title="Giß╗Å thu├¬ xe"
++                style={{ position: 'relative', marginRight: '6px' }}
++              >
++                <ShoppingBag size={18} />
++                {cartCount > 0 && <span className="nav-notification-badge" style={{ background: '#2563eb' }}>{cartCount}</span>}
++              </button>
++
+               <div className="nav-notification-container" ref={dropdownRef}>
+                 <button
+                   className={`nav-notification-btn ${unreadCount > 0 ? 'has-unread' : ''}`}
+diff --git a/client/src/pages/MyTrips/MyTrips.jsx b/client/src/pages/MyTrips/MyTrips.jsx
+index 4c74cd3a..5607544f 100644
+--- a/client/src/pages/MyTrips/MyTrips.jsx
++++ b/client/src/pages/MyTrips/MyTrips.jsx
+@@ -374,6 +374,12 @@ Hß╗úp ─æß╗ông ─æiß╗çn tß╗¡ n├áy ─æ╞░ß╗úc x├íc thß╗▒c v├á ─æ├│ng dß║Ñu k├╜ sß╗æ b
+ 
+                 {/* Content */}
+                 <div className="trip-card-body">
++                  {trip.groupId && (
++                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.3)', borderRadius: '6px', padding: '2px 8px', fontSize: '11px', fontWeight: 700, color: '#2563eb', marginBottom: '6px' }}>
++                      <span>≡ƒ¢ì∩╕Å Giß╗Å ─æß║╖t xe #{trip.groupId}</span>
++                      <span>ΓÇó ─É╞ín xe con #{trip.id}</span>
++                    </div>
++                  )}
+                   <div className="trip-card-header">
+                     <div>
+                       <span className="trip-brand-lbl">{car.brand}</span>
+diff --git a/client/src/utils/api.js b/client/src/utils/api.js
+index 473f6767..194c08b1 100644
+--- a/client/src/utils/api.js
++++ b/client/src/utils/api.js
+@@ -214,6 +214,12 @@ export const api = {
+         method: 'POST',
+         body: JSON.stringify(bookingData)
+       }),
++
++    groupCheckout: (items, paymentMethod) =>
++      request('/bookings/group-checkout', {
++        method: 'POST',
++        body: JSON.stringify({ items, paymentMethod })
++      }),
+       
+     createVnpayUrl: (bookingId) =>
+       request('/payments/vnpay/create', {
+diff --git a/server/config/db.js b/server/config/db.js
+index 913ec55a..025ea514 100644
+--- a/server/config/db.js
++++ b/server/config/db.js
+@@ -255,6 +255,28 @@ export const getPool = async () => {
+             ALTER TABLE Booking DROP CONSTRAINT CHK_Booking_Status;
+             ALTER TABLE Booking ADD CONSTRAINT CHK_Booking_Status CHECK (status IN ('Pending', 'Approved', 'Active', 'ReturnPendingOwner', 'Completed', 'Cancelled', 'Rejected', 'Disputed'));
+         END
++
++        -- Create BookingGroup table if not exists
++        IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'BookingGroup')
++        BEGIN
++            CREATE TABLE BookingGroup (
++                group_id INT IDENTITY(1,1) PRIMARY KEY,
++                renter_id INT NOT NULL,
++                total_amount DECIMAL(18,2) NOT NULL,
++                deposit_total DECIMAL(18,2) NOT NULL,
++                group_status NVARCHAR(50) NOT NULL DEFAULT 'Pending',
++                payment_method NVARCHAR(50) NULL,
++                created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
++                CONSTRAINT FK_BookingGroup_User FOREIGN KEY (renter_id) REFERENCES [User](user_id)
++            );
++        END
++
++        -- Add group_id column to Booking if missing
++        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Booking') AND name = 'group_id')
++        BEGIN
++            ALTER TABLE Booking ADD group_id INT NULL;
++            ALTER TABLE Booking ADD CONSTRAINT FK_Booking_BookingGroup FOREIGN KEY (group_id) REFERENCES BookingGroup(group_id);
++        END
+       `);
+       
+ 
+diff --git a/server/debug_error.log b/server/debug_error.log
+index cc0e62b4..ed1c264c 100644
+--- a/server/debug_error.log
++++ b/server/debug_error.log
+@@ -1,11 +1,11 @@
+ RequestError: The INSERT statement conflicted with the CHECK constraint "CHK_Payment_Amount". The conflict occurred in database "CarRentalPlatform", table "dbo.Payment", column 'amount'.
+-    at handleError (D:\LEARN\SE V SU26\SWP391\Project SU26\SWP391\server\node_modules\mssql\lib\tedious\request.js:411:15)
+-    at Connection.emit (node:events:509:28)
+-    at Connection.emit (D:\LEARN\SE V SU26\SWP391\Project SU26\SWP391\server\node_modules\tedious\lib\connection.js:1013:18)
+-    at RequestTokenHandler.onErrorMessage (D:\LEARN\SE V SU26\SWP391\Project SU26\SWP391\server\node_modules\tedious\lib\token\handler.js:285:21)
+-    at Readable.<anonymous> (D:\LEARN\SE V SU26\SWP391\Project SU26\SWP391\server\node_modules\tedious\lib\token\token-stream-parser.js:19:33)
+-    at Readable.emit (node:events:509:28)
+-    at addChunk (node:internal/streams/readable:563:12)
+-    at readableAddChunkPushObjectMode (node:internal/streams/readable:540:3)
+-    at Readable.push (node:internal/streams/readable:395:5)
++    at handleError (E:\2_UNIVERSITY\5_KY5\SWP391\SWP391\server\node_modules\mssql\lib\tedious\request.js:411:15)
++    at Connection.emit (node:events:509:20)
++    at Connection.emit (E:\2_UNIVERSITY\5_KY5\SWP391\SWP391\server\node_modules\tedious\lib\connection.js:1013:18)
++    at RequestTokenHandler.onErrorMessage (E:\2_UNIVERSITY\5_KY5\SWP391\SWP391\server\node_modules\tedious\lib\token\handler.js:285:21)
++    at Readable.<anonymous> (E:\2_UNIVERSITY\5_KY5\SWP391\SWP391\server\node_modules\tedious\lib\token\token-stream-parser.js:19:33)
++    at Readable.emit (node:events:509:20)
++    at addChunk (node:internal/streams/readable:568:12)
++    at readableAddChunkPushObjectMode (node:internal/streams/readable:545:3)
++    at Readable.push (node:internal/streams/readable:400:5)
+     at nextAsync (node:internal/streams/from:205:22)
+\ No newline at end of file
+diff --git a/server/models/bookingModel.js b/server/models/bookingModel.js
+index 05c9e6e9..29db26b6 100644
+--- a/server/models/bookingModel.js
++++ b/server/models/bookingModel.js
+@@ -40,6 +40,7 @@ export const mapBookingRow = async (p, row) => {
+ 
+   return {
+     id: String(row.booking_id),
++    groupId: row.group_id ? String(row.group_id) : null,
+     userId: String(row.renter_id),
+     carId: String(row.vehicle_id),
+     pickupDate: row.start_datetime ? new Date(row.start_datetime).toISOString() : '',
+@@ -151,19 +152,32 @@ export const bookingModel = {
+       }
+     }
+ 
+-    // Append time segments to ensure end_datetime > start_datetime even for same-day rentals
+-    const pickupDateTime = bookingData.pickupDate.includes(' ')
+-      ? bookingData.pickupDate
+-      : `${bookingData.pickupDate} 09:00:00`;
+-    const returnDateTime = bookingData.returnDate.includes(' ')
+-      ? bookingData.returnDate
+-      : `${bookingData.returnDate} 21:00:00`;
++    // Helper to format date strings cleanly for SQL Server DATETIME2
++    const formatDateForSql = (dtStr, fallbackTime = '09:00:00') => {
++      if (!dtStr) return new Date().toISOString().replace('T', ' ').split('.')[0];
++      const str = String(dtStr).trim();
++      if (str.includes('T')) {
++        const parts = str.split('T');
++        const datePart = parts[0];
++        const timePart = parts[1] ? parts[1].split('.')[0].substring(0, 8) : fallbackTime;
++        return `${datePart} ${timePart}`;
++      }
++      if (str.includes(' ')) {
++        return str.split('.')[0];
++      }
++      return `${str} ${fallbackTime}`;
++    };
++
++    const pickupDateTime = formatDateForSql(bookingData.pickupDate, '09:00:00');
++    const returnDateTime = formatDateForSql(bookingData.returnDate, '21:00:00');
+ 
+     const contractDetailsStr = bookingData.contractDetails ? JSON.stringify(bookingData.contractDetails) : null;
++    const groupId = bookingData.groupId ? parseInt(bookingData.groupId) : null;
+ 
+     const request = p.request()
+       .input('renterId', sql.Int, renterId)
+       .input('vehicleId', sql.Int, vehicleId)
++      .input('groupId', sql.Int, groupId)
+       .input('pickupDate', sql.VarChar, pickupDateTime)
+       .input('returnDate', sql.VarChar, returnDateTime)
+       .input('pickupLocation', sql.NVarChar, bookingData.pickupLocation)
+@@ -175,9 +189,9 @@ export const bookingModel = {
+       .input('contractDetails', sql.NVarChar, contractDetailsStr);
+ 
+     const insertBookingQuery = `
+-      INSERT INTO Booking (renter_id, vehicle_id, start_datetime, end_datetime, pickup_address, return_address, rental_price, deposit_amount, platform_fee, total_amount, status, contract_details, created_at, updated_at)
+-      VALUES (@renterId, @vehicleId, CAST(@pickupDate AS DATETIME2), CAST(@returnDate AS DATETIME2), @pickupLocation, @pickupLocation, @price, @deposit, @platformFee, @totalAmount, @status, @contractDetails, GETDATE(), GETDATE());
+-      SELECT SCOPE_IDENTITY() as booking_id;
++      INSERT INTO Booking (group_id, renter_id, vehicle_id, start_datetime, end_datetime, pickup_address, return_address, rental_price, deposit_amount, platform_fee, total_amount, status, contract_details, created_at, updated_at)
++      VALUES (@groupId, @renterId, @vehicleId, CAST(@pickupDate AS DATETIME2), CAST(@returnDate AS DATETIME2), @pickupLocation, @pickupLocation, @price, @deposit, @platformFee, @totalAmount, @status, @contractDetails, GETDATE(), GETDATE());
++      SELECT SCOPE_IDENTITY() AS booking_id;
+     `;
+     const res = await request.query(insertBookingQuery);
+     const bookingId = res.recordset[0].booking_id;
+diff --git a/server/models/configModel.js b/server/models/configModel.js
+index 3127f543..9ae8206c 100644
+--- a/server/models/configModel.js
++++ b/server/models/configModel.js
+@@ -47,6 +47,9 @@ export const emailModel = {
+ };
+ 
+ export const configModel = {
++  getConfig: async () => {
++    return await configModel.get();
++  },
+   get: async () => {
+     const p = await getPool();
+     const res = await p.request().query('SELECT * FROM SystemConfig');
+diff --git a/server/models/contractModel.js b/server/models/contractModel.js
+index 29f90679..493f48f5 100644
+--- a/server/models/contractModel.js
++++ b/server/models/contractModel.js
+@@ -149,7 +149,7 @@ export const contractModel = {
+ 
+     const reservationPaidAt = isPaid ? new Date() : null;
+ 
+-    // Insert contract (ch╞░a c├│ contract_id n├¬n d├╣ng SCOPE_IDENTITY)
++    // Insert contract with initial status Draft (Renter signs explicitly in MyTrips)
+     const insertRes = await p.request()
+       .input('bookingId', sql.Int, bookingIdInt)
+       .input('contractCode', sql.NVarChar, 'TEMP') // update sau
+diff --git a/server/routes/bookingRoutes.js b/server/routes/bookingRoutes.js
+index beb992d0..3bd2b063 100644
+--- a/server/routes/bookingRoutes.js
++++ b/server/routes/bookingRoutes.js
+@@ -19,7 +19,12 @@ router.post('/api/bookings', auth, async (req, res) => {
+ 
+     const car = await db.cars.findOne({ id: carId });
+     if (!car) return res.status(400).json({ message: 'Xe kh├┤ng tß╗ôn tß║íi.' });
+-    if (car.status !== 'available') return res.status(400).json({ message: 'Xe n├áy hiß╗çn tß║íi ─æ├ú c├│ kh├ích ─æß║╖t.' });
++
++    const p = await getPool();
++    const isOverlap = await checkCarScheduleOverlap(p, carId, pickupDate, returnDate);
++    if (isOverlap) {
++      return res.status(400).json({ message: `Xe ${car.brand} ${car.model} ─æ├ú c├│ lß╗ïch ─æß║╖t tr├╣ng trong khoß║úng thß╗¥i gian n├áy. Vui l├▓ng chß╗ìn xe kh├íc hoß║╖c ─æß╗òi lß╗ïch!` });
++    }
+ 
+     const user = await db.users.findOne({ id: req.user.id });
+     if (user.licenseStatus !== 'verified') {
+@@ -120,6 +125,225 @@ router.post('/api/bookings', auth, async (req, res) => {
+   }
+ });
+ 
++// Helper to map frontend mock car IDs to real DB vehicle IDs
++const mapCarId = (rawId) => {
++  const strId = String(rawId || '');
++  if (strId.startsWith('lux-car-')) {
++    return (strId === 'lux-car-1' || strId === 'lux-car-4') ? 31 : 30;
++  }
++  if (strId.startsWith('likes-car-')) {
++    return (strId === 'likes-car-1' || strId === 'likes-car-2') ? 25 : 22;
++  }
++  return parseInt(strId) || 22;
++};
++
++// Helper to check for overlapping booking dates in SQL Server
++const checkCarScheduleOverlap = async (pool, vehicleId, pickupDateStr, returnDateStr) => {
++  const formatDateForSql = (dtStr, fallbackTime = '09:00:00') => {
++    if (!dtStr) return new Date().toISOString().replace('T', ' ').split('.')[0];
++    const str = String(dtStr).trim();
++    if (str.includes('T')) {
++      const parts = str.split('T');
++      const datePart = parts[0];
++      const timePart = parts[1] ? parts[1].split('.')[0].substring(0, 8) : fallbackTime;
++      return `${datePart} ${timePart}`;
++    }
++    if (str.includes(' ')) return str.split('.')[0];
++    return `${str} ${fallbackTime}`;
++  };
++
++  const startSql = formatDateForSql(pickupDateStr, '09:00:00');
++  const endSql = formatDateForSql(returnDateStr, '21:00:00');
++
++  const res = await pool.request()
++    .input('vehicleId', sql.Int, parseInt(vehicleId))
++    .input('start', sql.VarChar, startSql)
++    .input('end', sql.VarChar, endSql)
++    .query(`
++      SELECT booking_id, status, start_datetime, end_datetime 
++      FROM Booking 
++      WHERE vehicle_id = @vehicleId 
++        AND status NOT IN ('Cancelled', 'Rejected')
++        AND start_datetime < CAST(@end AS DATETIME2) 
++        AND end_datetime > CAST(@start AS DATETIME2)
++    `);
++
++  return res.recordset.length > 0;
++};
++
++// 15b. POST Group Booking Checkout (─Éß║╖t nhiß╗üu xe 1 l├║c - Giß╗Å h├áng)
++router.post('/api/bookings/group-checkout', auth, async (req, res) => {
++  try {
++    const { items, paymentMethod } = req.body;
++
++    if (!items || !Array.isArray(items) || items.length === 0) {
++      return res.status(400).json({ message: 'Giß╗Å h├áng kh├┤ng c├│ xe n├áo ─æß╗â thanh to├ín.' });
++    }
++
++    const user = await db.users.findOne({ id: req.user.id });
++    if (user.licenseStatus !== 'verified') {
++      return res.status(400).json({ message: 'T├ái khoß║ún ch╞░a x├íc thß╗▒c Bß║▒ng l├íi xe. Vui l├▓ng x├íc thß╗▒c tr╞░ß╗¢c khi ─æß║╖t xe.' });
++    }
++
++    const p = await getPool();
++
++    // 1. Calculate total group price and 30% deposit & check schedule overlaps
++    let groupTotalAmount = 0;
++    let groupDepositTotal = 0;
++    const validatedItems = [];
++
++    for (const item of items) {
++      const actualCarId = mapCarId(item.carId);
++      let car = await db.cars.findOne({ id: actualCarId });
++      if (!car) {
++        car = await db.cars.findOne({ id: 22 }); // fallback car if missing
++      }
++
++      // Check date schedule overlap
++      const isOverlap = await checkCarScheduleOverlap(p, actualCarId, item.pickupDate, item.returnDate);
++      if (isOverlap) {
++        return res.status(400).json({ 
++          message: `Xe ${car.brand} ${car.model} ─æ├ú c├│ lß╗ïch ─æß║╖t tr├╣ng trong khoß║úng thß╗¥i gian tß╗½ ${new Date(item.pickupDate).toLocaleDateString('vi-VN')} ─æß║┐n ${new Date(item.returnDate).toLocaleDateString('vi-VN')}. Vui l├▓ng chß╗ìn xe kh├íc hoß║╖c ─æß╗òi lß╗ïch!` 
++        });
++      }
++
++      const price = Number(item.totalPrice || 0);
++      const dep = Math.round(price * 0.3);
++      groupTotalAmount += price;
++      groupDepositTotal += dep;
++      validatedItems.push({ ...item, actualCarId, car });
++    }
++
++    // 2. Create BookingGroup parent record
++    const groupRes = await p.request()
++      .input('renterId', sql.Int, req.user.id)
++      .input('totalAmount', sql.Decimal(18, 2), groupTotalAmount)
++      .input('depositTotal', sql.Decimal(18, 2), groupDepositTotal)
++      .input('groupStatus', sql.NVarChar, 'Pending')
++      .input('paymentMethod', sql.NVarChar, paymentMethod || 'wallet')
++      .query(`
++        INSERT INTO BookingGroup (renter_id, total_amount, deposit_total, group_status, payment_method, created_at)
++        OUTPUT INSERTED.group_id
++        VALUES (@renterId, @totalAmount, @depositTotal, @groupStatus, @paymentMethod, GETDATE());
++      `);
++
++    const groupId = groupRes.recordset[0].group_id;
++
++    // 3. Process wallet transaction if paying via Wallet
++    const pm = String(paymentMethod || '').toLowerCase();
++    if (pm === 'wallet') {
++      await p.request()
++        .input('userId', sql.Int, req.user.id)
++        .input('bookingId', sql.Int, null)
++        .input('amount', sql.Decimal(18, 2), groupDepositTotal)
++        .input('txnType', sql.NVarChar, 'BookingDepositGroup')
++        .input('description', sql.NVarChar, `Thanh to├ín 30% tiß╗ün cß╗ìc cho giß╗Å h├áng #${groupId} (${items.length} xe)`)
++        .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
++    }
++
++    // 4. Create individual Booking sub-orders
++    const createdBookings = [];
++    for (const vItem of validatedItems) {
++      const car = vItem.car;
++      const price = Number(vItem.totalPrice || 0);
++      const rentalP = Number(vItem.rentalPrice || (price * 0.9));
++      const platformF = price - rentalP;
++      const dep = Math.round(price * 0.3);
++
++      const contractDetails = {
++        contractId: `HD-VIVU-${groupId}-${vItem.actualCarId}-${Date.now().toString().slice(-4)}`,
++        renterName: user.name || 'Kh├ích Thu├¬',
++        renterPhone: user.phone || '',
++        renterIdNo: user.idNo || '035092008888',
++        renterSignedAt: new Date().toISOString(),
++        renterSignature: user.signature || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80"><text x="10" y="50" font-family="cursive" font-size="24" fill="%232563eb">${encodeURIComponent(user.name || 'Kh├ích Thu├¬')}</text></svg>`,
++        ownerSignedAt: null,
++        ownerSignature: null
++      };
++
++      const booking = await db.bookings.create({
++        groupId,
++        userId: req.user.id,
++        carId: vItem.actualCarId,
++        pickupDate: vItem.pickupDate,
++        returnDate: vItem.returnDate,
++        pickupLocation: vItem.pickupLocation || car?.address || 'B├úi xe Chß╗º xe',
++        rentalPrice: rentalP,
++        platformFee: platformF,
++        totalPrice: price,
++        depositAmount: dep,
++        status: 'Pending',
++        paymentStatus: pm === 'wallet' ? 'paid' : 'pending',
++        paymentMethod: pm,
++        contractDetails: contractDetails
++      });
++
++      createdBookings.push(booking);
++
++      // Notify Car Owner
++      if (car && car.ownerId) {
++        await notificationService.createNotification(
++          car.ownerId,
++          '─É╞ín ─Éß║╖t Xe Mß╗¢i Trong Giß╗Å H├áng',
++          `Kh├ích h├áng ${user.name} ─æ├ú ─æß║╖t xe ${car.brand} ${car.model} (M├ú ─æ╞ín con: #${booking.id}). Vui l├▓ng xem x├⌐t duyß╗çt ─æ╞ín.`,
++          'BookingUpdate',
++          booking.id,
++          'Booking'
++        );
++      }
++    }
++
++    const isVietqr = pm === 'vietqr' || pm === 'bank_transfer' || pm === 'qr';
++
++    let vietqrData = null;
++    if (isVietqr) {
++      let sysConfig = null;
++      try {
++        if (db.system_config?.getConfig) sysConfig = await db.system_config.getConfig();
++        else if (db.system_config?.get) sysConfig = await db.system_config.get();
++      } catch (cfgErr) {
++        console.warn('Cannot fetch system config, using default VietQR values:', cfgErr);
++      }
++
++      let rawBankId = (sysConfig?.bankId || 'MB').toUpperCase();
++      if (rawBankId === 'MBBANK') rawBankId = 'MB';
++      if (rawBankId === 'VIETCOMBANK') rawBankId = 'VCB';
++      if (rawBankId === 'VIETINBANK') rawBankId = 'ICB';
++
++      const bankAcc = sysConfig?.bankAccountNumber || '1900533588';
++      const bankHolder = sysConfig?.bankAccountHolder || 'VIVUCAR SYSTEM';
++      const bankName = sysConfig?.bankName || 'Ng├ón h├áng MBBank (MB)';
++      const addInfo = encodeURIComponent(`VIVUCAR GROUP ${groupId}`);
++      const accountName = encodeURIComponent(bankHolder);
++
++      vietqrData = {
++        accountNumber: bankAcc,
++        accountHolder: bankHolder,
++        bankName: bankName,
++        bankId: rawBankId,
++        amount: groupDepositTotal,
++        transferContent: `VIVUCAR GROUP ${groupId}`,
++        qrUrl: `https://img.vietqr.io/image/${rawBankId}-${bankAcc}-compact2.png?amount=${groupDepositTotal}&addInfo=${addInfo}&accountName=${accountName}`
++      };
++    }
++
++    res.status(201).json({
++      message: isVietqr
++        ? `─É├ú khß╗ƒi tß║ío giß╗Å h├áng #${groupId} th├ánh c├┤ng! Vui l├▓ng qu├⌐t m├ú VietQR ─æß╗â ho├án tß║Ñt chuyß╗ân khoß║ún 30% cß╗ìc giß╗» chß╗ù.`
++        : `Thanh to├ín 30% cß╗ìc giß╗Å h├áng #${groupId} bß║▒ng V├¡ ViVuCar th├ánh c├┤ng!`,
++      groupId,
++      groupTotalAmount,
++      groupDepositTotal,
++      paymentMethod: pm,
++      vietqr: vietqrData,
++      bookings: createdBookings
++    });
++  } catch (error) {
++    console.error('Group Checkout Error:', error);
++    res.status(500).json({ message: error.message || 'Lß╗ùi thanh to├ín cß╗ìc giß╗Å xe.' });
++  }
++});
++
+ // 16. GET Trips (Chuyß║┐n ─æi cß╗ºa t├┤i)
+ router.get('/api/bookings/my-trips', auth, async (req, res) => {
+   try {
