@@ -6,9 +6,9 @@ const formatCurrency = (amount) =>
 
 const MethodChip = ({ method }) => {
   const cfg = {
-    wallet:  { label: 'Ví ViVuCar', color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
-    vnpay:   { label: 'VNPAY',      color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
-    vietqr:  { label: 'VietQR',     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+    wallet: { label: 'Ví ViVuCar', color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
+    vnpay: { label: 'VNPAY', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
+    vietqr: { label: 'VietQR', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
   };
   const c = cfg[method] || { label: method || 'Khác', color: `var(--cskh-text-muted)`, bg: 'rgba(148,163,184,0.1)' };
   return (
@@ -20,10 +20,10 @@ const MethodChip = ({ method }) => {
 
 const DepositBadge = ({ status }) => {
   const map = {
-    paid:     { label: 'Đang giữ cọc',   cls: 'cskh-badge-blue' },
-    refunded: { label: 'Đã hoàn cọc',    cls: 'cskh-badge-green' },
-    withheld: { label: 'Đã thu cọc',     cls: 'cskh-badge-red' },
-    pending:  { label: 'Chưa đặt cọc',   cls: 'cskh-badge-amber' },
+    paid: { label: 'Đang giữ cọc', cls: 'cskh-badge-blue' },
+    refunded: { label: 'Đã hoàn cọc', cls: 'cskh-badge-green' },
+    withheld: { label: 'Đã thu cọc', cls: 'cskh-badge-red' },
+    pending: { label: 'Chưa đặt cọc', cls: 'cskh-badge-amber' },
   };
   const d = map[status] || { label: status || 'Không rõ', cls: 'cskh-badge-gray' };
   return <span className={`cskh-badge ${d.cls}`}>{d.label}</span>;
@@ -41,8 +41,8 @@ export const CSKHPaymentTab = ({
   };
 
   const pendingVietqr = filteredBookings.filter(b => isQr(b.paymentMethod) && b.depositStatus === 'pending');
-  const needsRefund   = filteredBookings.filter(b => b.depositStatus === 'paid' && (b.status === 'completed' || b.status === 'cancelled'));
-  const others        = filteredBookings.filter(b => !(isQr(b.paymentMethod) && b.depositStatus === 'pending') && !(b.depositStatus === 'paid' && (b.status === 'completed' || b.status === 'cancelled')));
+  const needsRefund = filteredBookings.filter(b => b.depositStatus === 'paid' && (b.status === 'completed' || b.status === 'cancelled'));
+  const others = filteredBookings.filter(b => !(isQr(b.paymentMethod) && b.depositStatus === 'pending') && !(b.depositStatus === 'paid' && (b.status === 'completed' || b.status === 'cancelled')));
 
   return (
     <div className="cskh-fade">
@@ -125,7 +125,7 @@ export const CSKHPaymentTab = ({
         <div className="cskh-card-header">
           <h4 className="cskh-card-title">
             <CheckCircle size={15} color="#10b981" />
-            Chuyến đi hoàn tất — Cần quyết định cọc bảo đảm (5.000.000đ)
+            Chuyến đi hoàn tất — Cần quyết định cọc
           </h4>
           {needsRefund.length > 0 && (
             <span className="cskh-badge cskh-badge-green">{needsRefund.length} chờ xử lý</span>
@@ -227,15 +227,14 @@ export const CSKHPaymentTab = ({
                   <td style={{ color: '#818cf8', fontWeight: 600 }}>{formatCurrency(b.totalPrice)}</td>
                   <td><DepositBadge status={b.depositStatus} /></td>
                   <td>
-                    <span className={`cskh-badge ${
-                      b.status === 'completed' ? 'cskh-badge-green' :
-                      b.status === 'cancelled' ? 'cskh-badge-red' :
-                      b.status === 'approved'  ? 'cskh-badge-blue' :
-                      'cskh-badge-amber'
-                    }`}>
+                    <span className={`cskh-badge ${b.status === 'completed' ? 'cskh-badge-green' :
+                        b.status === 'cancelled' ? 'cskh-badge-red' :
+                          b.status === 'approved' ? 'cskh-badge-blue' :
+                            'cskh-badge-amber'
+                      }`}>
                       {b.status === 'completed' ? 'Hoàn tất' :
-                       b.status === 'cancelled' ? 'Đã hủy' :
-                       b.status === 'approved'  ? 'Đã duyệt' : 'Đang chờ'}
+                        b.status === 'cancelled' ? 'Đã hủy' :
+                          b.status === 'approved' ? 'Đã duyệt' : 'Đang chờ'}
                     </span>
                   </td>
                 </tr>

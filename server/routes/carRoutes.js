@@ -1,6 +1,7 @@
 import express from 'express';
 import { db } from '../models/index.js';
 import { auth } from '../middleware/auth.js';
+import { sql, getPool } from '../config/db.js';
 import { notificationService } from '../services/notificationService.js';
 import { contractModel } from '../models/contractModel.js';
 
@@ -112,7 +113,7 @@ router.get('/api/owner/stats', auth, async (req, res) => {
     const carIds = myCars.map(c => c.id);
 
     const allBookings = await db.bookings.findMany();
-    const myBookings = allBookings.filter(b => carIds.includes(b.carId));
+    const myBookings = allBookings.filter(b => carIds.includes(b.carId) && b.status !== 'pending_cskh');
 
     const detailedBookings = await Promise.all(myBookings.map(async (booking) => {
       const user = await db.users.findOne({ id: booking.userId }) || { name: 'Khách hàng ẩn' };

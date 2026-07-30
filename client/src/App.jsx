@@ -23,6 +23,7 @@ import { ChatbotWidget } from './components/ChatbotWidget';
 import { Blog } from './pages/Blog/Blog';
 import { BlogDetail } from './pages/Blog/BlogDetail';
 import { Recruitment } from './pages/Recruitment/Recruitment';
+import { CartDrawer } from './components/CartDrawer';
 
 import { api } from './utils/api';
 import { useToast } from './components/Toast';
@@ -42,6 +43,22 @@ function App() {
   const [authModal, setAuthModal] = useState(null); // 'login', 'register', 'forgot-password'
   const [activeBooking, setActiveBooking] = useState(null);
   const [searchParams, setSearchParams] = useState(null);
+
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('vivucar_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const addToCart = (item) => {
+    const updated = [...cartItems, item];
+    setCartItems(updated);
+    localStorage.setItem('vivucar_cart', JSON.stringify(updated));
+  };
 
   const [systemConfig, setSystemConfig] = useState(null);
 
@@ -233,6 +250,8 @@ function App() {
           setCurrentTab={setCurrentTab}
           authModal={authModal}
           setAuthModal={setAuthModal}
+          onOpenCart={() => setIsCartOpen(true)}
+          cartCount={cartItems.length}
         />
       )}
 
@@ -437,8 +456,24 @@ function App() {
           onUpdateUser={setUser}
           onClose={() => setActiveBooking(null)}
           setCurrentTab={setCurrentTab}
+          onAddToCart={(cartItem) => {
+            addToCart(cartItem);
+            setActiveBooking(null);
+            setIsCartOpen(true);
+          }}
         />
       )}
+
+      {/* --- MULTI-CAR SHOPPING CART DRAWER --- */}
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        cartItems={cartItems}
+        setCartItems={setCartItems}
+        onCheckoutSuccess={() => {
+          navigate('/my-trips');
+        }}
+      />
 
       {/* --- AI SUPPORT CHATBOT WIDGET --- */}
       <ChatbotWidget user={user} setCurrentTab={setCurrentTab} />

@@ -47,6 +47,9 @@ export const emailModel = {
 };
 
 export const configModel = {
+  getConfig: async () => {
+    return await configModel.get();
+  },
   get: async () => {
     const p = await getPool();
     const res = await p.request().query('SELECT * FROM SystemConfig');
