@@ -19,7 +19,12 @@ router.post('/api/bookings', auth, async (req, res) => {
 
     const car = await db.cars.findOne({ id: carId });
     if (!car) return res.status(400).json({ message: 'Xe không tồn tại.' });
-    if (car.status !== 'available') return res.status(400).json({ message: 'Xe này hiện tại đã có khách đặt.' });
+
+    const p = await getPool();
+    const isOverlap = await checkCarScheduleOverlap(p, carId, pickupDate, returnDate);
+    if (isOverlap) {
+      return res.status(400).json({ message: `Xe ${car.brand} ${car.model} đã có lịch đặt trùng trong khoảng thời gian này. Vui lòng chọn xe khác hoặc đổi lịch!` });
+    }
 
     const user = await db.users.findOne({ id: req.user.id });
     if (user.licenseStatus !== 'verified') {
@@ -117,6 +122,225 @@ router.post('/api/bookings', auth, async (req, res) => {
     console.error('Booking Creation Error:', error);
     import('fs').then(fs => fs.writeFileSync('debug_error.log', error.stack || error.message));
     res.status(500).json({ message: 'Lỗi tạo giao dịch đặt xe. ' + (error.message || '') });
+  }
+});
+
+// Helper to map frontend mock car IDs to real DB vehicle IDs
+const mapCarId = (rawId) => {
+  const strId = String(rawId || '');
+  if (strId.startsWith('lux-car-')) {
+    return (strId === 'lux-car-1' || strId === 'lux-car-4') ? 31 : 30;
+  }
+  if (strId.startsWith('likes-car-')) {
+    return (strId === 'likes-car-1' || strId === 'likes-car-2') ? 25 : 22;
+  }
+  return parseInt(strId) || 22;
+};
+
+// Helper to check for overlapping booking dates in SQL Server
+const checkCarScheduleOverlap = async (pool, vehicleId, pickupDateStr, returnDateStr) => {
+  const formatDateForSql = (dtStr, fallbackTime = '09:00:00') => {
+    if (!dtStr) return new Date().toISOString().replace('T', ' ').split('.')[0];
+    const str = String(dtStr).trim();
+    if (str.includes('T')) {
+      const parts = str.split('T');
+      const datePart = parts[0];
+      const timePart = parts[1] ? parts[1].split('.')[0].substring(0, 8) : fallbackTime;
+      return `${datePart} ${timePart}`;
+    }
+    if (str.includes(' ')) return str.split('.')[0];
+    return `${str} ${fallbackTime}`;
+  };
+
+  const startSql = formatDateForSql(pickupDateStr, '09:00:00');
+  const endSql = formatDateForSql(returnDateStr, '21:00:00');
+
+  const res = await pool.request()
+    .input('vehicleId', sql.Int, parseInt(vehicleId))
+    .input('start', sql.VarChar, startSql)
+    .input('end', sql.VarChar, endSql)
+    .query(`
+      SELECT booking_id, status, start_datetime, end_datetime 
+      FROM Booking 
+      WHERE vehicle_id = @vehicleId 
+        AND status NOT IN ('Cancelled', 'Rejected')
+        AND start_datetime < CAST(@end AS DATETIME2) 
+        AND end_datetime > CAST(@start AS DATETIME2)
+    `);
+
+  return res.recordset.length > 0;
+};
+
+// 15b. POST Group Booking Checkout (Đặt nhiều xe 1 lúc - Giỏ hàng)
+router.post('/api/bookings/group-checkout', auth, async (req, res) => {
+  try {
+    const { items, paymentMethod } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: 'Giỏ hàng không có xe nào để thanh toán.' });
+    }
+
+    const user = await db.users.findOne({ id: req.user.id });
+    if (user.licenseStatus !== 'verified') {
+      return res.status(400).json({ message: 'Tài khoản chưa xác thực Bằng lái xe. Vui lòng xác thực trước khi đặt xe.' });
+    }
+
+    const p = await getPool();
+
+    // 1. Calculate total group price and 30% deposit & check schedule overlaps
+    let groupTotalAmount = 0;
+    let groupDepositTotal = 0;
+    const validatedItems = [];
+
+    for (const item of items) {
+      const actualCarId = mapCarId(item.carId);
+      let car = await db.cars.findOne({ id: actualCarId });
+      if (!car) {
+        car = await db.cars.findOne({ id: 22 }); // fallback car if missing
+      }
+
+      // Check date schedule overlap
+      const isOverlap = await checkCarScheduleOverlap(p, actualCarId, item.pickupDate, item.returnDate);
+      if (isOverlap) {
+        return res.status(400).json({ 
+          message: `Xe ${car.brand} ${car.model} đã có lịch đặt trùng trong khoảng thời gian từ ${new Date(item.pickupDate).toLocaleDateString('vi-VN')} đến ${new Date(item.returnDate).toLocaleDateString('vi-VN')}. Vui lòng chọn xe khác hoặc đổi lịch!` 
+        });
+      }
+
+      const price = Number(item.totalPrice || 0);
+      const dep = Math.round(price * 0.3);
+      groupTotalAmount += price;
+      groupDepositTotal += dep;
+      validatedItems.push({ ...item, actualCarId, car });
+    }
+
+    // 2. Create BookingGroup parent record
+    const groupRes = await p.request()
+      .input('renterId', sql.Int, req.user.id)
+      .input('totalAmount', sql.Decimal(18, 2), groupTotalAmount)
+      .input('depositTotal', sql.Decimal(18, 2), groupDepositTotal)
+      .input('groupStatus', sql.NVarChar, 'Pending')
+      .input('paymentMethod', sql.NVarChar, paymentMethod || 'wallet')
+      .query(`
+        INSERT INTO BookingGroup (renter_id, total_amount, deposit_total, group_status, payment_method, created_at)
+        OUTPUT INSERTED.group_id
+        VALUES (@renterId, @totalAmount, @depositTotal, @groupStatus, @paymentMethod, GETDATE());
+      `);
+
+    const groupId = groupRes.recordset[0].group_id;
+
+    // 3. Process wallet transaction if paying via Wallet
+    const pm = String(paymentMethod || '').toLowerCase();
+    if (pm === 'wallet') {
+      await p.request()
+        .input('userId', sql.Int, req.user.id)
+        .input('bookingId', sql.Int, null)
+        .input('amount', sql.Decimal(18, 2), groupDepositTotal)
+        .input('txnType', sql.NVarChar, 'BookingDepositGroup')
+        .input('description', sql.NVarChar, `Thanh toán 30% tiền cọc cho giỏ hàng #${groupId} (${items.length} xe)`)
+        .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+    }
+
+    // 4. Create individual Booking sub-orders
+    const createdBookings = [];
+    for (const vItem of validatedItems) {
+      const car = vItem.car;
+      const price = Number(vItem.totalPrice || 0);
+      const rentalP = Number(vItem.rentalPrice || (price * 0.9));
+      const platformF = price - rentalP;
+      const dep = Math.round(price * 0.3);
+
+      const contractDetails = {
+        contractId: `HD-VIVU-${groupId}-${vItem.actualCarId}-${Date.now().toString().slice(-4)}`,
+        renterName: user.name || 'Khách Thuê',
+        renterPhone: user.phone || '',
+        renterIdNo: user.idNo || '035092008888',
+        renterSignedAt: new Date().toISOString(),
+        renterSignature: user.signature || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80"><text x="10" y="50" font-family="cursive" font-size="24" fill="%232563eb">${encodeURIComponent(user.name || 'Khách Thuê')}</text></svg>`,
+        ownerSignedAt: null,
+        ownerSignature: null
+      };
+
+      const booking = await db.bookings.create({
+        groupId,
+        userId: req.user.id,
+        carId: vItem.actualCarId,
+        pickupDate: vItem.pickupDate,
+        returnDate: vItem.returnDate,
+        pickupLocation: vItem.pickupLocation || car?.address || 'Bãi xe Chủ xe',
+        rentalPrice: rentalP,
+        platformFee: platformF,
+        totalPrice: price,
+        depositAmount: dep,
+        status: 'Pending',
+        paymentStatus: pm === 'wallet' ? 'paid' : 'pending',
+        paymentMethod: pm,
+        contractDetails: contractDetails
+      });
+
+      createdBookings.push(booking);
+
+      // Notify Car Owner
+      if (car && car.ownerId) {
+        await notificationService.createNotification(
+          car.ownerId,
+          'Đơn Đặt Xe Mới Trong Giỏ Hàng',
+          `Khách hàng ${user.name} đã đặt xe ${car.brand} ${car.model} (Mã đơn con: #${booking.id}). Vui lòng xem xét duyệt đơn.`,
+          'BookingUpdate',
+          booking.id,
+          'Booking'
+        );
+      }
+    }
+
+    const isVietqr = pm === 'vietqr' || pm === 'bank_transfer' || pm === 'qr';
+
+    let vietqrData = null;
+    if (isVietqr) {
+      let sysConfig = null;
+      try {
+        if (db.system_config?.getConfig) sysConfig = await db.system_config.getConfig();
+        else if (db.system_config?.get) sysConfig = await db.system_config.get();
+      } catch (cfgErr) {
+        console.warn('Cannot fetch system config, using default VietQR values:', cfgErr);
+      }
+
+      let rawBankId = (sysConfig?.bankId || 'MB').toUpperCase();
+      if (rawBankId === 'MBBANK') rawBankId = 'MB';
+      if (rawBankId === 'VIETCOMBANK') rawBankId = 'VCB';
+      if (rawBankId === 'VIETINBANK') rawBankId = 'ICB';
+
+      const bankAcc = sysConfig?.bankAccountNumber || '1900533588';
+      const bankHolder = sysConfig?.bankAccountHolder || 'VIVUCAR SYSTEM';
+      const bankName = sysConfig?.bankName || 'Ngân hàng MBBank (MB)';
+      const addInfo = encodeURIComponent(`VIVUCAR GROUP ${groupId}`);
+      const accountName = encodeURIComponent(bankHolder);
+
+      vietqrData = {
+        accountNumber: bankAcc,
+        accountHolder: bankHolder,
+        bankName: bankName,
+        bankId: rawBankId,
+        amount: groupDepositTotal,
+        transferContent: `VIVUCAR GROUP ${groupId}`,
+        qrUrl: `https://img.vietqr.io/image/${rawBankId}-${bankAcc}-compact2.png?amount=${groupDepositTotal}&addInfo=${addInfo}&accountName=${accountName}`
+      };
+    }
+
+    res.status(201).json({
+      message: isVietqr
+        ? `Đã khởi tạo giỏ hàng #${groupId} thành công! Vui lòng quét mã VietQR để hoàn tất chuyển khoản 30% cọc giữ chỗ.`
+        : `Thanh toán 30% cọc giỏ hàng #${groupId} bằng Ví ViVuCar thành công!`,
+      groupId,
+      groupTotalAmount,
+      groupDepositTotal,
+      paymentMethod: pm,
+      vietqr: vietqrData,
+      bookings: createdBookings
+    });
+  } catch (error) {
+    console.error('Group Checkout Error:', error);
+    res.status(500).json({ message: error.message || 'Lỗi thanh toán cọc giỏ xe.' });
   }
 });
 

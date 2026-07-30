@@ -149,7 +149,7 @@ export const contractModel = {
 
     const reservationPaidAt = isPaid ? new Date() : null;
 
-    // Insert contract (chưa có contract_id nên dùng SCOPE_IDENTITY)
+    // Insert contract with initial status Draft (Renter signs explicitly in MyTrips)
     const insertRes = await p.request()
       .input('bookingId', sql.Int, bookingIdInt)
       .input('contractCode', sql.NVarChar, 'TEMP') // update sau

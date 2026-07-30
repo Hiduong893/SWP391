@@ -374,6 +374,12 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
 
                 {/* Content */}
                 <div className="trip-card-body">
+                  {trip.groupId && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.3)', borderRadius: '6px', padding: '2px 8px', fontSize: '11px', fontWeight: 700, color: '#2563eb', marginBottom: '6px' }}>
+                      <span>🛍️ Giỏ đặt xe #{trip.groupId}</span>
+                      <span>• Đơn xe con #{trip.id}</span>
+                    </div>
+                  )}
                   <div className="trip-card-header">
                     <div>
                       <span className="trip-brand-lbl">{car.brand}</span>

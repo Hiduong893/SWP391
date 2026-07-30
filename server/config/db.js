@@ -255,6 +255,28 @@ export const getPool = async () => {
             ALTER TABLE Booking DROP CONSTRAINT CHK_Booking_Status;
             ALTER TABLE Booking ADD CONSTRAINT CHK_Booking_Status CHECK (status IN ('Pending', 'Approved', 'Active', 'ReturnPendingOwner', 'Completed', 'Cancelled', 'Rejected', 'Disputed'));
         END
+
+        -- Create BookingGroup table if not exists
+        IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'BookingGroup')
+        BEGIN
+            CREATE TABLE BookingGroup (
+                group_id INT IDENTITY(1,1) PRIMARY KEY,
+                renter_id INT NOT NULL,
+                total_amount DECIMAL(18,2) NOT NULL,
+                deposit_total DECIMAL(18,2) NOT NULL,
+                group_status NVARCHAR(50) NOT NULL DEFAULT 'Pending',
+                payment_method NVARCHAR(50) NULL,
+                created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+                CONSTRAINT FK_BookingGroup_User FOREIGN KEY (renter_id) REFERENCES [User](user_id)
+            );
+        END
+
+        -- Add group_id column to Booking if missing
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Booking') AND name = 'group_id')
+        BEGIN
+            ALTER TABLE Booking ADD group_id INT NULL;
+            ALTER TABLE Booking ADD CONSTRAINT FK_Booking_BookingGroup FOREIGN KEY (group_id) REFERENCES BookingGroup(group_id);
+        END
       `);
       
 

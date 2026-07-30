@@ -214,6 +214,12 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(bookingData)
       }),
+
+    groupCheckout: (items, paymentMethod) =>
+      request('/bookings/group-checkout', {
+        method: 'POST',
+        body: JSON.stringify({ items, paymentMethod })
+      }),
       
     createVnpayUrl: (bookingId) =>
       request('/payments/vnpay/create', {

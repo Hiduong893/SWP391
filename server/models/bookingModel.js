@@ -40,6 +40,7 @@ export const mapBookingRow = async (p, row) => {
 
   return {
     id: String(row.booking_id),
+    groupId: row.group_id ? String(row.group_id) : null,
     userId: String(row.renter_id),
     carId: String(row.vehicle_id),
     pickupDate: row.start_datetime ? new Date(row.start_datetime).toISOString() : '',
@@ -151,19 +152,32 @@ export const bookingModel = {
       }
     }
 
-    // Append time segments to ensure end_datetime > start_datetime even for same-day rentals
-    const pickupDateTime = bookingData.pickupDate.includes(' ')
-      ? bookingData.pickupDate
-      : `${bookingData.pickupDate} 09:00:00`;
-    const returnDateTime = bookingData.returnDate.includes(' ')
-      ? bookingData.returnDate
-      : `${bookingData.returnDate} 21:00:00`;
+    // Helper to format date strings cleanly for SQL Server DATETIME2
+    const formatDateForSql = (dtStr, fallbackTime = '09:00:00') => {
+      if (!dtStr) return new Date().toISOString().replace('T', ' ').split('.')[0];
+      const str = String(dtStr).trim();
+      if (str.includes('T')) {
+        const parts = str.split('T');
+        const datePart = parts[0];
+        const timePart = parts[1] ? parts[1].split('.')[0].substring(0, 8) : fallbackTime;
+        return `${datePart} ${timePart}`;
+      }
+      if (str.includes(' ')) {
+        return str.split('.')[0];
+      }
+      return `${str} ${fallbackTime}`;
+    };
+
+    const pickupDateTime = formatDateForSql(bookingData.pickupDate, '09:00:00');
+    const returnDateTime = formatDateForSql(bookingData.returnDate, '21:00:00');
 
     const contractDetailsStr = bookingData.contractDetails ? JSON.stringify(bookingData.contractDetails) : null;
+    const groupId = bookingData.groupId ? parseInt(bookingData.groupId) : null;
 
     const request = p.request()
       .input('renterId', sql.Int, renterId)
       .input('vehicleId', sql.Int, vehicleId)
+      .input('groupId', sql.Int, groupId)
       .input('pickupDate', sql.VarChar, pickupDateTime)
       .input('returnDate', sql.VarChar, returnDateTime)
       .input('pickupLocation', sql.NVarChar, bookingData.pickupLocation)
@@ -175,9 +189,9 @@ export const bookingModel = {
       .input('contractDetails', sql.NVarChar, contractDetailsStr);
 
     const insertBookingQuery = `
-      INSERT INTO Booking (renter_id, vehicle_id, start_datetime, end_datetime, pickup_address, return_address, rental_price, deposit_amount, platform_fee, total_amount, status, contract_details, created_at, updated_at)
-      VALUES (@renterId, @vehicleId, CAST(@pickupDate AS DATETIME2), CAST(@returnDate AS DATETIME2), @pickupLocation, @pickupLocation, @price, @deposit, @platformFee, @totalAmount, @status, @contractDetails, GETDATE(), GETDATE());
-      SELECT SCOPE_IDENTITY() as booking_id;
+      INSERT INTO Booking (group_id, renter_id, vehicle_id, start_datetime, end_datetime, pickup_address, return_address, rental_price, deposit_amount, platform_fee, total_amount, status, contract_details, created_at, updated_at)
+      VALUES (@groupId, @renterId, @vehicleId, CAST(@pickupDate AS DATETIME2), CAST(@returnDate AS DATETIME2), @pickupLocation, @pickupLocation, @price, @deposit, @platformFee, @totalAmount, @status, @contractDetails, GETDATE(), GETDATE());
+      SELECT SCOPE_IDENTITY() AS booking_id;
     `;
     const res = await request.query(insertBookingQuery);
     const bookingId = res.recordset[0].booking_id;

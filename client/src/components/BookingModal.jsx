@@ -4,7 +4,7 @@ import { api } from '../utils/api';
 import { useToast } from './Toast';
 import { ContractModal } from './ContractModal';
 
-export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setCurrentTab }) => {
+export const BookingModal = ({ bookingDetails, user, onUpdateUser, onClose, setCurrentTab, onAddToCart }) => {
   const [step, setStep] = useState(1); // 1: Confirmation & License, 2: Payment, 3: Success, 'face_scan': Face Scanner, 'contract': Hợp đồng
   const [loading, setLoading] = useState(false);
   const [licenseUploading, setLicenseUploading] = useState(false);
@@ -456,6 +456,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
   const totalPrice = Math.max(0, basePrice - voucherDiscountAmount + insurancePrice + serviceFee + deliveryFee);
   const reservationFee = Math.round(totalPrice * 0.3);
   const totalPayment = totalPrice; // No deposit fee
+
   // Determine display and submission location with robust fallbacks
   const isCityOnly = (addr) => {
     if (!addr) return true;
@@ -649,7 +650,12 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
 
   const remainingPayment = totalPrice - reservationFee;
 
-  const vietQrUrl = `https://img.vietqr.io/image/${sysConfig.bankId}-${sysConfig.bankAccountNumber}-compact.png?amount=${reservationFee}&addInfo=${encodeURIComponent(`THUEXE ${car.brand} ${bookingId}`)}&accountName=${encodeURIComponent(sysConfig.bankAccountHolder)}`;
+  let bankCode = (sysConfig?.bankId || 'MB').toUpperCase();
+  if (bankCode === 'MBBANK') bankCode = 'MB';
+  if (bankCode === 'VIETCOMBANK') bankCode = 'VCB';
+  if (bankCode === 'VIETINBANK') bankCode = 'ICB';
+
+  const vietQrUrl = `https://img.vietqr.io/image/${bankCode}-${sysConfig?.bankAccountNumber || '1900533588'}-compact2.png?amount=${reservationFee}&addInfo=${encodeURIComponent(`THUEXE ${car.brand} ${bookingId}`)}&accountName=${encodeURIComponent(sysConfig?.bankAccountHolder || 'VIVUCAR SYSTEM')}`;
 
   return (
     <>
@@ -1367,7 +1373,7 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
             </div>
 
             {/* Step 2 Footer Action */}
-            <div className="booking-modal-footer mt-6" style={{ marginTop: '24px' }}>
+            <div className="booking-modal-footer mt-6" style={{ marginTop: '24px', display: 'flex', gap: '12px', justifyContent: 'flex-end', alignItems: 'center' }}>
               <button 
                 type="button" 
                 className="btn btn-secondary" 
@@ -1376,6 +1382,31 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
               >
                 Quay lại
               </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ background: '#eff6ff', color: '#2563eb', border: '1.5px solid #60a5fa', fontWeight: '700', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer' }}
+                onClick={() => {
+                  if (onAddToCart) {
+                    onAddToCart({
+                      carId: car.id,
+                      carName: `${car.brand} ${car.model}`,
+                      carImage: car.image,
+                      pickupDate: `${pickupDate}T${pickupTime}:00`,
+                      returnDate: `${returnDate}T${returnTime}:00`,
+                      pickupLocation: displayLocation || pickupLocation || car.address || 'Bãi xe Chủ xe',
+                      totalPrice: totalPayment,
+                      rentalPrice: Math.round(totalPayment * 0.9),
+                      platformFee: Math.round(totalPayment * 0.1)
+                    });
+                    showToast(`Đã thêm ${car.brand} ${car.model} vào giỏ hàng!`, 'success');
+                  }
+                }}
+              >
+                🛒 Thêm vào giỏ xe
+              </button>
+
               <button
                 type="button"
                 className="btn btn-primary"
