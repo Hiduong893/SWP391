@@ -987,7 +987,15 @@ export const RentCar = ({ user, onRentCarClick, setCurrentTab, onSearch }) => {
                     <div key={car.id} className="premium-row-car-card" onClick={() => handleViewCarDetails(car)}>
                       {/* Container Ảnh xe */}
                       <div className="card-image-box">
-                        <img src={car.image} alt={car.model} className="card-image-element" />
+                        <img 
+                          src={car.image} 
+                          alt={car.model} 
+                          className="card-image-element" 
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80';
+                          }}
+                        />
                         {/* Nhãn khuyến mãi góc trên bên trái */}
                         <div className="card-badge-top-container" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                           {car.pricePerDay > 1000000 && (

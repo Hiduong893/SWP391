@@ -585,7 +585,15 @@ export const FindCar = ({ user, setCurrentTab, onRentCarClick, initialSearchPara
                 <div key={car.id} className="find-car-card" style={{ position: 'relative' }}>
                   {/* Image container */}
                   <div className="find-card-image-box" onClick={() => handleViewCarDetails(car)}>
-                    <img src={car.image} alt={car.model} className="find-card-img" />
+                    <img 
+                      src={car.image} 
+                      alt={car.model} 
+                      className="find-card-img" 
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80';
+                      }}
+                    />
                     
                     {/* Wishlist Heart Button */}
                     <button
