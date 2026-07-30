@@ -222,6 +222,12 @@ export const api = {
         body: JSON.stringify({ scannedFace })
       }),
       
+    groupCheckout: (items, paymentMethod) =>
+      request('/bookings/group-checkout', {
+        method: 'POST',
+        body: JSON.stringify({ items, paymentMethod })
+      }),
+      
     createVnpayUrl: (bookingId) =>
       request('/payments/vnpay/create', {
         method: 'POST',

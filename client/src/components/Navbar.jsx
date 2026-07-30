@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShieldCheck, LogOut, User, Key, Car, PlusCircle, Compass, BookOpen, Briefcase, Bell } from 'lucide-react';
+import { ShieldCheck, LogOut, User, Key, Car, PlusCircle, Compass, BookOpen, Briefcase, Bell, ShoppingBag } from 'lucide-react';
 import { useToast } from './Toast';
 import { api } from '../utils/api';
 
-export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, setAuthModal }) => {
+export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, setAuthModal, onOpenCart, cartCount }) => {
   const { showToast } = useToast();
 
   const [notifications, setNotifications] = useState([]);
@@ -172,6 +172,17 @@ export const Navbar = ({ user, onLogout, currentTab, setCurrentTab, authModal, s
 
           {user ? (
             <div className="nav-user-area">
+              {/* Cart Drawer Trigger */}
+              <button
+                className="nav-notification-btn"
+                onClick={onOpenCart}
+                title="Giỏ thuê xe"
+                style={{ position: 'relative', marginRight: '6px' }}
+              >
+                <ShoppingBag size={18} />
+                {cartCount > 0 && <span className="nav-notification-badge" style={{ background: '#2563eb' }}>{cartCount}</span>}
+              </button>
+
               <div className="nav-notification-container" ref={dropdownRef}>
                 <button
                   className={`nav-notification-btn ${unreadCount > 0 ? 'has-unread' : ''}`}
