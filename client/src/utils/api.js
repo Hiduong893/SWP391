@@ -1,4 +1,6 @@
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api` 
+  : '/api';
 
 // Helper to make fetch calls with authorization header (with automatic retries for slow backend startup)
 const request = async (url, options = {}, retries = 4, delay = 1000) => {
