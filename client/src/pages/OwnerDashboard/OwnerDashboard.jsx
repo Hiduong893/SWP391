@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, FileWarning, ReceiptText, Camera, Sparkles } from 'lucide-react';
-
+import React, { useState, useEffect } from 'react';
+import { CreditCard, Car, BarChart3, DollarSign, Compass, PlusCircle, Upload, X, FileText, FileWarning, ReceiptText, Camera, Sparkles, BadgeCheck } from 'lucide-react';
 import { api } from '../../utils/api';
 import { useToast } from '../../components/Toast';
 import { ContractModal } from '../../components/ContractModal';
@@ -31,6 +30,10 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
   const [trafficViolationDetails, setTrafficViolationDetails] = useState({ amount: '', description: '' });
   const [trafficViolationTicketImage, setTrafficViolationTicketImage] = useState('');
   const [trafficViolationImageLoading, setTrafficViolationImageLoading] = useState(false);
+  // Owner Dispute State upon Return
+  const [disputeBooking, setDisputeBooking] = useState(null);
+  const [disputeDesc, setDisputeDesc] = useState('');
+  const [requestedDeduction, setRequestedDeduction] = useState('');
 
   // Edit Car Form State
   const [editingCar, setEditingCar] = useState(null);
@@ -242,6 +245,14 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
       fetchOwnerDashboard(true); // Refresh data
     } catch (error) {
       showToast(error.message || 'Lỗi khi gửi khiếu nại.', 'error');
+  const handleConfirmReturnVehicle = async (bookingId) => {
+    setActionLoading(true);
+    try {
+      const res = await api.bookings.confirmReturnVehicle(bookingId);
+      showToast(res.message, 'success');
+      fetchOwnerDashboard(true);
+    } catch (err) {
+      showToast(err.message || 'Lỗi xác nhận nhận lại xe.', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -259,6 +270,10 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
     e.preventDefault();
     if (!selectedBookingForTrafficViolation || !trafficViolationDetails.amount || !trafficViolationDetails.description) {
       showToast('Vui lòng nhập đầy đủ số tiền phạt và mô tả.', 'warning');
+  const handleOwnerSubmitDispute = async (e) => {
+    e.preventDefault();
+    if (!disputeBooking || !disputeDesc.trim()) {
+      showToast('Vui lòng nhập mô tả sự cố / hư hỏng phát sinh.', 'warning');
       return;
     }
 
@@ -270,12 +285,31 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
       fetchOwnerDashboard(true); // Refresh data
     } catch (error) {
       showToast(error.message || 'Lỗi khi báo cáo phạt nguội.', 'error');
+      const res = await api.bookings.ownerReportDispute(disputeBooking.id, disputeDesc, 'damage', requestedDeduction);
+      showToast(res.message, 'success');
+      setDisputeBooking(null);
+      setDisputeDesc('');
+      setRequestedDeduction('');
+      fetchOwnerDashboard(true);
+    } catch (err) {
+      showToast(err.message || 'Lỗi gửi khiếu nại.', 'error');
     } finally {
       setActionLoading(false);
     }
   };
 
-  const pendingBookings = ownerBookings.filter(b => b.status === 'pending_owner');
+  const pendingBookings = ownerBookings.filter(b => (b.status === 'pending_owner' || b.status === 'pending') && b.depositStatus === 'paid');
+  const returnPendingBookings = ownerBookings.filter(b => b.status === 'return_pending_owner');
+
+  const extensionBookings = ownerBookings.filter(b => {
+    let ext = null;
+    try {
+      if (b.extensionRequest) {
+        ext = typeof b.extensionRequest === 'string' ? JSON.parse(b.extensionRequest) : b.extensionRequest;
+      }
+    } catch (e) {}
+    return ext && (ext.status === 'pending' || ext.status === 'PENDING') && b.status !== 'completed' && b.status !== 'cancelled' && b.status !== 'rejected';
+  });
 
   return (
     <div className="owner-dashboard-page" style={{ width: '100%', maxWidth: '1000px', margin: '0 auto', padding: '20px 0' }}>
@@ -352,6 +386,131 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
           </div>
         ) : (
           <>
+            {/* PROMINENT VEHICLE RETURN CONFIRMATION AT THE VERY TOP */}
+            {returnPendingBookings.length > 0 && (
+              <div className="owner-glass-table-container mb-6" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.04) 100%)', border: '1px solid rgba(59, 130, 246, 0.4)', boxShadow: '0 8px 32px rgba(59, 130, 246, 0.15)', borderRadius: 16, padding: 20 }}>
+                <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#3b82f6', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <BadgeCheck size={16} color="#3b82f6" />
+                  <span>Yêu cầu xác nhận nhận lại xe (Khách đã nộp biên bản trả xe) ({returnPendingBookings.length})</span>
+                </h4>
+                <table className="owner-data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                      <th style={{ padding: 12, fontSize: '11px', color: '#60a5fa', textTransform: 'uppercase' }}>Khách Hàng</th>
+                      <th style={{ padding: 12, fontSize: '11px', color: '#60a5fa', textTransform: 'uppercase' }}>Phương Tiện</th>
+                      <th style={{ padding: 12, fontSize: '11px', color: '#60a5fa', textTransform: 'uppercase' }}>Thời Gian Nhận/Trả</th>
+                      <th style={{ padding: 12, fontSize: '11px', color: '#60a5fa', textTransform: 'uppercase' }}>Tổng Doanh Thu</th>
+                      <th style={{ padding: 12, fontSize: '11px', color: '#60a5fa', textTransform: 'uppercase', textAlign: 'center' }}>Xác Nhận Nhận Xe</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {returnPendingBookings.map((b) => (
+                      <tr key={b.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                        <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
+                          <strong>{b.userName}</strong>
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{b.userEmail}</span>
+                        </td>
+                        <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
+                          <strong>{b.carName}</strong>
+                        </td>
+                        <td style={{ padding: 14, fontSize: '12px', color: 'var(--text-secondary)' }}>
+                          <span>{b.pickupDate} ➔ {b.returnDate}</span>
+                        </td>
+                        <td style={{ padding: 14, fontSize: '14px', color: '#34d399', fontWeight: 800 }}>{formatCurrency(b.totalPrice)}</td>
+                        <td style={{ padding: 14 }}>
+                          <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                            <button 
+                              className="btn btn-primary" 
+                              style={{ width: 'auto', padding: '6px 14px', fontSize: '12px', background: '#16a34a', borderColor: '#16a34a', color: '#fff', fontWeight: 700 }}
+                              onClick={() => handleConfirmReturnVehicle(b.id)}
+                              disabled={actionLoading}
+                            >
+                              ✓ Xác nhận xe an toàn (Báo CSKH hoàn cọc)
+                            </button>
+                            <button 
+                              className="btn btn-secondary" 
+                              style={{ width: 'auto', padding: '6px 14px', fontSize: '12px', background: '#dc2626', borderColor: '#dc2626', color: '#fff', fontWeight: 700 }}
+                              onClick={() => {
+                                setDisputeBooking(b);
+                                setDisputeDesc('');
+                                setRequestedDeduction('');
+                              }}
+                              disabled={actionLoading}
+                            >
+                              ⚠️ Báo khiếu nại / Va quẹt
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* PROMINENT TRIP EXTENSION REQUESTS AT THE VERY TOP */}
+            {extensionBookings.length > 0 && (
+              <div className="owner-glass-table-container mb-6" style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(251, 191, 36, 0.04) 100%)', border: '1px solid rgba(245, 158, 11, 0.4)', boxShadow: '0 8px 32px rgba(245, 158, 11, 0.15)', borderRadius: 16, padding: 20 }}>
+                <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Sparkles size={16} color="#f59e0b" />
+                  <span>Yêu cầu xin gia hạn thời gian thuê xe ({extensionBookings.length})</span>
+                </h4>
+                <table className="owner-data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                      <th style={{ padding: 12, fontSize: '11px', color: '#fbbf24', textTransform: 'uppercase' }}>Khách Hàng</th>
+                      <th style={{ padding: 12, fontSize: '11px', color: '#fbbf24', textTransform: 'uppercase' }}>Phương Tiện</th>
+                      <th style={{ padding: 12, fontSize: '11px', color: '#fbbf24', textTransform: 'uppercase' }}>Thời Gian Xin Gia Hạn</th>
+                      <th style={{ padding: 12, fontSize: '11px', color: '#fbbf24', textTransform: 'uppercase' }}>Doanh Thu Thêm</th>
+                      <th style={{ padding: 12, fontSize: '11px', color: '#fbbf24', textTransform: 'uppercase', textAlign: 'center' }}>Phê Duyệt Gia Hạn</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {extensionBookings.map((b) => {
+                      let ext = typeof b.extensionRequest === 'string' ? JSON.parse(b.extensionRequest) : b.extensionRequest;
+                      return (
+                        <tr key={b.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                          <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
+                            <strong>{b.userName}</strong>
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{b.userEmail}</span>
+                          </td>
+                          <td style={{ padding: 14, fontSize: '13px', color: 'var(--text-primary)' }}>
+                            <strong>{b.carName}</strong>
+                          </td>
+                          <td style={{ padding: 14, fontSize: '12px', color: '#f59e0b' }}>
+                            <div>Hạn cũ: <span>{b.returnDate}</span></div>
+                            <div>Xin gia hạn đến: <strong style={{ color: '#34d399' }}>{ext.requestedReturnDate} (+{ext.extraDays} ngày)</strong></div>
+                          </td>
+                          <td style={{ padding: 14, fontSize: '14px', color: '#34d399', fontWeight: 800 }}>+{formatCurrency(ext.extraPrice || 0)}</td>
+                          <td style={{ padding: 14 }}>
+                            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                              <button 
+                                className="btn btn-primary" 
+                                style={{ width: 'auto', padding: '6px 14px', fontSize: '12px', background: '#16a34a', borderColor: '#16a34a', color: '#fff', fontWeight: 700 }}
+                                onClick={() => handleRespondExtension(b.id, 'approve')}
+                                disabled={actionLoading}
+                                title="Cho phép Khách thanh toán phí gia hạn"
+                              >
+                                ✓ Duyệt (Yêu cầu Khách thanh toán)
+                              </button>
+                              <button 
+                                className="btn btn-secondary"
+                                style={{ width: 'auto', padding: '6px 14px', fontSize: '12px', background: '#dc2626', borderColor: '#dc2626', color: '#fff', fontWeight: 700 }}
+                                onClick={() => handleRespondExtension(b.id, 'reject')}
+                                disabled={actionLoading}
+                              >
+                                ✕ Từ chối gia hạn
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
             {/* PENDING BOOKINGS - ALWAYS PERSISTENT AT THE TOP */}
             <div className="owner-glass-table-container mb-6" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-shadow)', borderRadius: 16, padding: 20 }}>
               <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 14, textAlign: 'left' }}>
@@ -481,39 +640,6 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                           </td>
                           <td style={{ padding: 14, fontSize: '12px', color: 'var(--text-secondary)' }}>
                             <span>{b.pickupDate} ➔ {b.returnDate}</span>
-                            {(() => {
-                              let ext = null;
-                              try {
-                                if (b.extensionRequest) {
-                                  ext = typeof b.extensionRequest === 'string' ? JSON.parse(b.extensionRequest) : b.extensionRequest;
-                                }
-                              } catch (e) {}
-
-                              if (ext && ext.status === 'pending') {
-                                return (
-                                  <div style={{ background: '#fef3c7', border: '1px solid #fde047', borderRadius: '8px', padding: '6px 8px', marginTop: '6px', fontSize: '11px', color: '#92400e' }}>
-                                    <strong>⏳ Xin gia hạn đến {ext.requestedReturnDate} (+{ext.extraDays} ngày)</strong>
-                                    <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
-                                      <button
-                                        onClick={() => handleRespondExtension(b.id, 'approve')}
-                                        disabled={actionLoading}
-                                        style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}
-                                      >
-                                        Duyệt
-                                      </button>
-                                      <button
-                                        onClick={() => handleRespondExtension(b.id, 'reject')}
-                                        disabled={actionLoading}
-                                        style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}
-                                      >
-                                        Từ chối
-                                      </button>
-                                    </div>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            })()}
                           </td>
                           <td style={{ padding: 14, fontSize: '13px', color: 'var(--accent-primary)', fontWeight: 700 }}>{formatCurrency(b.totalPrice)}</td>
                           <td style={{ padding: 14 }}>
@@ -875,6 +1001,63 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
             onInspectionUpdated={() => fetchOwnerDashboard(true)}
           />
 
+        )}
+
+        {/* Owner Report Dispute Modal upon Vehicle Return */}
+        {disputeBooking && (
+          <div className="cm2-overlay" onClick={() => setDisputeBooking(null)}>
+            <div className="cm2-wrap" onClick={e => e.stopPropagation()} style={{ maxWidth: '520px', borderRadius: '16px' }}>
+              <div className="cm2-toolbar" style={{ background: '#dc2626', color: '#fff', borderRadius: '16px 16px 0 0', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '15px' }}>
+                  <span>⚠️ Báo Cáo Sự Cố / Khiếu Nại Khi Nhận Lại Xe</span>
+                </div>
+                <button style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }} onClick={() => setDisputeBooking(null)}>
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={handleOwnerSubmitDispute} style={{ padding: '24px', background: '#fff', borderRadius: '0 0 16px 16px', textAlign: 'left' }}>
+                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
+                  Nếu xe bị va quẹt, hư hỏng hoặc thiếu nhiên liệu so với lúc nhận, vui lòng điền thông tin chi tiết để chuyển tới bộ phận <strong>CSKH ViVuCar đối soát giữ/trừ cọc</strong>.
+                </p>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                    Chi tiết vết trầy xước / hư hỏng phát sinh:
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={disputeDesc}
+                    onChange={e => setDisputeDesc(e.target.value)}
+                    placeholder="Ví dụ: Xe bị móp nhẹ cửa sau bên phụ, thiếu 1/4 nấc xăng so với ban đầu..."
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
+                    required
+                  />
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                    Đề xuất số tiền cấn trừ khoản cọc (VNĐ):
+                  </label>
+                  <input
+                    type="number"
+                    value={requestedDeduction}
+                    onChange={e => setRequestedDeduction(e.target.value)}
+                    placeholder="Ví dụ: 500000"
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setDisputeBooking(null)} disabled={actionLoading}>
+                    Hủy bỏ
+                  </button>
+                  <button type="submit" className="btn btn-primary" style={{ background: '#dc2626', borderColor: '#dc2626', color: '#fff' }} disabled={actionLoading}>
+                    {actionLoading ? 'Đang gửi...' : 'Gửi khiếu nại tới CSKH'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
       </div>
     </div>

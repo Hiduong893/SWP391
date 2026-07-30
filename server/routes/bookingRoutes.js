@@ -305,7 +305,15 @@ router.put('/api/bookings/:id/handover', auth, async (req, res) => {
     if (type === 'pickup') {
       nextStatus = 'active';
     } else if (type === 'return') {
-      nextStatus = 'completed';
+      nextStatus = 'return_pending_owner';
+      // Automatically attach default pickup document if pickup step was skipped
+      if (!updatedHandover.pickup) {
+        updatedHandover.pickup = {
+          checklist: ['noScratches', 'fuelOk', 'cleanCar', 'tiresOk'],
+          signature: 'auto_implicit_pickup',
+          timestamp: new Date().toISOString()
+        };
+      }
     }
 
     await db.bookings.update(id, {
@@ -316,15 +324,16 @@ router.put('/api/bookings/:id/handover', auth, async (req, res) => {
     const car = await db.cars.findOne({ id: booking.carId });
     if (car && car.ownerId) {
       const typeText = type === 'pickup' ? 'nhận xe (pickup)' : 'trả xe (return)';
-      const statusText = type === 'pickup' ? 'bắt đầu hành trình' : 'hoàn thành chuyến đi';
+      const statusText = type === 'pickup' ? 'bắt đầu hành trình' : 'đã nộp biên bản trả xe (chờ chủ xe xác nhận)';
       await notificationService.createNotification(
         car.ownerId,
-        type === 'pickup' ? 'Biên bản nhận xe đã ký' : 'Biên bản trả xe đã ký',
-        `Khách hàng đã ký biên bản bàn giao ${typeText} cho xe ${car.brand} ${car.model} (#${id}) và ${statusText}.`,
+        type === 'pickup' ? 'Biên bản nhận xe đã ký' : 'Biên bản trả xe cần xác nhận',
+        `Khách hàng đã ký biên bản bàn giao ${typeText} cho xe ${car.brand} ${car.model} (#${id}) và ${statusText}. Vui lòng kiểm tra xe thực tế và bấm 'Xác nhận nhận lại xe'.`,
         'BookingUpdate',
         id,
         'Booking'
       );
+<<<<<<< HEAD
 
       // Tự động phân bổ doanh thu khi chuyến đi hoàn thành (Trả xe)
       if (type === 'return') {
@@ -361,15 +370,154 @@ router.put('/api/bookings/:id/handover', auth, async (req, res) => {
           console.error('Lỗi tự động đối soát chuyển tiền ví:', err);
         }
       }
+=======
+>>>>>>> origin/feature/system-audit-and-refund-fixes
     }
 
-    res.json({
-      message: type === 'pickup'
-        ? 'Ký biên bản bàn giao nhận xe thành công! Hành trình thuê xe bắt đầu.'
-        : 'Ký biên bản trả xe thành công! Bạn có thể gửi đánh giá cho chủ xe.'
-    });
+    res.json({ message: type === 'return' ? 'Đã gửi biên bản trả xe! Vui lòng chờ Chủ xe kiểm tra và xác nhận nhận lại xe.' : 'Bàn giao nhận xe thành công! Chúc bạn có chuyến đi an toàn.', booking: await db.bookings.findOne({ id }) });
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi ký biên bản bàn giao.' });
+    console.error('Error signing handover docs:', error);
+    res.status(500).json({ message: error.message || 'Lỗi ký biên bản bàn giao.' });
+  }
+});
+
+// 15b. Car Owner Confirms Vehicle Return (Chủ xe xác nhận đã nhận lại xe & Hoàn tất chuyến đi)
+router.put('/api/bookings/:id/owner-confirm-return', auth, async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const booking = await db.bookings.findOne({ id: bookingId });
+    if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
+
+    const car = await db.cars.findOne({ id: booking.carId });
+    if (!car) return res.status(404).json({ message: 'Xe không tồn tại.' });
+
+    if (String(car.ownerId) !== String(req.user.id) && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Bạn không có quyền xác nhận nhận lại xe cho đơn này.' });
+    }
+
+    if (booking.status !== 'return_pending_owner' && booking.status !== 'active') {
+      return res.status(400).json({ message: 'Đơn đặt xe này chưa ở trạng thái nộp biên bản trả xe.' });
+    }
+
+    await db.bookings.update(bookingId, {
+      status: 'completed'
+    });
+
+    try {
+      const pool = await getPool();
+      const ownerPayout = booking.totalPrice * 0.2;
+      const adminProfit = booking.totalPrice * 0.1;
+
+      await pool.request()
+        .input('userId', sql.Int, car.ownerId)
+        .input('bookingId', sql.Int, bookingId)
+        .input('amount', sql.Decimal(18,2), ownerPayout)
+        .input('txnType', sql.VarChar, 'Revenue')
+        .input('description', sql.NVarChar, `Thanh toán 20% cọc còn lại chuyến đi #${bookingId} (Đã nhận 70% tiền mặt)`)
+        .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+
+      const adminRes = await pool.request().query("SELECT TOP 1 u.user_id FROM [User] u JOIN UserRole ur ON u.user_id = ur.user_id JOIN Role r ON ur.role_id = r.role_id WHERE r.role_name = 'Admin'");
+      if (adminRes.recordset.length > 0) {
+        const adminId = adminRes.recordset[0].user_id;
+        await pool.request()
+          .input('userId', sql.Int, adminId)
+          .input('bookingId', sql.Int, bookingId)
+          .input('amount', sql.Decimal(18,2), adminProfit)
+          .input('txnType', sql.VarChar, 'PlatformFee')
+          .input('description', sql.NVarChar, `Phí hoa hồng sàn 10% cho chuyến đi #${bookingId}`)
+          .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+      }
+    } catch (e) {
+      console.error('Lỗi phân bổ doanh thu khi chủ xe xác nhận trả xe:', e);
+    }
+
+    const depositAmount30Pct = Math.round(booking.totalPrice * 0.3);
+    const ownerUser = await db.users.findOne({ id: car.ownerId });
+    const ownerName = ownerUser ? ownerUser.name : 'Chủ xe';
+
+    await notificationService.notifyCSKH(
+      'Chủ xe đã nhận lại xe an toàn - Cần duyệt hoàn cọc 30%',
+      `Chủ xe ${ownerName} đã kiểm tra và xác nhận nhận lại xe ${car.brand} ${car.model} (#${bookingId}) an toàn không hư hại. Khoản cọc 30% (${depositAmount30Pct.toLocaleString('vi-VN')}đ) đã sẵn sàng để CSKH duyệt hoàn cọc cho khách.`,
+      'DepositRefund',
+      bookingId,
+      'Booking'
+    );
+
+    await notificationService.createNotification(
+      booking.userId,
+      'Chủ xe đã xác nhận nhận lại xe',
+      `Chủ xe đã kiểm tra và xác nhận nhận lại xe ${car.brand} ${car.model} (#${bookingId}) an toàn. Chuyến đi đã chính thức hoàn thành!`,
+      'BookingUpdate',
+      bookingId,
+      'Booking'
+    );
+
+    res.json({ message: 'Xác nhận nhận lại xe thành công! Đã gửi thông báo cho CSKH đối soát hoàn cọc.' });
+  } catch (error) {
+    console.error('Lỗi xác nhận nhận lại xe:', error);
+    res.status(500).json({ message: 'Lỗi xác nhận nhận lại xe.' });
+  }
+});
+
+// 15c. Car Owner Reports Incident / Dispute Upon Return (Chủ xe báo cáo sự cố/hỏng hóc khi nhận lại xe)
+router.post('/api/bookings/:id/owner-report-dispute', auth, async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const { description, incidentType, requestedDeduction } = req.body;
+
+    if (!description) {
+      return res.status(400).json({ message: 'Vui lòng điền mô tả sự cố / hư hỏng phát sinh.' });
+    }
+
+    const booking = await db.bookings.findOne({ id: bookingId });
+    if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
+
+    const car = await db.cars.findOne({ id: booking.carId });
+    if (!car) return res.status(404).json({ message: 'Xe không tồn tại.' });
+
+    if (String(car.ownerId) !== String(req.user.id) && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Bạn không có quyền báo cáo sự cố cho đơn đặt xe này.' });
+    }
+
+    const issueObj = {
+      reporter: 'owner',
+      description,
+      incidentType: incidentType || 'damage',
+      requestedDeduction: Number(requestedDeduction) || 0,
+      reportedAt: new Date().toISOString(),
+      status: 'pending_cskh'
+    };
+
+    const p = await getPool();
+    await p.request()
+      .input('bookingId', sql.Int, bookingId)
+      .input('issueData', sql.NVarChar, JSON.stringify(issueObj))
+      .query("UPDATE Booking SET status = 'Disputed', issue_report = @issueData WHERE booking_id = @bookingId");
+
+    const ownerUser = await db.users.findOne({ id: car.ownerId });
+    const ownerName = ownerUser ? ownerUser.name : 'Chủ xe';
+
+    await notificationService.notifyCSKH(
+      '⚠️ KHIẾU NẠI TRẢ XE TỪ CHỦ XE (CẦN XỬ LÝ)',
+      `Chủ xe ${ownerName} đã báo cáo sự cố/hỏng hóc cho chuyến đi #${bookingId} (${car.brand} ${car.model}). Nội dung: "${description}". Đề xuất cấn trừ cọc: ${Number(requestedDeduction || 0).toLocaleString('vi-VN')}đ. CSKH vui lòng kiểm tra và xử lý giữ/trừ cọc.`,
+      'Dispute',
+      bookingId,
+      'Booking'
+    );
+
+    await notificationService.createNotification(
+      booking.userId,
+      '⚠️ Chủ xe báo cáo sự cố khi nhận lại xe',
+      `Chủ xe ${ownerName} đã báo cáo sự cố cho chuyến đi #${bookingId}: "${description}". Bộ phận CSKH ViVuCar sẽ liên hệ làm rõ trước khi xử lý cọc.`,
+      'BookingUpdate',
+      bookingId,
+      'Booking'
+    );
+
+    res.json({ message: 'Đã gửi báo cáo khiếu nại sự cố tới bộ phận CSKH ViVuCar!' });
+  } catch (error) {
+    console.error('Lỗi báo cáo khiếu nại trả xe:', error);
+    res.status(500).json({ message: 'Lỗi gửi khiếu nại trả xe.' });
   }
 });
 
@@ -440,7 +588,7 @@ router.post('/api/bookings/:id/inspection', auth, async (req, res) => {
   }
 });
 
-// 19. Request Trip Extension (Yêu cầu gia hạn chuyến đi)
+// 19. Request Trip Extension (Yêu cầu gia hạn chuyến đi với kiểm tra trùng lịch)
 router.post('/api/bookings/:id/request-extension', auth, async (req, res) => {
   try {
     const bookingId = parseInt(req.params.id);
@@ -452,17 +600,35 @@ router.post('/api/bookings/:id/request-extension', auth, async (req, res) => {
 
     const booking = await db.bookings.findOne({ id: bookingId });
     if (!booking) return res.status(404).json({ message: 'Chuyến đi không tồn tại.' });
-    if (booking.userId !== req.user.id) return res.status(403).json({ message: 'Bạn không có quyền thực hiện trên chuyến đi này.' });
+    if (String(booking.userId) !== String(req.user.id)) return res.status(403).json({ message: 'Bạn không có quyền thực hiện trên chuyến đi này.' });
+
+    const p = await getPool();
+
+    // 1. Conflict Check: Ensure car has no overlapping future bookings
+    const conflictRes = await p.request()
+      .input('vehicleId', sql.Int, booking.carId)
+      .input('bookingId', sql.Int, bookingId)
+      .input('newReturnDate', sql.NVarChar, newReturnDate)
+      .query(`
+        SELECT booking_id FROM Booking 
+        WHERE vehicle_id = @vehicleId 
+          AND booking_id <> @bookingId 
+          AND status IN ('Pending', 'Approved', 'Active', 'Confirmed') 
+          AND start_datetime < @newReturnDate AND end_datetime > GETDATE()
+      `);
+
+    if (conflictRes.recordset.length > 0) {
+      return res.status(400).json({ message: 'Xe đã có lịch đặt tiếp theo trong khoảng thời gian này, không thể gia hạn.' });
+    }
 
     const extensionData = JSON.stringify({
       requestedReturnDate: newReturnDate,
       extraDays,
-      extraPrice: extraPrice || 0,
+      extraPrice: Number(extraPrice || 0),
       status: 'pending',
       requestedAt: new Date().toISOString()
     });
 
-    const p = await getPool();
     await p.request()
       .input('bookingId', sql.Int, bookingId)
       .input('data', sql.NVarChar, extensionData)
@@ -487,7 +653,7 @@ router.post('/api/bookings/:id/request-extension', auth, async (req, res) => {
   }
 });
 
-// 20. Respond to Trip Extension (Duyệt/Từ chối gia hạn chuyến đi)
+// 20. Respond to Trip Extension (Chủ xe duyệt/từ chối gia hạn)
 router.put('/api/bookings/:id/respond-extension', auth, async (req, res) => {
   try {
     const bookingId = parseInt(req.params.id);
@@ -503,38 +669,26 @@ router.put('/api/bookings/:id/respond-extension', auth, async (req, res) => {
     const p = await getPool();
     const currentRes = await p.request()
       .input('bookingId', sql.Int, bookingId)
-      .query('SELECT extension_request, return_date, total_price FROM Booking WHERE booking_id = @bookingId');
+      .query('SELECT extension_request, end_datetime, total_amount FROM Booking WHERE booking_id = @bookingId');
 
     if (currentRes.recordset.length === 0 || !currentRes.recordset[0].extension_request) {
       return res.status(400).json({ message: 'Chuyến đi này hiện không có yêu cầu gia hạn nào.' });
     }
 
     const extObj = JSON.parse(currentRes.recordset[0].extension_request);
-    extObj.status = action === 'approve' ? 'approved' : 'rejected';
+    extObj.status = action === 'approve' ? 'APPROVED_PENDING_PAYMENT' : 'REJECTED';
     extObj.respondedAt = new Date().toISOString();
 
-    if (action === 'approve') {
-      const newReturnDate = extObj.requestedReturnDate;
-      const newTotalPrice = Number(currentRes.recordset[0].total_price) + Number(extObj.extraPrice || 0);
-
-      await p.request()
-        .input('bookingId', sql.Int, bookingId)
-        .input('newReturnDate', sql.NVarChar, newReturnDate)
-        .input('newTotalPrice', sql.Decimal(18, 2), newTotalPrice)
-        .input('extData', sql.NVarChar, JSON.stringify(extObj))
-        .query('UPDATE Booking SET return_date = @newReturnDate, total_price = @newTotalPrice, extension_request = @extData WHERE booking_id = @bookingId');
-    } else {
-      await p.request()
-        .input('bookingId', sql.Int, bookingId)
-        .input('extData', sql.NVarChar, JSON.stringify(extObj))
-        .query('UPDATE Booking SET extension_request = @extData WHERE booking_id = @bookingId');
-    }
+    await p.request()
+      .input('bookingId', sql.Int, bookingId)
+      .input('extData', sql.NVarChar, JSON.stringify(extObj))
+      .query('UPDATE Booking SET extension_request = @extData WHERE booking_id = @bookingId');
 
     await notificationService.createNotification(
       booking.userId,
-      action === 'approve' ? 'Yêu cầu gia hạn ĐƯỢC CHẤP NHẬN' : 'Yêu cầu gia hạn BỊ TỪ CHỐI',
+      action === 'approve' ? 'Yêu cầu gia hạn ĐƯỢC CHẤP NHẬN - CẦN THANH TOÁN' : 'Yêu cầu gia hạn BỊ TỪ CHỐI',
       action === 'approve'
-        ? `Yêu cầu gia hạn cho chuyến đi #${bookingId} đã được duyệt! Ngày trả xe mới: ${extObj.requestedReturnDate}.`
+        ? `Chủ xe đã duyệt yêu cầu gia hạn cho chuyến đi #${bookingId}! Vui lòng hoàn tất thanh toán phí gia hạn ${Number(extObj.extraPrice || 0).toLocaleString('vi-VN')}đ.`
         : `Chủ xe không thể đồng ý gia hạn cho chuyến đi #${bookingId}. Vui lòng trả xe đúng hạn ban đầu.`,
       'BookingUpdate',
       bookingId,
@@ -542,12 +696,93 @@ router.put('/api/bookings/:id/respond-extension', auth, async (req, res) => {
     );
 
     res.json({
-      message: action === 'approve' ? 'Đã chấp nhận gia hạn chuyến đi thành công!' : 'Đã từ chối yêu cầu gia hạn.',
+      message: action === 'approve' ? 'Đã chấp nhận gia hạn! Yêu cầu khách hàng thanh toán phí gia hạn.' : 'Đã từ chối yêu cầu gia hạn.',
       extension: extObj
     });
   } catch (error) {
     console.error('Error responding extension:', error);
     res.status(500).json({ message: 'Lỗi xử lý phản hồi gia hạn.' });
+  }
+});
+
+// 20b. Pay Trip Extension Fee (Khách hàng thanh toán phí gia hạn trực tuyến)
+router.post('/api/bookings/:id/pay-extension', auth, async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const { paymentMethod } = req.body; // 'wallet' | 'vietqr'
+
+    const booking = await db.bookings.findOne({ id: bookingId });
+    if (!booking) return res.status(404).json({ message: 'Chuyến đi không tồn tại.' });
+
+    const p = await getPool();
+    const currentRes = await p.request()
+      .input('bookingId', sql.Int, bookingId)
+      .query('SELECT extension_request, end_datetime, total_amount FROM Booking WHERE booking_id = @bookingId');
+
+    if (currentRes.recordset.length === 0 || !currentRes.recordset[0].extension_request) {
+      return res.status(400).json({ message: 'Chuyến đi này hiện không có yêu cầu gia hạn nào.' });
+    }
+
+    const extObj = JSON.parse(currentRes.recordset[0].extension_request);
+    if (extObj.status !== 'APPROVED_PENDING_PAYMENT' && extObj.status !== 'approved') {
+      return res.status(400).json({ message: 'Yêu cầu gia hạn chưa được duyệt hoặc đã hoàn tất thanh toán.' });
+    }
+
+    const extraPrice = Number(extObj.extraPrice || 0);
+
+    // If wallet payment, process transaction via Stored Procedure
+    if (paymentMethod === 'wallet' && extraPrice > 0) {
+      await p.request()
+        .input('userId', sql.Int, req.user.id)
+        .input('bookingId', sql.Int, bookingId)
+        .input('amount', sql.Decimal(18, 2), extraPrice)
+        .input('txnType', sql.NVarChar, 'TripExtension')
+        .input('description', sql.NVarChar, `Thanh toán phí gia hạn +${extObj.extraDays} ngày cho chuyến đi #${bookingId}`)
+        .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+    }
+
+    extObj.status = 'PAID';
+    extObj.paidAt = new Date().toISOString();
+    extObj.paymentMethod = paymentMethod || 'wallet';
+
+    const newReturnDate = extObj.requestedReturnDate;
+    const newTotalPrice = Number(currentRes.recordset[0].total_amount) + extraPrice;
+
+    await p.request()
+      .input('bookingId', sql.Int, bookingId)
+      .input('newReturnDate', sql.NVarChar, newReturnDate)
+      .input('newTotalPrice', sql.Decimal(18, 2), newTotalPrice)
+      .input('extData', sql.NVarChar, JSON.stringify(extObj))
+      .query('UPDATE Booking SET end_datetime = @newReturnDate, total_amount = @newTotalPrice, extension_request = @extData WHERE booking_id = @bookingId');
+
+    const car = await db.cars.findOne({ id: booking.carId });
+    if (car && car.ownerId) {
+      await notificationService.createNotification(
+        car.ownerId,
+        'Gia hạn chuyến đi THÀNH CÔNG',
+        `Khách hàng đã thanh toán phí gia hạn ${extraPrice.toLocaleString('vi-VN')}đ cho chuyến đi #${bookingId}. Ngày trả xe mới: ${newReturnDate}.`,
+        'BookingUpdate',
+        bookingId,
+        'Booking'
+      );
+    }
+
+    await notificationService.createNotification(
+      booking.userId,
+      'Gia hạn chuyến đi THÀNH CÔNG',
+      `Bạn đã thanh toán phí gia hạn ${extraPrice.toLocaleString('vi-VN')}đ thành công! Hạn trả xe mới của chuyến đi #${bookingId} là: ${newReturnDate}.`,
+      'BookingUpdate',
+      bookingId,
+      'Booking'
+    );
+
+    res.json({
+      message: 'Thanh toán phí gia hạn thành công! Ngày trả xe mới đã được cập nhật.',
+      extension: extObj
+    });
+  } catch (error) {
+    console.error('Error paying extension:', error);
+    res.status(500).json({ message: error.message || 'Lỗi thanh toán phí gia hạn.' });
   }
 });
 

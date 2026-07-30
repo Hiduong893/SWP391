@@ -18,6 +18,8 @@ export const mapBookingRow = async (p, row) => {
     mappedStatus = 'confirmed';
   } else if (row.status === 'Active') {
     mappedStatus = 'active';
+  } else if (row.status === 'ReturnPendingOwner') {
+    mappedStatus = 'return_pending_owner';
   } else if (row.status === 'Completed') {
     mappedStatus = 'completed';
   } else if (row.status === 'Cancelled') {
@@ -28,7 +30,7 @@ export const mapBookingRow = async (p, row) => {
 
   const payRes = await p.request().input('bookingId', sql.Int, row.booking_id)
     .query('SELECT TOP 1 payment_method, status FROM Payment WHERE booking_id = @bookingId ORDER BY created_at DESC');
-  const paymentMethod = payRes.recordset.length > 0 ? payRes.recordset[0].payment_method.toLowerCase() : 'bank_transfer';
+  const paymentMethod = payRes.recordset.length > 0 ? payRes.recordset[0].payment_method.toLowerCase() : 'wallet';
   const rawStatus = payRes.recordset.length > 0 ? payRes.recordset[0].status.toLowerCase() : 'pending';
   
   let paymentStatus = rawStatus === 'success' ? 'paid' : rawStatus;
@@ -55,6 +57,7 @@ export const mapBookingRow = async (p, row) => {
     contractDetails: row.contract_details ? JSON.parse(row.contract_details) : null,
     inspectionCheckin: row.inspection_checkin || null,
     inspectionCheckout: row.inspection_checkout || null,
+    extensionRequest: row.extension_request ? (typeof row.extension_request === 'string' ? JSON.parse(row.extension_request) : row.extension_request) : null,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString()
   };
 };
@@ -193,8 +196,15 @@ export const bookingModel = {
         .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
     }
 
+<<<<<<< HEAD
     // Create Payment row (representing the online payment of 500,000 VND reservation fee)
     const initialStatus = bookingData.paymentMethod === 'vnpay' ? 'Pending' : 'Success';
+=======
+    // Create Payment row (representing 30% reservation fee online payment)
+    const initialStatus = (bookingData.paymentMethod === 'vietqr' || bookingData.paymentMethod === 'vnpay' || bookingData.paymentMethod === 'bank_transfer')
+      ? 'Pending'
+      : 'Success';
+>>>>>>> origin/feature/system-audit-and-refund-fixes
     const hasPaidAt = bookingData.paymentMethod === 'vnpay' ? null : new Date();
 
     const payRequest = p.request()
@@ -224,6 +234,7 @@ export const bookingModel = {
         'pending': 'Pending',
         'confirmed': 'Approved',
         'active': 'Active',
+        'return_pending_owner': 'ReturnPendingOwner',
         'completed': 'Completed',
         'cancelled': 'Cancelled',
         'rejected': 'Rejected'

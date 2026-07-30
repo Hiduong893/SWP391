@@ -304,6 +304,8 @@ function App() {
               <Route path="/my-trips" element={
                 user ? <MyTrips user={user} /> : <Navigate to="/" />
               } />
+              <Route path="/my trips" element={<Navigate to="/my-trips" />} />
+              <Route path="/my%20trips" element={<Navigate to="/my-trips" />} />
 
               <Route path="/admin-dashboard" element={
                 (!user && localStorage.getItem('token')) || (user && (user.role === 'admin' || user.role === 'cskh'))

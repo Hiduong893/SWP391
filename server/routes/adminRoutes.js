@@ -343,33 +343,25 @@ router.put('/api/admin/bookings/:id/refund-deposit', auth, cskhOrAdminAuth, asyn
     await db.bookings.update(id, { depositStatus: status });
 
     if (status === 'refunded') {
-      if (booking.paymentMethod === 'wallet') {
-        // Cộng 500.000đ tiền giữ chỗ vào ví người dùng qua stored procedure (an toàn, atomic)
-        const p = await getPool();
-        const refundAmount = Math.round(booking.totalPrice * 0.3);
-        const userId = parseInt(booking.userId);
-        const bookingIdInt = parseInt(id);
+      const p = await getPool();
+      const refundAmount = Math.round(booking.totalPrice * 0.3);
+      const userId = parseInt(booking.userId);
+      const bookingIdInt = parseInt(id);
 
-        await p.request()
-          .input('userId', sql.Int, userId)
-          .input('bookingId', sql.Int, bookingIdInt)
-          .input('amount', sql.Decimal(18, 2), refundAmount)
-          .input('txnType', sql.NVarChar, 'DepositRefund')
-          .input('description', sql.NVarChar, `Hoàn trả tiền phí giữ chỗ cho đặt xe #${id}`)
-          .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
+      await p.request()
+        .input('userId', sql.Int, userId)
+        .input('bookingId', sql.Int, bookingIdInt)
+        .input('amount', sql.Decimal(18, 2), refundAmount)
+        .input('txnType', sql.NVarChar, 'DepositRefund')
+        .input('description', sql.NVarChar, `Hoàn trả 30% tiền cọc giữ chỗ chuyến đi #${id} vào Ví ViVuCar`)
+        .query('EXEC usp_ProcessWalletTransaction @user_id = @userId, @booking_id = @bookingId, @amount = @amount, @txn_type = @txnType, @description = @description');
 
-        console.log(`Deposit refunded to wallet: ${refundAmount} VND to userId=${userId} for bookingId=${id}`);
-      } else {
-        console.log(`Deposit marked as refunded offline/vnpay: bookingId=${id}`);
-      }
+      console.log(`Deposit refunded to wallet: ${refundAmount} VND to userId=${userId} for bookingId=${id}`);
     }
-
 
     res.json({
       message: status === 'refunded'
-        ? (booking.paymentMethod === 'wallet'
-          ? 'Đã duyệt hoàn trả phí giữ chỗ thành công! Tiền đã được cộng vào ví của người dùng.'
-          : 'Đã duyệt hoàn phí giữ chỗ! Do đơn đặt xe này thanh toán ngoại tuyến/VNPAY, tiền cọc sẽ do chủ xe hoàn trả trực tiếp.')
+        ? 'Đã duyệt hoàn trả phí giữ chỗ thành công! Tiền cọc đã được cộng trực tiếp vào Ví ViVuCar của khách hàng.'
         : 'Đã giữ lại tiền giữ chỗ do phát sinh các thiệt hại vật chất đối với xe.'
     });
   } catch (error) {
@@ -386,22 +378,35 @@ router.put('/api/admin/bookings/:id/confirm-vietqr', auth, cskhOrAdminAuth, asyn
     const booking = await db.bookings.findOne({ id });
     if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
 
-    if (booking.paymentMethod !== 'vietqr') {
-      return res.status(400).json({ message: 'Đơn đặt xe này không sử dụng phương thức VietQR.' });
+    const pm = String(booking.paymentMethod || '').toLowerCase();
+    if (pm !== 'vietqr' && pm !== 'bank_transfer' && pm !== 'qr') {
+      return res.status(400).json({ message: 'Đơn đặt xe này không sử dụng phương thức Chuyển khoản VietQR.' });
     }
     if (booking.depositStatus === 'paid') {
       return res.status(400).json({ message: 'Đơn đặt xe này đã được xác nhận thanh toán rồi.' });
     }
 
-    // Cập nhật trạng thái thanh toán cọc và booking
+    // Cập nhật trạng thái thanh toán cọc và giữ booking ở dạng Pending chờ Chủ xe duyệt
     await db.bookings.update(id, {
       depositStatus: 'paid',
       payment_status: 'paid',
-      status: 'Approved',
+      status: 'Pending',
     });
 
+    const car = await db.cars.findOne({ id: booking.carId });
+    if (car && car.ownerId) {
+      await notificationService.createNotification(
+        car.ownerId,
+        'Yêu cầu đặt xe mới (Đã cọc VietQR)',
+        `CSKH đã xác nhận nhận khoản cọc VietQR cho đơn thuê xe ${car.brand} ${car.model} (#${id}). Vui lòng phê duyệt chuyến đi.`,
+        'BookingUpdate',
+        id,
+        'Booking'
+      );
+    }
+
     res.json({
-      message: `Đã xác nhận nhận được phí giữ chỗ VietQR cho đơn đặt xe #${id}. Booking đã được duyệt!`,
+      message: `Đã xác nhận nhận được phí giữ chỗ VietQR cho đơn đặt xe #${id}. Đã chuyển tới Chủ xe phê duyệt!`,
     });
   } catch (error) {
     console.error('Lỗi xác nhận VietQR:', error);

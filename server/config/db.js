@@ -248,6 +248,13 @@ export const getPool = async () => {
         BEGIN
             ALTER TABLE Booking ADD extension_request NVARCHAR(MAX) NULL;
         END
+
+        -- Ensure CHK_Booking_Status constraint includes ReturnPendingOwner
+        IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CHK_Booking_Status')
+        BEGIN
+            ALTER TABLE Booking DROP CONSTRAINT CHK_Booking_Status;
+            ALTER TABLE Booking ADD CONSTRAINT CHK_Booking_Status CHECK (status IN ('Pending', 'Approved', 'Active', 'ReturnPendingOwner', 'Completed', 'Cancelled', 'Rejected', 'Disputed'));
+        END
       `);
       
 
