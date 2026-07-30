@@ -340,7 +340,7 @@ function App() {
                 loading
                   ? <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}><Loader className="spin text-info" size={48} /></div>
                   : (user && (user.role === 'admin' || user.role === 'cskh'))
-                    ? <AdminDashboard setCurrentTab={setCurrentTab} />
+                    ? <AdminDashboard setCurrentTab={setCurrentTab} user={user} />
                     : <Navigate to="/" />
               } />
 

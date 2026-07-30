@@ -16,7 +16,7 @@ import { CashFlowTab } from './CashFlowTab';
 import { VoucherTab } from './VoucherTab';
 import { ConfigTab } from './ConfigTab';
 
-export const AdminDashboard = ({ setCurrentTab }) => {
+export const AdminDashboard = ({ setCurrentTab, user }) => {
   // Tabs: Overview, Fleet, Accounts, CashFlow, Reports, ConfigSystem
   const [activeTab, setActiveTab] = useState('overview');
   const [activeSubTab, setActiveSubTab] = useState('kyc'); // sub-tabs: kyc, cars_moderation, support, reviews, incidents, disputes, roles, ai_alerts
@@ -653,7 +653,7 @@ export const AdminDashboard = ({ setCurrentTab }) => {
           <div className="header-actions">
 
             {/* Notification bell */}
-            <NotificationBell user={adminUser} setCurrentTab={setCurrentTab} />
+            <NotificationBell user={user} setCurrentTab={setCurrentTab} />
 
             {/* Theme toggle */}
             <button
