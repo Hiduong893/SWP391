@@ -186,7 +186,7 @@ VALUES
 ((SELECT vehicle_id FROM Vehicle WHERE license_plate = '51K-789.22'), 'https://xeotochinhhang.com/wp-content/uploads/2024/09/mg5-thai-lan-7-251hqaa.jpg', 1, 0),
 
 -- Mercedes-Benz
-((SELECT vehicle_id FROM Vehicle WHERE license_plate = '30K-999.99'), 'https://mercedes-saigon.com.vn/quannguyenphat/uploads/2019/04/Mercedes-C200-Avantgarde-6.jpg.webp', 1, 0),
+((SELECT vehicle_id FROM Vehicle WHERE license_plate = '30K-999.99'), 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=600&q=80', 1, 0),
 ((SELECT vehicle_id FROM Vehicle WHERE license_plate = '51K-555.55'), 'https://i.pinimg.com/736x/4c/da/b1/4cdab1c2b59f1c6bba05c6085ff9a7da.jpg', 1, 0),
 
 -- BMW
