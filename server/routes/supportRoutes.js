@@ -146,12 +146,14 @@ router.post('/api/chatbot/message', async (req, res) => {
 
     // 2. Fetch real-time cars and booking schedules from database for context injection
     let carsContext = "";
+    let rawCars = [];
+    let allBookings = [];
     try {
-      const activeCars = await db.cars.findMany();
-      const allBookings = await db.bookings.findMany();
+      rawCars = await db.cars.findMany();
+      allBookings = await db.bookings.findMany();
       
       const lines = [];
-      activeCars.forEach(car => {
+      rawCars.forEach(car => {
         if (car.status !== 'available' && car.status !== 'rented') return;
         
         const carBookings = allBookings.filter(b => 
@@ -177,8 +179,12 @@ router.post('/api/chatbot/message', async (req, res) => {
       console.error("Failed to query database for chatbot context:", dbError);
     }
 
-    // 3. Query Gemini AI using the official SDK
-    const reply = await askChatbotAI(message, history, userContext, { activeCars: carsContext });
+    // 3. Query Chatbot AI with full database context
+    const reply = await askChatbotAI(message, history, userContext, {
+      activeCars: carsContext,
+      rawCars: rawCars,
+      allBookings: allBookings
+    });
     res.json({ reply });
   } catch (error) {
     console.error('Chatbot API Error:', error);

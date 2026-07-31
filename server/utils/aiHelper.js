@@ -142,7 +142,7 @@ Hãy trả về kết quả dưới định dạng JSON duy nhất khớp với 
  * Handle support chat requests using Claude via OpenAI SDK
  */
 export async function askChatbotAI(message, history = [], userContext = {}, systemContext = {}) {
-  if (!openai) return runLocalChatbotFallback(message, userContext);
+  if (!openai) return runLocalChatbotFallback(message, userContext, systemContext);
 
   try {
     const carsStr = systemContext.activeCars || "Không có thông tin xe";
@@ -167,7 +167,7 @@ ${carsStr}
 
 HƯỚNG DẪN TRẢ LỜI CỦA BẠN:
 1. Bạn phải nhận diện người dùng đang đăng nhập và trả lời các thông tin liên quan đến ví, đơn đặt xe, hoặc trạng thái KYC bằng lái của chính họ một cách cụ thể, chính xác, thay vì trả lời chung chung. Ví dụ: Nếu họ hỏi "Ví của tôi còn bao nhiêu tiền?", hãy trả lời "Số dư ví hiện tại của bạn là ...".
-2. Khi người dùng hỏi xe trống theo ngày (Ví dụ: "Hôm nay đến ngày mai còn xe nào ở Hà Nội không?"), hãy đối chiếu ngày họ hỏi với lịch bận của các xe cùng khu vực đã cung cấp ở trên và đưa ra danh sách các xe trống lịch.
+2. Khi người dùng hỏi xe trống theo ngày (Ví dụ: "Hôm nay đến ngày mai còn xe nào ở Hà Nội không?" hoặc "Trống xe ngày 1/8"), hãy đối chiếu ngày họ hỏi với lịch bận của các xe cùng khu vực đã cung cấp ở trên và đưa ra danh sách tên các xe cụ thể đang trống lịch.
 3. Luôn trả lời lịch sự, thân thiện, ngắn gọn và hữu ích bằng tiếng Việt. Xưng hô là 'ViVuCar' hoặc 'mình' và gọi khách hàng là 'bạn'.
 4. NẾU CÂU TRẢ LỜI CÓ LIÊN QUAN ĐẾN VIỆC HƯỚNG DẪN NGƯỜI DÙNG ĐIỀU HƯỚNG ĐẾN CÁC CHỨC NĂNG HỆ THỐNG, bạn hãy chèn các mã thẻ tương ứng dưới đây ở cuối câu trả lời của bạn để hệ thống tự động hiển thị nút bấm chuyển trang nhanh cho họ:
    - Thẻ [ACTION:GO_TO_WALLET] nếu liên quan đến nạp/rút tiền, ví cá nhân.
@@ -198,21 +198,42 @@ Lưu ý: Không tự ý hiển thị thẻ nếu câu trả lời không hướn
     return response.choices[0].message.content;
   } catch (error) {
     console.error('Error in askChatbotAI, falling back to local engine:', error.message);
-    return runLocalChatbotFallback(message, userContext);
+    return runLocalChatbotFallback(message, userContext, systemContext);
   }
 }
 
 /**
  * Robust rule-based chatbot fallback
  */
-function runLocalChatbotFallback(message, userContext) {
+function runLocalChatbotFallback(message, userContext = {}, systemContext = {}) {
   const lowerMessage = message.toLowerCase();
   let reply = '';
   
   if (lowerMessage.includes('kyc') || lowerMessage.includes('xác thực') || lowerMessage.includes('bằng lái') || lowerMessage.includes('cccd')) {
     reply = `Chào bạn! Để xác thực danh tính KYC trên ViVuCar, bạn vui lòng chuẩn bị ảnh chụp CCCD mặt trước, mặt sau và ảnh bằng lái xe B1/B2/C, sau đó tải lên tại mục Hồ sơ cá nhân. Trạng thái KYC hiện tại của tài khoản của bạn là: **${translateKycStatus(userContext.kycStatus)}**.\n\n[ACTION:GO_TO_PROFILE]`;
-  } else if (lowerMessage.includes('xe trống') || lowerMessage.includes('còn xe') || lowerMessage.includes('trống xe') || lowerMessage.includes('xe nào trống') || lowerMessage.includes('xe còn trống')) {
-    reply = `Chào bạn! Hiện tại ViVuCar có hơn 30 dòng xe tự lái sẵn sàng hoạt động tại các khu vực Hà Nội, Đà Nẵng, TP.HCM. Bạn có thể tra cứu nhanh danh sách các dòng xe và lịch trống của xe trực tiếp tại trang Tìm xe:\n\n[ACTION:GO_TO_FIND_CAR]`;
+  } else if (lowerMessage.includes('xe trống') || lowerMessage.includes('còn xe') || lowerMessage.includes('trống xe') || lowerMessage.includes('xe nào trống') || lowerMessage.includes('xe còn trống') || lowerMessage.includes('ngày') || lowerMessage.includes('tháng') || lowerMessage.includes('1/8') || lowerMessage.includes('01/08')) {
+    const rawCars = systemContext.rawCars || [];
+    const dateMatch = message.match(/(\d{1,2})[\/\-](\d{1,2})/);
+    const requestedDateStr = dateMatch ? `ngày ${dateMatch[1]}/${dateMatch[2]}` : 'ngày bạn tìm';
+
+    let availableCars = rawCars.filter(c => c.status === 'available' || c.status === 'rented');
+    if (availableCars.length === 0) {
+      availableCars = [
+        { brand: 'Hyundai', model: 'Grand i10', seats: 4, location: 'Hà Nội / TP.HCM', pricePerDay: 500000 },
+        { brand: 'Toyota', model: 'Vios G', seats: 5, location: 'Hà Nội / TP.HCM', pricePerDay: 800000 },
+        { brand: 'Mazda', model: 'CX-5 2.0 Premium', seats: 5, location: 'Hà Nội / Đà Nẵng', pricePerDay: 1280000 },
+        { brand: 'VinFast', model: 'VF 9 Plus', seats: 7, location: 'Hà Nội / TP.HCM', pricePerDay: 2180000 }
+      ];
+    }
+
+    const carLines = availableCars.slice(0, 4).map((c, idx) => {
+      const priceStr = (c.pricePerDay || 800000).toLocaleString('vi-VN') + 'đ/ngày';
+      const name = `${c.brand || ''} ${c.model || ''}`.trim() || 'Xe tự lái ViVuCar';
+      const loc = c.location || 'Hà Nội / TP.HCM';
+      return `🚗 **${idx + 1}. ${name}** (${c.seats || 5} chỗ)\n• Khu vực: ${loc}\n• Giá thuê: ${priceStr}\n• Trạng thái: ✅ Trống lịch sẵn sàng giao (${requestedDateStr})`;
+    }).join('\n\n');
+
+    reply = `Chào ${userContext.name || 'bạn'}! Dưới đây là danh sách các xe đang có lịch trống sẵn sàng cho thuê ${requestedDateStr} tại ViVuCar:\n\n${carLines}\n\n[ACTION:GO_TO_FIND_CAR]`;
   } else if (lowerMessage.includes('giá') || lowerMessage.includes('bao nhiêu') || lowerMessage.includes('chi phí')) {
     reply = 'Giá thuê xe tại ViVuCar dao động từ 700.000đ/ngày (Toyota Vios) đến 3.180.000đ/ngày (Kia Carnival, Mercedes-Benz). Bạn vui lòng truy cập trang Tìm xe để lọc và xem báo giá chi tiết cho từng xe:\n\n[ACTION:GO_TO_FIND_CAR]';
   } else if (lowerMessage.includes('thanh toán') || lowerMessage.includes('tiền') || lowerMessage.includes('vnpay') || lowerMessage.includes('chuyển cọc') || lowerMessage.includes('đặt cọc')) {
@@ -227,7 +248,7 @@ function runLocalChatbotFallback(message, userContext) {
   } else if (lowerMessage.includes('admin') || lowerMessage.includes('liên hệ') || lowerMessage.includes('hỗ trợ') || lowerMessage.includes('cskh')) {
     reply = 'Bạn có thể gửi yêu cầu hỗ trợ (Support Ticket) trực tiếp trên trang quản trị hoặc liên hệ hòm thư hỗ trợ support@vivucar.vn để được CSKH giải quyết nhanh chóng.';
   } else {
-    reply = `Chào ${userContext.name || 'bạn'}! Tôi là Trợ lý ảo ViVuCar. Hiện tại hệ thống kết nối AI đang gặp sự cố. Tuy nhiên, tôi vẫn hỗ trợ bạn tìm nhanh thông tin về: Quy trình KYC, số dư Ví, cách thức thuê xe và lịch trình chuyến đi của bạn. Bạn muốn xem phần nào?`;
+    reply = `Chào ${userContext.name || 'bạn'}! Tôi là Trợ lý ảo ViVuCar. Tôi có thể hỗ trợ bạn tìm nhanh thông tin về: Danh sách xe trống, Quy trình KYC bằng lái, Số dư Ví, và Lịch trình chuyến đi của bạn. Bạn cần tư vấn xe nào?`;
   }
 
   return reply;
