@@ -21,23 +21,14 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
   const [ownerBookings, setOwnerBookings] = useState([]);
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [myCarsList, setMyCarsList] = useState([]);
+  const [revenueData, setRevenueData] = useState([]);
+  const [isRevenueModalOpen, setIsRevenueModalOpen] = useState(false); // State cho popup doanh thu
   const [selectedBookingForContract, setSelectedBookingForContract] = useState(null);
   const [activeInspectionBooking, setActiveInspectionBooking] = useState(null);
 
   // Extracted Component States
   const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
   const [selectedVehicleForPause, setSelectedVehicleForPause] = useState(null);
-  const [isRevenueChartOpen, setIsRevenueChartOpen] = useState(false);
-
-  // Mock Data for Revenue Chart
-  const mockRevenueData = [
-    { month: 'T1', revenue: 1200000 },
-    { month: 'T2', revenue: 1900000 },
-    { month: 'T3', revenue: 3000000 },
-    { month: 'T4', revenue: 5000000 },
-    { month: 'T5', revenue: 4800000 },
-    { month: 'T6', revenue: totalEarnings > 0 ? totalEarnings : 6200000 }
-  ];
 
   const openPauseModal = (vehicle) => {
     setSelectedVehicleForPause(vehicle);
@@ -98,6 +89,36 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
   useEffect(() => {
     fetchOwnerDashboard();
   }, []);
+
+  // Calculate monthly revenue from ownerBookings
+  useEffect(() => {
+    const calculateRevenue = () => {
+      const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+        month: `Thg ${i + 1}`,
+        revenue: 0, // Tổng doanh thu
+        cars: {}    // Doanh thu chi tiết cho từng xe
+      }));
+
+      const completedBookings = ownerBookings.filter(b => b.status === 'completed');
+
+      completedBookings.forEach(booking => {
+        const endDate = new Date(booking.returnDate);
+        const monthIndex = endDate.getMonth(); // 0-11
+        if (endDate.getFullYear() === new Date().getFullYear()) {
+          const revenueForOwner = booking.rentalPriceForOwner || (booking.totalPrice * 0.9); // Fallback
+          // Cộng vào tổng doanh thu
+          monthlyData[monthIndex].revenue += revenueForOwner;
+          // Cộng vào doanh thu của xe cụ thể
+          if (!monthlyData[monthIndex].cars[booking.carId]) {
+            monthlyData[monthIndex].cars[booking.carId] = 0;
+          }
+          monthlyData[monthIndex].cars[booking.carId] += revenueForOwner;
+        }
+      });
+      setRevenueData(monthlyData.map(m => ({ ...m, revenue: Math.round(m.revenue) })));
+    };
+    calculateRevenue();
+  }, [ownerBookings]);
 
   const handleApproveBooking = async (bookingId, approved) => {
     setActionLoading(true);
@@ -220,8 +241,59 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
     }
   };
 
+  const handlePauseClick = (vehicle) => {
+    setSelectedVehicleForPause(vehicle);
+    setIsPauseModalOpen(true);
+  };
+
+  // 3. Hàm xử lý cho nút Phạt nguội
+  const handleTrafficViolationClick = async (booking) => {
+    // Logic lấy biển số xe được tối ưu để đảm bảo chỉ lấy chuỗi ký tự.
+    // Tìm xe trong danh sách `myCarsList` dựa trên `carId` của booking.
+    let licensePlate = '';
+    const carForBooking = myCarsList.find(car => car.id === booking.carId);
+    if (carForBooking && carForBooking.plateNumber) {
+      licensePlate = carForBooking.plateNumber;
+    } else if (booking?.carName?.includes(' - ')) { // Dự phòng cuối cùng nếu không tìm thấy xe
+      licensePlate = booking.carName.split(' - ').pop().trim();
+    }
+
+    const url = 'https://csgt.bocongan.gov.vn/tra-cuu-vi-pham-qua-hinh-anh';
+
+    if (!licensePlate) {
+      showToast('Không tìm thấy biển số xe cho chuyến đi này. Vui lòng kiểm tra lại dữ liệu.', 'warning');
+      window.open(url, '_blank'); // Vẫn mở trang tra cứu
+      openTrafficViolationModal(booking);
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(licensePlate);
+      showToast(`Đã sao chép biển số xe: ${licensePlate}`, 'success');
+    } catch (err) {
+      console.error('Lỗi sao chép biển số xe:', err);
+      showToast('Không thể tự động sao chép biển số xe.', 'error');
+    }
+
+    // Mở tab mới và sau đó mở popup báo cáo
+    window.open(url, '_blank');
+    openTrafficViolationModal(booking);
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  };
+
+  const formatDate = (isoString) => {
+    if (!isoString) return 'N/A';
+    const options = {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    };
+    return new Date(isoString).toLocaleString('vi-VN', options).replace(',', '');
   };
 
   // Generic Image Upload Handler
@@ -392,7 +464,7 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
 
       {/* STATS OVERVIEW CARDS */}
       <div className="owner-stats-grid mb-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-        <div className="owner-stat-card-glass" onClick={() => setIsRevenueChartOpen(true)} style={{ cursor: 'pointer' }} title="Xem biểu đồ doanh thu">
+        <div className="owner-stat-card-glass" onClick={() => setIsRevenueModalOpen(true)} style={{ cursor: 'pointer' }} title="Xem biểu đồ doanh thu">
           <div>
             <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tổng Thu Nhập</span>
             <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--accent-primary)', marginTop: 4 }}>{formatCurrency(totalEarnings)}</h3>
@@ -698,7 +770,7 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                                           type="button"
                                           className="btn btn-secondary"
                                           style={{ width: 'auto', padding: '4px 10px', fontSize: '11px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
-                                          onClick={() => openTrafficViolationModal(b)}
+                                          onClick={() => handleTrafficViolationClick(b)}
                                           disabled={actionLoading}
                                       >
                                           <ReceiptText size={12} /> Phạt nguội
@@ -751,7 +823,7 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
               <form onSubmit={handleSubmitEditCar} className="list-car-form">
                 <div style={{ marginBottom: 16 }}>
                   <strong style={{ color: 'var(--text-primary)', fontSize: '13.5px' }}>
-                    Xe: {editingCar.brand} {editingCar.model} ({editingCar.plateNumber})
+                    Xe: {editingCar.brand} {editingCar.model} ({editingCar.license_plate || editingCar.plateNumber})
                   </strong>
                 </div>
 
@@ -759,7 +831,6 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                   <div className="form-group">
                     <label className="form-label">Đơn giá thuê / Ngày (VND) *</label>
                     <div className="input-container">
-                      <DollarSign className="input-icon" size={16} />
                       <input 
                         type="number" 
                         placeholder="Vd: 800000" 
@@ -822,6 +893,22 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
           />
         )}
 
+        {/* Render Revenue Chart Modal */}
+        <RevenueChartModal 
+          isOpen={isRevenueModalOpen}
+          data={revenueData}
+          cars={myCarsList}
+          onClose={() => setIsRevenueModalOpen(false)}
+        />
+
+        {/* Render Pause Vehicle Modal */}
+        <PauseVehicleModal
+          isOpen={isPauseModalOpen}
+          onClose={() => setIsPauseModalOpen(false)}
+          vehicle={selectedVehicleForPause}
+          onConfirm={() => handleToggleCarStatus(selectedVehicleForPause.id, selectedVehicleForPause.status)}
+        />
+
         {/* General Dispute Modal */}
         {isGeneralDisputeModalOpen && (
             <div className="owner-modal-overlay">
@@ -845,7 +932,6 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                         <div className="form-group">
                             <label className="form-label">Số tiền yêu cầu bồi thường (VND)</label>
                             <div className="input-container">
-                                <DollarSign className="input-icon" size={16} />
                                 <input
                                     type="number"
                                     placeholder="Vd: 500000"
@@ -875,7 +961,7 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-                            <button type="button" className="btn btn-secondary" onClick={() => setIsGeneralDisputeModalOpen(false)}>Hủy bỏ</button>
+                            <button type="button" className="btn btn-secondary" style={{ flex: 0 }} onClick={() => setIsGeneralDisputeModalOpen(false)}>Hủy bỏ</button>
                             <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={actionLoading || generalDisputeImageLoading}>
                                 {actionLoading ? 'Đang gửi...' : 'Gửi khiếu nại'}
                             </button>
@@ -897,7 +983,6 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                         <div className="form-group">
                             <label className="form-label">Số tiền phạt (VND) *</label>
                             <div className="input-container">
-                                <DollarSign className="input-icon" size={16} />
                                 <input
                                     type="number"
                                     placeholder="Vd: 1500000"
@@ -1006,23 +1091,6 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
               </form>
             </div>
           </div>
-        )}
-
-        {isPauseModalOpen && selectedVehicleForPause && (
-          <PauseVehicleModal 
-            isOpen={isPauseModalOpen} 
-            onClose={() => setIsPauseModalOpen(false)} 
-            vehicle={selectedVehicleForPause} 
-            onConfirm={confirmPauseVehicle} 
-          />
-        )}
-        
-        {isRevenueChartOpen && (
-          <RevenueChartModal 
-            isOpen={isRevenueChartOpen} 
-            onClose={() => setIsRevenueChartOpen(false)} 
-            data={mockRevenueData} 
-          />
         )}
 
       </div>
