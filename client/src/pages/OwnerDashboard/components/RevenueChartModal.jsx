@@ -3,8 +3,8 @@ import { X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export const RevenueChartModal = ({ isOpen, onClose, data = [], cars = [] }) => {
-  if (!isOpen) return null;
   const [selectedCarId, setSelectedCarId] = useState('all');
+  if (!isOpen) return null;
 
   // Lấy tên của xe được chọn để hiển thị trong chú thích (legend)
   const selectedCarName = selectedCarId === 'all' ? 'Doanh thu xe' : cars.find(c => String(c.id) === selectedCarId)?.model || 'Doanh thu xe';
