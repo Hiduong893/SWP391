@@ -113,31 +113,6 @@ export const OverviewTab = ({
       });
     }
 
-    // --- SMART DEMO DATA SMOOTHING ---
-    // Nếu dữ liệu quá thưa thớt (chỉ có doanh thu tập trung vào 1-3 ngày do test), 
-    // chúng ta phân bổ lại doanh thu theo một đường cong thực tế để biểu đồ trông đẹp và chuyên nghiệp hơn
-    const nonZeroDays = dateList.filter(d => d.revenue > 0).length;
-    if (nonZeroDays > 0 && nonZeroDays <= 4) {
-      const totalRev = dateList.reduce((sum, d) => sum + d.revenue, 0);
-      let runningSum = 0;
-      // Tạo trọng số phân bổ (weights) cho 30 ngày (trend tăng dần + gợn sóng)
-      const weights = dateList.map((d, i) => {
-        const trend = (i / 30) * 2.5;
-        const seasonality = Math.sin((i / 30) * Math.PI * 4) * 0.8;
-        // Thay vì dùng Math.random() làm biểu đồ giật liên tục mỗi lần hover (re-render),
-        // dùng một công thức cố định để tạo độ nhiễu ổn định (deterministic noise)
-        const pseudoRandom = ((i * 137) % 100) / 100;
-        const noise = pseudoRandom * 0.6;
-        const weight = Math.max(0.1, trend + seasonality + noise + 1);
-        runningSum += weight;
-        return weight;
-      });
-
-      // Áp dụng trọng số để phân bổ lại tổng doanh thu
-      dateList.forEach((d, i) => {
-        d.revenue = Math.round((weights[i] / runningSum) * totalRev);
-      });
-    }
 
     // --- DEMO USER GROWTH ---
     const totalCurrentUsers = stats.totalUsers || usersList?.length || 50;
