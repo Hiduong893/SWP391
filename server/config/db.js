@@ -277,6 +277,26 @@ export const getPool = async () => {
             ALTER TABLE Booking ADD group_id INT NULL;
             ALTER TABLE Booking ADD CONSTRAINT FK_Booking_BookingGroup FOREIGN KEY (group_id) REFERENCES BookingGroup(group_id);
         END
+
+        -- Create BankTransaction table for fake bank webhook logging (auto QR confirmation)
+        IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'BankTransaction')
+        BEGIN
+            CREATE TABLE BankTransaction (
+                id                  INT IDENTITY(1,1) PRIMARY KEY,
+                transaction_id      NVARCHAR(100) NOT NULL,
+                amount              DECIMAL(18,2) NOT NULL,
+                transfer_content    NVARCHAR(500) NULL,
+                account_number      NVARCHAR(50)  NULL,
+                bank_name           NVARCHAR(100) NULL,
+                matched_booking_id  INT NULL,
+                matched_group_id    INT NULL,
+                status              NVARCHAR(50) NOT NULL DEFAULT 'unmatched',
+                note                NVARCHAR(500) NULL,
+                processed_at        DATETIME2 NULL,
+                created_at          DATETIME2 NOT NULL DEFAULT GETDATE()
+            );
+            CREATE UNIQUE INDEX UQ_BankTransaction_TxnId ON BankTransaction(transaction_id);
+        END
       `);
       
 

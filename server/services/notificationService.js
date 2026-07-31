@@ -54,10 +54,10 @@ export const notificationService = {
     try {
       const p = await getPool();
       const cskhUsers = await p.request().query(`
-        SELECT ur.user_id 
+        SELECT DISTINCT ur.user_id 
         FROM UserRole ur
         INNER JOIN Role r ON ur.role_id = r.role_id
-        WHERE r.role_name = 'CustomerService'
+        WHERE r.role_name IN ('CustomerService', 'Admin')
       `);
       for (const user of cskhUsers.recordset) {
         await notificationService.createNotification(

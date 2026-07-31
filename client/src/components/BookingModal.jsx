@@ -278,6 +278,8 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
   const [bookingId] = useState(() => crypto.randomUUID().slice(0, 8).toUpperCase());
   const [createdBookingId, setCreatedBookingId] = useState(null); // Real booking ID from API
   const [showContractModal, setShowContractModal] = useState(false);
+  const [qrSimulatedStatus, setQrSimulatedStatus] = useState(null); // null | 'matched' | 'unmatched'
+  const [qrDemoLoading, setQrDemoLoading] = useState(false);
   const [payMethod, setPayMethod] = useState('vietqr'); // 'vietqr', 'vnpay', or 'wallet'
   const [timeLeft, setTimeLeft] = useState(900); // 15 minutes = 900 seconds
   const [pickupMethod, setPickupMethod] = useState('self'); // 'self' or 'delivery'
@@ -1929,6 +1931,126 @@ Hợp đồng điện tử này được xác thực và đóng dấu ký số b
 
               <div className="receipt-stamp" style={{ bottom: '90px', right: '16px', fontSize: '9.5px', border: '2.5px double #10b981' }}>HỢP ĐỒNG ĐÃ KÝ SỐ ✓</div>
             </div>
+
+            {/* DEMO WEBHOOK TESTING SECTION FOR VIETQR */}
+            {paymentChoice === 'vietqr' && (
+              <div style={{
+                margin: '16px auto 0',
+                maxWidth: '420px',
+                background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                border: '1.5px dashed #6366f1',
+                borderRadius: '14px',
+                padding: '16px 20px',
+                textAlign: 'left'
+              }}>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#4f46e5', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🧪 CHẾ ĐỘ CHẠY THỬ (DEMO WEBHOOK VIETQR)</span>
+                </div>
+                <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px 0', lineHeight: 1.5 }}>
+                  Nếu không bấm chạy thử, đơn sẽ giữ nguyên ở trạng thái <strong>Chờ CSKH xác nhận thủ công</strong>.
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {/* Button 1: Success Match */}
+                  <button
+                    type="button"
+                    disabled={qrDemoLoading || qrSimulatedStatus === 'matched'}
+                    onClick={async () => {
+                      setQrDemoLoading(true);
+                      const targetId = createdBookingId || bookingId;
+                      try {
+                        const brandText = typeof car?.brand === 'string' ? car.brand : (car?.brand_name || car?.brand?.brand_name || 'Car');
+                        await api.webhook.simulate({
+                          transaction_id: `TXN_DEMO_${Date.now()}`,
+                          amount: reservationFee,
+                          transfer_content: `THUEXE ${brandText} ${targetId}`,
+                          bank_name: sysConfig?.bankName || 'MB Bank'
+                        });
+                        setQrSimulatedStatus('matched');
+                        showToast(`🎉 Giả lập Webhook THÀNH CÔNG! Đơn #${targetId} đã tự động duyệt cọc và thông báo Chủ xe.`, 'success');
+                      } catch (err) {
+                        const msg = err?.message || 'Lỗi chạy webhook giả lập.';
+                        if (msg.includes('da xac nhan roi') || msg.toLowerCase().includes('already')) {
+                          setQrSimulatedStatus('matched');
+                          showToast(`✅ Đơn #${targetId} đã được duyệt cọc thành công!`, 'success');
+                        } else {
+                          showToast(msg, 'error');
+                        }
+                      } finally {
+                        setQrDemoLoading(false);
+                      }
+                    }}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      background: qrSimulatedStatus === 'matched' ? '#059669' : 'linear-gradient(135deg, #10b981, #059669)',
+                      color: '#fff',
+                      border: 'none',
+                      fontWeight: 700,
+                      fontSize: '12.5px',
+                      cursor: qrDemoLoading ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    {qrSimulatedStatus === 'matched' ? '✅ Đã Duyệt Cọc Tự Động (Matched)' : '🚀 Giả Lập CK Đúng Mã Đơn (Tự Động Duyệt)'}
+                  </button>
+
+                  {/* Button 2: Error / Wrong Code Match */}
+                  <button
+                    type="button"
+                    disabled={qrDemoLoading}
+                    onClick={async () => {
+                      setQrDemoLoading(true);
+                      try {
+                        await api.webhook.simulate({
+                          transaction_id: `TXN_DEMO_ERR_${Date.now()}`,
+                          amount: reservationFee,
+                          transfer_content: 'THUEXE NHAM_MA_999999',
+                          bank_name: sysConfig.bankName || 'MB Bank'
+                        });
+                        setQrSimulatedStatus('unmatched');
+                        showToast(`⚠️ Giả lập Nhầm Mã Đơn thành công! Đã phát cảnh báo tới CSKH để xử lý thủ công.`, 'warning');
+                      } catch (err) {
+                        setQrSimulatedStatus('unmatched');
+                        showToast(`⚠️ Giả lập Nhầm Mã Đơn thành công! Đã ghi log giao dịch lỗi & chuyển cảnh báo tới CSKH.`, 'warning');
+                      } finally {
+                        setQrDemoLoading(false);
+                      }
+                    }}
+                    style={{
+                      padding: '9px 14px',
+                      borderRadius: '10px',
+                      background: '#fff',
+                      color: '#d97706',
+                      border: '1.5px solid #f59e0b',
+                      fontWeight: 700,
+                      fontSize: '12px',
+                      cursor: qrDemoLoading ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    ⚠️ Giả Lập Nhầm Mã Đơn (Chuyển CSKH Xử Lý)
+                  </button>
+                </div>
+
+                {qrSimulatedStatus === 'matched' && (
+                  <div style={{ marginTop: '10px', fontSize: '11.5px', color: '#059669', fontWeight: 700, textAlign: 'center' }}>
+                    ✨ Hệ thống đã xác nhận cọc & tự động thông báo tới Chủ xe + CSKH!
+                  </div>
+                )}
+                {qrSimulatedStatus === 'unmatched' && (
+                  <div style={{ marginTop: '10px', fontSize: '11.5px', color: '#d97706', fontWeight: 700, textAlign: 'center' }}>
+                    ⚠️ Đã ghi nhận giao dịch lỗi nhầm mã đơn & gửi cảnh báo tới CSKH!
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Contract CTA */}
             <div style={{

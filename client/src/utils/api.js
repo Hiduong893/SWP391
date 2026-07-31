@@ -635,5 +635,26 @@ export const api = {
   
   vouchers: {
     getActive: () => request('/vouchers/active')
+  },
+
+  webhook: {
+    /**
+     * Gui webhook gia lap dong bo (cho ket qua ngay - dung cho Demo Simulator).
+     * @param {object} data - { transaction_id, amount, transfer_content, account_number?, bank_name? }
+     */
+    simulate: (data) =>
+      request('/webhooks/bank-transfer/sync', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+
+    /**
+     * Lay lich su giao dich ngan hang da xu ly.
+     * @param {number} [limit=50]
+     */
+    getTransactions: (limit = 50) =>
+      request(`/webhooks/bank-transactions?limit=${limit}`, {
+        method: 'GET'
+      })
   }
 };

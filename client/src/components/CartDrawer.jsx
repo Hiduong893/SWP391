@@ -7,6 +7,7 @@ export const CartDrawer = ({ isOpen, onClose, cartItems = [], setCartItems, onCh
   const { showToast } = useToast();
   const [paymentMethod, setPaymentMethod] = useState('wallet');
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [vietqrModalData, setVietqrModalData] = useState(null);
 
   const formatCurrency = (amount) => {
@@ -261,21 +262,119 @@ export const CartDrawer = ({ isOpen, onClose, cartItems = [], setCartItems, onCh
               </div>
             </div>
 
-            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '12px', fontSize: '12px', color: '#1e40af', marginBottom: '16px', lineHeight: 1.5, textAlign: 'left' }}>
-              💡 CSKH ViVuCar sẽ tự động kiểm tra số dư và chuyển trạng thái đơn sang <strong>Đã đặt cọc (Paid)</strong> trong vòng 1-3 phút sau khi nhận tiền!
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '12px', fontSize: '12px', color: '#1e40af', marginBottom: '14px', lineHeight: 1.5, textAlign: 'left' }}>
+              💡 Nếu không bấm chạy thử, đơn sẽ giữ ở trạng thái <strong>Chờ CSKH xác nhận</strong>.
+            </div>
+
+            {/* DEMO WEBHOOK TESTING SECTION */}
+            <div style={{ background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)', border: '1.5px dashed #6366f1', borderRadius: '14px', padding: '14px', marginBottom: '16px', textAlign: 'left' }}>
+              <div style={{ fontSize: '12px', fontWeight: 800, color: '#4f46e5', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>🧪 CHẾ ĐỘ CHẠY THỬ (DEMO WEBHOOK)</span>
+              </div>
+              <p style={{ fontSize: '11.5px', color: '#64748b', margin: '0 0 10px 0', lineHeight: 1.4 }}>
+                Chọn 1 trong 2 trường hợp bên dưới để giả lập ngân hàng gửi thông báo tiền về:
+              </p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {/* 1. SUCCESS AUTO-MATCH WEBHOOK */}
+                <button
+                  type="button"
+                  disabled={demoLoading}
+                  onClick={async () => {
+                    setDemoLoading(true);
+                    try {
+                      await api.webhook.simulate({
+                        transaction_id: `TXN_DEMO_${Date.now()}`,
+                        amount: vietqrModalData.amount,
+                        transfer_content: vietqrModalData.transferContent,
+                        bank_name: 'MB Bank'
+                      });
+                      showToast(`🎉 Giả lập Webhook THÀNH CÔNG! Giỏ hàng đã tự động duyệt cọc và báo Chủ xe.`, 'success');
+                      setVietqrModalData(null);
+                      onClose();
+                      if (onCheckoutSuccess) onCheckoutSuccess();
+                    } catch (err) {
+                      showToast(err.message || 'Lỗi giả lập webhook', 'error');
+                    } finally {
+                      setDemoLoading(false);
+                    }
+                  }}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    color: '#fff',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '12.5px',
+                    cursor: demoLoading ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  🚀 Giả Lập CK Đúng Mã (Tự Động Duyệt)
+                </button>
+
+                {/* 2. WRONG CODE ERROR WEBHOOK */}
+                <button
+                  type="button"
+                  disabled={demoLoading}
+                  onClick={async () => {
+                    setDemoLoading(true);
+                    try {
+                      await api.webhook.simulate({
+                        transaction_id: `TXN_DEMO_ERR_${Date.now()}`,
+                        amount: vietqrModalData.amount,
+                        transfer_content: 'VIVUCAR GROUP NHAM_MA_999999',
+                        bank_name: 'MB Bank'
+                      });
+                      showToast(`⚠️ Giả lập Nhầm Mã Giỏ thành công! Đã gửi cảnh báo tới CSKH để xử lý thủ công.`, 'warning');
+                      setVietqrModalData(null);
+                      onClose();
+                      if (onCheckoutSuccess) onCheckoutSuccess();
+                    } catch (err) {
+                      showToast(`⚠️ Giả lập Nhầm Mã Giỏ thành công! Đã ghi log giao dịch lỗi & phát cảnh báo tới CSKH.`, 'warning');
+                      setVietqrModalData(null);
+                      onClose();
+                      if (onCheckoutSuccess) onCheckoutSuccess();
+                    } finally {
+                      setDemoLoading(false);
+                    }
+                  }}
+                  style={{
+                    padding: '9px 12px',
+                    borderRadius: '10px',
+                    background: '#fff',
+                    color: '#d97706',
+                    border: '1.5px solid #f59e0b',
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    cursor: demoLoading ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  ⚠️ Giả Lập Nhầm Mã Đơn (Chuyển CSKH Xử Lý)
+                </button>
+              </div>
             </div>
 
             <button
               type="button"
-              className="btn btn-primary"
-              style={{ width: '100%', padding: '12px', borderRadius: '12px', background: '#2563eb', border: 'none', color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}
+              className="btn btn-secondary"
+              style={{ width: '100%', padding: '12px', borderRadius: '12px', background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569', fontWeight: 700, fontSize: '13.5px', cursor: 'pointer' }}
               onClick={() => {
+                showToast('Đã lưu đơn ở trạng thái Chờ CSKH xác nhận.', 'info');
                 setVietqrModalData(null);
                 onClose();
                 if (onCheckoutSuccess) onCheckoutSuccess();
               }}
             >
-              Tôi Đã Chuyển Khoản Xong
+              Tôi Đã Chuyển Khoản (Đẩy Sang CSKH Chờ Duyệt)
             </button>
           </div>
         </div>

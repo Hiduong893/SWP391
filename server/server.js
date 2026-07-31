@@ -18,6 +18,7 @@ import renterActionRoutes from './routes/renterActionRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import contractRoutes from './routes/contractRoutes.js';
 import voucherRoutes from './routes/voucherRoutes.js';
+import webhookRoutes from './routes/webhookRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,6 +64,7 @@ app.use(renterActionRoutes);
 app.use(notificationRoutes);
 app.use('/api', contractRoutes);
 app.use(voucherRoutes);
+app.use(webhookRoutes);
 
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {

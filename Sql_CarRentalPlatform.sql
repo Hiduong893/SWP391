@@ -737,3 +737,46 @@ FROM IncidentStats i
 FULL OUTER JOIN ComplaintStats c 
     ON i.report_year = c.report_year AND i.report_week = c.report_week;
 GO
+
+-- ============================================================
+-- SECTION: CART GROUP & BANK TRANSACTIONS (VIETQR AUTOMATION)
+-- ============================================================
+
+-- BookingGroup: Group checkout for cart bookings
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'BookingGroup')
+BEGIN
+    CREATE TABLE BookingGroup (
+        group_id       INT            IDENTITY(1,1) PRIMARY KEY,
+        renter_id      INT            NOT NULL,
+        total_amount   DECIMAL(18,2)  NOT NULL DEFAULT 0,
+        deposit_amount DECIMAL(18,2)  NOT NULL DEFAULT 0,
+        group_status   NVARCHAR(50)   NOT NULL DEFAULT 'Pending',
+        payment_method NVARCHAR(50)   NULL,
+        created_at     DATETIME2      NOT NULL DEFAULT GETDATE(),
+        updated_at     DATETIME2      NOT NULL DEFAULT GETDATE(),
+        CONSTRAINT FK_BookingGroup_Renter FOREIGN KEY (renter_id) REFERENCES [User](user_id)
+    );
+END;
+GO
+
+-- BankTransaction: Log of bank transfer webhooks (VietQR auto-matching)
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'BankTransaction')
+BEGIN
+    CREATE TABLE BankTransaction (
+        id                 INT            IDENTITY(1,1) PRIMARY KEY,
+        transaction_id     NVARCHAR(100)  NOT NULL UNIQUE,
+        amount             DECIMAL(18,2)  NOT NULL,
+        transfer_content   NVARCHAR(500)  NULL,
+        account_number     NVARCHAR(50)   NULL,
+        bank_name          NVARCHAR(100)  NULL,
+        matched_booking_id INT            NULL,
+        matched_group_id   INT            NULL,
+        status             NVARCHAR(50)   NOT NULL DEFAULT 'unmatched', -- matched | unmatched | duplicate
+        note               NVARCHAR(1000) NULL,
+        processed_at       DATETIME2      NULL,
+        created_at         DATETIME2      NOT NULL DEFAULT GETDATE(),
+        CONSTRAINT FK_BankTxn_Booking FOREIGN KEY (matched_booking_id) REFERENCES Booking(booking_id),
+        CONSTRAINT FK_BankTxn_Group   FOREIGN KEY (matched_group_id)   REFERENCES BookingGroup(group_id)
+    );
+END;
+GO

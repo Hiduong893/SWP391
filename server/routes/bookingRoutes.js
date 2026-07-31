@@ -153,7 +153,7 @@ const checkCarScheduleOverlap = async (pool, vehicleId, pickupDateStr, returnDat
       SELECT booking_id, status, start_datetime, end_datetime 
       FROM Booking 
       WHERE vehicle_id = @vehicleId 
-        AND status NOT IN ('Cancelled', 'Rejected')
+        AND status NOT IN ('Cancelled', 'Rejected', 'Completed')
         AND start_datetime < CAST(@end AS DATETIME2) 
         AND end_datetime > CAST(@start AS DATETIME2)
     `);

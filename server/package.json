@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "swp391-auth-server",
   "version": "1.0.0",
   "description": "Express server for Authentication Demo",
@@ -21,7 +21,7 @@
     "jsonwebtoken": "^9.0.2",
     "jsqr": "^1.4.0",
     "mssql": "^12.5.5",
-    "nodemailer": "^8.0.10",
+    "nodemailer": "^8.0.11",
     "openai": "^6.48.0"
   }
 }
