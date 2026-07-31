@@ -818,7 +818,7 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
             <div className="owner-modal-card glassmorphism">
               <div className="owner-modal-header">
                 <h4>Chỉnh sửa phương tiện ký gửi</h4>
-                <button className="owner-modal-close" onClick={() => setEditingCar(null)}>Γ£ò</button>
+                <button className="owner-modal-close" onClick={() => setEditingCar(null)}>X</button>
               </div>
               <form onSubmit={handleSubmitEditCar} className="list-car-form">
                 <div style={{ marginBottom: 16 }}>
@@ -915,7 +915,7 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                 <div className="owner-modal-card glassmorphism">
                     <div className="owner-modal-header">
                         <h4>Tạo Khiếu nại chung cho chuyến đi #{selectedBookingForDispute?.id}</h4>
-                        <button className="owner-modal-close" onClick={() => setIsGeneralDisputeModalOpen(false)}>Γ£ò</button>
+                        <button className="owner-modal-close" onClick={() => setIsGeneralDisputeModalOpen(false)}>X</button>
                     </div>
                     <form onSubmit={handleGeneralDisputeSubmit} className="list-car-form">
                         <div className="form-group">
@@ -977,7 +977,7 @@ export const OwnerDashboard = ({ setCurrentTab, user }) => {
                 <div className="owner-modal-card glassmorphism">
                     <div className="owner-modal-header">
                         <h4>Báo cáo Phạt nguội cho chuyến đi #{selectedBookingForTrafficViolation?.id}</h4>
-                        <button className="owner-modal-close" onClick={() => setIsTrafficViolationModalOpen(false)}>Γ£ò</button>
+                        <button className="owner-modal-close" onClick={() => setIsTrafficViolationModalOpen(false)}>X</button>
                     </div>
                     <form onSubmit={handleTrafficViolationSubmit} className="list-car-form">
                         <div className="form-group">
