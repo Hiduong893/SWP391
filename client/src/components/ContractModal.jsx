@@ -380,7 +380,7 @@ export const ContractModal = ({ bookingId, user, onClose, onContractSigned }) =>
               <div className="cm2-lh-meta">
                 <span className="cm2-doc-type">Hợp đồng thuê xe tự lái</span>
                 <span className="cm2-doc-code">{contract.contractCode || 'HD-TEMP'}</span>
-                <span className="cm2-doc-date">Ngày lập: {fmtD(contract.createdAt)}</span>
+                <span className="cm2-doc-date">Ngày lập: {fmtDt(contract.createdAt)}</span>
               </div>
             </div>
             <hr className="cm2-lh-divider" />
