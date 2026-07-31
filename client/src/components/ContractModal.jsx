@@ -144,8 +144,26 @@ const inject = () => {
 
 /* ─── Helpers ─── */
 const fmt = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
-const fmtDt = (iso) => iso ? new Date(iso).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
-const fmtD = (iso) => iso ? new Date(iso).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+const fmtDt = (iso) => {
+  if (!iso) return '—';
+  try {
+    let s = String(iso).trim();
+    if (s.includes(' ') && !s.includes('T')) s = s.replace(' ', 'T');
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return String(iso);
+    return d.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+  } catch (_) { return String(iso); }
+};
+const fmtD = (iso) => {
+  if (!iso) return '—';
+  try {
+    let s = String(iso).trim();
+    if (s.includes(' ') && !s.includes('T')) s = s.replace(' ', 'T');
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return String(iso);
+    return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  } catch (_) { return String(iso); }
+};
 
 const STATUS_MAP = {
   Draft: { label: 'Chờ ký', cls: 'draft' },
