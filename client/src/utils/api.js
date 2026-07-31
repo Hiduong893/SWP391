@@ -23,42 +23,51 @@ const request = async (url, options = {}, retries = 4, delay = 1000) => {
         headers
       });
 
-      // Nếu proxy của Vite trả về 502 hoặc 504 (dạng HTML thay vì JSON) do server chưa chạy xong
-      if (!response.ok && (response.status === 502 || response.status === 504 || response.status === 503)) {
+      // Nếu proxy của Vite trả về 502/503/504 hoặc HTML do server đang khởi động/khởi động lại
+      const contentType = response.headers.get("content-type");
+      if (!response.ok && (!contentType || !contentType.includes("application/json"))) {
         throw new Error(`Server is starting (HTTP ${response.status})`);
       }
 
-      // Xử lý lỗi JSON parse nếu backend trả về HTML không mong muốn
-      const contentType = response.headers.get("content-type");
-      if (contentType && !contentType.includes("application/json")) {
-          throw new Error('Unexpected content type: ' + contentType);
+      let data;
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        try {
+          data = JSON.parse(text);
+        } catch (_) {
+          throw new Error(`Server is starting (HTML response)`);
+        }
       }
-
-      const data = await response.json();
 
       if (!response.ok) {
         if (response.status === 401) {
           localStorage.removeItem('token');
         }
-        throw new Error(data.message || 'Đã xảy ra lỗi không xác định.');
+        throw new Error(data?.message || `Lỗi hệ thống (HTTP ${response.status}).`);
       }
 
       return data;
     } catch (error) {
-      // Nếu là lỗi kết nối mạng hoặc lỗi server chưa sẵn sàng (trả về 502/504/HTML)
       const isNetworkError = error instanceof TypeError || 
                              error.name === 'SyntaxError' ||
-                             error.message?.includes('Failed to fetch') || 
-                             error.message?.includes('network') ||
-                             error.message?.includes('Failed to execute') ||
-                             error.message?.includes('Server is starting') ||
-                             error.message?.includes('Unexpected content type');
-                             
+                             (error.message && (
+                               error.message.includes('Server is starting') ||
+                               error.message.includes('Unexpected content type') ||
+                               error.message.includes('Failed to fetch')
+                             ));
+
       if (isNetworkError && i < retries) {
         console.warn(`[API] Kết nối thất bại hoặc server chưa sẵn sàng, đang thử lại sau ${delay}ms... (${i + 1}/${retries})`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise(res => setTimeout(res, delay));
         continue;
       }
+
+      if (error.message.includes('Server is starting') || error.message.includes('Unexpected content type')) {
+        throw new Error('Máy chủ backend đang khởi động lại. Vui lòng thử lại sau giây lát.');
+      }
+
       throw error;
     }
   }
