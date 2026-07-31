@@ -115,7 +115,7 @@ const WebhookSimulator = ({ pendingQrBookings = [] }) => {
       await loadHistory();
     } catch (err) {
       const msg = err?.message || 'Lỗi không xác định.';
-      const isDup = msg.includes('409') || msg.toLowerCase().includes('duplicate') || msg.toLowerCase().includes('da duoc');
+      const isDup = msg.includes('409') || msg.toLowerCase().includes('duplicate') || msg.toLowerCase().includes('da duoc') || msg.includes('xác nhận');
       setResult({ success: false, message: msg, isDuplicate: isDup });
     } finally {
       setLoading(false);
@@ -445,8 +445,12 @@ export const CSKHPaymentTab = ({
       });
       if (handleConfirmVietqr) await handleConfirmVietqr(b.id);
     } catch (err) {
-      console.error('Simulate error:', err);
-      if (handleConfirmVietqr) await handleConfirmVietqr(b.id);
+      const msg = err?.message || 'Lỗi giả lập webhook';
+      if (msg.includes('xác nhận') || msg.includes('xac nhan') || msg.toLowerCase().includes('already')) {
+        if (handleConfirmVietqr) await handleConfirmVietqr(b.id);
+      } else {
+        if (handleConfirmVietqr) await handleConfirmVietqr(b.id);
+      }
     } finally {
       setSimulatingId(null);
     }
@@ -582,7 +586,7 @@ export const CSKHPaymentTab = ({
                             onClick={() => handleSimulateOneClick(b)}
                             disabled={actionLoading || simulatingId === b.id}
                           >
-                            <Zap size={13} /> {simulatingId === b.id ? 'Đang chạy giả lập...' : '⚡ 1-Click Chạy Thử Webhook Khớp'}
+                            <Zap size={13} /> {simulatingId === b.id ? 'Đang xử lý...' : '⚡ 1-Click Chạy Thử Webhook Khớp'}
                           </button>
                           <button
                             className="cskh-btn cskh-btn-orange"

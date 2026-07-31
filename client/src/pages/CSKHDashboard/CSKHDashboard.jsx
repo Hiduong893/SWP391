@@ -123,13 +123,20 @@ export const CSKHDashboard = ({ setCurrentTab }) => {
   };
 
   const handleConfirmVietqr = async (bookingId) => {
-    if (!window.confirm('Bạn xác nhận đã nhận được 500.000đ chuyển khoản VietQR cho booking này?')) return;
     setActionLoading(true);
     try {
       const data = await api.admin.confirmVietqr(bookingId);
       showToast(data.message, 'success');
       fetchData(true);
-    } catch (e) { showToast(e.message || 'Lỗi xác nhận VietQR.', 'error'); }
+    } catch (e) {
+      const msg = e.message || 'Lỗi xác nhận VietQR.';
+      if (msg.includes('xác nhận') || msg.includes('xac nhan') || msg.toLowerCase().includes('already')) {
+        showToast('✅ Đơn đặt xe này đã được duyệt cọc thành công!', 'success');
+        fetchData(true);
+      } else {
+        showToast(msg, 'error');
+      }
+    }
     finally { setActionLoading(false); }
   };
 
