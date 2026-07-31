@@ -336,4 +336,57 @@ router.post('/api/owner/bookings/:id/dispute', auth, async (req, res) => {
   }
 });
 
+// NEW: Owner reports a traffic violation (Phạt nguội) for a booking
+router.post('/api/owner/bookings/:id/traffic-violation', auth, async (req, res) => {
+  try {
+    const { id } = req.params; // bookingId
+    const { amount, description, ticketImageUrl } = req.body;
+
+    if (!amount || !description) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp số tiền phạt và mô tả chi tiết phạt nguội.' });
+    }
+
+    const booking = await db.bookings.findOne({ id });
+    if (!booking) return res.status(404).json({ message: 'Đơn đặt xe không tồn tại.' });
+
+    const car = await db.cars.findOne({ id: booking.carId });
+    if (!car || String(car.ownerId) !== String(req.user.id)) {
+      return res.status(403).json({ message: 'Bạn không có quyền báo cáo phạt nguội cho chuyến đi này.' });
+    }
+
+    const existingDispute = await db.disputes.findMany({ bookingId: id, ownerId: req.user.id, type: 'traffic_violation', status: 'open' });
+    if (existingDispute.length > 0) {
+      return res.status(409).json({ message: 'Bạn đã có một báo cáo phạt nguội đang chờ xử lý cho chuyến đi này.' });
+    }
+
+    const newDispute = await db.disputes.create({
+      bookingId: id,
+      renterId: booking.userId,
+      ownerId: req.user.id,
+      type: 'traffic_violation',
+      description: description,
+      amount: parseFloat(amount),
+      evidenceUrls: ticketImageUrl ? [ticketImageUrl] : [],
+      status: 'open',
+    });
+
+    // Notify CSKH
+    await notificationService.notifyCSKH(
+      'Báo cáo Phạt nguội mới từ Chủ xe',
+      `Chủ xe ${req.user.name} vừa báo cáo phạt nguội ${parseFloat(amount).toLocaleString('vi-VN')}đ cho chuyến đi #${id}.`,
+      'DisputeUpdate',
+      newDispute.id,
+      'Dispute'
+    );
+
+    res.status(201).json({
+      message: 'Đã gửi báo cáo phạt nguội thành công. CSKH sẽ xác minh bằng chứng và thông báo đến bạn.',
+      dispute: newDispute,
+    });
+  } catch (error) {
+    console.error('Report traffic violation error:', error);
+    res.status(500).json({ message: error.message || 'Lỗi khi gửi báo cáo phạt nguội.' });
+  }
+});
+
 export default router;

@@ -355,8 +355,14 @@ export const api = {
         body: JSON.stringify({ description, amount, evidenceUrls })
       }),
 
+    reportDispute: (bookingId, description, amount, evidenceUrls) =>
+      request(`/owner/bookings/${bookingId}/dispute`, {
+        method: 'POST',
+        body: JSON.stringify({ description, amount, evidenceUrls })
+      }),
+
     reportTrafficViolation: (bookingId, amount, description, ticketImageUrl) =>
-      request(`/bookings/${bookingId}/report-violation`, {
+      request(`/owner/bookings/${bookingId}/traffic-violation`, {
         method: 'POST',
         body: JSON.stringify({ amount, description, ticketImageUrl })
       }),
